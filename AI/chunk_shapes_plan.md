@@ -51,6 +51,11 @@ chunk's kind.
   water maze on a chunk of 3 slots or more (`MAZE_SLOTS_MAX = 2`). Big
   rectangles are room networks, or plazas when square. It holds for L, T
   and S/Z too (user, answering question 1): odd shapes are never mazes.
+- **Big plazas are filled** (user, answering question 2): 3x3 plazas
+  only. Two avenues cross at the grand fountain, lined with statues, and
+  split the hall into four quarters. Each quarter rolls one theme: a
+  fountain court, a colonnade court or a kiosk cluster. Kiosks roll a
+  booth or an open stall. No planters. Step 12.
 
 ## How a chunk's footprint works now
 
@@ -299,6 +304,54 @@ Moved here from variation step 6:
 - Kinds may cluster too: draft, 30% chance to lean toward a neighbour's
   kind (mall wings next to mall wings make a longer mall).
 
+## 12. Big plazas (3x3 only)
+
+Today's plaza on a 3x3 is one disc 300 cells across, bare but for the
+fountain, a statue ring and a row of columns near the edge. This fills
+it, using only what exists already (floor, wall columns, water, statues,
+tables), so there is no new art.
+
+### Layout
+- The hall, its inlaid band, the edge colonnade and the grand fountain
+  stay as now.
+- **Two avenues** cross at the grand fountain, one along x, one along y,
+  each 12 to 16 cells wide (draft), inlaid in the band's floor. They are
+  what's left open; the quarters are the four parts of the hall between
+  them.
+- **Statues line the avenues** (user): a small statue every 20 to 30
+  cells (draft) along both sides of each avenue, under the ring rule and
+  kept off the fountain's quay and the door approaches. On a 3x3 these
+  take the place of today's ring of statues round the fountain (draft).
+
+### Quarters
+Each quarter rolls one theme, at even odds (draft). Each is built round
+the quarter's centre and keeps a ring of open floor along the avenues
+and the band, so nothing is cut off. `connectRegions` runs after as the
+safety net.
+- **Fountain court**: a smaller fountain, a pool round an island with a
+  scale-1 statue, a third the size of the grand one (draft). It can't be
+  crossed, like the grand one. Water to drink, and to guard.
+- **Colonnade court**: columns (the plaza's 2x2 wall columns) in a ring,
+  square or round, about the quarter's centre, or a grid every 8 to 12
+  cells over the quarter. Cover and sight lines broken up.
+- **Kiosk cluster**: 3 to 6 kiosks (draft), each rolling (user):
+  - a **booth**: a walled box about 5x4, in the chunk's wall style, with
+    one 2-cell opening facing the nearest avenue, and a table inside. A
+    dead end, so it's exempt from the ring rule inside, like a niche:
+    good cover, and somewhere to be cornered;
+  - an **open stall**: a table with a wall along two sides, in an L.
+  Kiosk tables are where the chunk's cakes and keys go first, before
+  other spots (draft). There are no extra cakes; the counts per slot
+  stay as they are. Keys still keep their depth from the entry, so a
+  kiosk near the entry gets a cake rather than a key.
+
+### Checks
+- `make genprobe` grows 3x3 plazas alone and in worlds; every booth's
+  table must be reachable, and no quarter's floor cut off.
+- Shots of a few 3x3 plazas from genprobe's pictures.
+- The soak seldom makes a 3x3 plaza (about 1 chunk in 200), so it won't
+  show much; the probe is the main check.
+
 ## Kind weights
 
 Draft weights per footprint. 0 means the kind doesn't fit there.
@@ -319,6 +372,7 @@ Draft weights per footprint. 0 means the kind doesn't fit there.
 1. Footprint foundation. `make check` unchanged. Commit.
 2. Genprobe tool (step 9), against today's chunks, as the baseline.
 3. Bigger rectangles. Time 3x3 generation. `make golden`.
+3b. Big plazas (step 12). Can be built any time now that 3x3 exists.
 4. Odd footprints with rooms (no mazes). Probe, shots, golden.
 5. Outlines on rooms and maze.
 6. Mall wing.
@@ -335,6 +389,6 @@ for new stuck humans or blocks before `make golden`.
 ## Open questions
 
 1. ~~Mazes on L, T, S/Z?~~ Answered: no mazes on them.
-2. **Plazas on 3x3?** A 3x3 plaza is one disc 300 cells across, mostly
-   bare round a small fountain. Keep it, keep plazas to 1x1 and 2x2, or
-   fill big plazas with more (several fountains, planters, columns)?
+2. ~~Plazas on 3x3?~~ Answered: keep them, and fill them (step 12).
+
+None open now. The "(draft)" numbers in step 12 are to tune in play.
