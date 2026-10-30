@@ -156,6 +156,12 @@ struct SoakProbe {
     static void addWater(World& w, Vec2i cell) { w.setTile(cell, Tile::Basin); }
     /// h tasted the water at the cell this foul (with feces and piss) before.
     static void tastedFoul(Human& h, Vec2i water, float filth) { h.water_.foul[water] = {filth, 0.0f}; }
+    /// Wary of cakes on tables after darts, and of rooms with one door
+    /// after a slam, as if caught that much (Human::Wary).
+    static void setWary(Human& h, float darts, float slam) {
+        h.wary_.darts = darts;
+        h.wary_.slam = slam;
+    }
     /// Given up on a way out, at home on home.
     static void settle(Human& h, Vec2i home) {
         h.escape_.settled = true;

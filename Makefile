@@ -29,7 +29,7 @@ HIDEF := build/hidef
 # Human frames with bottles, scaled up, to check the bottle art by eye.
 BOTTLESHEET := build/bottle_sheet
 
-.PHONY: all run clean stuck check golden coverage shot scenarios genprobe hidef bottlesheet apk install-apk logcat
+.PHONY: all run clean stuck check golden coverage shot scenarios genprobe hidef bottlesheet trapprobe apk install-apk logcat
 
 all: $(BIN)
 
@@ -105,6 +105,15 @@ clean:
 	rm -rf build
 
 -include $(OBJ:.o=.d)
+
+# Every trap set off in the soak worlds: same plate again, or a new one.
+TRAPPROBE := build/trap_probe
+
+$(TRAPPROBE): tools/trap_probe.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out tests/probe.h,$^) -o $@ $(LDLIBS)
+
+trapprobe: $(TRAPPROBE)
+	./$(TRAPPROBE) $(TRAPPROBE_ARGS)
 
 # The phone build: see android/apk.mk. Run these on the host, not in the toolbox.
 apk install-apk logcat:

@@ -2066,3 +2066,21 @@ timid                   | I DIDN'T MEAN... NEVER MIND.
 loner                   | NEVER NEEDED THEM ANYWAY.
 generous                | SORRY.
 starving                | I HAD TO.
+
+
+# Darted before, leaving a cake on a table alone, said to nobody.
+[wary_cake 0.7]
+                        | NOT THAT ONE. NOT AGAIN.
+                        | THAT CAKE COULD BE RIGGED.
+!hungry                 | I'M NOT THAT HUNGRY.
+hurt                    | ONE MORE DART AND I'M DONE.
+hungry                  | NOT YET. NOT HUNGRY ENOUGH TO RISK IT.
+timid                   | I'M NOT TOUCHING IT.
+
+# Shut in a slam room before, leaving a cake in a room with one door
+# alone, with no key to let itself out, said to nobody.
+[wary_slam 0.7]
+                        | ONE WAY IN. I KNOW THIS ROOM.
+                        | NOT WITHOUT A KEY.
+                        | THAT'S HOW THEY GET YOU.
+hungry                  | NOT WORTH BEING SHUT IN FOR.

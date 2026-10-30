@@ -31,6 +31,7 @@ Status as of 2026-10-30.
 | [pc_layout_plan.md](pc_layout_plan.md) | A wide 1014x468 canvas for PC windows: stats, log, square world, HUD over map, all always open | Built | Q1: scale on 1080p (smooth below 2x for now) |
 | [shut_in_plan.md](shut_in_plan.md) | Remembering a cry from a slam room: going later with a key, fetching one, calling back, telling others | Built | — |
 | [lessons_plan.md](lessons_plan.md) | Self-lessons announced once, again, or for good; a slower fade; a line for surviving thirst | Built | — |
+| [trap_wary_plan.md](trap_wary_plan.md) | Wary of the next trap like one that caught it: table cakes after darts, one-door rooms after a slam | Built | Should seeing someone else caught make it wary too? |
 | [human_split_plan.md](human_split_plan.md) | Splitting Human into per-system classes | Not started | Advised against for now; if done, only system by system, when that system is being reworked anyway |
 
 ## Known gaps found by the tests

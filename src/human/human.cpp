@@ -237,6 +237,8 @@ void Human::live(World& world, float dt) {
     lessons.keysFirst = std::max(0.0f, lessons.keysFirst - LESSON_FADE * dt);
     lessons.nearWater = std::max(0.0f, lessons.nearWater - LESSON_FADE * dt);
     lessons.safeSleep = std::max(0.0f, lessons.safeSleep - LESSON_FADE * dt);
+    wary_.darts = std::max(0.0f, wary_.darts - WARY_DARTS_FADE * dt);
+    wary_.slam = std::max(0.0f, wary_.slam - LESSON_FADE * dt);
     mind(dt);
     brood(world);
     if (keys > 0) deadEnd_ = false;
@@ -677,12 +679,14 @@ bool Human::pursue(World& world, Want w) {
         // For someone shut in, a key before any cake.
         bool forCries = keyForCries() > 0.0f;
         bool wantCakes = cakes < carryMax() && !memory.cakes.empty();
+        Shy shied = Shy::None;
         std::optional<std::vector<Vec2i>> p;
         if (forCries) p = search(world, [&](Vec2i c) { return inReach(c, memory.keys).has_value(); });
         if (!p)
             p = search(world, [&](Vec2i c) {
-                return inReach(c, memory.keys) || (wantCakes && inReach(c, memory.cakes));
+                return inReach(c, memory.keys) || (wantCakes && cakeInReach(c, &shied));
             });
+        noteShy(shied);
         // Cakes lying put down do as well, when nearer, unless it is after a key
         // for someone shut in.
         if (auto q = cakes < carryMax() && !(forCries && p) ? pilePath(world, true, false) : std::nullopt;
