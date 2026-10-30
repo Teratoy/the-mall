@@ -38,6 +38,8 @@ public:
     void draw(const Canvas& canvas) override;
 
 private:
+    /// tools/shot.cpp opens menus and keeps its worlds out of the obituary.
+    friend struct ShotProbe;
     uint64_t seed_;
     World world_;
     /// Made on first draw, per human id.

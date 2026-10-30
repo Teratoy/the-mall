@@ -2,3 +2,4 @@ build/
 AI/APIkey.txt
 *.kate-swp
 .directory
+data/obituary.txt

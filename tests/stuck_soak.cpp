@@ -3,6 +3,8 @@
 // Usage: build/stuck_soak [seeds=6] [minutes=20] [verbose=1] [crowd=0]
 //   crowd: extra humans packed round the spawn, to stress doorways.
 //   TRACE=seed:id:from:to prints one human second by second.
+//   LOGLINES=path writes every distinct log line written, with its count, for
+//   tools/coverage.py (make coverage).
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
@@ -39,6 +41,9 @@ using P = SoakProbe;
 static const char* GOAL[] = {"Explore", "FetchKey", "OpenDoor", "PassDoor", "Wander", "Meet", "Follow", "Company", "FetchCake", "Drink", "Relieve", "Fight",
                              "Flee", "Share", "CheckDoor", "Wash", "Avoid", "Escort", "Escorted", "Track", "GiveWay", "Loot", "Feed", "Sleep", "Rob", "Watch"};
 static const char* STATE[] = {"Waking", "Idle", "Sitting", "Rising", "Walking", "Greeting", "Eating", "Drinking", "Relieving", "Punching", "Giving", "Washing", "Looting", "Feeding", "Sleeping", "Dead"};
+// A goal or state added to Human needs its name here too.
+static_assert(std::size(GOAL) == size_t(Human::Goal::Watch) + 1);
+static_assert(std::size(STATE) == size_t(Human::State::Dead) + 1);
 
 struct Track {
     Vec2i lastCell{};
@@ -66,6 +71,9 @@ struct Totals {
     int flips = 0;      // target alternating
     std::map<std::string, int> stillBy, loopBy, blockBy, flipBy;
     std::map<int, double> goalTime, goalBlocked;
+    std::set<int> statesSeen;
+    // Every log line written, by its text, over all seeds.
+    std::map<std::string, int> logLines;
 };
 
 static std::string label(const Human& h) {
@@ -112,6 +120,7 @@ int main(int argc, char** argv) {
             t += dt;
             for (const auto& hp : w.humans()) {
                 Human& h = *hp;
+                T.statesSeen.insert(int(h.state));
                 if (h.dead()) continue;
                 Track& k = tr[h.id];
                 T.humanSeconds += dt;
@@ -229,6 +238,7 @@ int main(int argc, char** argv) {
         int killedBlow = 0, killedBled = 0, killFound = 0;
         for (auto& h : w.humans()) {
             alive += !h->dead();
+            for (auto& e : h->log.entries()) T.logLines[e.what] += e.times;
             for (auto& e : h->log.entries())
                 if (e.what.find("'S BODY") != std::string::npos && e.what.rfind("ATE ", 0) != 0 &&
                     e.what.find("HALF EATEN") == std::string::npos) {
@@ -378,8 +388,21 @@ int main(int argc, char** argv) {
     dump("loop by", T.loopBy);
     dump("flip by", T.flipBy);
     dump("long block by", T.blockBy);
+    std::printf("goals never seen:");
+    for (int g = 0; g < int(std::size(GOAL)); g++)
+        if (!T.goalTime.count(g)) std::printf(" %s", GOAL[g]);
+    std::printf("\nstates never seen:");
+    for (int st = 0; st < int(std::size(STATE)); st++)
+        if (!T.statesSeen.count(st)) std::printf(" %s", STATE[st]);
+    std::printf("\n");
     std::printf("goal time (blocked share):");
     for (auto& [g, v] : T.goalTime)
         std::printf("  %s %.1f%%(%.0f%%)", GOAL[g], 100 * v / T.humanSeconds, 100 * T.goalBlocked[g] / v);
     std::printf("\n");
+    if (const char* path = std::getenv("LOGLINES")) {
+        if (FILE* f = std::fopen(path, "w")) {
+            for (auto& [what, n] : T.logLines) std::fprintf(f, "%d\t%s\n", n, what.c_str());
+            std::fclose(f);
+        }
+    }
 }
