@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Mall as a phone app: raylib's NativeActivity with no Java code, held
+     upright and full screen. Built by android/apk.mk. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          package="com.teratoy.themall"
+          android:versionCode="1"
+          android:versionName="0.1-debug">
+    <uses-feature android:glEsVersion="0x00020000" android:required="true" />
+    <application android:label="The Mall"
+                 android:hasCode="false"
+                 android:allowBackup="false">
+        <activity android:name="android.app.NativeActivity"
+                  android:exported="true"
+                  android:theme="@style/Mall"
+                  android:screenOrientation="portrait"
+                  android:launchMode="singleTask"
+                  android:resizeableActivity="false"
+                  android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|screenLayout|density|uiMode|navigation">
+            <meta-data android:name="android.app.lib_name" android:value="themall" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

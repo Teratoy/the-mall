@@ -1,4 +1,5 @@
 #include "human/name.h"
+#include "core/files.h"
 #include "core/rng.h"
 #include <array>
 #include <cctype>
@@ -65,9 +66,7 @@ std::vector<std::filesystem::path> places() {
 /// One name per row, kept only if it is all letters, lowercased.
 std::vector<std::string> readNames() {
     std::vector<std::string> names;
-    for (const auto& path : places()) {
-        std::ifstream in(path);
-        if (!in) continue;
+    auto take = [&](std::istream& in) {
         std::string row;
         while (std::getline(in, row)) {
             while (!row.empty() && (row.back() == '\r' || row.back() == ' ')) row.pop_back();
@@ -78,6 +77,13 @@ std::vector<std::string> readNames() {
             }
             if (letters) names.push_back(row);
         }
+    };
+    if (auto in = files::asset("data/names.txt")) take(*in);
+    if (!names.empty()) return names;
+    for (const auto& path : places()) {
+        std::ifstream in(path);
+        if (!in) continue;
+        take(in);
         if (!names.empty()) return names;
     }
     std::fprintf(stderr, "no data/names.txt found: names come from the small built-in list\n");

@@ -1,4 +1,5 @@
 #include "human/talk.h"
+#include "core/files.h"
 #include "human/human.h"
 #include "world/statue.h"
 #include <algorithm>
@@ -403,6 +404,10 @@ void fill(std::string& text, const char* slot, const std::string& name, bool& sa
 } // namespace
 
 bool reload() {
+    if (auto in = files::asset("data/lines.txt")) {
+        book() = read(*in, "data/lines.txt");
+        return true;
+    }
     for (const auto& path : places()) {
         std::ifstream in(path);
         if (!in) continue;
