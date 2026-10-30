@@ -29,14 +29,27 @@ inline bool opaque(Tile t) {
 /// grand hall round a fountain.
 enum class ChunkKind { Spawn, Maze, WaterMaze, Rooms, Plaza };
 
+/// The slots a chunk owns, as offsets from the top-left of its box, which
+/// is offset {0, 0}'s row and column. A box owns every slot in it; an L, T,
+/// S or Z leaves some out, and those belong to other chunks.
+using Footprint = std::vector<Vec2i>;
+/// Every slot of a box this many slots across and down, row by row.
+Footprint boxFootprint(Vec2i slots);
+/// The size in slots of the box round a footprint.
+Vec2i footprintBox(const Footprint& parts);
+
 /// A piece of the world covering one or more slots, walled all round.
-/// Once made it stays, and keeps being simulated off screen.
+/// Once made it stays, and keeps being simulated off screen. Its cells
+/// span its whole box; those in slots it doesn't own stay Void, and are
+/// never read but by its own generators, which leave them be.
 struct Chunk {
     int id;
     ChunkKind kind;
-    /// Top-left slot, and size in slots.
+    /// Top-left slot of the box, and its size in slots.
     Vec2i slot, slots;
-    /// Size in cells.
+    /// The slots it owns.
+    Footprint parts;
+    /// Size of the box in cells.
     int w, h;
     std::vector<Tile> tiles;
     /// How each cell's floor looks; meaningless where there is no floor.
@@ -46,18 +59,31 @@ struct Chunk {
     /// How each cell's wall looks; meaningless where there is no wall.
     std::vector<WallStyle> walls;
 
-    Chunk(int id, ChunkKind kind, Vec2i slot, Vec2i slots)
-        : id(id), kind(kind), slot(slot), slots(slots),
-          w(slots.x * CHUNK), h(slots.y * CHUNK), tiles(size_t(w * h), Tile::Wall),
-          floors(size_t(w * h)), walls(size_t(w * h)) {}
+    Chunk(int id, ChunkKind kind, Vec2i slot, Footprint parts);
 
     Vec2i origin() const { return slot * CHUNK; }
-    bool covers(Vec2i s) const {
-        return s.x >= slot.x && s.y >= slot.y && s.x < slot.x + slots.x && s.y < slot.y + slots.y;
+    int slotCount() const { return int(parts.size()); }
+    /// Owns the slot this far from the top-left of its box.
+    bool ownsSlot(Vec2i off) const {
+        return off.x >= 0 && off.y >= 0 && off.x < slots.x && off.y < slots.y &&
+               owned_[size_t(off.y * slots.x + off.x)];
     }
+    bool covers(Vec2i s) const { return ownsSlot(s - slot); }
     bool inside(Vec2i l) const { return l.x >= 0 && l.y >= 0 && l.x < w && l.y < h; }
-    /// Inside the border walls.
-    bool interior(Vec2i l) const { return l.x > 0 && l.y > 0 && l.x < w - 1 && l.y < h - 1; }
+    /// In a slot it owns.
+    bool owns(Vec2i l) const { return inside(l) && ownsSlot({l.x / CHUNK, l.y / CHUNK}); }
+    /// Inside the border walls: it and every cell round it are owned. So
+    /// the border runs round the footprint's outline, the inside corner of
+    /// an L included, and seams between owned slots are open.
+    bool interior(Vec2i l) const {
+        if (box_) return l.x > 0 && l.y > 0 && l.x < w - 1 && l.y < h - 1;
+        for (int y = -1; y <= 1; y++)
+            for (int x = -1; x <= 1; x++)
+                if (!owns(l + Vec2i{x, y})) return false;
+        return true;
+    }
+    /// Every cell of the rectangle is interior.
+    bool interiorRect(int x, int y, int rw, int rh) const;
     Tile get(Vec2i l) const { return tiles[size_t(l.y * w + l.x)]; }
     void set(Vec2i l, Tile t) { tiles[size_t(l.y * w + l.x)] = t; }
     Floor floor(Vec2i l) const { return floors[size_t(l.y * w + l.x)]; }
@@ -67,4 +93,10 @@ struct Chunk {
 
     /// Runs whatever lives here, on screen or not. Nothing does yet.
     void simulate(float dt) { (void)dt; }
+
+private:
+    /// Which slots of the box it owns, row by row.
+    std::vector<bool> owned_;
+    /// It owns its whole box, so interior() needs only the box.
+    bool box_;
 };

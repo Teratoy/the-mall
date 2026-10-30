@@ -21,8 +21,10 @@ GOLDEN := tests/golden/soak.txt
 SCENARIOS := build/scenarios
 # Screenshots without a visible window.
 SHOT := build/shot
+# Grows chunk interiors on every footprint and checks they keep to it.
+GENPROBE := build/genprobe
 
-.PHONY: all run clean stuck check golden coverage shot scenarios
+.PHONY: all run clean stuck check golden coverage shot scenarios genprobe
 
 all: $(BIN)
 
@@ -70,6 +72,12 @@ $(SHOT): tools/shot.cpp $(filter-out build/main.o,$(OBJ))
 
 shot: $(SHOT)
 	./$(SHOT) build/shot.png $(SHOT_ARGS)
+
+$(GENPROBE): tools/genprobe.cpp $(filter-out build/main.o,$(OBJ))
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@ $(LDLIBS)
+
+genprobe: $(GENPROBE)
+	./$(GENPROBE) $(GENPROBE_ARGS)
 
 clean:
 	rm -rf build

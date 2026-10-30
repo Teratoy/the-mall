@@ -49,7 +49,7 @@ void World::placeRestrooms(Chunk& c) {
     };
     std::vector<Box> boxes;
     int want = 0;
-    for (int i = 0; i < c.slots.x * c.slots.y; i++) want += rng_.chance(RESTROOM_CHANCE);
+    for (int i = 0; i < c.slotCount(); i++) want += rng_.chance(RESTROOM_CHANCE);
     for (int t = 0; t < RESTROOM_TRIES && want > 0; t++) {
         int a = rng_.range(RESTROOM_LONG_MIN, RESTROOM_LONG_MAX), b = rng_.range(RESTROOM_SHORT_MIN, RESTROOM_SHORT_MAX);
         Box r{0, 0, a, b};
@@ -57,7 +57,7 @@ void World::placeRestrooms(Chunk& c) {
         if (r.w > c.w - 2 || r.h > c.h - 2) continue;
         r.x = rng_.range(1, c.w - 1 - r.w);
         r.y = rng_.range(1, c.h - 1 - r.h);
-        bool clear = true;
+        bool clear = c.interiorRect(r.x, r.y, r.w, r.h);
         for (const Box& o : boxes)
             clear = clear && (r.x >= o.x + o.w + RESTROOM_GAP || o.x >= r.x + r.w + RESTROOM_GAP ||
                               r.y >= o.y + o.h + RESTROOM_GAP || o.y >= r.y + r.h + RESTROOM_GAP);
@@ -136,7 +136,7 @@ void World::placeToilets(Chunk& c) {
     if (c.kind == ChunkKind::Maze) placeRestrooms(c);
     float chance = c.kind == ChunkKind::Rooms ? ROOMS_TOILET_CHANCE : c.kind == ChunkKind::Maze ? MAZE_TOILET_CHANCE : 0.0f;
     int want = 0;
-    for (int i = 0; i < c.slots.x * c.slots.y; i++) want += rng_.chance(chance);
+    for (int i = 0; i < c.slotCount(); i++) want += rng_.chance(chance);
     auto floorAt = [&](Vec2i l) { return c.interior(l) && c.get(l) == Tile::Floor; };
     for (int t = 0; t < TOILET_TRIES && want > 0; t++) {
         Vec2i l{rng_.range(1, c.w - 2), rng_.range(1, c.h - 2)};

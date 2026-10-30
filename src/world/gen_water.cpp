@@ -135,10 +135,13 @@ void canal(Chunk& c, Rng& rng) {
 
     std::vector<int> starts;
     for (int v = CANAL_MARGIN; v + span <= breadth - CANAL_MARGIN; v++) {
-        // Its ends meet the border where there is no door, nor one beside.
+        // Its ends meet the border where there is no door, nor one beside,
+        // and all of it between lies inside the footprint.
         bool ok = true;
         for (int k = v - 1; k <= v + span && ok; k++)
             ok = c.get(at(0, k)) == Tile::Wall && c.get(at(len - 1, k)) == Tile::Wall;
+        Vec2i lo = at(1, v - 1), hi = at(len - 2, v + span);
+        ok = ok && c.interiorRect(lo.x, lo.y, hi.x - lo.x + 1, hi.y - lo.y + 1);
         if (ok) starts.push_back(v);
     }
     if (starts.empty()) return;
@@ -160,7 +163,7 @@ void canal(Chunk& c, Rng& rng) {
 void flood(Chunk& c) {
     for (int y = 1; y < c.h - 1; y++)
         for (int x = 1; x < c.w - 1; x++)
-            if (c.get({x, y}) == Tile::Wall) c.set({x, y}, Tile::Water);
+            if (c.interior({x, y}) && c.get({x, y}) == Tile::Wall) c.set({x, y}, Tile::Water);
 }
 
 } // namespace gen

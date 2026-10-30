@@ -89,6 +89,31 @@ chunk's kind.
 ### Check
 Every chunk is still a rectangle, so `make check` must pass unchanged.
 
+### Built (2026-10-30)
+- `Chunk` takes a `Footprint` (the owned slots as offsets in its box,
+  `boxFootprint()` for a rectangle) and keeps `slots` as the box. New
+  `chunk.cpp`. `covers()`, `owns()`, `interior()` and `interiorRect()`
+  follow the footprint; `interior()` keeps the old box test when the chunk
+  owns its whole box, so nothing slows down. Cells of unowned slots are
+  Void. `slotCount()` replaces `slots.x * slots.y` for per-slot counts.
+- `World`: `SIZES` became `SHAPES` (footprints, same four boxes and
+  weights, same order of options, so the same dice). `addChunk`,
+  `slotChunk_` and `perimeter()` go by owned slots.
+- Generators: rooms, restrooms, maze cells and halls, and canals go only
+  where `interiorRect()` holds; `sides()` and `flood()` skip what isn't
+  interior; a corridor bend that would lie outside takes the other
+  corner; spikes keep their margin from inside corners too.
+- Not done, as nothing needs it yet: `Chunk::centre()`. A maze hall that
+  would reach out of the footprint is skipped, not rolled again.
+- `make check` passes unchanged (15/15 scenarios, soak byte-identical).
+- Started step 9 early: `tools/genprobe.cpp` (`make genprobe`,
+  `GENPROBE_ARGS="seeds png"`) grows rooms, maze and water maze on every
+  turn of L3, L4, T4, S/Z4 and the boxes, without a World. 1380 chunks
+  (20 seeds) pass: nothing outside the footprint, the border whole, the
+  floor on each side of the water one. Slowest 17 ms. Doors, statues,
+  toilets and tables on odd footprints are checked in step 4, once
+  `SHAPES` holds them.
+
 ## 2. Bigger rectangles
 
 - `SIZES` gains `{3,1}` and `{1,3}` at 0.6, `{4,1}` and `{1,4}` at 0.3,

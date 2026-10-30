@@ -163,7 +163,7 @@ private:
 
     const Chunk* chunkAt(Vec2i slot) const;
     Chunk* chunkAt(Vec2i slot);
-    Chunk& addChunk(ChunkKind kind, Vec2i slot, Vec2i slots);
+    Chunk& addChunk(ChunkKind kind, Vec2i slot, const Footprint& parts);
     void generate(Vec2i slot, Vec2i entry);
     std::vector<Edge> perimeter(const Chunk& c) const;
     /// Puts the doors neighbours already made into the chunk's border, as

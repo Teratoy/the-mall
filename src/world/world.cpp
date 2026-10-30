@@ -90,12 +90,15 @@ constexpr int STATUE_CLEAR_GAP = 2;
 /// How far from the centre a statue may be nudged to fit.
 constexpr int STATUE_NUDGE = 4;
 
-/// Chunk sizes in slots, and how likely each is.
-struct SizePick {
-    Vec2i size;
+/// Chunk footprints, and how likely each is.
+struct ShapePick {
+    Footprint parts;
     float weight;
 };
-constexpr SizePick SIZES[] = {{{1, 1}, 4.0f}, {{2, 1}, 2.0f}, {{1, 2}, 2.0f}, {{2, 2}, 1.0f}};
+const std::vector<ShapePick> SHAPES = {{boxFootprint({1, 1}), 4.0f},
+                                       {boxFootprint({2, 1}), 2.0f},
+                                       {boxFootprint({1, 2}), 2.0f},
+                                       {boxFootprint({2, 2}), 1.0f}};
 
 TableMaterial randomMaterial(Rng& rng) { return TableMaterial(rng.weighted(TABLE_MATERIAL_WEIGHTS)); }
 
@@ -139,18 +142,17 @@ const Statue* World::statue(Vec2i cell) const {
     return it == statueCells_.end() ? nullptr : &statues_[size_t(it->second)];
 }
 
-Chunk& World::addChunk(ChunkKind kind, Vec2i slot, Vec2i slots) {
+Chunk& World::addChunk(ChunkKind kind, Vec2i slot, const Footprint& parts) {
     int id = int(chunks_.size());
-    chunks_.push_back(std::make_unique<Chunk>(id, kind, slot, slots));
+    chunks_.push_back(std::make_unique<Chunk>(id, kind, slot, parts));
     // Walls start alike; generators restyle those round rooms.
     std::fill(chunks_.back()->walls.begin(), chunks_.back()->walls.end(), gen::randomWall(rng_));
-    for (int y = 0; y < slots.y; y++)
-        for (int x = 0; x < slots.x; x++) slotChunk_[slot + Vec2i{x, y}] = id;
+    for (Vec2i p : parts) slotChunk_[slot + p] = id;
     return *chunks_.back();
 }
 
 Human& World::makeSpawn(const HumanLook& look, uint64_t seed, const std::string& name) {
-    Chunk& c = addChunk(ChunkKind::Spawn, {0, 0}, {1, 1});
+    Chunk& c = addChunk(ChunkKind::Spawn, {0, 0}, boxFootprint({1, 1}));
     c.paint = gen::randomFloor(rng_);
     gen::squareRoom(c);
     Vec2i centre{c.w / 2, c.h / 2};
@@ -206,32 +208,32 @@ void World::ensureGenerated(Vec2i cell) {
     if (!generated(s)) generate(s, cell);
 }
 
-// Picks a size and placement that covers the slot without overlapping any
-// chunk, fills it with a maze or a room network, then doors, keys and a
+// Picks a footprint and placement that covers the slot without overlapping
+// any chunk, fills it with a maze or a room network, then doors, keys and a
 // human, and cakes, each key and cake on a table, then traps. A water maze is dug as a plain one and its
 // walls turned to water once everything is joined up. Each new door gets a
 // key, and so does each slam room, so there are as many keys as locked
 // doors and gates that can be.
 void World::generate(Vec2i slot, Vec2i entry) {
-    std::vector<std::pair<Vec2i, Vec2i>> options;
+    // Each slot of each footprint in turn is tried on the one entered.
+    std::vector<std::pair<Vec2i, const Footprint*>> options;
     std::vector<float> weights;
-    for (const SizePick& sp : SIZES)
-        for (int oy = 0; oy < sp.size.y; oy++)
-            for (int ox = 0; ox < sp.size.x; ox++) {
-                Vec2i origin = slot - Vec2i{ox, oy};
-                bool free = true;
-                for (int y = 0; y < sp.size.y && free; y++)
-                    for (int x = 0; x < sp.size.x && free; x++)
-                        free = !generated(origin + Vec2i{x, y});
-                if (!free) continue;
-                options.push_back({origin, sp.size});
-                weights.push_back(sp.weight);
-            }
-    auto [origin, size] = options[size_t(rng_.weighted(weights))];
+    for (const ShapePick& sp : SHAPES)
+        for (Vec2i on : sp.parts) {
+            Vec2i origin = slot - on;
+            bool free = std::none_of(sp.parts.begin(), sp.parts.end(),
+                                     [&](Vec2i p) { return generated(origin + p); });
+            if (!free) continue;
+            options.push_back({origin, &sp.parts});
+            weights.push_back(sp.weight);
+        }
+    auto [origin, parts] = options[size_t(rng_.weighted(weights))];
 
     std::vector<float> kindWeights = KIND_WEIGHTS;
-    if (size.x != size.y) kindWeights[3] = 0.0f;
-    Chunk& c = addChunk(KINDS[rng_.weighted(kindWeights)], origin, size);
+    const Vec2i box = footprintBox(*parts);
+    if (box.x != box.y || int(parts->size()) != box.x * box.y) kindWeights[3] = 0.0f;
+    Chunk& c = addChunk(KINDS[rng_.weighted(kindWeights)], origin, *parts);
+    const int slotCount = c.slotCount();
     markDoors(c);
     std::vector<gen::RoomBox> rooms;
     // A plaza's grand statue is rolled first, so its fountain's island fits it.
@@ -246,7 +248,7 @@ void World::generate(Vec2i slot, Vec2i entry) {
         plaza = gen::plaza(c, rng_, rng_.chance(FOUNTAIN_CHANCE) ? grand.size + Vec2i{2, 2} : Vec2i{});
     else
         gen::maze(c, rng_);
-    int fresh = placeDoors(c, entry - c.origin(), NEW_DOOR_CHANCE, 1, 4 * size.x * size.y);
+    int fresh = placeDoors(c, entry - c.origin(), NEW_DOOR_CHANCE, 1, 4 * slotCount);
     gen::connectRegions(c, JOIN_WIDTH);
     if (c.kind == ChunkKind::WaterMaze) gen::flood(c);
     // Statues once all digging is done, as nothing digs round them.
@@ -257,7 +259,7 @@ void World::generate(Vec2i slot, Vec2i entry) {
     if (toiletPlaza) placePlazaToilets(c);
     // Slam rooms go in last, so nothing digs a second way into them.
     std::vector<gen::SlamRoom> slams;
-    if (c.kind == ChunkKind::Rooms) slams = gen::slamRooms(c, rng_, rng_.range(0, SLAM_ROOMS_MAX) * size.x * size.y);
+    if (c.kind == ChunkKind::Rooms) slams = gen::slamRooms(c, rng_, rng_.range(0, SLAM_ROOMS_MAX) * slotCount);
     // A plaza without a fountain has basins to drink from instead.
     if (c.kind == ChunkKind::Plaza && plaza.islandSize.x == 0) {
         int basins = rng_.range(PLAZA_BASINS_MIN, PLAZA_BASINS_MAX);
@@ -284,7 +286,7 @@ void World::generate(Vec2i slot, Vec2i entry) {
         next++;
         break;
     }
-    int cakes = rng_.range(CAKES_MIN, CAKES_MAX) * size.x * size.y;
+    int cakes = rng_.range(CAKES_MIN, CAKES_MAX) * slotCount;
     for (; cakes > 0; cakes--) {
         auto s = tableSpot(c, spots, next, house);
         if (!s) break;
@@ -455,7 +457,7 @@ void World::placeStatues(Chunk& c, const std::vector<gen::RoomBox>& rooms) {
     std::vector<size_t> order(rooms.size());
     for (size_t i = 0; i < order.size(); i++) order[i] = i;
     rng_.shuffle(order);
-    int left = STATUES_PER_SLOT_MAX * c.slots.x * c.slots.y;
+    int left = STATUES_PER_SLOT_MAX * c.slotCount();
     for (size_t i : order) {
         if (left <= 0) break;
         if (rng_.chance(STATUE_ROOM_CHANCE) && placeStatue(c, rooms[i].centre, {-100, -100}))
@@ -521,13 +523,15 @@ std::optional<Vec2i> World::tableSpot(Chunk& c, const std::vector<Vec2i>& spots,
 // way off, and far enough in that nobody coming through a door, or out of
 // a slam room, steps straight onto one.
 void World::placeSpikes(Chunk& c, const std::vector<gen::SlamRoom>& slams) {
-    int count = rng_.range(SPIKES_MIN, SPIKES_MAX) * c.slots.x * c.slots.y;
+    int count = rng_.range(SPIKES_MIN, SPIKES_MAX) * c.slotCount();
     std::vector<Vec2i> open;
     for (int y = SPIKE_MARGIN; y < c.h - SPIKE_MARGIN; y++)
         for (int x = SPIKE_MARGIN; x < c.w - SPIKE_MARGIN; x++) {
             Vec2i l{x, y}, cell = c.origin() + l;
-            if (!gen::openAround(c, l) || hasKey(cell) || hasCake(cell) || occupant(cell) ||
-                behindStatues_.count(cell))
+            // The margin holds round an odd footprint's inside corners too.
+            if (!c.interiorRect(x - SPIKE_MARGIN + 1, y - SPIKE_MARGIN + 1, 2 * SPIKE_MARGIN - 1,
+                                2 * SPIKE_MARGIN - 1) ||
+                !gen::openAround(c, l) || hasKey(cell) || hasCake(cell) || occupant(cell) || behindStatues_.count(cell))
                 continue;
             if (std::none_of(slams.begin(), slams.end(), [&](const gen::SlamRoom& r) {
                     return r.contains(l) || cheb(l, r.gate) <= SPIKE_GATE_GAP;
@@ -548,12 +552,11 @@ void World::placeSpikes(Chunk& c, const std::vector<gen::SlamRoom>& slams) {
 
 std::vector<World::Edge> World::perimeter(const Chunk& c) const {
     std::vector<Edge> edges;
-    for (int y = 0; y < c.slots.y; y++)
-        for (int x = 0; x < c.slots.x; x++) {
-            Vec2i s = c.slot + Vec2i{x, y};
-            for (Vec2i d : DIRS4)
-                if (!c.covers(s + d)) edges.push_back({edgeBetween(s, s + d), s, s + d});
-        }
+    for (Vec2i p : c.parts) {
+        Vec2i s = c.slot + p;
+        for (Vec2i d : DIRS4)
+            if (!c.covers(s + d)) edges.push_back({edgeBetween(s, s + d), s, s + d});
+    }
     return edges;
 }
 

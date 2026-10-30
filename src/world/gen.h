@@ -5,7 +5,8 @@
 #include <utility>
 
 /// Chunk interiors. Generators carve floor out of a chunk that starts all
-/// wall, and never touch the border ring, which belongs to walls and doors.
+/// wall, and never touch the border ring, which belongs to walls and doors,
+/// nor the Void of slots it doesn't own. Only interior() cells are theirs.
 /// Carving lays the chunk's current paint on new floor only, so a corridor
 /// running into a room keeps the room's floor. Carving and digging never
 /// touch water, so whatever water cuts apart stays apart. Nor statues,
@@ -55,7 +56,8 @@ struct Plaza {
     Vec2i island, islandSize;
     int ring = 0;
 };
-/// One grand hall over the chunk, inlaid with a border and maybe lined
+/// One grand hall over the chunk, which must own its whole square box,
+/// inlaid with a border and maybe lined
 /// with columns, round a fountain whose pool circles an island of the
 /// given size, if it is not zero.
 Plaza plaza(Chunk& c, Rng& rng, Vec2i island);

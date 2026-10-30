@@ -28,7 +28,10 @@ void maze(Chunk& c, Rng& rng) {
     const int ox = 1 + wt + ((c.w - 2 - wt) - nx * pitch) / 2;
     const int oy = 1 + wt + ((c.h - 2 - wt) - ny * pitch) / 2;
     auto at = [&](Vec2i m) { return Vec2i{ox + m.x * pitch, oy + m.y * pitch}; };
-    auto in = [&](Vec2i m) { return m.x >= 0 && m.y >= 0 && m.x < nx && m.y < ny; };
+    // A maze cell counts only where it lies wholly inside the footprint.
+    auto in = [&](Vec2i m) {
+        return m.x >= 0 && m.y >= 0 && m.x < nx && m.y < ny && c.interiorRect(at(m).x, at(m).y, cw, cw);
+    };
     auto idx = [&](Vec2i m) { return size_t(m.y * nx + m.x); };
     c.paint = randomFloor(rng);
     const Floor corridorFloor = c.paint;
@@ -48,11 +51,13 @@ void maze(Chunk& c, Rng& rng) {
     for (int y = 0; y < ny; y++)
         for (int x = 0; x < nx; x++) {
             Vec2i p = at({x, y});
-            carveRect(c, p.x, p.y, cw, cw);
+            if (in({x, y})) carveRect(c, p.x, p.y, cw, cw);
         }
 
     std::vector<bool> seen(size_t(nx * ny), false);
-    std::vector<Vec2i> stack{{rng.range(0, nx - 1), rng.range(0, ny - 1)}};
+    Vec2i start{rng.range(0, nx - 1), rng.range(0, ny - 1)};
+    while (!in(start)) start = {rng.range(0, nx - 1), rng.range(0, ny - 1)};
+    std::vector<Vec2i> stack{start};
     seen[idx(stack.back())] = true;
     while (!stack.empty()) {
         Vec2i a = stack.back();
@@ -79,11 +84,13 @@ void maze(Chunk& c, Rng& rng) {
             if (!walls.empty()) link(a, rng.pick(walls));
         }
 
-    int halls = rng.range(0, HALLS_PER_SLOT_MAX) * c.slots.x * c.slots.y;
+    int halls = rng.range(0, HALLS_PER_SLOT_MAX) * c.slotCount();
     for (int i = 0; i < halls; i++) {
         int hw = std::min(rng.range(2, 4), nx), hh = std::min(rng.range(2, 4), ny);
         Vec2i a{rng.range(0, nx - hw), rng.range(0, ny - hh)};
         Vec2i lo = at(a), hi = at({a.x + hw - 1, a.y + hh - 1});
+        // A hall that would reach out of the footprint is left out.
+        if (!c.interiorRect(lo.x, lo.y, hi.x + cw - lo.x, hi.y + cw - lo.y)) continue;
         c.paint = randomFloor(rng);
         carveRect(c, lo.x, lo.y, hi.x + cw - lo.x, hi.y + cw - lo.y);
         paintRect(c, lo.x, lo.y, hi.x + cw - lo.x, hi.y + cw - lo.y);

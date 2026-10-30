@@ -242,7 +242,7 @@ void styleWalls(Chunk& c, const Room& r, WallStyle style) {
 } // namespace
 
 std::vector<RoomBox> rooms(Chunk& c, Rng& rng) {
-    const int want = rng.range(ROOMS_MIN, ROOMS_MAX) * c.slots.x * c.slots.y;
+    const int want = rng.range(ROOMS_MIN, ROOMS_MAX) * c.slotCount();
     const int maxSide = rng.range(ROOM_MAX_LO, ROOM_MAX_HI);
     const int corridor = rng.range(CORRIDOR_MIN, CORRIDOR_MAX);
     std::vector<Floor> floors(size_t(rng.range(ROOM_FLOORS_MIN, ROOM_FLOORS_MAX)));
@@ -263,7 +263,8 @@ std::vector<RoomBox> rooms(Chunk& c, Rng& rng) {
             return x < o.x + o.w + ROOM_GAP && o.x < x + w + ROOM_GAP &&
                    y < o.y + o.h + ROOM_GAP && o.y < y + h + ROOM_GAP;
         });
-        if (clash) continue;
+        // The room and the wall round it lie inside the footprint.
+        if (clash || !c.interiorRect(x - 1, y - 1, w + 2, h + 2)) continue;
         c.paint = rng.pick(floors);
         Plan plan{s, rng.pick(walls)};
         rooms.push_back({x, y, w, h, carveShape(c, rng, plan, x, y, w, h)});
@@ -316,7 +317,7 @@ std::vector<RoomBox> rooms(Chunk& c, Rng& rng) {
     furnishAll();
     if (rng.chance(CANAL_CHANCE)) canal(c, rng);
 
-    pools(c, rng, rng.range(0, POOLS_MAX) * c.slots.x * c.slots.y);
+    pools(c, rng, rng.range(0, POOLS_MAX) * c.slotCount());
     return rooms;
 }
 

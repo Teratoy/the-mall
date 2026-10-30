@@ -82,8 +82,11 @@ void carveBrush(Chunk& c, Vec2i p, int width) {
     carveRect(c, p.x + lo, p.y + lo, width, width);
 }
 
+// The bend takes the other corner when the one rolled lies outside the
+// footprint, as it may round the inside of an L.
 void carveCorridor(Chunk& c, Rng& rng, Vec2i a, Vec2i b, int width) {
     Vec2i corner = rng.chance(0.5f) ? Vec2i{b.x, a.y} : Vec2i{a.x, b.y};
+    if (!c.interior(corner)) corner = corner == Vec2i{b.x, a.y} ? Vec2i{a.x, b.y} : Vec2i{b.x, a.y};
     carveLine(c, a, corner, width);
     carveLine(c, corner, b, width);
 }
@@ -149,7 +152,7 @@ std::vector<int> sides(const Chunk& c) {
     int next = 0;
     for (int y = 1; y < c.h - 1; y++)
         for (int x = 1; x < c.w - 1; x++) {
-            if (c.get({x, y}) == Tile::Water || side[size_t(y * c.w + x)] != -1) continue;
+            if (!c.interior({x, y}) || c.get({x, y}) == Tile::Water || side[size_t(y * c.w + x)] != -1) continue;
             std::vector<Vec2i> stack{{x, y}};
             side[size_t(y * c.w + x)] = next;
             while (!stack.empty()) {
