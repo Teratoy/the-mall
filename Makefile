@@ -79,6 +79,11 @@ $(GENPROBE): tools/genprobe.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
 genprobe: $(GENPROBE)
 	./$(GENPROBE) $(GENPROBE_ARGS)
 
+# Life logs of one soak world: build/lifelog seed [minutes] [crowd] [name] [every].
+LIFELOG := build/lifelog
+$(LIFELOG): tools/lifelog.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out tests/probe.h,$^) -o $@ $(LDLIBS)
+
 clean:
 	rm -rf build
 

@@ -15,6 +15,24 @@ struct SoakProbe {
     static int leader(const Human& h) { return h.social_.leader; }
     static int foe(const Human& h) { return h.fight_.foe; }
     static bool ateFlesh(const Human& h) { return !h.mind_.ateFrom.empty(); }
+    static int companion(const Human& h) { return h.social_.companion; }
+    static float thirstOf(const Human& h) { return h.thirst; }
+    static int keysOf(const Human& h) { return h.keys; }
+    // What it could still go for (tools/lifelog.cpp): somewhere left to
+    // explore, a locked door it knows, water it would drink, a toilet.
+    static bool knowsFrontier(const World& w, const Human& h) {
+        return h.search(w, [&](Vec2i c) { return (c != h.cell && h.isFrontier(c)) || h.openDoorBeside(c).has_value(); })
+            .has_value();
+    }
+    static bool knowsLockedDoor(const World& w, const Human& h) {
+        return h.search(w, [&](Vec2i c) { return h.lockedDoorBeside(c).has_value(); }).has_value();
+    }
+    static bool knowsWater(const World& w, const Human& h) {
+        return h.search(w, [&](Vec2i c) { return h.waterBeside(c).has_value(); }).has_value();
+    }
+    static bool knowsToilet(const World& w, const Human& h) {
+        return h.search(w, [&](Vec2i c) { return h.toiletBefore(w, c).has_value(); }).has_value();
+    }
 
     // How chunks came out (tools/genprobe.cpp).
     static const std::vector<std::unique_ptr<Chunk>>& chunks(const World& w) { return w.chunks_; }
