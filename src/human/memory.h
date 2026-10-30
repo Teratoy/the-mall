@@ -51,8 +51,11 @@ public:
     std::unordered_set<int> mess;
     std::unordered_set<Vec2i, Vec2iHash> keys;
     std::unordered_set<Vec2i, Vec2iHash> cakes;
-    /// What it saw lying put down on the floor, as it was then.
+    /// What it saw lying put down on the floor, as it was then; and, of
+    /// those, the ones it knows are someone's stash, and whose: seen being
+    /// stashed, or told of.
     std::unordered_map<Vec2i, Pile, Vec2iHash> piles;
+    std::unordered_map<Vec2i, int, Vec2iHash> stashes;
     /// Traps by the cell that sets them off, learnt by seeing one go off,
     /// spotting it nearby, or being told of it at a greeting (Human::tell):
     /// what a human knows of traps is worth something to others, and the

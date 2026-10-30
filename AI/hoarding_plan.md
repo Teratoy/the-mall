@@ -138,6 +138,26 @@ Second round (2026-10-30):
   blame whoever they saw near it (or last saw near it), as a sleeper blames
   for a missing cake.
 
+### Built (2026-10-30, step 3)
+
+- `Memory::stashes`: piles it knows are someone's stash, and whose. Anyone
+  who sees a human stash things learns it ("SAW @ STASH THINGS", line
+  saw_stash). The world itself keeps no owner: only what humans saw.
+- Knowing a pile is someone else's, a human leaves it alone: no taking, and
+  it doesn't count as food or water it knows of. Stealing comes in step 4.
+  A pile nobody is known to own is anyone's, as before.
+- The owner remembers each stash as it left it (`stash_.left`) and who it
+  last saw beside it (`stash_.nearBy`). Seeing it short, it notes "SOMEONE
+  TOOK FROM MY STASH", blames whoever it last saw beside it ("@ MUST HAVE
+  TAKEN IT", trust −0.3, line stash_robbed), and marks the stash found out.
+- Moving: a found-out stash is no longer used for new loads; the owner
+  empties it into its pockets ("TOOK … FROM MY STASH TO MOVE IT") and, once
+  its pockets are full, stashes the load somewhere new, at least 8 cells
+  away. Changed from the plan: with only a few cakes left, it simply keeps
+  them on it.
+- Scenarios stash-seen, stash-robbed. Soak: 12 stashes, 4 found short, 1
+  blamed; no new stuck humans or loops.
+
 ## 4. Stealing, and resentment
 
 - **Stealing**: taking from a stash it knows is someone else's. The hungry

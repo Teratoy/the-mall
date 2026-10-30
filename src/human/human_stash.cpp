@@ -19,6 +19,11 @@
 // or where it last drank. Far from all of its stashes, it makes a new one.
 // It takes from its own stash only what it needs: a cake when hungry with
 // none on it, water when thirsty with none to drink.
+//
+// Whoever sees it stash things knows that pile is its stash, and leaves it
+// alone (stealing is human_stash's step 4); a pile nobody is known to own is
+// anyone's. Back at its stash, the owner sees what is gone, blames whoever
+// it last saw beside it, and moves what is left somewhere new.
 
 namespace {
 
@@ -47,6 +52,10 @@ constexpr int STASH_SHY = 40;
 /// full is stashed too.
 constexpr int STASH_KEEP = 1;
 constexpr float STASH_BOTTLE = 0.5f;
+/// Robbed, it thinks this much less of whoever it blames; it moves the
+/// stash at least this far from where it was.
+constexpr float TRUST_STASH_BLAMED = -0.3f;
+constexpr int STASH_MOVE = 8;
 
 /// The emptiest of its bottles under PILE_TOPUP, -1 if none.
 int emptiestBelow(const std::vector<Bottle>& bottles) {
@@ -79,11 +88,44 @@ int Human::stashTarget() const {
 
 bool Human::isMine(Vec2i c) const { return std::find(stash_.mine.begin(), stash_.mine.end(), c) != stash_.mine.end(); }
 
+bool Human::exposed(Vec2i c) const {
+    return std::find(stash_.exposed.begin(), stash_.exposed.end(), c) != stash_.exposed.end();
+}
+
 std::optional<Vec2i> Human::nearStash() const {
     std::optional<Vec2i> best;
     for (Vec2i c : stash_.mine)
-        if (cheb(c, cell) <= STASH_RANGE && (!best || cheb(c, cell) < cheb(*best, cell))) best = c;
+        if (!exposed(c) && cheb(c, cell) <= STASH_RANGE && (!best || cheb(c, cell) < cheb(*best, cell))) best = c;
     return best;
+}
+
+void Human::checkStash(Vec2i c, const Pile* now) {
+    auto it = stash_.left.find(c);
+    if (it != stash_.left.end()) {
+        const Pile& was = it->second;
+        int cakesGone = was.cakes - (now ? now->cakes : 0);
+        int bottlesGone = int(was.bottles.size()) - (now ? int(now->bottles.size()) : 0);
+        if (cakesGone > 0 || bottlesGone > 0) {
+            note("SOMEONE TOOK FROM MY STASH");
+            auto by = stash_.nearBy.find(c);
+            int blamed = by == stash_.nearBy.end() ? -1 : by->second;
+            sayLater(talk::Moment::StashRobbed, -1, blamed);
+            if (blamed >= 0) {
+                note("@ MUST HAVE TAKEN IT", blamed);
+                regard(blamed, TRUST_STASH_BLAMED);
+            }
+            if (now && !exposed(c)) stash_.exposed.push_back(c);
+        }
+    }
+    if (now) {
+        stash_.left[c] = *now;
+        return;
+    }
+    // Gone: no stash of its own there any more.
+    std::erase(stash_.mine, c);
+    std::erase(stash_.exposed, c);
+    stash_.left.erase(c);
+    stash_.nearBy.erase(c);
 }
 
 bool Human::wantsToStash() const {
@@ -95,16 +137,31 @@ bool Human::wantsToStash() const {
         if (auto it = memory.piles.find(*near); it != memory.piles.end()) held = it->second.cakes;
     bool spare = bottles.size() >= 2 && std::min(bottles[0].water, bottles[1].water) >= STASH_BOTTLE;
     if (spare) return true;
+    // A stash found out, still holding something, to be moved.
+    for (Vec2i c : stash_.exposed)
+        if (auto it = memory.piles.find(c); it != memory.piles.end() && !it->second.empty()) return true;
     if (held >= target || cakes < carryMax()) return false;
     // More to be had than it can carry.
     if (!memory.cakes.empty()) return true;
     for (const auto& [c, p] : memory.piles)
-        if (p.cakes > 0 && !isMine(c)) return true;
+        if (p.cakes > 0 && !isMine(c) && !othersStash(c)) return true;
     return false;
 }
 
-// A nook nobody it sees is watching, as near where it keeps as it can get.
+// A nook nobody it sees is watching, as near where it keeps as it can get,
+// and away from any stash of its own that was found out. Moving one, it
+// fills its pockets from it first.
 bool Human::seekStash(World& world) {
+    if (cakes < carryMax())
+        for (Vec2i c : stash_.exposed) {
+            auto it = memory.piles.find(c);
+            if (it == memory.piles.end() || it->second.cakes == 0) continue;
+            auto p = search(world, [&](Vec2i at) { return cheb(at, c) <= 1; });
+            if (!p) continue;
+            if (p->empty()) return takeFromPiles(world);
+            startWalking(Goal::Pick, *p);
+            return true;
+        }
     if (auto near = nearStash()) {
         stash_.spot = *near;
     } else {
@@ -116,6 +173,8 @@ bool Human::seekStash(World& world) {
         auto p = search(world, [&](Vec2i c) {
             if (cheb(c, base) > STASH_SPOT_REACH || memory.tile(c) != Tile::Floor || avoids(c)) return false;
             if (memory.piles.count(c) || world.hasCake(c) || world.hasKey(c)) return false;
+            for (Vec2i e : stash_.exposed)
+                if (cheb(c, e) < STASH_MOVE) return false;
             for (Vec2i d : DIRS8) {
                 Tile t = memory.tile(c + d);
                 if (t == Tile::DoorOpen || t == Tile::DoorLocked) return false;
@@ -154,7 +213,11 @@ bool Human::stashHere() {
     return true;
 }
 
-bool Human::wantsFromPile(const Pile& p, bool own) const {
+bool Human::wantsFromPile(Vec2i c, const Pile& p) const {
+    if (othersStash(c)) return false;
+    bool own = isMine(c);
+    // A stash of its own that was found out is emptied, to be moved.
+    if (own && exposed(c) && p.cakes > 0 && cakes < carryMax()) return true;
     if (own) {
         if (p.cakes > 0 && hungry() && cakes == 0) return true;
         if (thirsty() && sippable() < 0)
@@ -182,7 +245,7 @@ bool Human::takeFromPiles(World& world) {
             continue;
         }
         memory.piles[c] = *p;
-        if (!wantsFromPile(*p, isMine(c))) continue;
+        if (!wantsFromPile(c, *p)) continue;
         stash_.at = c;
         stash_.putting = stash_.stashing = false;
         stash_.cakes = 0;
@@ -226,7 +289,17 @@ void Human::finishStash(World& world) {
             }
         cakes -= n;
         world.putDown(c, n, down);
-        if (const Pile* p = world.pile(c)) memory.piles[c] = *p;
+        if (const Pile* p = world.pile(c)) {
+            memory.piles[c] = *p;
+            if (isMine(c)) stash_.left[c] = *p;
+        }
+        // Seen stashing, the pile is known for its stash.
+        for (const auto& o : world.humans()) {
+            if (!stash_.stashing || o.get() == this || o->dead() || !o->sight.sees(c)) continue;
+            if (!o->memory.stashes.emplace(c, id).second) continue;
+            o->note("SAW @ STASH THINGS", id);
+            o->sayLater(talk::Moment::SawStash, -1, id);
+        }
         std::vector<std::string> parts;
         if (n > 0) parts.push_back(count(n, "A CAKE", " CAKES"));
         if (!down.empty()) parts.push_back(count(int(down.size()), "A BOTTLE", " BOTTLES"));
@@ -237,13 +310,14 @@ void Human::finishStash(World& world) {
         stash_.putting = stash_.stashing = false;
         return choose(world);
     }
-    bool own = isMine(c);
+    bool own = isMine(c), moving = own && exposed(c);
     const Pile* p = world.pile(c);
     int gotCakes = 0, gotBottles = 0;
     float poured = 0.0f;
-    if (p && wantsFromPile(*p, own)) {
-        // From its own stash, a cake at a time, and water only to drink.
-        gotCakes = world.takePileCakes(c, own ? (hungry() && cakes == 0 ? 1 : 0) : carryMax() - cakes);
+    if (p && wantsFromPile(c, *p)) {
+        // From its own stash, a cake at a time, and water only to drink;
+        // all it can carry when moving it.
+        gotCakes = world.takePileCakes(c, own && !moving ? (hungry() && cakes == 0 ? 1 : 0) : carryMax() - cakes);
         cakes += gotCakes;
         bool forWater = !own || (thirsty() && sippable() < 0);
         // Bottles while there is room, the fullest it would drink first; one
@@ -272,11 +346,22 @@ void Human::finishStash(World& world) {
         memory.piles[c] = *p;
     else
         memory.piles.erase(c);
+    // What it took itself is no theft: it remembers the stash as it left it.
+    if (own && p) {
+        stash_.left[c] = *p;
+    } else if (own) {
+        std::erase(stash_.mine, c);
+        std::erase(stash_.exposed, c);
+        stash_.left.erase(c);
+        stash_.nearBy.erase(c);
+    }
     std::vector<std::string> parts;
     if (gotCakes > 0) parts.push_back(count(gotCakes, "A CAKE", " CAKES"));
     if (gotBottles > 0) parts.push_back(count(gotBottles, "A BOTTLE", " BOTTLES"));
     if (!parts.empty()) {
-        note(own ? "TOOK " + listed(parts) + " FROM MY STASH" : "PICKED UP " + listed(parts) + " LYING THERE");
+        note(moving ? "TOOK " + listed(parts) + " FROM MY STASH TO MOVE IT"
+             : own  ? "TOOK " + listed(parts) + " FROM MY STASH"
+                    : "PICKED UP " + listed(parts) + " LYING THERE");
         sayLater(own ? talk::Moment::FromStash : talk::Moment::PickUp);
     }
     if (poured > 0.0f) note(own ? "FILLED MY BOTTLE FROM MY STASH" : "FILLED MY BOTTLE FROM ONE LYING THERE");
@@ -288,7 +373,7 @@ std::optional<std::vector<Vec2i>> Human::pilePath(const World& world, bool food,
     std::vector<Vec2i> worth;
     for (const auto& [c, p] : memory.piles) {
         bool own = isMine(c);
-        if (own && !wantsFromPile(p, true)) continue;
+        if (othersStash(c) || (own && !wantsFromPile(c, p))) continue;
         bool cakesThere = food && p.cakes > 0 && (own || cakes < carryMax());
         bool waterThere = false;
         for (const Bottle& b : p.bottles) waterThere |= water && wouldSip(b);

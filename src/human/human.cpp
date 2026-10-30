@@ -331,6 +331,7 @@ bool Human::observe(const World& world) {
     // it ever sees are remarked on, one a look so they don't all come out
     // at once, and not before it has come to.
     bool remarked = state == State::Waking;
+    std::vector<Vec2i> checks;
     auto firstSight = [&](talk::Moment m, int about = -1) {
         unsigned bit = 1u << (int(m) - int(talk::Moment::FirstKey));
         if (remarked || (firstSights_ & bit)) return;
@@ -362,15 +363,16 @@ bool Human::observe(const World& world) {
             memory.blood[c] = *b;
             news |= noticeBlood(world, c);
         }
-        // What lies put down is in plain sight, bottles see-through.
+        // What lies put down is in plain sight, bottles see-through. Its own
+        // stash it checks once it has looked round (who was beside it).
+        if (isMine(c)) checks.push_back(c);
         if (const Pile* p = world.pile(c)) {
             bool fresh = !memory.piles.count(c);
             memory.piles[c] = *p;
-            news |= fresh && ((hungry() && p->cakes > 0) || (thirsty() && p->water() > 0.0f));
+            news |= fresh && !othersStash(c) && ((hungry() && p->cakes > 0) || (thirsty() && p->water() > 0.0f));
         } else {
             memory.piles.erase(c);
-            // Seen gone: no stash of its own there any more.
-            std::erase(stash_.mine, c);
+            memory.stashes.erase(c);
         }
         if (world.hasKey(c)) {
             firstSight(talk::Moment::FirstKey);
@@ -391,6 +393,11 @@ bool Human::observe(const World& world) {
     });
     // Cakes carried are in plain sight, and so is how starved and hurt someone looks.
     inSight_.clear();
+    // Who it sees beside its stashes, to blame if anything goes missing.
+    for (const auto& o : world.humans())
+        if (o.get() != this && !o->dead() && sight.sees(o->cell))
+            for (Vec2i s : stash_.mine)
+                if (cheb(o->cell, s) <= 1) stash_.nearBy[s] = o->id;
     for (const auto& o : world.humans()) {
         if (o.get() == this || !sight.sees(o->cell)) continue;
         if (!o->dead()) inSight_.push_back(o->id);
@@ -452,6 +459,7 @@ bool Human::observe(const World& world) {
         news |= o->starving() && cakes > 1 && !starving();
         news |= judge(*o);
     }
+    for (Vec2i c : checks) checkStash(c, world.pile(c));
     return news;
 }
 

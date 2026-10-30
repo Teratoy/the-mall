@@ -1136,6 +1136,11 @@ private:
         /// for a new one).
         std::vector<Vec2i> mine;
         Vec2i spot;
+        /// Each of its stashes as it last left it, and who it last saw
+        /// beside it; and those found out (robbed), to be moved.
+        std::unordered_map<Vec2i, Pile, Vec2iHash> left;
+        std::unordered_map<Vec2i, int, Vec2iHash> nearBy;
+        std::vector<Vec2i> exposed;
     };
     Stash stash_;
     /// How much it hoards, from greed, going hungry, being unsociable,
@@ -1149,8 +1154,18 @@ private:
     /// Pockets full, knowing of more it can't carry (or holding a spare
     /// bottle), with a stash not yet as big as it wants: a load to stash.
     bool wantsToStash() const;
-    /// Takes the load to its stash, or picks a spot for a new one there.
+    /// Takes the load to its stash, or picks a spot for a new one there;
+    /// with a stash found out and room in its pockets, goes to empty it.
     bool seekStash(World& world);
+    /// Back at its stash, seen as it is now (null: gone): less on it than it
+    /// left, it blames whoever it last saw beside it, and means to move it.
+    void checkStash(Vec2i c, const Pile* now);
+    /// Someone else's stash, as far as it knows.
+    bool othersStash(Vec2i c) const {
+        auto it = memory.stashes.find(c);
+        return it != memory.stashes.end() && it->second != id;
+    }
+    bool exposed(Vec2i c) const;
     /// At the stash or the spot: puts the load down.
     bool stashHere();
     /// What it would take from the pile on a cell, as it sees it: cakes
@@ -1158,7 +1173,9 @@ private:
     /// when it has none) while it has room, or water poured into its own.
     /// From its own stash only what it needs now: a cake when hungry with
     /// none, water when thirsty with nothing to drink.
-    bool wantsFromPile(const Pile& p, bool own) const;
+    /// Nothing from someone else's stash, as far as it knows; from a stash
+    /// of its own that was found out, all it can carry, to move it.
+    bool wantsFromPile(Vec2i c, const Pile& p) const;
     /// A pile it wants something from, on its cell or beside it: kneels and
     /// takes it. False if there is none.
     bool takeFromPiles(World& world);

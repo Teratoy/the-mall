@@ -1796,3 +1796,19 @@ hopeless                | MIGHT AS WELL BE READY.
                         | STILL HERE. GOOD.
 hungry                  | TIME TO DIG IN.
 greedy                  | JUST ONE.
+
+# Seeing someone stash things, said to nobody, about them.
+[saw_stash 0.4]
+                        | SO THAT'S WHERE THEY KEEP IT.
+                        | HIDING THINGS, ARE WE?
+                        | I SAW THAT.
+hungry                  | FOOD. RIGHT THERE.
+greedy                  | GOOD TO KNOW.
+
+# Its own stash found short, said to nobody, about whom it blames.
+[stash_robbed]
+                        | SOMEONE'S BEEN AT MY STASH!
+                        | IT'S NOT ALL HERE.
+rude                    | {WHO}. IT WAS {WHO}.
+                        | THIEVES. EVERYONE HERE IS A THIEF.
+timid                   | I HAVE TO HIDE IT BETTER.

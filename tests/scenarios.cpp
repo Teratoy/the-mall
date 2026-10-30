@@ -533,13 +533,49 @@ const std::vector<Scenario> SCENARIOS = {
          P::clearChunk(s.world, h.cell);
          Vec2i at = s.freeNear(h.cell, 4);
          s.world.putDown(at, 3, {});
-         P::ownStash(h, at);
-         h.memory.piles[at] = *s.world.pile(at);
+         P::ownStash(s.world, h, at);
          h.cakes = 0;
          h.hunger = 0.7f;
          h.thirst = 0.1f;
          s.run(40);
          return Checks{logged({"TOOK A CAKE FROM MY STASH"}), logged({"ATE A CAKE"})};
+     }},
+    {"stash-seen", "a hungry stranger sees a hoarder stash cakes and leaves them be", 99,
+     [](Stage& s) {
+         Human& owner = s.first();
+         P::clearChunk(s.world, owner.cell);
+         Human& other = s.add(seedWhere(plain, 17000), 3);
+         owner.cakes = 4;
+         owner.hunger = owner.thirst = other.thirst = 0.1f;
+         other.hunger = 0.6f;
+         other.cakes = 0;
+         s.run(10);
+         P::stashHere(owner);
+         s.run(40);
+         return Checks{logged({"SAW @ STASH THINGS"}),
+                       {"nobody else picked it up", [](const Stage& st) {
+                            return !st.logged("PICKED UP 3 CAKES LYING THERE") && !st.logged("PICKED UP 2 CAKES LYING THERE") &&
+                                   !st.logged("PICKED UP A CAKE LYING THERE");
+                        }}};
+     }},
+    {"stash-robbed", "a stash is picked over while its owner is away, who finds it short and moves the rest", 99,
+     [](Stage& s) {
+         Human& owner = s.first();
+         P::clearChunk(s.world, owner.cell);
+         P::knowChunk(s.world, owner);
+         Vec2i at = s.freeNear(owner.cell, 3);
+         s.world.putDown(at, 6, {});
+         P::ownStash(s.world, owner, at);
+         P::place(s.world, owner, s.farFrom(at, 18));
+         Human& other = P::addHuman(s.world, HumanLook::random(s.rng), s.freeNear(at, 1), seedWhere(plain, 18000));
+         s.humans.push_back(&other);
+         other.cakes = 0;
+         other.hunger = 0.6f;
+         owner.cakes = 0;
+         owner.hunger = 0.45f;
+         owner.thirst = other.thirst = 0.1f;
+         s.run(90);
+         return Checks{logged({"SOMEONE TOOK FROM MY STASH"}), loggedLike("TOOK", "FROM MY STASH TO MOVE IT")};
      }},
     {"chat", "two calm acquaintances together start chatting", 99,
      [](Stage& s) {

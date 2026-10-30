@@ -102,6 +102,9 @@ enum class Moment {
     // Stashing things in a stash of its own, and taking from it (both to
     // nobody).
     StashIt, FromStash,
+    // Seeing someone stash things (to nobody, about them); finding its own
+    // stash short (to nobody, about whom it blames).
+    SawStash, StashRobbed,
     Count
 };
 

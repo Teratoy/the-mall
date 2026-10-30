@@ -63,8 +63,17 @@ struct SoakProbe {
     }
     /// Kneels and puts down n cakes and these bottles where it stands.
     static void putDown(Human& h, int cakes, std::vector<size_t> bottles) { h.startPutting(cakes, std::move(bottles)); }
-    /// The pile on the cell is a stash of h's, as if h had made it.
-    static void ownStash(Human& h, Vec2i cell) { h.stash_.mine.push_back(cell); }
+    /// The pile on the cell is a stash of h's, as if h had made it and seen
+    /// it last as it is now.
+    static void ownStash(const World& w, Human& h, Vec2i cell) {
+        h.stash_.mine.push_back(cell);
+        if (const Pile* p = w.pile(cell)) h.stash_.left[cell] = *p, h.memory.piles[cell] = *p;
+    }
+    /// Stashes what it carries where it stands, as if that were its spot.
+    static void stashHere(Human& h) {
+        h.stash_.spot = h.cell;
+        h.stashHere();
+    }
     /// Given up on a way out, at home on home.
     static void settle(Human& h, Vec2i home) {
         h.escape_.settled = true;
