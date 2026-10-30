@@ -540,6 +540,23 @@ timid                   | I'M STUCK IN HERE...
 timid fear              | LET ME OUT!
 brave rude              | STUPID DOOR.
 
+# Any lesson it still held (cakes, keys, water, sleep) learnt the hard way
+# again. Said to nobody.
+[learn_again 0.7]
+                        | NOT AGAIN!
+                        | AGAIN?!
+                        | I NEVER LEARN.
+timid fear              | WHY DOES THIS KEEP HAPPENING?
+brave rude              | STUPID. STUPID.
+
+# The hard lesson that makes it full strength: learnt for good. Said to
+# nobody.
+[learn_max 0.8]
+                        | NEVER. AGAIN.
+                        | THAT'S IT. I'VE LEARNT.
+                        | I WON'T FORGET THIS TIME.
+brave                   | NOT ONE MORE TIME.
+
 
 # ---- Flesh -----------------------------------------------------------------
 
@@ -1519,8 +1536,14 @@ erratic                 | GULP. GULP. GULP.
 [learn_water 0.7]
                         | NEVER AGAIN. I STAY NEAR WATER.
                         | I'M NOT GOING FAR FROM WATER AGAIN.
-timid                   | I THOUGHT I'D DIE OF THIRST.
 brave                   | NEXT TIME I KEEP WATER CLOSE.
+
+# The first drink after thirst began to kill it, said to nobody.
+[quenched 0.8]
+                        | I'M ALIVE...
+                        | THAT WAS TOO CLOSE.
+timid                   | I THOUGHT I'D DIE OF THIRST.
+erratic                 | WET! WET!
 
 # Parched with no water to be had, drinking from a toilet, said to nobody.
 [toilet_drink 0.8]

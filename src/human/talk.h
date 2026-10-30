@@ -89,6 +89,9 @@ enum class Moment {
     // (to nobody, about them).
     Tired, Exhausted, SleepNow, Woke, Dream, RobbedSleep, CakeGone, WatchMe, WatchYes, WatchCake, WatchNo, WakeUp,
     YourWatch, FailedWatch, WakeThem,
+    // A lesson it still held, learnt again the hard way, and learnt for good
+    // (to nobody); the first drink after thirst began to kill it (to nobody).
+    LearnAgain, LearnMax, Quenched,
     Count
 };
 
