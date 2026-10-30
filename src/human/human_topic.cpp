@@ -38,7 +38,7 @@ constexpr int SOMEONE_EARSHOT = 6;
 /// Raised again only once its opinion moved this far.
 constexpr float SOMEONE_MOVED = 0.2f;
 /// Feelings: getting hungry or thirsty from PECKISH (HUNGRY and THIRSTY in
-/// human.cpp are 0.5, where it goes looking), footsore after FOOTSORE_TIME
+/// human_tuning.h are 0.5, where it goes looking), footsore after FOOTSORE_TIME
 /// without sitting, uneasy from UNEASY dread, hopeful from HOPEFUL hope;
 /// each weighs its own amount at its fullest.
 constexpr float PECKISH = 0.35f, NEEDS_SOON = 0.5f;

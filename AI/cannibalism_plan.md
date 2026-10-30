@@ -20,13 +20,13 @@ the dead, and at a lower bar. Eating flesh weighs on the mind in two ways,
 body is **fresh for about 5 minutes**. After that it is spoiled, and eating it makes
 you sick.
 
-Builds on: `bodies_` / looting (kneel at a body), `foe_` + `startFight`
+Builds on: `deaths_.bodies` / looting (kneel at a body), `fight_.foe` + `startFight`
 (hunting), `PREY_HEALTH` (who counts as weak), `dread_` / `scare()`, trust and
 gossip (word of an eater spreads), blood on humans (a red mouth), talk
 moments and `note()`.
 
 ## 1. The erratic meter
-- `Human::erratic_` 0..1, plus `erratic()` and `ERRATIC = 0.5` (from here on
+- `Human::mind_.erratic` 0..1, plus `erratic()` and `ERRATIC = 0.5` (from here on
   the human counts as erratic).
 - Rises from:
   - each second spent starving (`ERRATIC_STARVE`, about 0.5 over 2 starving minutes)
@@ -79,7 +79,7 @@ eater's head and front arm (the face and hands).
   - weakest first, then nearest
   - witnesses don't stop it
 - Appetite lets either hunt sooner (lower hunger bar, larger prey health).
-- `Goal::Hunt` reuses the fight: `foe_ = prey` with a `killing_` flag, so it
+- `Goal::Hunt` reuses the fight: `fight_.foe = prey` with a `killing_` flag, so it
   doesn't stop when a cake is snatched and doesn't give up on the grudge timer. It
   runs on until the prey dies, or until its own health drops below flee health. Prey flees as now.
 - Once the prey is dead it goes straight into feeding on that body.
@@ -92,8 +92,8 @@ Each meal has weight `w`:
 - ×2 if they were a friend
 
 It splits by erratic `e` at that moment:
-- `guilt_ += w * GUILT * (1 - e)`
-- `appetite_ += w * APPETITE * e`
+- `mind_.guilt += w * GUILT * (1 - e)`
+- `mind_.appetite += w * APPETITE * e`
 
 **Guilt** (the steady, often brave first-timer):
 - a scare of `DREAD_GUILT * w` on the spot

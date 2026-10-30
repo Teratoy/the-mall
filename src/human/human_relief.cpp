@@ -108,7 +108,7 @@ constexpr float TOILET_MISS = 0.05f, TOILET_MISS_URGENT = 0.25f, TOILET_MISS_ERR
 /// Going straight into water fouls it this much for a full one.
 constexpr float FECES_FOUL = 1.0f, PISS_FOUL = 0.25f;
 
-/// A fright big enough (FRIGHT_WET in human.cpp) wets the timidest this
+/// A fright big enough (FRIGHT_WET in human_tuning.h) wets the timidest this
 /// likely, the bravest never, with the bladder this full at least.
 constexpr float FRIGHT_WET_CHANCE = 0.5f;
 constexpr float FRIGHT_WET_BLADDER = 0.4f;

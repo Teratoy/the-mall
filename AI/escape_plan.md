@@ -27,7 +27,7 @@ leaving keeps failing. This plan gives exploring a reason and a cost.
 - New State::Waking: a just-made human lies on the floor for 3–6 s, then
   sits up (reuse Sitting/Rising) and looks round, before choose() runs at
   all. Sprite: lying frame (the dead pose, eyes open) then seated.
-- Dazed for the first ~30 s (`daze_`, 1 → 0): sight radius starts short
+- Dazed for the first ~30 s (`escape_.daze`, 1 → 0): sight radius starts short
   and widens, walk is slower, it turns and glances more (like sitters do).
 - Log + talk: `WOKE UP`, then a `[wake]` moment in lines.txt muttered to
   nobody ("WHERE AM I", "HELLO?", "HOW DID I GET HERE"). This is the first
@@ -41,51 +41,51 @@ leaving keeps failing. This plan gives exploring a reason and a cost.
 
 State::Waking is every human's first state (lying 3–6 s, Pose::Wake: the
 dead pose turned on its back, eyes shut 1.5 s then slow blinks), then
-Human::sitUp(): Sitting for 2–4 s with comingTo_ set, so news seen while
+Human::sitUp(): Sitting for 2–4 s with escape_.comingTo set, so news seen while
 sat doesn't get it up early; it notes "WOKE UP, REMEMBERING NOTHING" and
-says a `[wake 0.8]` line to nobody. daze_ 1 → 0 over DAZE_TIME 40 s:
+says a `[wake 0.8]` line to nobody. escape_.daze 1 → 0 over DAZE_TIME 40 s:
 sight radius DAZE_SIGHT 6 → 20 (Sight::look takes a radius) and steps up
 to 60% slower. Hunger costs as sitting. HUD status "COMING TO" while
 waking, and seated while daze ≥ 0.5. Talk conditions `dazed` and
 `they.dazed` (daze ≥ 0.3) give [meet] its first-meeting lines instead of
-a separate moment. Constants: WAKE_*, DAZE_* at the top of human.cpp.
+a separate moment. Constants: WAKE_*, DAZE_* in human_tuning.h.
 
 ## 2. The urge to get out
 
-- New `Human::out_` 0..1, the urge to leave, high at waking. It replaces
+- New `Human::escape_.out` 0..1, the urge to leave, high at waking. It replaces
   the flat curiosity reason for Want::Explore and Want::OpenDoor: their
-  WANTING rows get an `out_` weight, so a curious human still explores
+  WANTING rows get an `escape_.out` weight, so a curious human still explores
   more, but everyone explores at first.
 - Exploring now points somewhere. Each human holds a **hunch**, a
   direction it thinks "out" lies in (rolled at waking, or the way it was
-  facing when it woke). Frontier search (`search()` in human.cpp) adds a
+  facing when it woke). Frontier search (`search()` in human_walk.cpp) adds a
   small cost for frontier cells against the hunch, so humans head off in
   a direction instead of clearing the nearest unknown corner. A hunch
   moves when something seems to point another way (step 4, step 5).
 - Chunk exit doors become the thing that matters: a locked exit door seen
   is "maybe the way out". Your rule "explore everything before unlocking"
-  stays as the default; `out_` only adds to the existing door urge, the
+  stays as the default; `escape_.out` only adds to the existing door urge, the
   same way fright and hunger do now (doorUrge).
 
 ### Built (2026-10-29)
 
-Human::out_ (outUrge()) starts at 1 and settles to OUT_REST 0.6 over
+Human::escape_.out (outUrge()) starts at 1 and settles to OUT_REST 0.6 over
 OUT_SETTLE 10 min; step 3's hope is meant to move it after that. The
 Explore and OpenDoor rows of WANTING lost some base and curiosity (0.40 +
 0.5 → 0.25 + 0.35, and 0.35 → 0.20 for doors) and both gain OUT_EXPLORE
-0.4 × out_, so at rest exploring weighs about what it did before and
-OpenDoor stays 0.05 under it. Meet gains OUT_ASK 0.25 × out_ (asking
+0.4 × escape_.out, so at rest exploring weighs about what it did before and
+OpenDoor stays 0.05 under it. Meet gains OUT_ASK 0.25 × escape_.out (asking
 whoever it meets what this place is), so the extra exploring early on
 doesn't crowd out greetings. Wanting out past 0.7, a key holder may be
 door-urged (doorUrge, up to DOOR_URGE_OUT 0.3, the restless more), logged
 once as "TRYING A DOOR. THERE HAS TO BE A WAY OUT".
 
-Human::hunch_ is a compass angle rolled at birth, logged on waking ("FEELS
+Human::escape_.hunch is a compass angle rolled at birth, logged on waking ("FEELS
 LIKE THE WAY OUT IS NORTH-EAST"), and turned HUNCH_FOLLOW 25% toward the
 way it went at every door it passes. search()/searchFrom() take an
 optional goalCost: a done cell goes back in the queue as an ending at
 path cost + goal cost, so a farther cell may win. hunchCost(c, most) is
-most × out_ × (1 − cos)/2: HUNCH_COST 300 for frontier cells,
+most × escape_.out × (1 − cos)/2: HUNCH_COST 300 for frontier cells,
 HUNCH_DOOR_COST 1500 for doors (Explore through open doors, OpenDoor,
 UrgedDoor).
 
@@ -101,7 +101,7 @@ hunch is a lean, not a compass; raise HUNCH_* if it should be stronger.
 
 The leaving keeps not working, and that should show.
 
-- New `Human::hope_` 0..1, starts ~0.7. Goes up on: crossing into a chunk
+- New `Human::escape_.hope` 0..1, starts ~0.7. Goes up on: crossing into a chunk
   never seen (+0.15), opening a door (+0.1), a hopeful tip from someone
   (step 4). Goes down on: a new chunk that is "just more of the same"
   after a few (diminishing: each one after the third lifts less and
@@ -109,14 +109,14 @@ The leaving keeps not working, and that should show.
   locked door with no key, seeing a body (more if it was a friend),
   long stretches (~5 min) with nothing new found.
 - Effects, mostly through things already there:
-  - hope multiplies `out_` into the Explore/OpenDoor wants;
+  - hope multiplies `escape_.out` into the Explore/OpenDoor wants;
   - low hope adds to dread_'s effects (more sitting, shorter strolls),
     makes hoarding lessons stick, and adds to the snap chance for
-    erratic_ (cannibalism plan) — despair is a road to erratic;
+    mind_.erratic (cannibalism plan) — despair is a road to erratic;
   - very low hope (< 0.15): **settling**. The human stops trying to
     leave and makes a place its own: a room with water or a cake table,
     which it stays near, returns to, and keeps others away from
-    (`home_` cell; new Want::Home). Settlers are the mall's "locals"
+    (`escape_.home` cell; new Want::Home). Settlers are the mall's "locals"
     and the obvious people to trade with, rob or follow.
   - hope can come back: a new chunk, a friend, a hopeful rumour.
 - HUD: `HOPE n` beside `FEAR n` on the friends row (keep it inside the
@@ -127,7 +127,7 @@ The leaving keeps not working, and that should show.
 ### Built (2026-10-29)
 
 Code in src/human/human_hope.cpp (constants there and HOPE_*/DESPAIR_*
-at the top of human.cpp). hope_ starts 0.7. Rises: each new chunk set
+in human_tuning.h). escape_.hope starts 0.7. Rises: each new chunk set
 foot in (World::chunkIdAt; the waking chunk doesn't count) +0.15 for the
 first 3, then 0.05 less each, down to −0.08 (more of the same); unlocking
 a door +0.1; a new friend +0.1. Falls (×0.5–1.5, the timid harder): a
@@ -137,13 +137,13 @@ Crossing HOPE_LOW 0.35 either way logs it and mutters `[despair]` /
 `[hope]`. gloom() = how far under HOPE_LOW, 0..1: sit chance up to ×2,
 Wander +0.5, strolls up to half as long, lesson fade halved, and
 ERRATIC_DESPAIR 0.004/s to erratic (beats the calm fade past ~0.4
-gloom). outDrive() = out_ × min(1.3, hope/0.7) now feeds Explore,
+gloom). outDrive() = escape_.out × min(1.3, hope/0.7) now feeds Explore,
 OpenDoor, Meet and the door urge.
 
-Settling: hope under 0.15 (0.3 if erratic) → settled_, home_ = nearest
+Settling: hope under 0.15 (0.3 if erratic) → escape_.settled, escape_.home = nearest
 known floor beside water or a table within 40 steps (else where it
 stands), log + `[settle]`. Settled: no Explore, OpenDoor, CheckDoor or
-Follow; Wander strolls round home_ (HUD "KEEPING TO HOME"). Hope back over
+Follow; Wander strolls round escape_.home (HUD "KEEPING TO HOME"). Hope back over
 0.4 sets it off again. Territorial settlers (erratic, or 0.5 brave + 0.5
 greedy − 0.4 sociable ≥ 0.3, about half) warn anyone they trust under
 0.15 who comes within 6 of home (`[guard]`, rude, −0.1 trust) and go for
@@ -178,7 +178,7 @@ What humans believe about getting out spreads, and can be wrong.
 
 Tell::Kind::Way (fields way, sure, gloomy, lie), made by Human::wayFor()
 and told in exchange() at every greeting, beside gossip and news. Each
-human has hunchSure_ (0.3 on waking). An honest tell gives the hunch and
+human has escape_.hunchSure (0.3 on waking). An honest tell gives the hunch and
 its sureness; the listener is pulled toward it by w × sure / (sure + own
 sure), w = trust in the teller + 0.2. Its sureness rises by up to 0.15 × w
 when they agree and falls when they don't (min 0.05), and its hope rises
@@ -191,7 +191,7 @@ stepping on it is caught as a lie by learnTrap: −0.6 trust), else
 opposite their own hunch. lieWorthy() now also sends a cunning human to
 greet a foe it has a plate to lie about, even if the foe has no keys.
 Not retold to the same human until its hunch turns by 45° or it turns
-gloomy (wayTold_). Moments `[tell_way]`, `[no_way_out]`, `[lie_way]`.
+gloomy (escape_.wayTold). Moments `[tell_way]`, `[no_way_out]`, `[lie_way]`.
 
 Probe, 20 seeds × 30 min, 6 extra humans at spawn: living pairs that told
 each other the way end with hunches at mean cos 0.37, other pairs 0.00
@@ -207,7 +207,7 @@ on it, an honest tell bends the listener's hunch.
 User: "THAT WAY. I'M SURE OF IT" said unprompted at every greeting made no
 sense in play. Now nobody volunteers it. At a greeting, a human that still
 wants out (outDrive ≥ ASK_WAY_FROM 0.4), and not to a foe, asks once per
-human (`[ask_way]`, askedWay_); only one of the pair asks. When the
+human (`[ask_way]`, escape_.askedWay); only one of the pair asks. When the
 question is said, the other answers (Human::answerWay): its hunch
 (`[tell_way]`), that there is none (`[no_way_out]`), a lie to a foe
 (`[lie_way]`), or `[no_idea]` when its sureness is under WAY_UNSURE 0.15
@@ -252,7 +252,7 @@ way, and this step only if there is a real exit.
 ## Order
 
 1. Waking (state, daze, wake log/lines). Small, visible at once.
-2. `out_` + hunch-directed exploring. Check with the stuck soak.
+2. `escape_.out` + hunch-directed exploring. Check with the stuck soak.
 3. Hope/despair + HUD + talk; settling last within this step.
 4. Theories as Tell::Kind::Way, gloom spreading, lies.
 5. Exit signs / daylight, per Q1.

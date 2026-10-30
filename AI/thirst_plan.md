@@ -100,10 +100,10 @@ known water always wins, and with none known Explore already runs.
 This is where thirst meets the blood plan.
 
 - Drinking from a cell with Blood::tint ≥ RED_WATER (0.15): refused unless
-  parched, or the drinker has a taste for flesh (`appetite_` ≥ 0.4), who
+  parched, or the drinker has a taste for flesh (`mind_.appetite` ≥ 0.4), who
   drinks it gladly. A parched human who drinks red water gets dread
   (0.15), a log line "DRANK BLOODY WATER" and a `[bloody_water]` line.
-- Very red water (≥ 0.5) makes the drinker sick (reuse `sick_`, a
+- Very red water (≥ 0.5) makes the drinker sick (reuse `mind_.sick`, a
   milder hit than rotten flesh; the flesh-tasters too).
 - Tint already clears over TINT_CLEAR_TIME (blood.cpp); check it's slow
   enough that a fouled pool stays undrinkable for a few minutes.
@@ -168,10 +168,10 @@ stuck or loops.
   (human_thirst.cpp): not a foe and the guard sociable (≥ 0.45), or the
   newcomer parched and the guard not greedy → let drink 90 s, "LET @
   DRINK MY WATER", [water_free]; guard greedy (≥ 0.5) and the newcomer
-  has a cake → let drink for a cake, [water_price], owesWater_; else
+  has a cake → let drink for a cake, [water_price], water_.owes; else
   turned away, [my_water] (instead of the plain [guard] line), and the
   newcomer keeps off water within 6 of that home for 300 s unless
-  parched (refusedWater_, in wouldDrink, which every gulp now re-checks,
+  parched (water_.refused, in wouldDrink, which every gulp now re-checks,
   so one turned away mid-drink stops), then guardHome's grace and
   drive-off as before.
 - payForWater once quenched: the cake goes over (both +0.1 trust, "PAID
@@ -210,7 +210,7 @@ guarding never came up there; drinking, deaths and stuck flags unchanged.
   newsFor's tips; otherwise after them. Free to friends and to those it
   walks with (inGroupWith); kept back by greedy ≥ 0.67 from anyone else;
   sold by greedy ≥ 0.5 to anyone else holding a cake (paid like a trap
-  tip, owes_); to a thirsty foe, the cunning (greedy ≥ 0.5, brave ≥ 0.4)
+  tip, social_.owes); to a thirsty foe, the cunning (greedy ≥ 0.5, brave ≥ 0.4)
   tell a way over a spike plate the foe doesn't know, on to real water
   ("TOLD @ A WAY TO WATER OVER SPIKES"), exposed by learnTrap as before.
 - Groups: a thirsty human that knows no water it would drink asks the
@@ -223,7 +223,7 @@ guarding never came up there; drinking, deaths and stuck flags unchanged.
   walking onto it never exposed the liar.
 - talk: tell_water, sell_water, lie_water, ask_water.
 - Escorting the parched to water (built the same day, after the user
-  asked): an escort now has a reason (escortDrink_), and leadEscort waits
+  asked): an escort now has a reason (escorting_.drink), and leadEscort waits
   at the water for drinking instead of washing when leading to drink.
   wouldLeadToDrink: not a loner (≥ 0.3 sociable), health ≥ 0.5, not
   hungry, not busy; leads a friend or one it walks with, within 6 cells,
@@ -306,7 +306,7 @@ drank anyway 8 of 8. Soak: parched 47, thirst deaths 22, nothing stuck.
 
 User asked. With no water it would drink in reach (seekWater finds
 none), the parched and the erratic go to a toilet they know and drink
-from it (seekToilet; drinkAt_ is the toilet). Its water is as foul as
+from it (seekToilet; water_.drinkAt is the toilet). Its water is as foul as
 0.5 × the toilet's dirt (hurts, and from 0.5 sickens, "THE TOILET WATER
 MADE ME SICK"); a clean toilet is safe. It stops once no longer parched
 (the erratic drink on). Log "DRANK FROM A TOILET", [toilet_drink];

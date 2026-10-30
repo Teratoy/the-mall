@@ -120,7 +120,7 @@ lying there; the erratic, who may now go beside water, drop feces in too
 
 Drinking: each gulp of foul water costs 0.04 × foul health (never below
 0.05: foul water hurts, it doesn't kill), and from foul 0.5 makes it sick
-for 60 s (sick_: no healing; log "THE FOUL WATER MADE ME SICK"). Water it
+for 60 s (mind_.sick: no healing; log "THE FOUL WATER MADE ME SICK"). Water it
 can see is foul costs 400 tenths of a cell per foulness to pick, and from
 0.3 it won't drink there at all, unless parched or erratic.
 
@@ -205,12 +205,12 @@ Groups (human_company.cpp, another session's): companions keep within 2
 cells of whoever they follow, which made every spot near a group member
 "watched", so nobody in a group could go until bursting, in front of
 everyone. Now (human_relief.cpp):
-- inGroupWith(o): one keeps with the other (companion_ or leader_), or
+- inGroupWith(o): one keeps with the other (social_.companion or social_.leader), or
   both with the same one. watchedAt() doesn't count those it walks with,
   unless they are erratic.
 - givePrivacy (in choose(), before waitForCompany): seeing someone it
   walks with off to go or going, it stands back, facing away, 0.8–1.4 s
-  at a time (privacyFor_); not when it needs to go itself, never the
+  at a time (relief_.privacyFor); not when it needs to go itself, never the
   erratic. Test (scratchpad group.cpp, 20 pairs): every one went unseen,
   every follower looked away; groups held together as often as without.
 - Modest humans don't take a filthy companion, and drop one who gets
@@ -264,8 +264,8 @@ file loads without complaint; soak (30 × 20 min) unchanged, nothing stuck.
 User asked whether drinking caused instant pissing: it did. Measured (15
 worlds × 20 min): 38 of 85 goings after a drink came within 10 s of it,
 and 3 wet themselves within 15 s of drinking (a 2–3 gulp drink put up to
-+0.54 straight into the bladder). Now takeIn holds what goes in (drunk_,
-eaten_) and press() passes it on by e every WATER_PASSES 90 s (most of a
++0.54 straight into the bladder). Now takeIn holds what goes in (relief_.drunk,
+relief_.eaten) and press() passes it on by e every WATER_PASSES 90 s (most of a
 drink within ~4 min) and FOOD_PASSES 240 s (a meal within ~10 min), same
 totals. After: 11 of 87 within 10 s (those already needed to go before
 drinking), 0 wet after drinking; soak (30 × 20 min): 139 pissed, 63
@@ -314,7 +314,7 @@ Stain: per-cell pixels, wet → dry, permanent until something clears it.
   (a `foul` value per water cell beside the tint, spreading to
   neighbours). Pooping or pissing straight into water fouls it far more.
 - **Drinking fouled water damages health** (per gulp, ∝ foul) and can
-  make you sick (`sick_`). Foul clears very slowly from pools, faster
+  make you sick (`mind_.sick`). Foul clears very slowly from pools, faster
   from canals; basins (small, still) stay foul longest.
 
 ## 3b. Toilets

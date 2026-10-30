@@ -104,7 +104,7 @@ constexpr float LONER = 0.3f;
 /// strike it, as episodes to talk about.
 constexpr float EPISODE_POOL = 0.5f, EPISODE_OWN_POOL = 0.7f, EPISODE_ESCORT = 0.5f, EPISODE_ESCORTED = 0.6f;
 /// What seeing someone bloodied with no wound of their own does to trust,
-/// and what being led to water does. The rest of trust is in human.cpp.
+/// and what being led to water does. The rest of trust is in human_social.cpp.
 constexpr float TRUST_SUSPECT = -0.2f;
 /// What a fresh pool of blood and a bloodied suspect add to dread.
 constexpr float DREAD_POOL = 0.3f;

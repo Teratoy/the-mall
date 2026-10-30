@@ -8,7 +8,7 @@
 namespace {
 
 /// Hungry and starving from here on, and too timid below this much
-/// bravery, as in human.cpp: the timid would rather starve than eat flesh.
+/// bravery, as in human_tuning.h: the timid would rather starve than eat flesh.
 constexpr float HUNGRY = 0.5f;
 constexpr float STARVING = 0.8f;
 constexpr float TIMID = 0.3f;
@@ -97,7 +97,7 @@ constexpr int FEED_DROPS = 3;
 constexpr float FEED_DROP_MIN = 0.6f, FEED_DROP_MAX = 1.6f;
 constexpr float BODY_HALF_PX = 8.0f;
 /// Bodies this close to whoever it ran from are left alone while afraid,
-/// as FLEE_DIST in human.cpp.
+/// as FLEE_DIST in human_tuning.h.
 constexpr int FEARED_DIST = 10;
 
 /// How much eating flesh, seeing it eaten, finding a gnawed body and the

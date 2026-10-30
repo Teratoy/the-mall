@@ -39,7 +39,7 @@ had 35/40 dying 10–13 s later), darts' bleeding stops at the dart floor
   and `wounded()`.
 
 ### Sources
-- **Punches**: `takeHit` adds damage to a `beating_` total that drains at
+- **Punches**: `takeHit` adds damage to a `fight_.beating` total that drains at
   `BEATING_DECAY` per second. Once it passes `BEATING_BLEED` (about 3 punches
   in 5 s), a Blunt wound opens on the Head with damage = the total. Further
   punches while over the threshold deepen that wound instead of opening a
@@ -180,7 +180,7 @@ arrive), `world_view.cpp` (pose), `world_scene.cpp` (labels).
 - `Goal::Wash`, `State::Washing`, `Action::Wash` with its own hunger cost
   (≈1/400 s), added to `HUNGER_PER_SECOND`.
 - In `choose()`: when the human has any blood on them (wet or dry), isn't
-  hungry, and isn't fighting or fleeing (`foe_`, `fear_`), it walks to the
+  hungry, and isn't fighting or fleeing (`fight_.foe`, `fight_.fear`), it walks to the
   nearest known floor cell next to known water. Priority: after food and
   fights, before greeting and exploring.
 - Washing takes time ∝ blood amount and removes blood a bit at a time.
@@ -234,7 +234,7 @@ Note: a fist bloodied by punching a bleeding foe makes the puncher a suspect.
   leave the spot (a short flee from the cell, `POOL_FEAR_TIME`), and it
   won't wander or idle near it.
 - **Suspicion**: seeing a human with blood on them but no open wound →
-  `suspects_[id]` with a timer, refreshed every time they're seen still
+  `gore_.suspects[id]` with a timer, refreshed every time they're seen still
   bloody. Suspects are treated like the feared: kept away from (no
   greeting, sharing or following), but without running. Exception: starving
   and the suspect carries cakes → go for the food as now (fight). Once
@@ -242,7 +242,7 @@ Note: a fist bloodied by punching a bleeding foe makes the puncher a suspect.
   clears you. Side effect: a healed human who hasn't washed looks just as
   suspicious, which is fine and emergent.
 - **Fright**: fresh pools and suspects in sight should also raise
-  `Human::fright()` (0–1, today only from `fear_`/`feared_`). A frightened key
+  `Human::fright()` (0–1, today only from `fight_.fear`/`fight_.feared`). A frightened key
   holder may make for a locked door before exploring (`doorUrge()`, added
   2026-10-29), and picks one not lying toward the danger, so the door search
   in `choose()` should keep away from pools and suspects too.
@@ -271,7 +271,7 @@ isn't checked by a test.
   offers an escort: target = nearest water known to either of them (the
   union of both memories' water cells; the wounded one effectively tells).
 - Helper: `Goal::Escort`, walks there at the wounded one's pace and waits
-  for them every few cells. Wounded: `leader_ = helper` with a
+  for them every few cells. Wounded: `social_.leader = helper` with a
   `Goal::Escorted` that reuses the Follow logic.
 - On arrival the wounded one washes. The escort ends if either is attacked,
   gets hungry, or the wounded dies.

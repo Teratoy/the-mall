@@ -43,7 +43,7 @@ sees the one it talks to.
 
 ## Built (2026-10-29)
 
-All of the above. Tuning constants are at the top of human.cpp (HEAR_RADIUS,
+All of the above. Tuning constants are in human_tuning.h (HEAR_RADIUS,
 SPEECH_*, TRUST_WARM/RUDE, DREAD_TALK, BEG_*, PLEA_*, THREAT_*, YIELD_CHANCE).
 Accusations are only made to suspects within SUSPECT_DIST, at 60%: before
 that they were a third of everything said and doubled the foes made.

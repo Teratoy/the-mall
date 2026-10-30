@@ -68,7 +68,7 @@ corridor or gap); costs 3 per open cell round it, so dead ends beat
 corners beat open floor ("FELL ASLEEP"). Asleep: sight.blind() (so it
 witnesses nothing and watches nobody go), hears nothing, says nothing,
 heals × 2 (SLEEP_HEAL), tiredness −1/170 a second. Wakes at RESTED 0.05
-(State::Rising with roused_ → Pose::WakeUp, ROUSE_TIME + STAND_UP_TIME),
+(State::Rising with sleep_.roused → Pose::WakeUp, ROUSE_TIME + STAND_UP_TIME),
 at a blow ("WOKE UP HURT", straight up to react), once below 0.3 if
 starving, parched or bladder/bowels ≥ 0.9, and when full right up
 whatever (no accidents asleep). Daze 0.25 on waking. HUD: a fourth bar,
@@ -97,7 +97,7 @@ flags unchanged (parched 43, thirst 20, starved 22, bled 15).
 - Asleep it **sees nothing new**: observe() is skipped. It still hears
   (see step 4 for what wakes it).
 - Waking is Pose::WakeUp: curled with eyes open for ROUSE_TIME, then
-  up. A short daze after waking (reuse `daze_`, much milder than the
+  up. A short daze after waking (reuse `escape_.daze`, much milder than the
   first waking): what it last knew may have changed.
 
 ## 3. Where to sleep
@@ -189,7 +189,7 @@ or looping; deaths unchanged.
   first second within 5 cells wakes it at up to 1.5/s, someone walking
   right past at 0.3/s, by how much lighter ("WOKE UP TO A NOISE", dread
   +0.05). Hit asleep (takeHit): "WOKE UP TO @ HITTING ME", dread +0.2,
-  daze 0.6, and it can't answer the blow for 0.8 s (stunned_); hurt
+  daze 0.6, and it can't answer the blow for 0.8 s (sleep_.stunned); hurt
   otherwise (darts, spikes): "WOKE UP HURT". Set on (hit or robbed), the
   place it slept is forgotten. wakeUp now looks round (observe) itself.
 - Robbing: Want::Rob (WANTING 0.3 + 0.2 brave + 0.6 greedy − 0.2
@@ -197,7 +197,7 @@ or looping; deaths unchanged.
   the greedy ≥ 0.5 and brave ≥ 0.35, with room to carry, from a sleeper
   in sight holding a cake, not a friend, not in its group, trusted under
   0.2, not feared. Goal::Rob walks beside them, then kneels 1.5 s
-  (State::Looting with robbee_, Pose::Search, "ROBBING @"). Takes one
+  (State::Looting with sleep_.robbee, Pose::Search, "ROBBING @"). Takes one
   cake; they wake with chance 0.3 × (0.5 + lightSleep): "@ WOKE UP AS I
   ROBBED THEM" / "WOKE UP TO @ ROBBING ME", "@ ROBBED ME IN MY SLEEP",
   −0.5 trust, and they answer it as a blow (react: fight or flee).
@@ -210,7 +210,7 @@ or looping; deaths unchanged.
   hungry (nearestHolder), so they go for it first. "HIT @ IN THEIR
   SLEEP"; witnesses −0.5 trust, dread +0.3, remembered as strongly as a
   killing. Those craving flesh get no pull to sleepers (user).
-- Dying asleep: die() keeps diedAsleep_; the body is drawn curled and
+- Dying asleep: die() keeps sleep_.diedAsleep; the body is drawn curled and
   still (Pose::DiedAsleep: no breath, no z's), eaten and rotting on the
   curl (HumanSprites::remains curled). From farther than 2 cells it is
   taken for a sleeper (not a body: no FOUND, no looting); close up,
@@ -258,19 +258,19 @@ In human_sleep.cpp unless said. Group = inGroupWith or a friend.
   thirsty, needing to go or afraid; of its own accord only if sociable ≥
   0.3, tiredness < 0.4, and (sociable + brave) / 2 ≥ 0.45; over the
   nearest of its group asleep within 8 that nobody else watches
-  (watchee_; the sleeper's watchedBy_). Walks within 2 (Goal::Watch) and
+  (sleep_.watchee; the sleeper's sleep_.watchedBy). Walks within 2 (Goal::Watch) and
   sits ("KEEPING WATCH OVER @"); new Action::Watch (hunger and thirst
   1/1500, tiredness 1/1200: staying awake on purpose). Each glance while
   sat (watchCalls) gets it up if the sleeper woke, a threat came, or it
   is tired or in need.
 - Alarm: a foe, suspect, whoever it fears, or anyone sneaking up to rob
-  (robbee_) within 6 of the sleeper: it wakes every sleeper of its group
+  (sleep_.robbee) within 6 of the sleeper: it wakes every sleeper of its group
   within 8 ("WOKE THE OTHERS: @ WAS COMING" / "@ WOKE ME. SOMEONE WAS
   COMING"). Thieves won't rob a sleeper someone sits watch over within 3
   (wouldRob).
 - Turns: tired on watch, it wakes the most rested of its group asleep
   (tiredness < 0.25) to take over ("WOKE @ TO TAKE A TURN ON WATCH"),
-  who then watches it, whatever its traits (askedWatch_); then it goes
+  who then watches it, whatever its traits (sleep_.askedWatch); then it goes
   to sleep itself. If nobody is rested enough it watches on until it
   collapses: "FELL ASLEEP ON WATCH".
 - Asking: lying down sleeping lightly (lightSleep ≥ 0.45), it asks the

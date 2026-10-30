@@ -176,7 +176,7 @@ calls witness(). Anyone who sees a door unlocked remembers it
 
 `src/human/human_chat.cpp`, ticked from Human::update every CHAT_TICK.
 
-- Human::chatUrge_[id], 0 to 1: grows while the human is easy in mind
+- Human::chat_.urge[id], 0 to 1: grows while the human is easy in mind
   (not hungry, thirsty, needing to go, bleeding, frightened or just hurt)
   toward everyone it has met, not a foe or suspect, in sight within
   CHAT_SEEN (10): full in CHAT_EVERY (75 s) for sociability 0.5,
@@ -249,7 +249,7 @@ bonding). Stuck soak 15 x 20 min clean.
   strong, recent; {THING} the statue, {N} places together).
 - Wording is fixed, not rolled: of the fitting lines, one not said by the
   speaker in the last CHAT_REPEAT (300 s) if any, then most conditions,
-  then said longest ago (Human::chatLines_). Chat sections ignore any
+  then said longest ago (Human::voice_.chatLines). Chat sections ignore any
   [moment chance].
 - startChat queues a Saying carrying the topic, about whoever the topic is
   about (the third person in an episode); the topic counts as raised only
