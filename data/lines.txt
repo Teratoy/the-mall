@@ -1759,3 +1759,218 @@ generous                | HANG ON, WHOEVER YOU ARE.
                         | HELLO? ANYONE IN THERE?
                         | I CAN'T FIND THE WAY IN.
                         | {WHO}? I CAN'T FIND YOU!
+
+
+# ---- Bottles ---------------------------------------------------------------
+
+# Drinking from its bottle, said to nobody.
+[sip 0.25]
+                        | GOOD THING I KEPT THIS.
+                        | JUST A SIP.
+                        | AHH.
+parched                 | FINALLY.
+timid                   | MAKE IT LAST...
+erratic                 | GLUG GLUG GLUG.
+
+# The bottle ran dry, said to nobody.
+[bottle_dry 0.6]
+                        | EMPTY.
+                        | THAT WAS THE LAST OF IT.
+                        | NOT A DROP LEFT.
+thirsty                 | STILL THIRSTY. AND NO WATER.
+timid                   | WHAT DO I DO NOW?
+
+# Kneeling to fill its bottle, said to nobody.
+[fill_bottle 0.25]
+                        | FILL HER UP.
+                        | BETTER TAKE SOME WITH ME.
+                        | FOR LATER.
+timid                   | IN CASE THERE'S NO MORE.
+greedy                  | ALL MINE.
+
+# Pouring out water too dirty to keep, said to nobody.
+[pour_out 0.6]
+                        | UGH. NOT DRINKING THAT.
+                        | OUT IT GOES.
+                        | THAT'S GONE BAD.
+craving                 | WHAT A WASTE.
+
+# Thirsty with nothing to drink, asking someone it sees with water, said to
+# them.
+[ask_drink]
+                        | COULD I HAVE SOME WATER?
+                        | JUST A SIP? PLEASE?
+                        | I'M SO THIRSTY.
+parched                 | PLEASE. WATER. ANYTHING.
+friend                  | {NAME}, SHARE YOUR WATER?
+greedy                  | GIVE ME SOME OF THAT WATER.
+
+# Pouring some of its water for someone who asked, said to them.
+[give_drink]
+warm                    | HERE. DON'T DRINK IT ALL AT ONCE.
+warm                    | TAKE SOME.
+warm                    | OF COURSE.
+friend warm             | ANYTHING FOR YOU, {NAME}.
+
+# Pouring some for a cake, said to them.
+[sell_drink]
+                        | A CAKE AND IT'S YOURS.
+                        | WATER'S NOT FREE.
+                        | IT'LL COST YOU A CAKE.
+
+# Lying to whoever asked that its bottle is empty, said to them.
+[bottle_lie]
+                        | SORRY. IT'S EMPTY.
+                        | I'VE GOT NOTHING LEFT.
+                        | ALL GONE, I'M AFRAID.
+
+# Seeing the water through the glass of a bottle it was told is empty, said
+# to the liar.
+[caught_bottle_lie]
+rude                    | I CAN SEE IT, YOU KNOW.
+rude                    | EMPTY? I CAN SEE THE WATER.
+rude                    | LIAR. IT'S RIGHT THERE.
+timid                   | BUT... IT'S NOT EMPTY.
+
+# Not giving any of its water to whoever asked, said to them.
+[refuse_drink]
+                        | FIND YOUR OWN.
+                        | NO. I NEED IT.
+rude                    | GET AWAY FROM MY WATER.
+thirsty                 | I'M THIRSTY TOO.
+timid                   | SORRY. I CAN'T.
+
+# Its bottle snatched in a fight, said to whoever took it.
+[bottle_taken]
+rude                    | MY WATER!
+rude                    | GIVE IT BACK!
+                        | THAT'S MINE!
+
+
+# ---- Things put down -------------------------------------------------------
+
+# Putting cakes or bottles down on the floor, said to nobody.
+[put_down 0.3]
+                        | THERE.
+                        | THAT CAN WAIT HERE.
+                        | I'LL COME BACK FOR THIS.
+greedy                  | NOBODY TOUCHES THIS.
+timid                   | I HOPE NOBODY FINDS IT.
+
+# Picking up cakes or bottles someone put down, said to nobody.
+[pick_up 0.3]
+                        | WHO LEFT THIS HERE?
+                        | DON'T MIND IF I DO.
+                        | FINDERS KEEPERS.
+hungry                  | FOOD! JUST LYING THERE.
+thirsty                 | WATER!
+timid                   | SOMEONE'S GOING TO BE ANGRY.
+
+# Putting cakes or bottles in a stash of its own, said to nobody.
+[stash 0.3]
+                        | FOR LATER.
+                        | NOBODY WILL LOOK HERE.
+                        | ONE MORE FOR THE PILE.
+greedy                  | MINE. ALL MINE.
+timid                   | IN CASE THINGS GET BAD.
+hopeless                | MIGHT AS WELL BE READY.
+
+# Taking from a stash of its own, said to nobody.
+[from_stash 0.3]
+                        | GLAD I SAVED THIS.
+                        | STILL HERE. GOOD.
+hungry                  | TIME TO DIG IN.
+greedy                  | JUST ONE.
+
+# Seeing someone stash things, said to nobody, about them.
+[saw_stash 0.4]
+                        | SO THAT'S WHERE THEY KEEP IT.
+                        | HIDING THINGS, ARE WE?
+                        | I SAW THAT.
+hungry                  | FOOD. RIGHT THERE.
+greedy                  | GOOD TO KNOW.
+
+# Its own stash found short, said to nobody, about whom it blames.
+[stash_robbed]
+                        | SOMEONE'S BEEN AT MY STASH!
+                        | IT'S NOT ALL HERE.
+rude                    | {WHO}. IT WAS {WHO}.
+                        | THIEVES. EVERYONE HERE IS A THIEF.
+timid                   | I HAVE TO HIDE IT BETTER.
+
+# Stealing from someone's stash, said to nobody, about them.
+[steal_stash 0.4]
+                        | THEY WON'T MISS IT.
+                        | SORRY, {WHO}.
+                        | NOBODY'S LOOKING.
+starving                | I HAVE TO EAT.
+greedy                  | FINDERS KEEPERS.
+guilty                  | WHAT HAVE I BECOME?
+
+# Catching someone at its stash, said to the thief.
+[caught_stealing]
+rude                    | HEY! THAT'S MINE!
+rude                    | THIEF!
+rude                    | GET AWAY FROM MY STASH!
+friend rude             | {NAME}? HOW COULD YOU?
+
+# Hungry with nothing, seeing someone's big stash, said to nobody, about
+# the hoarder.
+[resent 0.6]
+                        | ALL THAT FOOD, AND WE STARVE.
+                        | WHO NEEDS THAT MUCH?
+                        | KEEPING IT ALL FOR THEMSELVES.
+hungry                  | {WHO} HAS PLENTY. AND I HAVE NOTHING.
+thirsty                 | ALL THAT WATER, JUST SITTING THERE.
+brave                   | SOMEONE SHOULD TAKE IT FROM THEM.
+
+# Telling someone where a stash is, said to them, about its owner.
+[tell_stash]
+                        | {WHO} KEEPS FOOD BACK THERE.
+                        | THERE'S A STASH THAT WAY.
+                        | SOMEONE'S HIDING CAKES OVER THERE.
+friend                  | DON'T TELL ANYONE. THERE'S A STASH THAT WAY.
+they.hungry             | YOU'RE HUNGRY? I KNOW WHERE THERE'S FOOD.
+
+# Selling where a stash is, for a cake, said to them.
+[sell_stash]
+                        | I KNOW WHERE SOMEONE KEEPS FOOD. A CAKE?
+                        | A CAKE, AND I'LL TELL YOU WHERE THE STASH IS.
+
+# Lying about a stash to a foe, said to them.
+[lie_stash]
+                        | THERE'S A STASH THAT WAY. NOBODY'S GUARDING IT.
+                        | {WHO} HOARDS FOOD. HELP YOURSELF.
+                        | GO ON. THEY'LL NEVER KNOW.
+
+# Overhearing someone tell of its stash, said to them.
+[stash_told]
+rude                    | THAT'S MY STASH YOU'RE TALKING ABOUT!
+rude                    | KEEP YOUR MOUTH SHUT!
+rude                    | WHO TOLD YOU ABOUT THAT?
+
+# Asking someone if a stash it knows of is theirs, said to them.
+[ask_stash]
+                        | IS THAT STASH YOURS?
+                        | THAT FOOD BACK THERE. YOURS?
+hungry                  | YOU'VE GOT FOOD HIDDEN, HAVEN'T YOU?
+rude                    | HOARDING, ARE WE?
+
+# Owning up to a stash, said to whoever asked.
+[own_stash]
+                        | IT'S MINE. LEAVE IT.
+                        | YES. AND IT STAYS THAT WAY.
+greedy                  | MINE. HANDS OFF.
+generous                | IT'S MINE. ASK IF YOU NEED SOME.
+
+# Denying a stash is theirs, said to whoever asked.
+[deny_stash]
+                        | WHAT STASH?
+                        | NOT MINE. NEVER SEEN IT.
+                        | NO IDEA WHAT YOU MEAN.
+
+# Seeing through a denial, having seen the stash made, said to the denier.
+[caught_denying]
+rude                    | I SAW YOU PUT IT THERE.
+rude                    | LIAR. I WATCHED YOU.
+timid                   | BUT... I SAW YOU.

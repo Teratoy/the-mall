@@ -93,6 +93,35 @@ struct SoakProbe {
     }
     /// Shut in, h cries for help on its next update.
     static void cryNow(Human& h) { h.rescue_.helpTimer = 0.0f; }
+    /// Kneels and puts down n cakes and these bottles where it stands.
+    static void putDown(Human& h, int cakes, std::vector<size_t> bottles) { h.startPutting(cakes, std::move(bottles)); }
+    /// The pile on the cell is a stash of h's, as if h had made it and seen
+    /// it last as it is now.
+    static void ownStash(const World& w, Human& h, Vec2i cell) {
+        h.stash_.mine.push_back(cell);
+        if (const Pile* p = w.pile(cell)) h.stash_.left[cell] = *p, h.memory.piles[cell] = *p;
+    }
+    /// h knows the pile on the cell is owner's stash, as if it had seen it made.
+    static void knowStash(const World& w, Human& h, Vec2i cell, const Human& owner) {
+        h.memory.stashes[cell] = owner.id;
+        if (const Pile* p = w.pile(cell)) h.memory.piles[cell] = *p;
+    }
+    /// The same, having watched it being made.
+    static void sawStashMade(const World& w, Human& h, Vec2i cell, const Human& owner) {
+        knowStash(w, h, cell, owner);
+        h.memory.stashSeenMade.insert(cell);
+    }
+    /// teller tells to where owner's stash at cell is, as at a greeting.
+    static void tellStash(Human& teller, Human& to, Vec2i cell, const Human& owner) {
+        Human::Tell t{Human::Tell::Kind::Stash, cell};
+        t.owner = owner.id;
+        teller.tell(to, t);
+    }
+    /// Stashes what it carries where it stands, as if that were its spot.
+    static void stashHere(Human& h) {
+        h.stash_.spot = h.cell;
+        h.stashHere();
+    }
     /// Given up on a way out, at home on home.
     static void settle(Human& h, Vec2i home) {
         h.escape_.settled = true;

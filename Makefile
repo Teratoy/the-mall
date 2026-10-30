@@ -26,8 +26,10 @@ SHOT := build/shot
 GENPROBE := build/genprobe
 # A human drawn at twice the detail, beside the one the game draws now.
 HIDEF := build/hidef
+# Human frames with bottles, scaled up, to check the bottle art by eye.
+BOTTLESHEET := build/bottle_sheet
 
-.PHONY: all run clean stuck check golden coverage shot scenarios genprobe hidef apk install-apk logcat
+.PHONY: all run clean stuck check golden coverage shot scenarios genprobe hidef bottlesheet apk install-apk logcat
 
 all: $(BIN)
 
@@ -87,6 +89,12 @@ $(HIDEF): tools/hidef.cpp $(filter-out build/main.o,$(OBJ))
 
 hidef: $(HIDEF)
 	./$(HIDEF) build/hidef.png $(HIDEF_ARGS)
+
+$(BOTTLESHEET): tools/bottle_sheet.cpp $(filter-out build/main.o,$(OBJ))
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@ $(LDLIBS)
+
+bottlesheet: $(BOTTLESHEET)
+	./$(BOTTLESHEET) build/bottle-sheet.png
 
 clean:
 	rm -rf build

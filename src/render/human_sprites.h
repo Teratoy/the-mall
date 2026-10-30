@@ -1,8 +1,10 @@
 #pragma once
 #include "human/body_blood.h"
+#include "human/bottle.h"
 #include "human/human_look.h"
 #include <array>
 #include <raylib.h>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -21,7 +23,10 @@
 /// z's rising. WakeUp counts from waking: still curled, eyes open and
 /// blinking for ROUSE_TIME, a crouch for STAND_UP_TIME, then standing.
 /// DiedAsleep lies curled as in sleep, but still: no breath, no z's.
-enum class Pose { Idle, Walk, Wave, Eat, Guard, Punch, Offer, Fall, Sit, Rise, Wash, Search, Feed, Wake, Point, PointUp, PointDown, Squat, Piss, Sleep, WakeUp, DiedAsleep };
+/// Sip drinks from a bottle held up to the mouth; Fill kneels with it in
+/// the water; Pour holds it out upside down, water running out of it;
+/// OfferBottle holds it out to someone.
+enum class Pose { Idle, Walk, Wave, Eat, Guard, Punch, Offer, Fall, Sit, Rise, Wash, Search, Feed, Wake, Point, PointUp, PointDown, Squat, Piss, Sleep, WakeUp, DiedAsleep, Sip, Fill, Pour, OfferBottle };
 
 
 /// One human's frames as textures, made from its look.
@@ -35,9 +40,11 @@ public:
     /// Draws with the base pixel's bottom edge centred on feet; a body lying
     /// dead keeps its back on the ground across the feet's cell. tint
     /// multiplies every pixel. Standing or walking, carrying shows a cake
-    /// in the back hand.
+    /// in the back hand. A bottle shows in the back pocket, or in the hand
+    /// when inHand (and the pose holds it there), as full and dirty as it
+    /// is; lying down, it doesn't show.
     void draw(Vector2 feet, Pose pose, float animTime, bool flip, int scale = 1, Color tint = WHITE,
-              bool carrying = false) const;
+              bool carrying = false, const Bottle* bottle = nullptr, bool inHand = false) const;
     /// Redraws every frame with this blood on the body, unless it already shows it.
     void bloody(const BodyBlood& blood);
     /// The same for the feces and the piss on it, painted over the blood.
@@ -50,7 +57,9 @@ public:
 
 private:
     Texture2D idle_, idleCarry_, guard_, punch_, offer_, point_, pointUp_, pointDown_, kneel_, dead_, crouch_, crouchCarry_,
-        woken_, wokenCarry_;
+        woken_, wokenCarry_, sip_, fill_, pour_, offerBottle_;
+    /// Where each texture's frame holds a bottle.
+    std::unordered_map<const Texture2D*, std::pair<BottleSpot, BottleSpot>> spots_;
     std::array<Texture2D, WALK_FRAMES> walk_, walkCarry_;
     std::array<Texture2D, WAVE_FRAMES> wave_;
     std::array<Texture2D, EAT_FRAMES> eat_;

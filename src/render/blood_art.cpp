@@ -28,11 +28,13 @@ unsigned char bloodAlpha(int amount) {
     return (unsigned char)std::min(255, ALPHA_MIN + amount * (255 - ALPHA_MIN) / 160);
 }
 
-void drawWaterTint(int x, int y, float tint) {
+Color waterBloodCloud(float tint) {
     Color c = WATER_BLOOD;
     c.a = (unsigned char)(std::min(1.0f, tint) * WATER_TINT_ALPHA);
-    DrawRectangle(x, y, CELL_PX, CELL_PX, c);
+    return c;
 }
+
+void drawWaterTint(int x, int y, float tint) { DrawRectangle(x, y, CELL_PX, CELL_PX, waterBloodCloud(tint)); }
 
 void drawStain(int x, int y, const Stain& stain, float brightness) {
     Color c{mix(BLOOD_DRY.r, BLOOD_WET.r, stain.wet, brightness), mix(BLOOD_DRY.g, BLOOD_WET.g, stain.wet, brightness),

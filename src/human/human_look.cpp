@@ -135,6 +135,14 @@ SpriteFrame HumanLook::curl(int frame, bool carrying) const {
     return draw({.front = Arm::Pillow, .curl = true, .breathe = frame == 1, .carry = carrying, .eyesShut = frame != 2});
 }
 
+SpriteFrame HumanLook::sip() const { return draw({.front = Arm::Sip}); }
+
+SpriteFrame HumanLook::fill() const { return draw({.front = Arm::Fill, .kneel = true}); }
+
+SpriteFrame HumanLook::pour() const { return draw({.front = Arm::Pour}); }
+
+SpriteFrame HumanLook::offerBottle() const { return draw({.front = Arm::OfferBottle}); }
+
 // Built from the feet up, so short legs and torsos leave empty rows on top.
 SpriteFrame HumanLook::draw(const Stance& s) const {
     Paper p;
@@ -342,6 +350,33 @@ SpriteFrame HumanLook::draw(const Stance& s) const {
                 armPx(side, x + 1, shoulder - 2, 2, true);
                 if (s.carry) cake(x + 1, shoulder);
                 break;
+            case Arm::Sip:
+                // Up to the face, the bottle on its side above the hand,
+                // its neck at the mouth.
+                armPx(side, x, shoulder, 0, false);
+                armPx(side, x + 1, shoulder - 1, 1, false);
+                armPx(side, x + 1, shoulder - 2, 2, true);
+                p.f.hand = {int8_t(CX + 6), int8_t(shoulder - 3), BottleTurn::Back};
+                break;
+            case Arm::Fill:
+                // Reaching down ahead, the bottle in the water.
+                armPx(side, x, shoulder, 0, false);
+                armPx(side, x + 1, shoulder + 1, 1, false);
+                armPx(side, x + 2, shoulder + 2, 2, true);
+                p.f.hand = {int8_t(x + 3), int8_t(shoulder + 2), BottleTurn::Ahead};
+                break;
+            case Arm::Pour:
+                armPx(side, x, shoulder, 0, false);
+                armPx(side, x + 1, shoulder, 1, false);
+                armPx(side, x + 2, shoulder, 2, true);
+                p.f.hand = {int8_t(x + 2), int8_t(shoulder - 2), BottleTurn::Down};
+                break;
+            case Arm::OfferBottle:
+                armPx(side, x, shoulder, 0, false);
+                armPx(side, x + 1, shoulder, 1, false);
+                armPx(side, x + 2, shoulder, 2, true);
+                p.f.hand = {int8_t(x + 2), int8_t(shoulder - 1), BottleTurn::Up};
+                break;
             case Arm::Swing:
                 break;
             }
@@ -355,6 +390,8 @@ SpriteFrame HumanLook::draw(const Stance& s) const {
                 for (int y = shoulder; y <= torsoBottom + 1; y++) armPx(side, x, y, y - shoulder, false);
                 armPx(side, x - 1, feet, 0, true);
                 if (s.carry) cake(x - 3, feet - 1);
+                // Out of the back pocket, standing on the floor behind.
+                p.f.pocket = {int8_t(tl), int8_t(feet), BottleTurn::Up};
             } else {
                 // Reaching to the raised knee, the hand on top of it.
                 for (int y = shoulder; y < torsoBottom; y++) armPx(side, x, y, y - shoulder, false);
@@ -366,6 +403,8 @@ SpriteFrame HumanLook::draw(const Stance& s) const {
         int swing = side == 0 ? stride : -stride;
         int hand = torsoBottom + 1 - (swing > 0 ? 1 : 0);
         for (int y = shoulder; y <= hand; y++) armPx(side, x, y, y - shoulder, y == hand);
+        // Out of the back pocket, behind the hip.
+        if (side == 0) p.f.pocket = {int8_t(tl - 1), int8_t(legTop + 1), BottleTurn::Up};
         // Carried at the side, behind the hand.
         if (side == 0 && s.carry) cake(x - 2, hand - 1);
     }

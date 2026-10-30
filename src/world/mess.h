@@ -5,9 +5,10 @@
 #include <unordered_map>
 #include <vector>
 
-/// Piss and feces, as each was left: where, how much, when and by whom; and
-/// the prints of feet that stepped in fresh feces.
-enum class MessKind : uint8_t { Piss, Feces, Print };
+/// Piss and feces, as each was left: where, how much, when and by whom; the
+/// prints of feet that stepped in fresh feces; and water poured out of a
+/// bottle, which dries to nothing.
+enum class MessKind : uint8_t { Piss, Feces, Print, Water };
 
 struct Dropping {
     MessKind kind;
@@ -21,16 +22,21 @@ struct Dropping {
     int who;
     /// Keeps its shape its own.
     uint32_t seed;
+    /// Poured water: as foul and as red as it was in the bottle.
+    float foul = 0.0f, red = 0.0f;
 };
 
 /// Everything humans have left behind. Nothing clears it: it dries where it
 /// lies, slowly, feces darker and duller, piss fainter, and both grow less
-/// disgusting as they dry, but stay for good, as blood does. Feces are more
+/// disgusting as they dry, but stay for good, as blood does. Poured water
+/// alone dries to nothing, and only disgusts as far as it was foul. Feces are more
 /// disgusting than piss, wet or dry. What goes into water, washed off or
 /// left straight in it, fouls the water instead, which clears in time.
 class Mess {
 public:
     void drop(MessKind kind, Vec2i cell, float x, float y, float size, float born, int who, uint32_t seed);
+    /// Water poured out of a bottle, this foul and red.
+    void pour(Vec2i cell, float x, float y, float size, float born, int who, uint32_t seed, float foul, float red);
 
     const std::vector<Dropping>& all() const { return all_; }
     /// What lies on a cell, as indexes into all(); nothing if none.

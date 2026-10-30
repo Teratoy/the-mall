@@ -145,6 +145,8 @@ Checks guardedWater(Stage& s, bool strangerHasCake, Checks expect) {
     P::settle(settler, s.freeNear(*b, 1));
     Human& stranger = s.add(seedWhere(plain, 4000), 3);
     stranger.thirst = 0.7f;
+    // An empty bottle, so it needs the settler's water.
+    stranger.bottles = {Bottle{}};
     stranger.cakes = strangerHasCake ? 1 : 0;
     settler.hunger = stranger.hunger = 0.1f;
     settler.thirst = 0.1f;
@@ -198,6 +200,70 @@ void hearCry(Stage& s, Human& caller, std::vector<Human*> hearers) {
 }
 /// Caring about who is shut in: neither greedy nor erratic.
 bool caring(const Traits& t) { return kindly(t) && t.greedy <= 0.4f; }
+
+/// Some line in someone's log starting with from and ending with to.
+Check loggedLike(std::string from, std::string to) {
+    return {from + "..." + to, [from, to](const Stage& s) {
+                for (const auto& h : s.world.humans())
+                    for (const auto& e : h->log.entries())
+                        if (e.what.rfind(from, 0) == 0 && e.what.size() >= to.size() &&
+                            e.what.compare(e.what.size() - to.size(), to.size(), to) == 0)
+                            return true;
+                return false;
+            }};
+}
+
+/// A hoarder's stash of cakes near the spawn, known to another human for
+/// the hoarder's, with the hoarder this far off (beside it at 1); the other
+/// human that hungry, with no cakes.
+struct StashScene {
+    Human* owner;
+    Human* other;
+    Vec2i at;
+};
+StashScene stashScene(Stage& s, int ownerFar, float hunger, uint64_t otherSeed, int cakes = 5) {
+    Human& owner = s.first();
+    P::clearChunk(s.world, owner.cell);
+    Vec2i at = s.freeNear(owner.cell, 3);
+    s.world.putDown(at, cakes, {});
+    P::ownStash(s.world, owner, at);
+    if (ownerFar > 1) P::place(s.world, owner, s.farFrom(at, ownerFar));
+    else {
+        // Beside it, it stays: it has made its home there.
+        P::place(s.world, owner, s.freeNear(at, 1));
+        P::settle(owner, owner.cell);
+    }
+    Human& other = P::addHuman(s.world, HumanLook::random(s.rng), s.freeNear(at, 2), otherSeed);
+    s.humans.push_back(&other);
+    P::knowStash(s.world, other, at, owner);
+    other.cakes = 0;
+    other.hunger = hunger;
+    owner.cakes = 1;
+    owner.hunger = 0.1f;
+    owner.thirst = other.thirst = 0.1f;
+    return {&owner, &other, at};
+}
+
+/// A thirsty asker with an empty bottle (or none) close to a holder with
+/// water, both far from the spawn basin, so the asker knows of no water.
+/// The asker is timid, so it asks rather than fights; the holder has made
+/// its home where it stands, so it stays about.
+Checks askForWater(Stage& s, Checks expect, const std::function<void(Human& holder, Human& asker)>& setUp) {
+    Human& holder = s.first();
+    auto b = s.basin();
+    if (!b) return {{"a basin near the spawn", [](const Stage&) { return false; }}};
+    P::place(s.world, holder, s.farFrom(*b, 25));
+    P::settle(holder, holder.cell);
+    Human& asker = s.add(seedWhere([](const Traits& t) { return t.sociable >= 0.55f && t.brave < 0.3f; }, 11000), 1);
+    holder.hunger = asker.hunger = 0.1f;
+    holder.thirst = 0.1f;
+    asker.thirst = 0.7f;
+    asker.bottles = {Bottle{}};
+    asker.cakes = 0;
+    setUp(holder, asker);
+    s.run(100);
+    return expect;
+}
 
 const std::vector<Scenario> SCENARIOS = {
     {"share", "a friend with cakes to spare feeds a starving friend", 99,
@@ -262,6 +328,9 @@ const std::vector<Scenario> SCENARIOS = {
          Human& victim = s.add(seedWhere(plain, 5000));
          setUpLie(s, liar, victim);
          victim.thirst = 0.7f;
+         // Nothing to drink on either, nor to fight over.
+         victim.bottles = {Bottle{}};
+         liar.bottles.clear();
          s.run(60);
          return Checks{logged({"TOLD @ A WAY TO WATER OVER SPIKES"}), straightFace(liar)};
      }},
@@ -518,6 +587,252 @@ const std::vector<Scenario> SCENARIOS = {
          P::bloody(killer);
          s.run(30);
          return Checks{logged({"@ MUST HAVE KILLED #"}), logged({"WENT FOR @ FOR WHAT THEY DID"})};
+     }},
+    {"bottle-pour", "a bottle of foul water is poured out at the basin and filled with clean", 99,
+     [](Stage& s) {
+         Human& h = s.first();
+         auto b = s.basin();
+         if (!b) return Checks{{"a basin near the spawn", [](const Stage&) { return false; }}};
+         h.bottles = {Bottle{0.4f, 0.6f, 0.0f}};
+         h.hunger = h.thirst = h.tiredness = 0.1f;
+         s.run(90);
+         return Checks{logged({"POURED OUT MY BOTTLE. IT WAS FOUL"}), logged({"FILLED MY BOTTLE"})};
+     }},
+    {"bottle-give", "a friend asked for water pours some into the asker's bottle", seedWhere(kindly, 12000),
+     [](Stage& s) {
+         return askForWater(s, {logged({"ASKED @ FOR WATER"}), logged({"GAVE @ SOME WATER"}), logged({"@ GAVE ME SOME WATER"})},
+                            [](Human& holder, Human& asker) {
+                                P::setTrust(holder, asker, 0.6f);
+                                P::setTrust(asker, holder, 0.6f);
+                            });
+     }},
+    {"bottle-spare", "a friend hands its spare bottle to a thirsty friend with none", seedWhere(kindly, 12500),
+     [](Stage& s) {
+         return askForWater(s, {logged({"GAVE @ A BOTTLE"}), logged({"@ GAVE ME A BOTTLE"})}, [](Human& holder, Human& asker) {
+             P::setTrust(holder, asker, 0.6f);
+             P::setTrust(asker, holder, 0.6f);
+             // The spare under half full: not worth stashing.
+             holder.bottles = {Bottle{1.0f}, Bottle{0.45f}};
+             asker.bottles.clear();
+         });
+     }},
+    {"bottle-sell", "a grasping stranger asked for water sells it for a cake",
+     seedWhere([](const Traits& t) { return t.greedy >= 0.55f && t.sociable < 0.4f && t.brave < 0.4f; }, 13000),
+     [](Stage& s) {
+         return askForWater(s, {logged({"SOLD @ SOME WATER FOR A CAKE"}), logged({"BOUGHT SOME WATER FROM @ FOR A CAKE"})},
+                            [](Human&, Human& asker) { asker.cakes = 1; });
+     }},
+    {"bottle-lie", "a cunning stranger says its bottle is empty, and is seen through",
+     seedWhere([](const Traits& t) { return cunning(t) && t.sociable < 0.4f; }, 14000),
+     [](Stage& s) {
+         return askForWater(s, {logged({"TOLD @ MY BOTTLE WAS EMPTY"}), logged({"@ SAID THEIR BOTTLE WAS EMPTY. IT WASN'T"})},
+                            [](Human&, Human&) {});
+     }},
+    {"bottle-refuse", "a stingy stranger won't give any of its water",
+     seedWhere([](const Traits& t) { return t.greedy < 0.35f && t.sociable < 0.4f && t.brave < 0.3f; }, 15000),
+     [](Stage& s) {
+         return askForWater(s, {logged({"WOULDN'T GIVE @ WATER"}), logged({"@ WOULDN'T GIVE ME WATER"})},
+                            [](Human&, Human&) {});
+     }},
+    {"bottle-snatch", "a bold, thirsty human with nothing to drink takes a foe's bottle in a fight", 99,
+     [](Stage& s) {
+         Human& holder = s.first();
+         auto b = s.basin();
+         if (!b) return Checks{{"a basin near the spawn", [](const Stage&) { return false; }}};
+         P::place(s.world, holder, s.farFrom(*b, 25));
+         Human& thief = s.add(seedWhere([](const Traits& t) { return t.brave >= 0.7f; }, 16000), 2);
+         P::setTrust(thief, holder, -0.6f);
+         holder.hunger = thief.hunger = 0.1f;
+         holder.thirst = 0.1f;
+         thief.thirst = 0.75f;
+         thief.bottles = {Bottle{}};
+         s.run(60);
+         return Checks{logged({"HIT @ AND TOOK THEIR BOTTLE"}), logged({"@ HIT ME AND TOOK MY BOTTLE"})};
+     }},
+    {"pile-cakes", "a hungry human with no cakes picks up cakes lying on the floor", 99,
+     [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         s.world.putDown(s.freeNear(h.cell, 3), 3, {});
+         h.cakes = 0;
+         h.hunger = 0.7f;
+         h.thirst = 0.1f;
+         s.run(40);
+         return Checks{loggedLike("PICKED UP", "CAKES LYING THERE")};
+     }},
+    {"pile-water", "a thirsty human with an empty bottle picks up a full one lying there", 99,
+     [](Stage& s) {
+         Human& h = s.first();
+         auto b = s.basin();
+         if (!b) return Checks{{"a basin near the spawn", [](const Stage&) { return false; }}};
+         P::place(s.world, h, s.farFrom(*b, 25));
+         s.world.putDown(s.freeNear(h.cell, 2), 0, {Bottle{1.0f}});
+         h.bottles = {Bottle{}};
+         h.hunger = 0.1f;
+         h.thirst = 0.7f;
+         s.run(40);
+         return Checks{logged({"PICKED UP A BOTTLE LYING THERE"}), logged({"DRANK FROM MY BOTTLE"})};
+     }},
+    {"put-down", "a human kneels and puts cakes and a bottle down", 99,
+     [](Stage& s) {
+         Human& h = s.first();
+         h.cakes = 2;
+         h.bottles = {Bottle{1.0f}, Bottle{0.5f}};
+         h.hunger = h.thirst = 0.1f;
+         s.run(8);
+         P::putDown(h, 2, {1});
+         s.run(5);
+         return Checks{logged({"PUT DOWN 2 CAKES AND A BOTTLE"})};
+     }},
+    {"stash", "a grasping loner with full pockets stashes the cakes it can't carry",
+     seedWhere([](const Traits& t) { return t.greedy >= 0.8f && t.sociable <= 0.3f; }),
+     [](Stage& s) {
+         Human& h = s.first();
+         P::knowChunk(s.world, h, true);
+         h.cakes = h.carryMax();
+         h.hunger = h.thirst = h.tiredness = 0.1f;
+         s.run(120);
+         return Checks{logged({"MADE A STASH"}), loggedLike("STASHED", "")};
+     }},
+    {"from-stash", "a hoarder, hungry with no cakes on it, eats from its stash", 99,
+     [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         Vec2i at = s.freeNear(h.cell, 4);
+         s.world.putDown(at, 3, {});
+         P::ownStash(s.world, h, at);
+         h.cakes = 0;
+         h.hunger = 0.7f;
+         h.thirst = 0.1f;
+         s.run(40);
+         return Checks{logged({"TOOK A CAKE FROM MY STASH"}), logged({"ATE A CAKE"})};
+     }},
+    {"stash-seen", "a hungry stranger sees a hoarder stash cakes and leaves them be", 99,
+     [](Stage& s) {
+         Human& owner = s.first();
+         P::clearChunk(s.world, owner.cell);
+         Human& other = s.add(seedWhere(plain, 17000), 3);
+         owner.cakes = 4;
+         owner.hunger = owner.thirst = other.thirst = 0.1f;
+         other.hunger = 0.6f;
+         other.cakes = 0;
+         s.run(10);
+         P::stashHere(owner);
+         s.run(40);
+         return Checks{logged({"SAW @ STASH THINGS"}),
+                       {"nobody else picked it up", [](const Stage& st) {
+                            return !st.logged("PICKED UP 3 CAKES LYING THERE") && !st.logged("PICKED UP 2 CAKES LYING THERE") &&
+                                   !st.logged("PICKED UP A CAKE LYING THERE");
+                        }}};
+     }},
+    {"stash-robbed", "a stash is picked over while its owner is away, who finds it short and moves the rest", 99,
+     [](Stage& s) {
+         Human& owner = s.first();
+         P::clearChunk(s.world, owner.cell);
+         P::knowChunk(s.world, owner);
+         Vec2i at = s.freeNear(owner.cell, 3);
+         s.world.putDown(at, 6, {});
+         P::ownStash(s.world, owner, at);
+         P::place(s.world, owner, s.farFrom(at, 18));
+         Human& other = P::addHuman(s.world, HumanLook::random(s.rng), s.freeNear(at, 1), seedWhere(plain, 18000));
+         s.humans.push_back(&other);
+         other.cakes = 0;
+         other.hunger = 0.6f;
+         owner.cakes = 0;
+         owner.hunger = 0.45f;
+         owner.thirst = other.thirst = 0.1f;
+         s.run(90);
+         return Checks{logged({"SOMEONE TOOK FROM MY STASH"}), loggedLike("TOOK", "FROM MY STASH TO MOVE IT")};
+     }},
+    {"steal-stash", "a hungry human steals from a stash it knows is someone's, out of their sight", 99,
+     [](Stage& s) {
+         stashScene(s, 20, 0.7f, seedWhere([](const Traits& t) { return t.greedy >= 0.4f && t.brave >= 0.4f; }, 19000));
+         s.run(60);
+         return Checks{loggedLike("TOOK", "FROM @'S STASH")};
+     }},
+    {"caught-stealing", "a starving human steals from a stash under its owner's eyes, who goes for it", 99,
+     [](Stage& s) {
+         stashScene(s, 1, 0.92f, seedWhere(plain, 19500));
+         s.run(40);
+         return Checks{loggedLike("TOOK", "FROM @'S STASH"), logged({"@ TOOK FROM MY STASH"})};
+     }},
+    {"resent", "a hungry human with nothing sees a big stash and resents its owner", 99,
+     [](Stage& s) {
+         // A timid, honest one, so it resents rather than steals.
+         stashScene(s, 20, 0.7f, seedWhere([](const Traits& t) { return t.greedy < 0.3f && t.brave < 0.3f; }, 20000), 6);
+         s.run(30);
+         return Checks{logged({"@ HOARDS WHILE I GO WITHOUT"})};
+     }},
+    {"tell-stash", "a friend tells a hungry friend where someone's stash is", 99,
+     [](Stage& s) {
+         StashScene sc = stashScene(s, 25, 0.1f, seedWhere(kindly, 21000));
+         Human& hungry = P::addHuman(s.world, HumanLook::random(s.rng), s.freeNear(sc.other->cell, 2), seedWhere(kindly, 21500));
+         s.humans.push_back(&hungry);
+         P::setTrust(*sc.other, hungry, 0.6f);
+         P::setTrust(hungry, *sc.other, 0.6f);
+         hungry.hunger = 0.6f;
+         hungry.cakes = 0;
+         hungry.thirst = 0.1f;
+         s.run(40);
+         return Checks{logged({"TOLD @ WHERE A STASH IS"}), logged({"@ TOLD ME WHERE A STASH IS"})};
+     }},
+    {"stash-overheard", "a hoarder overhears its stash told of, and means to move it", 99,
+     [](Stage& s) {
+         StashScene sc = stashScene(s, 1, 0.1f, seedWhere(kindly, 21000));
+         Human& friendOf = P::addHuman(s.world, HumanLook::random(s.rng), s.freeNear(sc.other->cell, 1), seedWhere(kindly, 21500));
+         s.humans.push_back(&friendOf);
+         friendOf.hunger = friendOf.thirst = 0.1f;
+         // All three keep to where they are; the friend already knows the
+         // stash is the owner's, so it leaves it be. The owner minds the
+         // telling all the same.
+         P::settle(*sc.other, sc.other->cell);
+         P::settle(friendOf, friendOf.cell);
+         P::knowStash(s.world, friendOf, sc.at, *sc.owner);
+         s.run(12);
+         P::tellStash(*sc.other, friendOf, sc.at, *sc.owner);
+         s.run(15);
+         return Checks{logged({"@ TOLD # ABOUT MY STASH"})};
+     }},
+    {"lie-stash", "a cunning human sets a hungry foe on the stash of someone it dislikes", seedWhere(cunning),
+     [](Stage& s) {
+         Human& liar = s.first();
+         P::clearChunk(s.world, liar.cell);
+         Human& owner = s.add(seedWhere(plain, 22000), 25);
+         Vec2i at = s.freeNear(owner.cell, 2);
+         s.world.putDown(at, 4, {});
+         P::ownStash(s.world, owner, at);
+         P::knowStash(s.world, liar, at, owner);
+         P::setTrust(liar, owner, -0.3f);
+         Human& victim = s.add(seedWhere(plain, 22500));
+         setUpLie(s, liar, victim);
+         victim.hunger = 0.7f;
+         victim.cakes = 0;
+         s.run(60);
+         return Checks{logged({"SET @ ON #'S STASH"}), logged({"@ TOLD ME WHERE A STASH IS"})};
+     }},
+    {"false-stash", "with no bare table to send it to, a cunning human tells a hungry foe of a stash that isn't there",
+     seedWhere(cunning),
+     [](Stage& s) {
+         Human& liar = s.first();
+         // A cake on every table, and the liar knows it: no false cake tip.
+         for (const Table& t : s.world.tables())
+             if (World::slotOf(t.at) == World::slotOf(liar.cell)) P::addCake(s.world, t.at);
+         P::knowChunk(s.world, liar, true);
+         Human& victim = s.add(seedWhere(plain, 23000));
+         setUpLie(s, liar, victim);
+         victim.hunger = 0.7f;
+         victim.cakes = 0;
+         s.run(150);
+         return Checks{logged({"TOLD @ OF A STASH THAT ISN'T THERE"}), logged({"@ TOLD ME WHERE A STASH IS"})};
+     }},
+    {"deny-stash", "a hoarder denies its stash to a wary stranger who saw it made, and is seen through",
+     seedWhere([](const Traits& t) { return t.greedy >= 0.8f && t.sociable <= 0.3f; }),
+     [](Stage& s) {
+         StashScene sc = stashScene(s, 1, 0.1f, seedWhere(plain, 24000));
+         P::sawStashMade(s.world, *sc.other, sc.at, *sc.owner);
+         P::setTrust(*sc.other, *sc.owner, -0.2f);
+         s.run(60);
+         return Checks{logged({"TOLD @ THE STASH ISN'T MINE"}), logged({"@ DENIED THEIR STASH. I SAW THEM MAKE IT"})};
      }},
     {"chat", "two calm acquaintances together start chatting", 99,
      [](Stage& s) {

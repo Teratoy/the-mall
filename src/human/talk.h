@@ -99,6 +99,31 @@ enum class Moment {
     // hearing it from inside (to nobody); off for a key to let them out (to
     // nobody); giving up on finding them (to nobody, about them).
     TellShutIn, CallBack, HeardBack, KeyForShutIn, LostShutIn,
+    // Bottles: drinking from it, running it dry, filling it, pouring it out
+    // (all to nobody); asking someone for a drink (to them), and their
+    // answer: pouring some, for a cake, lying that it's empty, refusing;
+    // the asker seeing through the lie (to them); a bottle snatched in a
+    // fight (to whoever took it).
+    Sip, BottleDry, FillBottle, PourOut, AskDrink, GiveDrink, SellDrink, BottleLie, CaughtBottleLie, RefuseDrink,
+    BottleTaken,
+    // Putting things down on the floor, and picking up what lies there
+    // (both to nobody).
+    PutDown, PickUp,
+    // Stashing things in a stash of its own, and taking from it (both to
+    // nobody).
+    StashIt, FromStash,
+    // Seeing someone stash things (to nobody, about them); finding its own
+    // stash short (to nobody, about whom it blames).
+    SawStash, StashRobbed,
+    // Stealing from someone's stash (to nobody, about them); catching a
+    // thief at its stash (to them); resenting a hoarder (to nobody, about
+    // them).
+    StealStash, CaughtStealing, Resent,
+    // A stash at a greeting: told, sold, lied about (all to the one told);
+    // its owner overhearing (to the teller); asking someone if a stash is
+    // theirs (to them), and their answer: owning up, denying it; a denial
+    // seen through (to the denier).
+    TellStash, SellStash, LieStash, StashTold, AskStash, OwnStash, DenyStash, CaughtDenying,
     Count
 };
 

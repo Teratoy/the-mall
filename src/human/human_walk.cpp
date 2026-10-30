@@ -144,7 +144,7 @@ void Human::move(World& world, Vec2i next) {
     if (goal == Goal::Feed && !wouldEat(mind_.meal)) rethink_ = true;
     // They move too; keep the plan fresh.
     if (goal == Goal::Meet || goal == Goal::Follow || goal == Goal::Company || goal == Goal::Fight ||
-        goal == Goal::Share)
+        goal == Goal::Share || goal == Goal::Ask)
         rethink_ = true;
 }
 
@@ -187,6 +187,15 @@ void Human::arrive(World& world) {
         return choose(world);
     case Goal::Drink:
         if (seekWater(world)) return;
+        return choose(world);
+    case Goal::Fill:
+        if (auto w = waterBeside(cell); w && startFilling(world, *w)) return;
+        return choose(world);
+    case Goal::Ask:
+    case Goal::Pick:
+        return choose(world);
+    case Goal::Stash:
+        if (stashHere()) return;
         return choose(world);
     case Goal::Relieve:
         if (seekRelief(world)) return;

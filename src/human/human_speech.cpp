@@ -60,7 +60,9 @@ void Human::speak(World& world, float dt) {
         bool cry = talk::isCry(s.moment);
         const Human* to = s.to >= 0 ? &world.human(s.to) : nullptr;
         bool gone = to && (to->dead() || cheb(cell, to->cell) > HEAR_RADIUS || !sight.sees(to->cell));
-        float patience = cry ? CRY_PATIENCE : s.tell || s.intro ? WORD_PATIENCE : SPEECH_PATIENCE;
+        // Asking for a drink waits as long as word does: it is waited on.
+        bool word = s.tell || s.intro || s.moment == talk::Moment::AskDrink;
+        float patience = cry ? CRY_PATIENCE : word ? WORD_PATIENCE : SPEECH_PATIENCE;
         if (gone || s.waited > patience) {
             if (s.awaited) awaiting_ = false;
             voice_.sayings.erase(voice_.sayings.begin());
@@ -142,9 +144,13 @@ void Human::say(World& world, const Saying& s) {
     if (said && to && s.moment == talk::Moment::Join) to->sayLater(talk::Moment::JoinReply, id);
     // Asked the way out, the other answers.
     if (said && to && s.moment == talk::Moment::AskWay) to->answerWay(*this);
+    // Asked for a drink, worded or not, the other answers (human_bottle.cpp).
+    if (to && s.moment == talk::Moment::AskDrink) to->answerDrink(world, *this);
     // What it tells lands now, worded or not.
     if (to && s.intro) giveName(*to);
     if (to && s.tell) deliver(*to, *s.tell);
+    // Its owner, hearing a stash told of, means to move it (human_stash.cpp).
+    if (to && s.tell && s.tell->kind == Tell::Kind::Stash && s.tell->owner >= 0) stashToldOf(world, *s.tell, *to);
 }
 
 void Human::hear(World&, Human& s, const talk::Said& said, Human* to, const Human* about) {
