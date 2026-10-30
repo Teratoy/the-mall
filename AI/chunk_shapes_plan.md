@@ -32,8 +32,8 @@ chunk's kind.
   kinds and shaped outlines.
 - Odd footprints go **up to 4 slots**: L of 3, and L, T, S/Z of 4.
 - **4x1 and 1x4 are in, but rare** (weight 0.3).
-- Odd footprints get **only the kinds that fit the shape**. Rooms, maze
-  and water maze work on any outline. Plaza stays square only. The mall
+- Odd footprints get **only the kinds that fit the shape**. Rooms work
+  on any outline (mazes were first allowed too, then ruled out below). Plaza stays square only. The mall
   wing's street follows the bends of the L or T.
 - New kinds: **mall wing, food court, parking/service, atrium/gallery**.
 - Outlines: **ring/donut, cross/plus, diagonal band, islands**.
@@ -49,8 +49,8 @@ chunk's kind.
 - **Districts** are part of this plan, as its last step (step 11).
 - (Later the same day) **No mazes on bigger shapes**: neither maze nor
   water maze on a chunk of 3 slots or more (`MAZE_SLOTS_MAX = 2`). Big
-  rectangles are room networks, or plazas when square. Whether this also
-  holds for L, T, S/Z (3 and 4 slots) is open question 1.
+  rectangles are room networks, or plazas when square. It holds for L, T
+  and S/Z too (user, answering question 1): odd shapes are never mazes.
 
 ## How a chunk's footprint works now
 
@@ -166,8 +166,8 @@ tries every placement of every size that covers the entered slot with
 all slots free. It now does the same for each turn of each shape.
 
 ### Which kinds
-- Rooms on any footprint; maze and water maze only up to 2 slots, unless
-  the user decides otherwise for odd shapes (question 1). Rooms are placed only where
+- Rooms on any footprint. Never maze or water maze, as every odd shape
+  has 3 slots or more (user). Rooms are placed only where
   their whole box is owned. Corridors that would cross an unowned slot
   stop at the Void, and `connectRegions` joins the rest.
 - Plaza: square rectangles only, as now.
@@ -306,8 +306,8 @@ Draft weights per footprint. 0 means the kind doesn't fit there.
 | kind | 1x1 | 2x1/3x1/4x1 | 2x2 | 3x3 | L/T/S |
 |---|---|---|---|---|---|
 | Rooms | .35 | .25 | .30 | .25 | .35 |
-| Maze | .20 | .15 (2x1 only) | .15 | 0 | 0? |
-| Water maze | .10 | .08 (2x1 only) | .08 | 0 | 0? |
+| Maze | .20 | .15 (2x1 only) | .15 | 0 | 0 |
+| Water maze | .10 | .08 (2x1 only) | .08 | 0 | 0 |
 | Plaza | .12 | 0 | .10 | .10 | 0 |
 | Mall wing | 0 | .30 | .10 | .10 | .15 |
 | Food court | .10 | .07 | .12 | .10 | .05 |
@@ -319,7 +319,7 @@ Draft weights per footprint. 0 means the kind doesn't fit there.
 1. Footprint foundation. `make check` unchanged. Commit.
 2. Genprobe tool (step 9), against today's chunks, as the baseline.
 3. Bigger rectangles. Time 3x3 generation. `make golden`.
-4. Odd footprints with rooms, maze, water maze. Probe, shots, golden.
+4. Odd footprints with rooms (no mazes). Probe, shots, golden.
 5. Outlines on rooms and maze.
 6. Mall wing.
 7. Parking/service.
@@ -334,9 +334,7 @@ for new stuck humans or blocks before `make golden`.
 
 ## Open questions
 
-1. **Mazes on L, T, S/Z?** They have 3 or 4 slots, so the "no mazes on
-   bigger shapes" rule would keep mazes off them too. Is that meant, or
-   should odd shapes still get mazes?
+1. ~~Mazes on L, T, S/Z?~~ Answered: no mazes on them.
 2. **Plazas on 3x3?** A 3x3 plaza is one disc 300 cells across, mostly
    bare round a small fountain. Keep it, keep plazas to 1x1 and 2x2, or
    fill big plazas with more (several fountains, planters, columns)?
