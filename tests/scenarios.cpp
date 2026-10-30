@@ -28,14 +28,21 @@ uint64_t seedWhere(const std::function<bool(const Traits&)>& like, uint64_t from
         if (like(Traits::random(s))) return s;
 }
 
-/// A fresh world with its spawn room, and room to place more humans.
+/// A fresh world with its spawn room, and room to place more humans. Unless
+/// it is set as in play (asInPlay), nothing lies on the floor and everyone
+/// is handed a full bottle, as they all woke with one before bottles were
+/// found lying.
 struct Stage {
     World world;
     Rng rng;
     std::vector<Human*> humans;
+    bool asInPlay;
 
-    explicit Stage(uint64_t seed, uint64_t first) : world(seed), rng(seed) {
+    explicit Stage(uint64_t seed, uint64_t first, bool asInPlay) : world(seed), rng(seed), asInPlay(asInPlay) {
         humans.push_back(&world.makeSpawn(HumanLook::random(rng), first));
+        if (asInPlay) return;
+        P::clearPiles(world, *humans[0]);
+        humans[0]->bottles = {Bottle{1.0f}};
     }
     Human& first() { return *humans[0]; }
     const Human& first() const { return *humans[0]; }
@@ -68,6 +75,7 @@ struct Stage {
     }
     Human& add(uint64_t seed, int gap = 2) {
         Human& h = P::addHuman(world, HumanLook::random(rng), freeNear(first().cell, gap), seed);
+        if (!asInPlay) h.bottles = {Bottle{1.0f}};
         humans.push_back(&h);
         return h;
     }
@@ -128,6 +136,8 @@ struct Scenario {
     std::function<Checks(Stage&)> play;
     /// Known not to happen yet, and why: reported, but doesn't fail the run.
     const char* known = nullptr;
+    /// Starts as in play: a bottle lying near the first human, none in hand.
+    bool asInPlay = false;
 };
 
 // Traits a scenario asks for. Seeds are searched from different starts so
@@ -367,6 +377,37 @@ Checks askForWater(Stage& s, Checks expect, const std::function<void(Human& hold
     asker.cakes = 0;
     setUp(holder, asker);
     s.run(100);
+    return expect;
+}
+
+/// The first human wakes as in play and finds its bottle; a thirsty stranger
+/// with none comes to beside it and takes it. Later thirsty, the first goes
+/// back for it and finds it gone: a loss, or (hard, having learnt the thirst
+/// lesson) a theft.
+Checks bottleTaken(Stage& s, bool hard) {
+    Human& h = s.first();
+    h.hunger = h.thirst = 0.1f;
+    if (hard) h.lessons.nearWater = 1.0f;
+    s.run(8);
+    auto at = P::foundBottle(h);
+    if (!at) return {loggedBy(h, "FOUND A BOTTLE LYING THERE")};
+    Human& taker = P::addHuman(s.world, HumanLook::random(s.rng), s.freeNear(*at, 1),
+                               seedWhere([](const Traits& t) { return t.brave >= 0.4f; }, 21000));
+    s.humans.push_back(&taker);
+    taker.hunger = 0.1f;
+    taker.thirst = 0.7f;
+    s.run(20);
+    h.thirst = 0.7f;
+    s.run(40);
+    Checks expect{loggedBy(h, "FOUND A BOTTLE LYING THERE"), loggedBy(taker, "PICKED UP A BOTTLE LYING THERE")};
+    if (hard) {
+        expect.push_back(loggedBy(h, "SOMEONE TOOK MY BOTTLE"));
+        expect.push_back(loggedBy(h, "@ MUST HAVE TAKEN IT"));
+        expect.push_back(loggedBy(h, "MY BOTTLE IS GONE", false));
+    } else {
+        expect.push_back(loggedBy(h, "MY BOTTLE IS GONE"));
+        expect.push_back(loggedBy(h, "SOMEONE TOOK MY BOTTLE", false));
+    }
     return expect;
 }
 
@@ -868,6 +909,65 @@ const std::vector<Scenario> SCENARIOS = {
          s.run(60);
          return Checks{logged({"HIT @ AND TOOK THEIR BOTTLE"}), logged({"@ HIT ME AND TOOK MY BOTTLE"})};
      }},
+    {"wake-bottle", "a human wakes near a bottle, notes it, leaves it, and goes back for it once thirsty", 99,
+     [](Stage& s) {
+         Human& h = s.first();
+         h.hunger = h.thirst = 0.1f;
+         s.run(12);
+         auto at = P::foundBottle(h);
+         bool leftIt = h.bottles.empty();
+         if (!at) return Checks{loggedBy(h, "FOUND A BOTTLE LYING THERE")};
+         // Walked off a way, then thirsty.
+         P::place(s.world, h, s.farFrom(*at, 10));
+         h.thirst = 0.7f;
+         s.run(40);
+         return Checks{loggedBy(h, "FOUND A BOTTLE LYING THERE"),
+                       {"left it lying while not thirsty", [leftIt](const Stage&) { return leftIt; }},
+                       loggedBy(h, "PICKED UP A BOTTLE LYING THERE"), loggedBy(h, "DRANK FROM MY BOTTLE")};
+     },
+     nullptr, true},
+    {"bottle-gone", "a stranger takes the bottle a human found and left; it finds it gone, a loss", 99,
+     [](Stage& s) { return bottleTaken(s, false); }, nullptr, true},
+    {"bottle-stolen", "the same, once it has learnt the thirst lesson: stolen, and it blames the stranger", 99,
+     [](Stage& s) { return bottleTaken(s, true); }, nullptr, true},
+    {"scarce-once", "its bottle runs dry, then it fills it: water is scarce, said once only", 99,
+     [](Stage& s) {
+         Human& h = s.first();
+         auto b = s.basin();
+         if (!b) return Checks{{"a basin near the spawn", [](const Stage&) { return false; }}};
+         P::place(s.world, h, s.farFrom(*b, 20));
+         h.bottles = {Bottle{0.3f}};
+         h.hunger = 0.1f;
+         h.thirst = 0.75f;
+         s.run(90);
+         const Human* who = &h;
+         return Checks{loggedBy(h, "MY BOTTLE RAN DRY"), loggedBy(h, "FILLED MY BOTTLE"),
+                       {"#0 WATER IS SCARCE once", [who](const Stage&) {
+                            int n = 0;
+                            for (const auto& e : who->log.entries())
+                                if (e.what == "WATER IS SCARCE. I'M KEEPING THIS BOTTLE") n += e.times;
+                            return n == 1;
+                        }}};
+     }},
+    {"scarce-keeps", "having seen water is scarce, a friend won't hand over its only bottle", seedWhere(kindly, 12500),
+     [](Stage& s) {
+         return askForWater(s, {logged({"ASKED @ FOR WATER"}), notLogged({"GAVE @ A BOTTLE"})},
+                            [](Human& holder, Human& asker) {
+                                P::setTrust(holder, asker, 0.6f);
+                                P::setTrust(asker, holder, 0.6f);
+                                P::setScarce(holder);
+                                asker.bottles.clear();
+                            });
+     }},
+    {"hard-no-sell", "a grasping stranger who learnt the thirst lesson won't sell its water",
+     seedWhere([](const Traits& t) { return t.greedy >= 0.55f && t.sociable < 0.4f && t.brave < 0.4f; }, 13000),
+     [](Stage& s) {
+         return askForWater(s, {logged({"ASKED @ FOR WATER"}), notLogged({"SOLD @ SOME WATER FOR A CAKE"})},
+                            [](Human& holder, Human& asker) {
+                                asker.cakes = 1;
+                                holder.lessons.nearWater = 1.0f;
+                            });
+     }},
     {"pile-cakes", "a hungry human with no cakes picks up cakes lying on the floor", 99,
      [](Stage& s) {
          Human& h = s.first();
@@ -1335,7 +1435,7 @@ int main(int argc, char** argv) {
     for (const Scenario& sc : SCENARIOS) {
         if (only && std::strcmp(only, sc.name)) continue;
         ran++;
-        Stage stage(7919, sc.first);
+        Stage stage(7919, sc.first, sc.asInPlay);
         Checks expect = sc.play(stage);
         for (const auto& h : stage.world.humans())
             for (const auto& e : h->log.entries()) lines[e.what] += e.times;

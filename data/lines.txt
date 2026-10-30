@@ -2111,3 +2111,34 @@ hungry                  | NOT WORTH BEING SHUT IN FOR.
                         | ONE IS ENOUGH TO CARRY.
 thirsty                 | AT LAST.
 greedy                  | MINE NOW.
+
+# With no bottle, finding one lying about, said to nobody.
+[see_bottle]
+                        | A BOTTLE.
+                        | A BOTTLE... FOR LATER.
+curious                 | WHO LEAVES A BOTTLE OUT HERE?
+timid                   | SOMEONE ELSE'S?
+thirsty                 | WATER. THANK GOD.
+
+# Coming back for the bottle it found, and it's gone, said to nobody.
+[bottle_gone 0.7]
+                        | IT WAS RIGHT HERE.
+                        | GONE.
+timid                   | I SHOULD HAVE TAKEN IT.
+thirsty                 | NO. NO, NO.
+
+# The same once it holds on hard: someone stole it, said to nobody, about
+# whom it blames.
+[bottle_stolen]
+                        | THIEVES.
+                        | SOMEONE TOOK IT.
+rude                    | {WHO}. IT WAS {WHO}.
+brave                   | WHOEVER HAS IT WILL GIVE IT BACK.
+
+# The first time its bottle runs dry or is filled: water is scarce, and it
+# keeps the bottle. Said to nobody.
+[scarce]
+                        | WATER IS SCARCE. I'M KEEPING THIS BOTTLE.
+                        | I'M NOT LETTING GO OF THIS.
+timid                   | I CAN'T LOSE THIS. I CAN'T.
+greedy                  | NOBODY GETS THIS BOTTLE.

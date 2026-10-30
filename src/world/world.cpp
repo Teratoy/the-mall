@@ -28,6 +28,10 @@ constexpr int JOIN_WIDTH = 3;
 constexpr float KEY_DEPTH = 0.4f;
 /// Cakes per slot a chunk is made with. They never come back once eaten.
 constexpr int CAKES_MIN = 2, CAKES_MAX = 5;
+/// Each human wakes BOTTLE_STEPS_MIN to BOTTLE_STEPS_MAX steps from a bottle
+/// this full, lying on the floor.
+constexpr int BOTTLE_STEPS_MIN = 2, BOTTLE_STEPS_MAX = 3;
+constexpr float WAKE_BOTTLE = 0.5f;
 /// Slam rooms per slot of a room network, at most.
 constexpr int SLAM_ROOMS_MAX = 1;
 /// Chance a cake is rigged with darts, where a wall faces it down a straight run.
@@ -172,10 +176,36 @@ Human& World::makeSpawn(const HumanLook& look, uint64_t seed, const std::string&
     size_t next = 0;
     if (auto s = tableSpot(c, spots, next, house, true)) keys_.insert(*s);
     if (auto s = tableSpot(c, spots, next, house)) cakes_.insert(*s);
-    return addHuman(look, c.origin() + centre, seed, name);
+    Human& h = addHuman(look, c.origin() + centre, seed, name);
+    layBottle(h);
+    return h;
 }
 
 Human& World::addHuman(const HumanLook& look, Vec2i cell) { return addHuman(look, cell, rng_.next()); }
+
+// Walked out from where it lies, so the bottle is never behind a wall or a
+// table from it; any free floor that far, picked by dice of its own, so the
+// rest of the mall comes out as it would without it.
+void World::layBottle(Human& h) {
+    std::unordered_map<Vec2i, int, Vec2iHash> dist{{h.cell, 0}};
+    std::deque<Vec2i> open{h.cell};
+    std::vector<Vec2i> free;
+    while (!open.empty()) {
+        Vec2i at = open.front();
+        open.pop_front();
+        int d = dist[at];
+        if (d >= BOTTLE_STEPS_MIN && !traps_.count(at) && !piles_.count(at) && !occupant(at) &&
+            !behindStatues_.count(at))
+            free.push_back(at);
+        if (d == BOTTLE_STEPS_MAX) continue;
+        for (Vec2i n : {at + Vec2i{1, 0}, at + Vec2i{-1, 0}, at + Vec2i{0, 1}, at + Vec2i{0, -1}})
+            if (tile(n) == Tile::Floor && dist.emplace(n, d + 1).second) open.push_back(n);
+    }
+    if (free.empty()) return;
+    Rng pick(uint64_t(h.id) * 0x9E3779B97F4A7C15ull ^ uint64_t(uint32_t(h.cell.x)) << 32 ^ uint32_t(h.cell.y));
+    putDown(free[size_t(pick.range(0, int(free.size()) - 1))], 0, {Bottle{WAKE_BOTTLE}});
+    h.observe(*this);
+}
 
 Human& World::addHuman(const HumanLook& look, Vec2i cell, uint64_t seed, const std::string& name) {
     int id = int(humans_.size());
@@ -291,11 +321,12 @@ void World::generate(Vec2i slot, Vec2i entry) {
     for (int i = 0; i < keys; i++)
         if (auto s = tableSpot(c, spots, next, house, true)) keys_.insert(*s);
     // Tables took some spots, and their room round them is best left clear.
+    Human* waker = nullptr;
     for (; next < spots.size(); next++) {
         Vec2i s = spots[next];
         if (tile(s) != Tile::Floor || occupant(s)) continue;
         Rng looks(rng_.next());
-        addHuman(HumanLook::random(looks), s);
+        waker = &addHuman(HumanLook::random(looks), s);
         next++;
         break;
     }
@@ -317,6 +348,8 @@ void World::generate(Vec2i slot, Vec2i entry) {
         cakes_.insert(plate);
     }
     placeSpikes(c, slams);
+    // Last, so its bottle lies clear of every table and trap.
+    if (waker) layBottle(*waker);
 }
 
 // Shapes are tried likeliest first, each turned at random and slid every

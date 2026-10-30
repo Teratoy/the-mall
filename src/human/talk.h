@@ -145,6 +145,11 @@ enum class Moment {
     // Warning someone it walks with off foul water (to them); drinking foul
     // water it was warned of (to nobody, about whoever warned it).
     WarnFoul, FoulWarned,
+    // Bottle-less, finding a bottle lying (to nobody); coming back to find it
+    // gone (to nobody), or stolen once it holds on hard (to nobody, about
+    // whom it blames); the first time it runs its bottle dry or fills it,
+    // seeing that water is scarce (to nobody).
+    SeeBottle, BottleGone, BottleStolen, Scarce,
     Count
 };
 

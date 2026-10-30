@@ -990,6 +990,13 @@ private:
         /// tasted the foulness yet.
         bool knewFoul = false, tastedFoul = false;
         int warnedBy = -1;
+        /// The bottle it found lying while it had none, to come back for,
+        /// and who it last saw beside it.
+        std::optional<Vec2i> found;
+        int foundNear = -1;
+        /// It has run its bottle dry or filled it once, and seen that water
+        /// is scarce.
+        bool scarce = false;
     };
     Water water_;
     /// Getting thirsty, and parched (with what that may teach it).
@@ -1266,6 +1273,24 @@ private:
     /// Whether it would take b: with none, any; holding one, b must hold
     /// clean water too, unless its own is empty and it would drink b anyway.
     bool wouldTakeBottle(const Bottle& b) const;
+    /// With no bottle, whether it would take one lying about now: thirsty,
+    /// or knowing water to fill it at (it has drunk somewhere).
+    bool needsBottle() const;
+    /// A bottle lying put down that it would go and take, not anyone's
+    /// stash; with none, it walks back for it (seekFill).
+    bool bottleToFetch(Vec2i c, const Pile& p) const;
+    /// Since it saw that water is scarce, it won't give its only bottle.
+    bool keepsBottle() const;
+    /// Having learnt the thirst lesson, it holds on hard: water only for a
+    /// friend, never sold, and never its own left for another bottle.
+    bool holdsBottleHard() const;
+    /// The first time its bottle runs dry or is filled: water is scarce,
+    /// and it keeps it. True if that was now (and said instead).
+    bool sawScarcity();
+    /// Bottle-less, it sees a bottle lying it hadn't found yet, or sees the
+    /// one it found gone: lost, or stolen once it holds on hard.
+    void spotBottle(Vec2i c, const Pile& p);
+    void bottleGone();
     /// Takes b, as wouldTakeBottle allows: with none, b itself; holding one,
     /// the emptier of the two is poured into the fuller, which it keeps.
     /// Returns the bottle it leaves behind, if any; keptOwn says whether

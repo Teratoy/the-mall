@@ -4,7 +4,11 @@
 #include <algorithm>
 #include <cmath>
 
-// Bottles: every human wakes with one, full, in the back hand. Thirsty with
+// Bottles: every human wakes a few steps from one lying half full, notes it,
+// and leaves it until it needs it: thirsty, or knowing water to fill it at.
+// Come back to find it gone, it has lost it, or once it holds on hard, been
+// robbed. The first time it runs it dry or fills it, it sees that water is
+// scarce and keeps it: never handing over its only one. Thirsty with
 // water far off, it drinks from it where it stands; beside water it would
 // drink, it fills it, first pouring out what it wouldn't drink, or what is
 // clearly dirtier than the water before it, in a puddle that dries. The
@@ -35,6 +39,11 @@ constexpr float FILL_TOPUP = 0.9f;
 /// dry.
 constexpr float BOTTLE_LOW = 0.5f;
 constexpr float FILL_DRIVE = 1.0f;
+/// A bottle lying farther off than this it doesn't go back for to fill.
+constexpr int FETCH_BOTTLE_RANGE = 30;
+/// Blaming whoever it last saw beside the bottle it found, once it holds on
+/// hard: as much trust lost as for a robbed stash.
+constexpr float TRUST_BOTTLE_BLAMED = -0.3f;
 /// Pouring a bottle out takes this long.
 constexpr float POUR_TIME = 1.2f;
 /// The puddle lands this far ahead of the feet, in pixels.
@@ -129,7 +138,58 @@ bool Human::wouldTakeBottle(const Bottle& b) const {
     return !b.empty() && (clean(b) || (bottles.front().empty() && wouldSip(b)));
 }
 
-// The fuller is kept; whatever doesn't fit stays in the other.
+bool Human::needsBottle() const { return bottles.empty() && (thirsty() || water_.drankYet); }
+
+bool Human::bottleToFetch(Vec2i c, const Pile& p) const {
+    if (p.bottles.empty() || isMine(c) || othersStash(c) || avoids(c) || cheb(c, cell) > FETCH_BOTTLE_RANGE) return false;
+    return std::any_of(p.bottles.begin(), p.bottles.end(), [&](const Bottle& b) { return wouldTakeBottle(b); });
+}
+
+bool Human::keepsBottle() const { return water_.scarce || holdsBottleHard(); }
+
+bool Human::holdsBottleHard() const { return lessons.nearWater >= LESSON_HELD; }
+
+bool Human::sawScarcity() {
+    if (water_.scarce) return false;
+    water_.scarce = true;
+    note("WATER IS SCARCE. I'M KEEPING THIS BOTTLE");
+    sayLater(talk::Moment::Scarce);
+    return true;
+}
+
+// Only once it has come to, and only the first it finds while it has none:
+// that one it means to come back for.
+void Human::spotBottle(Vec2i c, const Pile& p) {
+    if (!bottles.empty() || state == State::Waking || isMine(c) || othersStash(c)) return;
+    if (water_.found) {
+        if (*water_.found == c && p.bottles.empty()) bottleGone();
+        return;
+    }
+    if (p.bottles.empty()) return;
+    water_.found = c;
+    water_.foundNear = -1;
+    note("FOUND A BOTTLE LYING THERE");
+    sayLater(talk::Moment::SeeBottle);
+}
+
+void Human::bottleGone() {
+    int blamed = water_.foundNear;
+    water_.found.reset();
+    water_.foundNear = -1;
+    if (!holdsBottleHard()) {
+        note("MY BOTTLE IS GONE");
+        sayLater(talk::Moment::BottleGone);
+        return;
+    }
+    note("SOMEONE TOOK MY BOTTLE");
+    sayLater(talk::Moment::BottleStolen, -1, blamed);
+    if (blamed < 0) return;
+    note("@ MUST HAVE TAKEN IT", blamed);
+    regard(blamed, TRUST_BOTTLE_BLAMED);
+}
+
+// The fuller is kept, or its own whatever, holding on hard; whatever doesn't
+// fit stays in the other.
 std::optional<Bottle> Human::takeBottle(Bottle b, bool* keptOwn) {
     if (keptOwn) *keptOwn = false;
     if (bottles.empty()) {
@@ -137,7 +197,7 @@ std::optional<Bottle> Human::takeBottle(Bottle b, bool* keptOwn) {
         return std::nullopt;
     }
     Bottle& own = bottles.front();
-    bool keep = own.water >= b.water;
+    bool keep = own.water >= b.water || holdsBottleHard();
     if (keptOwn) *keptOwn = keep;
     if (keep) {
         b.pourInto(own, b.water);
@@ -189,7 +249,7 @@ void Human::sip(World& world) {
     bool dry = b.empty();
     if (dry) {
         note("MY BOTTLE RAN DRY");
-        sayLater(talk::Moment::BottleDry);
+        if (!sawScarcity()) sayLater(talk::Moment::BottleDry);
     }
     if (observe(world)) rethink_ = true;
     if (dry || rethink_ || thirst <= SIP_QUENCHED || fight_.fear > 0.0f || fight_.foe >= 0) {
@@ -235,7 +295,7 @@ bool Human::startFilling(World& world, Vec2i water) {
     }
     if (fresh) {
         note(toilet ? "FILLED MY BOTTLE AT A TOILET" : "FILLED MY BOTTLE");
-        sayLater(talk::Moment::FillBottle);
+        if (!sawScarcity()) sayLater(talk::Moment::FillBottle);
     }
     state = State::Filling;
     timer = FILL_TIME;
@@ -278,9 +338,24 @@ void Human::fill(World& world) {
 }
 
 // Only water it would drink, and only when not thirsty: thirsty, it drinks
-// first (seekWater), and fills after.
+// first (seekWater), and fills after. With no bottle, it goes back for one
+// it knows lying about first.
 bool Human::seekFill(World& world) {
-    if (thirsty() || bottles.empty()) return false;
+    if (thirsty()) return false;
+    if (bottles.empty()) {
+        if (!needsBottle()) return false;
+        std::vector<Vec2i> at;
+        for (const auto& [c, p] : memory.piles)
+            if (bottleToFetch(c, p)) at.push_back(c);
+        if (at.empty()) return false;
+        auto p = search(world, [&](Vec2i c) {
+            return std::any_of(at.begin(), at.end(), [&](Vec2i a) { return cheb(c, a) <= 1; });
+        });
+        if (!p) return false;
+        if (p->empty()) return takeFromPiles(world);
+        startWalking(Goal::Pick, *p);
+        return true;
+    }
     auto p = search(world, [&](Vec2i c) {
         auto w = waterBeside(c);
         return w && wouldDrink(world, c, *w) && wantsFill(world, *w);
@@ -292,7 +367,13 @@ bool Human::seekFill(World& world) {
 }
 
 float Human::fillDrive() const {
-    if (bottles.empty() || thirsty()) return -1.0f;
+    if (thirsty()) return -1.0f;
+    // No bottle at all is as good as an empty one, if it knows one to fetch.
+    if (bottles.empty())
+        return needsBottle() && std::any_of(memory.piles.begin(), memory.piles.end(),
+                                            [&](const auto& p) { return bottleToFetch(p.first, p.second); })
+                   ? FILL_DRIVE
+                   : -1.0f;
     float most = 0.0f;
     for (const Bottle& b : bottles) most = std::max(most, b.water);
     if (most >= BOTTLE_LOW) return -1.0f;
@@ -406,9 +487,12 @@ void Human::answerDrink(World& world, Human& asker) {
     if (busy || bottleWater() < SEE_WATER) return;
     bool foe = isFoe(asker.id);
     bool close = isFriend(asker.id) || inGroupWith(asker);
-    bool kind = close || (traits.sociable >= SHARE_SOCIABLE && traits.greedy <= SHARE_GREEDY);
+    // Holding on hard, it pours only for a friend, and sells none.
+    bool hard = holdsBottleHard();
+    bool kind = hard ? isFriend(asker.id) : close || (traits.sociable >= SHARE_SOCIABLE && traits.greedy <= SHARE_GREEDY);
     if (!foe && !thirsty() && kind && giveWater(world, asker, false)) return;
-    if (!foe && !thirsty() && traits.greedy >= SELL_GREEDY && asker.cakes > 0 && giveWater(world, asker, true)) return;
+    if (!foe && !thirsty() && !hard && traits.greedy >= SELL_GREEDY && asker.cakes > 0 && giveWater(world, asker, true))
+        return;
     if (!isFriend(asker.id) && traits.greedy >= LIE_GREEDY && traits.brave >= LIE_BRAVE) {
         note("TOLD @ MY BOTTLE WAS EMPTY", asker.id);
         sayLater(talk::Moment::BottleLie, asker.id);
@@ -426,13 +510,14 @@ void Human::answerDrink(World& world, Human& asker) {
 }
 
 // Poured from its fullest into the asker's emptiest; to a friend with no
-// bottle, its own is handed over, with whatever is in it, never sold.
+// bottle, its own is handed over, with whatever is in it, never sold, and
+// not once it has seen that water is scarce.
 bool Human::giveWater(World& world, Human& o, bool sold) {
     int from = fullest(bottles);
     if (from < 0) return false;
     std::string what;
     if (o.bottles.empty()) {
-        if (sold || !isFriend(o.id)) return false;
+        if (sold || !isFriend(o.id) || keepsBottle()) return false;
         o.bottles.push_back(bottles[size_t(from)]);
         bottles.erase(bottles.begin() + from);
         from = -1;
