@@ -403,10 +403,11 @@ bool Human::noticeBlood(const World& world, Vec2i c) {
 
 // Bleeding explains the blood; without a wound, it's someone else's. Wet,
 // it was spilled just now; a spot of it dried is long over, but someone
-// caked in it did something.
+// caked in it did something. Not the one it is fighting: it knows where
+// that blood came from, often off its own body onto their fists.
 bool Human::judge(const Human& o) {
     float total = o.stains.telling();
-    if (!o.wounds.empty() || total < SUSPECT_BLOOD) return false;
+    if (!o.wounds.empty() || total < SUSPECT_BLOOD || fight_.foe == o.id) return false;
     float fresh = o.stains.freshness();
     float weight = std::max(fresh, std::clamp((total - DRY_MIN) / (DRY_FULL - DRY_MIN), 0.0f, 1.0f));
     if (weight < SUSPECT_WEIGHT) return false;
