@@ -16,6 +16,10 @@ struct SoakProbe {
     static int foe(const Human& h) { return h.fight_.foe; }
     static bool ateFlesh(const Human& h) { return !h.mind_.ateFrom.empty(); }
 
+    // How chunks came out (tools/genprobe.cpp).
+    static const std::vector<std::unique_ptr<Chunk>>& chunks(const World& w) { return w.chunks_; }
+    static const std::unordered_map<EdgeKey, Door, EdgeKeyHash>& doors(const World& w) { return w.doors_; }
+
     // Setting up a situation (scenarios.cpp).
     static Human& addHuman(World& w, const HumanLook& look, Vec2i cell, uint64_t seed) { return w.addHuman(look, cell, seed); }
     /// What h thinks of o, -1 to 1, as if it had seen it all happen.

@@ -47,6 +47,10 @@ chunk's kind.
 - **Humans remark on new places**: on first entering a food court,
   parking or atrium, a `note()` line and a moment (step 10).
 - **Districts** are part of this plan, as its last step (step 11).
+- (Later the same day) **No mazes on bigger shapes**: neither maze nor
+  water maze on a chunk of 3 slots or more (`MAZE_SLOTS_MAX = 2`). Big
+  rectangles are room networks, or plazas when square. Whether this also
+  holds for L, T, S/Z (3 and 4 slots) is open question 1.
 
 ## How a chunk's footprint works now
 
@@ -126,6 +130,27 @@ Every chunk is still a rectangle, so `make check` must pass unchanged.
   If it's over about 20 ms, label once and union regions instead of
   flooding again.
 
+### Built (2026-10-30)
+- `SHAPES` gained the five boxes at the weights above.
+- The time went into pools, not `connectRegions`: clearance was worked
+  out afresh over the whole chunk before each pool. It's now worked out
+  once and lowered round each new pool. Same numbers, so that commit
+  passed `make check` unchanged. 3x3 room networks went from 37 ms to 7.
+- The user then took mazes off chunks of 3+ slots (see decisions).
+- `make genprobe` now also grows whole worlds, crossing door after door
+  as humans do, and checks every new door, key and cake can be reached
+  from the entry (locks aside; cakes only water keeps off are counted,
+  not failed, as water splitting a chunk is meant). 20 worlds, 780
+  chunks, none failed. Whole-chunk generation at most: 3x3 18 ms on a
+  quiet machine, 27 ms with other sessions loading it. Near the 20 ms
+  line, so watch it; the union speed-up above is the fix if it hitches.
+- Soak: the golden one moved (the six worlds roll other chunks); no new
+  stuck, loop or block lines. A 16-world crowded soak: 2 unmoved and 4
+  target flips, against 2 and 5 without the new sizes.
+- Not looked at in the game window: the canvas shows too little of a
+  300-cell chunk. Seen in genprobe's pictures instead. A 3x3 plaza is one
+  vast bare disc (open question 2).
+
 ## 3. Odd footprints (L, T, S/Z)
 
 ### Shapes
@@ -141,7 +166,8 @@ tries every placement of every size that covers the entered slot with
 all slots free. It now does the same for each turn of each shape.
 
 ### Which kinds
-- Rooms, maze and water maze: any footprint. Rooms are placed only where
+- Rooms on any footprint; maze and water maze only up to 2 slots, unless
+  the user decides otherwise for odd shapes (question 1). Rooms are placed only where
   their whole box is owned. Corridors that would cross an unowned slot
   stop at the Void, and `connectRegions` joins the rest.
 - Plaza: square rectangles only, as now.
@@ -280,8 +306,8 @@ Draft weights per footprint. 0 means the kind doesn't fit there.
 | kind | 1x1 | 2x1/3x1/4x1 | 2x2 | 3x3 | L/T/S |
 |---|---|---|---|---|---|
 | Rooms | .35 | .25 | .30 | .25 | .35 |
-| Maze | .20 | .15 | .15 | .15 | .25 |
-| Water maze | .10 | .08 | .08 | .05 | .10 |
+| Maze | .20 | .15 (2x1 only) | .15 | 0 | 0? |
+| Water maze | .10 | .08 (2x1 only) | .08 | 0 | 0? |
 | Plaza | .12 | 0 | .10 | .10 | 0 |
 | Mall wing | 0 | .30 | .10 | .10 | .15 |
 | Food court | .10 | .07 | .12 | .10 | .05 |
@@ -308,5 +334,9 @@ for new stuck humans or blocks before `make golden`.
 
 ## Open questions
 
-None yet. All six first questions were answered on 2026-10-30 (see
-"User's decisions"). Questions that come up while building go here.
+1. **Mazes on L, T, S/Z?** They have 3 or 4 slots, so the "no mazes on
+   bigger shapes" rule would keep mazes off them too. Is that meant, or
+   should odd shapes still get mazes?
+2. **Plazas on 3x3?** A 3x3 plaza is one disc 300 cells across, mostly
+   bare round a small fountain. Keep it, keep plazas to 1x1 and 2x2, or
+   fill big plazas with more (several fountains, planters, columns)?

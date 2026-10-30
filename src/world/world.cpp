@@ -19,6 +19,8 @@ constexpr int DOOR_MARGIN = 8;
 /// Plazas only come square.
 constexpr ChunkKind KINDS[] = {ChunkKind::Rooms, ChunkKind::Maze, ChunkKind::WaterMaze, ChunkKind::Plaza};
 const std::vector<float> KIND_WEIGHTS = {0.5f, 0.25f, 0.13f, 0.12f};
+/// Mazes, of stone or water, come no bigger than this many slots (user).
+constexpr int MAZE_SLOTS_MAX = 2;
 /// Width of the corridors that join stray areas and doors to the rest.
 constexpr int JOIN_WIDTH = 3;
 /// Keys and the chunk's human start at least this far into the chunk from
@@ -98,7 +100,12 @@ struct ShapePick {
 const std::vector<ShapePick> SHAPES = {{boxFootprint({1, 1}), 4.0f},
                                        {boxFootprint({2, 1}), 2.0f},
                                        {boxFootprint({1, 2}), 2.0f},
-                                       {boxFootprint({2, 2}), 1.0f}};
+                                       {boxFootprint({2, 2}), 1.0f},
+                                       {boxFootprint({3, 1}), 0.6f},
+                                       {boxFootprint({1, 3}), 0.6f},
+                                       {boxFootprint({4, 1}), 0.3f},
+                                       {boxFootprint({1, 4}), 0.3f},
+                                       {boxFootprint({3, 3}), 0.25f}};
 
 TableMaterial randomMaterial(Rng& rng) { return TableMaterial(rng.weighted(TABLE_MATERIAL_WEIGHTS)); }
 
@@ -232,6 +239,7 @@ void World::generate(Vec2i slot, Vec2i entry) {
     std::vector<float> kindWeights = KIND_WEIGHTS;
     const Vec2i box = footprintBox(*parts);
     if (box.x != box.y || int(parts->size()) != box.x * box.y) kindWeights[3] = 0.0f;
+    if (int(parts->size()) > MAZE_SLOTS_MAX) kindWeights[1] = kindWeights[2] = 0.0f;
     Chunk& c = addChunk(KINDS[rng_.weighted(kindWeights)], origin, *parts);
     const int slotCount = c.slotCount();
     markDoors(c);

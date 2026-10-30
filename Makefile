@@ -73,8 +73,8 @@ $(SHOT): tools/shot.cpp $(filter-out build/main.o,$(OBJ))
 shot: $(SHOT)
 	./$(SHOT) build/shot.png $(SHOT_ARGS)
 
-$(GENPROBE): tools/genprobe.cpp $(filter-out build/main.o,$(OBJ))
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@ $(LDLIBS)
+$(GENPROBE): tools/genprobe.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out tests/probe.h,$^) -o $@ $(LDLIBS)
 
 genprobe: $(GENPROBE)
 	./$(GENPROBE) $(GENPROBE_ARGS)
