@@ -53,6 +53,8 @@ public:
         auto it = foul_.find(cell);
         return it == foul_.end() ? 0.0f : it->second;
     }
+    /// Every water cell fouled, and how foul.
+    const std::unordered_map<Vec2i, float, Vec2iHash>& fouled() const { return foul_; }
     /// Fouls a water cell this much more, there alone at first.
     void foulWater(Vec2i cell, float amount) { foul_[cell] += amount; }
     /// Foulness seeps slowly into the water next to it (water tells which

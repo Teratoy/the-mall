@@ -125,6 +125,8 @@ public:
     void vacate(Vec2i cell) { occupied_.erase(cell); }
 
 private:
+    /// tests/stuck_soak.cpp packs extra humans in with addHuman.
+    friend struct SoakProbe;
     struct Edge {
         EdgeKey key;
         /// The chunk's slot on this side of the wall, and the slot past it.

@@ -20,16 +20,16 @@ void Human::step(World& world) {
         choose(world);
         if (state != State::Walking) return;
     }
-    if (goal == Goal::Meet && partner_ >= 0) {
-        Human& o = world.human(partner_);
+    if (goal == Goal::Meet && social_.partner >= 0) {
+        Human& o = world.human(social_.partner);
         if (sight.sees(o.cell) && cheb(cell, o.cell) <= GREET_RADIUS) return tryGreet(world, o);
     }
-    if (goal == Goal::Fight && foe_ >= 0) {
-        Human& f = world.human(foe_);
+    if (goal == Goal::Fight && fight_.foe >= 0) {
+        Human& f = world.human(fight_.foe);
         if (!f.dead() && sight.sees(f.cell) && cheb(cell, f.cell) <= 1) return startPunch(f);
     }
-    if (goal == Goal::Share && sharee_ >= 0) {
-        Human& o = world.human(sharee_);
+    if (goal == Goal::Share && social_.sharee >= 0) {
+        Human& o = world.human(social_.sharee);
         if (wouldShare(o) && sight.sees(o.cell) && cheb(cell, o.cell) <= 1) {
             give(o, Gift::Share);
             witness(world, *this, o, TRUST_SAW_FEED, 0.0f, Episode::What::Gift, EPISODE_SAW_GIFT, int(Gift::Share));
@@ -37,7 +37,7 @@ void Human::step(World& world) {
         }
     }
     // Leading someone to water, it lets them catch up.
-    if (goal == Goal::Escort && escortee_ >= 0 && cheb(cell, world.human(escortee_).cell) > ESCORT_GAP)
+    if (goal == Goal::Escort && escorting_.escortee >= 0 && cheb(cell, world.human(escorting_.escortee).cell) > ESCORT_GAP)
         return startIdle(ESCORT_WAIT_MIN, ESCORT_WAIT_MAX);
     // Off on its own business ahead of its group, it lets them catch up.
     if ((goal == Goal::Explore || goal == Goal::Wander || goal == Goal::CheckDoor || goal == Goal::OpenDoor) &&
@@ -76,7 +76,7 @@ void Human::step(World& world) {
 // there is the one to move; nobody busy eating, greeting, fighting or
 // seated is asked.
 bool Human::makeWay(World& world, Human& o) {
-    bool standing = o.state == State::Idle && !o.provoked_;
+    bool standing = o.state == State::Idle && !o.fight_.provoked;
     bool blocked = o.state == State::Walking && !o.moving && o.goal != Goal::GiveWay;
     if (!standing && !blocked) return false;
     bool headOn = blocked && !o.path_.empty() && o.path_.front() == cell;
@@ -109,7 +109,7 @@ void Human::move(World& world, Vec2i next) {
     if (next.x != prev.x) facingLeft = next.x < prev.x;
     bool running = goal == Goal::Fight || goal == Goal::Flee;
     stepTime = STEP_TIME * (running ? RUN : 1.0f) * (next.x != prev.x && next.y != prev.y ? DIAGONAL : 1.0f) *
-               (1.0f + DAZE_SLOW * daze_) * (exhausted() ? EXHAUSTED_SLOW : 1.0f);
+               (1.0f + DAZE_SLOW * escape_.daze) * (exhausted() ? EXHAUSTED_SLOW : 1.0f);
     timer = stepTime;
     world.setOff(cell, *this);
     if (dead()) return;
@@ -129,8 +129,8 @@ void Human::move(World& world, Vec2i next) {
     if (goal == Goal::CheckDoor && !lockedDoorBeside(target_)) rethink_ = true;
     if (goal == Goal::Explore && !isFrontier(target_) && !openDoorBeside(target_)) rethink_ = true;
     if (goal == Goal::FetchCake && !inReach(target_, memory.cakes)) rethink_ = true;
-    if (goal == Goal::Loot && !worthLooting(corpse_, traits.brave < TIMID)) rethink_ = true;
-    if (goal == Goal::Feed && !wouldEat(meal_)) rethink_ = true;
+    if (goal == Goal::Loot && !worthLooting(deaths_.corpse, traits.brave < TIMID)) rethink_ = true;
+    if (goal == Goal::Feed && !wouldEat(mind_.meal)) rethink_ = true;
     // They move too; keep the plan fresh.
     if (goal == Goal::Meet || goal == Goal::Follow || goal == Goal::Company || goal == Goal::Fight ||
         goal == Goal::Share)
@@ -142,9 +142,9 @@ void Human::arrive(World& world) {
     case Goal::OpenDoor: {
         // Come to let someone out, it opens their gate whatever else is beside it.
         auto door = lockedDoorBeside(cell);
-        bool rescue = rescuee_ >= 0 && std::abs(rescueGate_.x - cell.x) + std::abs(rescueGate_.y - cell.y) == 1 &&
-                      memory.tile(rescueGate_) == Tile::DoorLocked;
-        if (rescue) door = rescueGate_;
+        bool rescue = rescue_.rescuee >= 0 && std::abs(rescue_.gate.x - cell.x) + std::abs(rescue_.gate.y - cell.y) == 1 &&
+                      memory.tile(rescue_.gate) == Tile::DoorLocked;
+        if (rescue) door = rescue_.gate;
         if (door && keys > 0 && world.unlock(*door)) {
             keys--;
             note("UNLOCKED A DOOR");
@@ -208,7 +208,7 @@ void Human::arrive(World& world) {
         if (startLoot(world, traits.brave < TIMID)) return;
         return choose(world);
     case Goal::Feed:
-        if (startFeed(world, meal_)) return;
+        if (startFeed(world, mind_.meal)) return;
         return choose(world);
     default:
         break;
@@ -229,13 +229,13 @@ void Human::startIdle(float lo, float hi) {
 
 void Human::rest() {
     if (!rng_.chance(SIT_CHANCE * sway(1.0f - traits.curious, SIT_CURIOUS) * (1.0f + DREAD_SIT * dread_) *
-                     (1.0f + GUILT_SIT * guilt_) * (1.0f + DESPAIR_SIT * gloom())))
+                     (1.0f + GUILT_SIT * mind_.guilt) * (1.0f + DESPAIR_SIT * gloom())))
         return startIdle(IDLE_TIME_MIN, IDLE_TIME_MAX);
     sitDown();
 }
 
 void Human::sitDown() {
-    restedAt_ = clock_;
+    chat_.restedAt = clock_;
     startIdle(SIT_TIME_MIN, SIT_TIME_MAX);
     state = State::Sitting;
     animTime = 0.0f;
@@ -247,15 +247,15 @@ void Human::sitUp() {
     animTime = 0.0f;
     timer = rng_.range(WAKE_SIT_MIN, WAKE_SIT_MAX);
     glance_ = 0.0f;
-    comingTo_ = true;
+    escape_.comingTo = true;
     note("WOKE UP, REMEMBERING NOTHING");
     remember(Episode::What::Woke, EPISODE_WOKE, id);
     sayLater(talk::Moment::Wake);
 }
 
 void Human::startRising() {
-    comingTo_ = false;
-    roused_ = false;
+    escape_.comingTo = false;
+    sleep_.roused = false;
     state = State::Rising;
     animTime = 0.0f;
     timer = STAND_UP_TIME;
@@ -273,9 +273,9 @@ void Human::startWalking(Goal g, std::vector<Vec2i> path) {
 // Through a door, the way out feels a little more like the way it went.
 void Human::startPassDoor(Vec2i door) {
     Vec2i d = door - cell;
-    float hx = std::cos(hunch_) * (1.0f - HUNCH_FOLLOW) + float(d.x) * HUNCH_FOLLOW;
-    float hy = std::sin(hunch_) * (1.0f - HUNCH_FOLLOW) + float(d.y) * HUNCH_FOLLOW;
-    if (hx != 0.0f || hy != 0.0f) hunch_ = std::atan2(hy, hx);
+    float hx = std::cos(escape_.hunch) * (1.0f - HUNCH_FOLLOW) + float(d.x) * HUNCH_FOLLOW;
+    float hy = std::sin(escape_.hunch) * (1.0f - HUNCH_FOLLOW) + float(d.y) * HUNCH_FOLLOW;
+    if (hx != 0.0f || hy != 0.0f) escape_.hunch = std::atan2(hy, hx);
     startWalking(Goal::PassDoor, {door, door + d, door + d * 2});
 }
 
@@ -295,8 +295,8 @@ void Human::takeInReach(World& world) {
             keys++;
             note("PICKED UP A KEY");
             memory.keys.erase(c);
-            if (leader_ >= 0) sayLater(talk::Moment::PartOwnKey, leader_);
-            leader_ = -1;
+            if (social_.leader >= 0) sayLater(talk::Moment::PartOwnKey, social_.leader);
+            social_.leader = -1;
         }
         if (cake && world.takeCake(c)) {
             cakes++;
@@ -351,8 +351,8 @@ bool Human::isFrontier(Vec2i c) const {
 int Human::hunchCost(Vec2i c, int most) const {
     Vec2i d = c - cell;
     if (d == Vec2i{0, 0}) return 0;
-    float along = (float(d.x) * std::cos(hunch_) + float(d.y) * std::sin(hunch_)) / std::hypot(float(d.x), float(d.y));
-    return int(float(most) * out_ * (1.0f - along) / 2.0f);
+    float along = (float(d.x) * std::cos(escape_.hunch) + float(d.y) * std::sin(escape_.hunch)) / std::hypot(float(d.x), float(d.y));
+    return int(float(most) * escape_.out * (1.0f - along) / 2.0f);
 }
 
 std::optional<Vec2i> Human::lockedDoorBeside(Vec2i c) const {

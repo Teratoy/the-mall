@@ -106,7 +106,7 @@ constexpr float EPISODE_ATE = 0.9f, EPISODE_SAW_EAT = 0.9f, EPISODE_GNAWED = 0.7
 
 } // namespace
 
-bool Human::isErratic() const { return erratic_ >= ERRATIC; }
+bool Human::isErratic() const { return mind_.erratic >= ERRATIC; }
 
 float Human::decay() const { return std::min(1.0f, deadFor() / BONES_TIME); }
 
@@ -116,15 +116,15 @@ int Human::meals() const { return decay() >= 1.0f ? 0 : flesh; }
 
 void Human::mind(float dt) {
     bool was = isErratic();
-    if (starving()) erratic_ += ERRATIC_STARVE * dt;
-    if (parched()) erratic_ += ERRATIC_PARCHED * (1.0f + 2.0f * appetite_) * dt;
-    if (dread_ > DREAD_UNHINGES) erratic_ += (dread_ - DREAD_UNHINGES) * ERRATIC_DREAD * dt;
-    erratic_ += gloom() * ERRATIC_DESPAIR * dt;
-    if (!hungry() && dread_ < CALM) erratic_ -= ERRATIC_FADE * dt;
-    erratic_ = std::clamp(erratic_, appetite_ * ERRATIC_HELD, 1.0f);
-    guilt_ = std::max(0.0f, guilt_ - GUILT_FADE * dt);
-    appetite_ = std::max(0.0f, appetite_ - APPETITE_FADE * dt);
-    sick_ = std::max(0.0f, sick_ - dt);
+    if (starving()) mind_.erratic += ERRATIC_STARVE * dt;
+    if (parched()) mind_.erratic += ERRATIC_PARCHED * (1.0f + 2.0f * mind_.appetite) * dt;
+    if (dread_ > DREAD_UNHINGES) mind_.erratic += (dread_ - DREAD_UNHINGES) * ERRATIC_DREAD * dt;
+    mind_.erratic += gloom() * ERRATIC_DESPAIR * dt;
+    if (!hungry() && dread_ < CALM) mind_.erratic -= ERRATIC_FADE * dt;
+    mind_.erratic = std::clamp(mind_.erratic, mind_.appetite * ERRATIC_HELD, 1.0f);
+    mind_.guilt = std::max(0.0f, mind_.guilt - GUILT_FADE * dt);
+    mind_.appetite = std::max(0.0f, mind_.appetite - APPETITE_FADE * dt);
+    mind_.sick = std::max(0.0f, mind_.sick - dt);
     if (isErratic() == was) return;
     note(isErratic() ? "SOMETHING IN ME SNAPPED" : "FEEL MORE LIKE MYSELF");
     remember(Episode::What::Snapped, EPISODE_SNAPPED, id, -1, isErratic() ? 1 : 0);
@@ -140,7 +140,7 @@ float Human::fleshBar() const {
                 : health < DESPERATE          ? 1.0f
                                               : NEVER;
     if (bar >= NEVER) return NEVER;
-    return std::max(BAR_MIN, bar + GUILT_BAR * guilt_ - APPETITE_BAR * appetite_);
+    return std::max(BAR_MIN, bar + GUILT_BAR * mind_.guilt - APPETITE_BAR * mind_.appetite);
 }
 
 // The erratic hunt when hungry, the bravest when starving; nobody too hurt
@@ -149,24 +149,24 @@ float Human::huntBar() const {
     if (traits.brave < TIMID || health < fleeHealth()) return NEVER;
     float bar = isErratic() ? HUNGRY : traits.brave >= BRAVE_HUNT ? STARVING : NEVER;
     if (bar >= NEVER) return NEVER;
-    return std::max(BAR_MIN, bar + GUILT_BAR * guilt_ - APPETITE_BAR * appetite_);
+    return std::max(BAR_MIN, bar + GUILT_BAR * mind_.guilt - APPETITE_BAR * mind_.appetite);
 }
 
 // Bodies near whoever it fears are left alone, as for looting; a friend
 // only once mad.
 bool Human::wouldEat(int id) const {
-    auto it = bodies_.find(id);
-    if (it == bodies_.end()) return false;
+    auto it = deaths_.bodies.find(id);
+    if (it == deaths_.bodies.end()) return false;
     const Body& b = it->second;
-    if (b.meals <= 0 || (b.spoiled && appetite_ < SPOILED_APPETITE)) return false;
-    if (isFriend(id) && erratic_ < ERRATIC_MAD) return false;
-    auto f = lastSeen_.find(feared_);
-    return !(fear_ > 0.0f && f != lastSeen_.end() && cheb(b.cell, f->second) < FEARED_DIST);
+    if (b.meals <= 0 || (b.spoiled && mind_.appetite < SPOILED_APPETITE)) return false;
+    if (isFriend(id) && mind_.erratic < ERRATIC_MAD) return false;
+    auto f = social_.lastSeen.find(fight_.feared);
+    return !(fight_.fear > 0.0f && f != social_.lastSeen.end() && cheb(b.cell, f->second) < FEARED_DIST);
 }
 
 std::optional<std::vector<Vec2i>> Human::fleshPath(const World& world, int* whose) const {
     std::vector<std::pair<int, Vec2i>> worth;
-    for (const auto& [who, b] : bodies_)
+    for (const auto& [who, b] : deaths_.bodies)
         if (wouldEat(who)) worth.push_back({who, b.cell});
     if (worth.empty()) return std::nullopt;
     return search(world, [&](Vec2i c) {
@@ -184,25 +184,25 @@ bool Human::startFeed(World& world, int body) {
     int whose = body;
     if (body >= 0) {
         // Its own kill it eats, however it stood with them.
-        bool own = body == prey_ && bodies_.count(body) && bodies_[body].meals > 0;
+        bool own = body == mind_.prey && deaths_.bodies.count(body) && deaths_.bodies[body].meals > 0;
         if (own || wouldEat(body)) {
-            Vec2i at = bodies_[body].cell;
+            Vec2i at = deaths_.bodies[body].cell;
             p = search(world, [&](Vec2i c) { return cheb(c, at) <= 1; });
         }
     } else {
         p = fleshPath(world, &whose);
     }
     if (!p) {
-        meal_ = -1;
+        mind_.meal = -1;
         return false;
     }
-    meal_ = whose;
+    mind_.meal = whose;
     if (!p->empty()) {
         startWalking(Goal::Feed, *p);
         return true;
     }
     // Beside it: kneels and eats.
-    const Human& b = world.human(meal_);
+    const Human& b = world.human(mind_.meal);
     state = State::Feeding;
     moving = false;
     path_.clear();
@@ -213,12 +213,12 @@ bool Human::startFeed(World& world, int body) {
 }
 
 void Human::feed(World& world) {
-    Human& b = world.human(meal_);
+    Human& b = world.human(mind_.meal);
     if (b.meals() <= 0 || cheb(cell, b.cell) > 1) {
-        meal_ = -1;
+        mind_.meal = -1;
         return startIdle(0.0f, 0.0f);
     }
-    if (prey_ == b.id) prey_ = -1;
+    if (mind_.prey == b.id) mind_.prey = -1;
     bool rotten = b.spoiled();
     b.flesh--;
     hunger = std::max(0.0f, hunger - FLESH_FOOD * (rotten ? SPOILED_FOOD : 1.0f));
@@ -237,35 +237,35 @@ void Human::feed(World& world) {
     // A steady mind takes it as guilt, an erratic one as a taste for more;
     // the more it knew of them, the heavier.
     float w = 1.0f;
-    if (b.killer_ == id) w *= WEIGHT_KILLED;
+    if (b.deaths_.killer == id) w *= WEIGHT_KILLED;
     if (met.count(b.id)) w *= WEIGHT_MET;
     if (isFriend(b.id)) w *= WEIGHT_FRIEND;
-    float e = erratic_;
-    bool first = ateFrom_.insert(b.id).second;
+    float e = mind_.erratic;
+    bool first = mind_.ateFrom.insert(b.id).second;
     // It haunts it once it has walked away, not at the meal.
-    hauntedAt_ = clock_;
-    guilt_ += w * GUILT_PER_MEAL * (1.0f - e);
-    appetite_ = std::min(1.0f, appetite_ + w * APPETITE_PER_MEAL * e);
+    mind_.hauntedAt = clock_;
+    mind_.guilt += w * GUILT_PER_MEAL * (1.0f - e);
+    mind_.appetite = std::min(1.0f, mind_.appetite + w * APPETITE_PER_MEAL * e);
     scare(DREAD_GUILT * w * (1.0f - e));
     note(rotten ? "ATE FROM @'S ROTTEN BODY" : "ATE FROM @'S BODY", b.id);
     remember(Episode::What::Flesh, EPISODE_ATE, id, b.id);
     if (first) sayLater(talk::Moment::Feed, -1, b.id);
     if (rotten) {
         health = std::max(std::min(health, SICK_LEAVES), health - SICK_DAMAGE);
-        sick_ = SICK_TIME;
+        mind_.sick = SICK_TIME;
         note("THE ROTTEN FLESH MADE ME SICK");
         sayLater(talk::Moment::Sick);
     }
-    if (guilt_ > 1.0f) {
-        erratic_ = std::min(1.0f, erratic_ + guilt_ - 1.0f);
-        guilt_ = 1.0f;
+    if (mind_.guilt > 1.0f) {
+        mind_.erratic = std::min(1.0f, mind_.erratic + mind_.guilt - 1.0f);
+        mind_.guilt = 1.0f;
         note("THE GUILT IS TOO MUCH");
     }
 
     // Seen at it, it is what it is to everyone who saw.
     for (const auto& o : world.humans()) {
         if (o->dead() || !(o.get() == this || o->sight.sees(cell))) continue;
-        Body& seen = o->bodies_[b.id];
+        Body& seen = o->deaths_.bodies[b.id];
         seen.cell = b.cell;
         seen.cakes = b.cakes;
         seen.meals = b.meals();
@@ -280,7 +280,7 @@ void Human::feed(World& world) {
         timer = FEED_TIME;
         return;
     }
-    meal_ = -1;
+    mind_.meal = -1;
     startIdle(0.5f, 1.0f);
 }
 
@@ -288,14 +288,14 @@ void Human::feed(World& world) {
 // anyone but a friend, until mad.
 Human* Human::preyInSight(const World& world) const {
     bool sane = !isErratic();
-    float weakest = PREY_HEALTH + PREY_APPETITE * appetite_;
+    float weakest = PREY_HEALTH + PREY_APPETITE * mind_.appetite;
     Human* best = nullptr;
     int others = 0;
     for (const auto& o : world.humans()) {
         if (o.get() == this || o->dead() || !sight.sees(o->cell)) continue;
         others++;
-        if (fear_ > 0.0f && o->id == feared_) continue;
-        if (isFriend(o->id) && (sane || erratic_ < ERRATIC_MAD)) continue;
+        if (fight_.fear > 0.0f && o->id == fight_.feared) continue;
+        if (isFriend(o->id) && (sane || mind_.erratic < ERRATIC_MAD)) continue;
         if (sane && o->health >= weakest) continue;
         if (!best || o->health < best->health ||
             (o->health == best->health && cheb(cell, o->cell) < cheb(cell, best->cell)))
@@ -308,11 +308,11 @@ Human* Human::preyInSight(const World& world) const {
 bool Human::startHunt(World& world) {
     Human* p = preyInSight(world);
     if (!p) return false;
-    bool fresh = prey_ != p->id;
-    prey_ = foe_ = p->id;
-    grudge_ = 0.0f;
+    bool fresh = mind_.prey != p->id;
+    mind_.prey = fight_.foe = p->id;
+    fight_.grudge = 0.0f;
     if (!startFight(world)) {
-        prey_ = -1;
+        mind_.prey = -1;
         return false;
     }
     if (fresh) {
@@ -326,47 +326,47 @@ bool Human::startHunt(World& world) {
 // distrusted, and the timid keep away; a brave friend of the dead goes
 // for them. The erratic take it more lightly.
 void Human::sawEat(Human& eater, const Human& body) {
-    gnawedSeen_.insert(body.id);
-    if (!eaters_.insert(eater.id).second) return;
+    mind_.gnawedSeen.insert(body.id);
+    if (!mind_.eaters.insert(eater.id).second) return;
     note("SAW @ EATING #", eater.id, body.id);
     rememberAt(body.cell, Episode::What::Flesh, EPISODE_SAW_EAT, eater.id, body.id);
     bool mad = isErratic();
     scare(DREAD_SAW_EAT * (mad ? 0.5f : 1.0f));
-    erratic_ = std::min(1.0f, erratic_ + ERRATIC_SAW_EAT);
+    mind_.erratic = std::min(1.0f, mind_.erratic + ERRATIC_SAW_EAT);
     if (float t = trust(eater.id); t > TRUST_EATER) regard(eater.id, TRUST_EATER - t);
     sayLater(talk::Moment::SawEat, eater.id, body.id);
     rethink_ = true;
     if (mad) return;
     if (traits.brave < TIMID) {
-        feared_ = eater.id;
-        fear_ = fearTime();
+        fight_.feared = eater.id;
+        fight_.fear = fearTime();
     } else if (isFriend(body.id) && traits.brave >= BRAVE_AVENGE) {
-        foe_ = eater.id;
-        grudge_ = grudgeFor(eater.id);
+        fight_.foe = eater.id;
+        fight_.grudge = grudgeFor(eater.id);
         note("WENT FOR @ FOR WHAT THEY DID", eater.id);
     }
 }
 
 void Human::seeRemains(const Human& body) {
-    if (ateFrom_.count(body.id)) {
-        if (guilt_ < HAUNT_GUILT || clock_ - hauntedAt_ < HAUNT_EVERY) return;
-        hauntedAt_ = clock_;
-        scare(DREAD_HAUNT * guilt_);
+    if (mind_.ateFrom.count(body.id)) {
+        if (mind_.guilt < HAUNT_GUILT || clock_ - mind_.hauntedAt < HAUNT_EVERY) return;
+        mind_.hauntedAt = clock_;
+        scare(DREAD_HAUNT * mind_.guilt);
         note("CAN'T STOP THINKING ABOUT @", body.id);
         sayLater(talk::Moment::Haunted, -1, body.id);
         return;
     }
     // Bare bones keep no marks of teeth: nobody can tell they were eaten from.
-    if (!body.bones() && body.flesh < FLESH_MEALS && gnawedSeen_.insert(body.id).second) {
+    if (!body.bones() && body.flesh < FLESH_MEALS && mind_.gnawedSeen.insert(body.id).second) {
         scare(DREAD_GNAWED);
-        erratic_ = std::min(1.0f, erratic_ + ERRATIC_GNAWED);
+        mind_.erratic = std::min(1.0f, mind_.erratic + ERRATIC_GNAWED);
         note("FOUND @'S BODY HALF EATEN", body.id);
         rememberAt(body.cell, Episode::What::Gnawed, EPISODE_GNAWED, -1, body.id);
         sayLater(talk::Moment::Gnawed, -1, body.id);
         return;
     }
-    if (appetite_ >= CRAVING && hungry() && body.meals() > 0 && clock_ - cravedAt_ >= CRAVE_EVERY) {
-        cravedAt_ = clock_;
+    if (mind_.appetite >= CRAVING && hungry() && body.meals() > 0 && clock_ - mind_.cravedAt >= CRAVE_EVERY) {
+        mind_.cravedAt = clock_;
         sayLater(talk::Moment::Craving, -1, body.id);
     }
 }

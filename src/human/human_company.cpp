@@ -74,8 +74,8 @@ int Human::pickCompany(const World& world) const {
 }
 
 bool Human::stillCompany(const World& world) const {
-    if (companion_ < 0) return false;
-    const Human& c = world.human(companion_);
+    if (social_.companion < 0) return false;
+    const Human& c = world.human(social_.companion);
     if (sight.sees(c.cell) && c.dead()) return false;
     if (suspicious(c.id) || isFoe(c.id) || (!isFriend(c.id) && trust(c.id) < companyTrust() - TRUST_COMPANY_KEEP))
         return false;
@@ -86,20 +86,20 @@ bool Human::stillCompany(const World& world) const {
 
 bool Human::keepCompany(World& world) {
     if (!stillCompany(world)) {
-        if (companion_ >= 0) partCompany(world);
-        companion_ = pickCompany(world);
-        if (companion_ < 0) return false;
-        note("KEEPING WITH @", companion_);
-        sayLater(talk::Moment::Join, companion_);
+        if (social_.companion >= 0) partCompany(world);
+        social_.companion = pickCompany(world);
+        if (social_.companion < 0) return false;
+        note("KEEPING WITH @", social_.companion);
+        sayLater(talk::Moment::Join, social_.companion);
     }
-    Human& c = world.human(companion_);
+    Human& c = world.human(social_.companion);
     bool seen = sight.sees(c.cell);
-    Vec2i at = seen ? c.cell : lastSeen_[c.id];
+    Vec2i at = seen ? c.cell : social_.lastSeen[c.id];
     if (cheb(cell, at) <= COMPANY_GAP) {
         if (!seen) {
-            note("LOST @", companion_);
-            sayLater(talk::Moment::PartLost, -1, companion_);
-            companion_ = -1;
+            note("LOST @", social_.companion);
+            sayLater(talk::Moment::PartLost, -1, social_.companion);
+            social_.companion = -1;
             return false;
         }
         // Beside one asleep, it sits down to wait.
@@ -115,17 +115,17 @@ bool Human::keepCompany(World& world) {
     }
     auto p = search(world, [&](Vec2i x) { return x != at && cheb(x, at) <= COMPANY_GAP; });
     if (!p) {
-        companion_ = -1;
+        social_.companion = -1;
         return false;
     }
     startWalking(Goal::Company, *p);
     return true;
 }
 
-// Says why it is leaving companion_, if it can tell them: nothing to the
+// Says why it is leaving social_.companion, if it can tell them: nothing to the
 // dead, nor to one who now follows it.
 void Human::partCompany(const World& world) {
-    const Human& c = world.human(companion_);
+    const Human& c = world.human(social_.companion);
     if (c.dead() || followedBy(world, c.id)) return;
     if (suspicious(c.id) || isFoe(c.id) || (!isFriend(c.id) && trust(c.id) < companyTrust() - TRUST_COMPANY_KEEP)) {
         note("SPLIT FROM @", c.id);
@@ -140,16 +140,16 @@ bool Human::waitForCompany(const World& world) {
     if (follows() >= 0) return false;
     bool lagging = false;
     for (const auto& o : world.humans())
-        if (o->companion_ == id && o->leader_ < 0 && !o->dead() && sight.sees(o->cell) &&
+        if (o->social_.companion == id && o->social_.leader < 0 && !o->dead() && sight.sees(o->cell) &&
             cheb(cell, o->cell) > COMPANY_LAG)
             lagging = true;
     if (!lagging) {
-        waitedFor_ = 0.0f;
+        social_.waitedFor = 0.0f;
         return false;
     }
-    if (waitedFor_ >= COMPANY_PATIENCE) return false;
+    if (social_.waitedFor >= COMPANY_PATIENCE) return false;
     float t = rng_.range(COMPANY_PAUSE_MIN, COMPANY_PAUSE_MAX);
-    waitedFor_ += t;
+    social_.waitedFor += t;
     startIdle(t, t);
     return true;
 }

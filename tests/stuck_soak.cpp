@@ -18,12 +18,23 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-// It reads humans' private state (paths, stuck counts), so it sees them
-// with private made public.
-#define private public
 #include "human/human.h"
 #include "world/world.h"
-#undef private
+
+/// Reads the walking state humans keep to themselves (paths, stuck counts),
+/// and packs extra humans in; a friend of Human and World.
+struct SoakProbe {
+    static const std::deque<Vec2i>& path(const Human& h) { return h.path_; }
+    static Vec2i target(const Human& h) { return h.target_; }
+    static int stuck(const Human& h) { return h.stuck_; }
+    static bool rethink(const Human& h) { return h.rethink_; }
+    static int partner(const Human& h) { return h.social_.partner; }
+    static int leader(const Human& h) { return h.social_.leader; }
+    static int foe(const Human& h) { return h.fight_.foe; }
+    static bool ateFlesh(const Human& h) { return !h.mind_.ateFrom.empty(); }
+    static Human& addHuman(World& w, const HumanLook& look, Vec2i cell, uint64_t seed) { return w.addHuman(look, cell, seed); }
+};
+using P = SoakProbe;
 
 static const char* GOAL[] = {"Explore", "FetchKey", "OpenDoor", "PassDoor", "Wander", "Meet", "Follow", "Company", "FetchCake", "Drink", "Relieve", "Fight",
                              "Flee", "Share", "CheckDoor", "Wash", "Avoid", "Escort", "Escorted", "Track", "GiveWay", "Loot", "Feed", "Sleep", "Rob", "Watch"};
@@ -60,8 +71,8 @@ struct Totals {
 static std::string label(const Human& h) {
     char b[200];
     std::snprintf(b, sizeof b, "#%d %s/%s @(%d,%d) tgt(%d,%d) path%zu partner%d leader%d foe%d keys%d cakes%d hunger%.2f",
-                  h.id, STATE[int(h.state)], GOAL[int(h.goal)], h.cell.x, h.cell.y, h.target_.x, h.target_.y,
-                  h.path_.size(), h.partner_, h.leader_, h.foe_, h.keys, h.cakes, h.hunger);
+                  h.id, STATE[int(h.state)], GOAL[int(h.goal)], h.cell.x, h.cell.y, P::target(h).x, P::target(h).y,
+                  P::path(h).size(), P::partner(h), P::leader(h), P::foe(h), h.keys, h.cakes, h.hunger);
     return b;
 }
 
@@ -83,7 +94,7 @@ int main(int argc, char** argv) {
         for (int i = 0, tries = 0; i < crowd && tries < 1000; tries++) {
             Vec2i c = first.cell + Vec2i{rng.range(-8, 8), rng.range(-8, 8)};
             if (w.tile(c) != Tile::Floor || w.occupant(c) || w.table(c) || w.statue(c)) continue;
-            w.addHuman(HumanLook::random(rng), c, rng.next());
+            P::addHuman(w, HumanLook::random(rng), c, rng.next());
             i++;
         }
         std::unordered_map<int, Track> tr;
@@ -127,20 +138,20 @@ int main(int argc, char** argv) {
                     k.stillFor = 0;
                 }
                 while (!k.steps.empty() && k.steps.front().first < t - 60) k.steps.pop_front();
-                if (k.targets.empty() || k.targets.back().second != h.target_) k.targets.push_back({t, h.target_});
+                if (k.targets.empty() || k.targets.back().second != P::target(h)) k.targets.push_back({t, P::target(h)});
                 while (!k.targets.empty() && k.targets.front().first < t - 30) k.targets.pop_front();
 
                 // Waiting on someone in the way.
-                bool blocked = h.state == Human::State::Walking && !h.moving && !h.path_.empty();
-                Human* by = blocked ? w.occupant(h.path_.front()) : nullptr;
+                bool blocked = h.state == Human::State::Walking && !h.moving && !P::path(h).empty();
+                Human* by = blocked ? w.occupant(P::path(h).front()) : nullptr;
                 if (by == &h) by = nullptr;
                 blocked = blocked && by;
                 if (blocked) {
                     k.blockedFor += dt;
                     T.blockedSeconds += dt;
                     T.goalBlocked[int(h.goal)] += dt;
-                    if (by->state == Human::State::Walking && !by->moving && !by->path_.empty() &&
-                        by->path_.front() == h.cell && h.id < by->id && k.blockedFor <= dt * 1.5f) {
+                    if (by->state == Human::State::Walking && !by->moving && !P::path(*by).empty() &&
+                        P::path(*by).front() == h.cell && h.id < by->id && k.blockedFor <= dt * 1.5f) {
                         T.mutual++;
                         float& last = mutualAt[{h.id, by->id}];
                         if (t - last > 60) note("MUTUAL", h, "<-> " + label(*by));
@@ -155,11 +166,11 @@ int main(int argc, char** argv) {
                 } else {
                     k.blockedFor = 0;
                 }
-                if (k.prevStuck >= 4 && h.stuck_ == 0 && h.state == Human::State::Idle && !h.moving) T.giveUps++;
-                k.prevStuck = h.stuck_;
+                if (k.prevStuck >= 4 && P::stuck(h) == 0 && h.state == Human::State::Idle && !h.moving) T.giveUps++;
+                k.prevStuck = P::stuck(h);
                 if (trace && s == tseed && h.id == tid && t >= tfrom && t <= tto &&
                     (h.goal != k.prevGoal || h.cell != k.steps.back().second || f % 15 == 0))
-                    std::printf("    T %.2f %s rethink%d stuck%d\n", t, label(h).c_str(), h.rethink_, h.stuck_);
+                    std::printf("    T %.2f %s rethink%d stuck%d\n", t, label(h).c_str(), P::rethink(h), P::stuck(h));
                 if (h.goal == Human::Goal::GiveWay && k.prevGoal != Human::Goal::GiveWay) T.giveWays++;
                 k.prevGoal = h.goal;
 
@@ -303,7 +314,7 @@ int main(int argc, char** argv) {
                 }
                 (thirst ? diedThirst : starve ? diedStarved : bled ? diedBled : diedOther)++;
             }
-            if (!h->ateFrom_.empty()) (h->appetite_ > h->guilt_ ? erraticEaters : braveEaters)++;
+            if (P::ateFlesh(*h)) (h->appetite() > h->guilt() ? erraticEaters : braveEaters)++;
         }
         std::printf("seed %d: %zu humans (%d alive), %zu chunks, %d bodies gone through (%d empty), "
                     "starving spells %d, lessons: %d hoard, %d keys first\n",
@@ -327,13 +338,13 @@ int main(int argc, char** argv) {
         {
             // How foul the water got: cells foul at all, past refusing, past sickness, and the worst.
             std::map<Vec2i, float, bool (*)(Vec2i, Vec2i)> f([](Vec2i a, Vec2i b) { return a.x != b.x ? a.x < b.x : a.y < b.y; });
-            for (auto& [c, v] : w.mess().foul_) f[c] += v;
-            for (auto& [c, v] : w.blood().foul_) f[c] += v;
+            for (auto& [c, v] : w.mess().fouled()) f[c] += v;
+            for (auto& [c, v] : w.blood().fouled()) f[c] += v;
             int any = 0, refuse = 0, sick = 0;
             float most = 0;
             for (auto& [c, v] : f) any++, refuse += v >= 0.3f, sick += v >= 0.5f, most = std::max(most, v);
             float dirtiest = 0;
-            for (auto& [c, t] : w.toilets_) dirtiest = std::max(dirtiest, t.dirt);
+            for (auto& [c, t] : w.toilets()) dirtiest = std::max(dirtiest, t.dirt);
             std::printf("   water tips: %d told, %d over spikes, %d asks of the group said, %d led to drink; %d learnt to "
                         "keep near water\n",
                         waterTold, waterLied, waterAsked, ledToDrink, nearWater);
@@ -343,7 +354,7 @@ int main(int argc, char** argv) {
             std::printf("   accidents: %d wet, %d soiled, %d wet in fright; seen going %d, accident seen %d, "
                         "going in water seen %d, mocked %d\n",
                         wet, soiled, frightWet, seenGoing, seenAccident, inWater, mocked);
-            std::printf("   toilets: %zu, %d uses, %d misses, dirtiest %.2f, %d waits\n", w.toilets_.size(), toiletUses,
+            std::printf("   toilets: %zu, %d uses, %d misses, dirtiest %.2f, %d waits\n", w.toilets().size(), toiletUses,
                         toiletMisses, dirtiest, toiletWaits);
             std::printf("   water: %d cells foul, %d >= 0.3, %d >= 0.5, worst %.2f; %d foul gulps\n", any, refuse, sick,
                         most, foulGulps);

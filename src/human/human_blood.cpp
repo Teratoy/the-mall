@@ -212,8 +212,8 @@ void Human::dryStains(float dt) {
             stains.wet[i] = std::max(0.0f, stains.wet[i] - dt / BODY_DRY_TIME);
             wet = true;
         }
-    if (!wet || (run_ -= dt) > 0.0f) return;
-    run_ = RUN_EVERY;
+    if (!wet || (gore_.run -= dt) > 0.0f) return;
+    gore_.run = RUN_EVERY;
     for (int y = SPRITE_H - 2; y >= 0; y--)
         for (int x = 0; x < SPRITE_W; x++) {
             size_t i = size_t(y * SPRITE_W + x), below = i + SPRITE_W;
@@ -235,7 +235,7 @@ void Human::spill(World& world, float dt) {
     float fy = (prev.y + (cell.y - prev.y) * t) * CELL_PX + CELL_PX;
 
     dryStains(dt);
-    for (const Spray& s : sprays_) {
+    for (const Spray& s : gore_.sprays) {
         stain({s.part}, HIT_PIXELS + int(s.damage * HIT_PIXELS_PER_DAMAGE), HIT_INK);
         int n = SPRAY_DROPS + int(s.damage * SPRAY_DROPS_PER_DAMAGE);
         float len = std::hypot(s.dx, s.dy);
@@ -262,21 +262,21 @@ void Human::spill(World& world, float dt) {
                 world.blood().drop(world, x, y, r, id, rng_);
         }
     }
-    sprays_.clear();
+    gore_.sprays.clear();
 
     // Stepping into a thick wet stain wets the feet, which print it on for
     // a few steps after.
-    if (!dead() && cell != trod_) {
-        trod_ = cell;
+    if (!dead() && cell != gore_.trod) {
+        gore_.trod = cell;
         const Stain* under = world.blood().at(cell);
         if (under && under->wet > 0.0f && under->total() >= FOOT_WET_MIN) {
-            bloodySteps_ = FOOTPRINT_STEPS;
-            feetBlood_ = under->mostly();
+            gore_.bloodySteps = FOOTPRINT_STEPS;
+            gore_.feetBlood = under->mostly();
             stain({BodyPart::Feet}, 2, STEP_INK);
-        } else if (bloodySteps_ > 0) {
-            world.blood().drop(world, fx + rng_.range(-1.0f, 1.0f), fy - 1.5f, FOOTPRINT_RADIUS, feetBlood_, rng_,
-                               float(bloodySteps_) / FOOTPRINT_STEPS);
-            bloodySteps_--;
+        } else if (gore_.bloodySteps > 0) {
+            world.blood().drop(world, fx + rng_.range(-1.0f, 1.0f), fy - 1.5f, FOOTPRINT_RADIUS, gore_.feetBlood, rng_,
+                               float(gore_.bloodySteps) / FOOTPRINT_STEPS);
+            gore_.bloodySteps--;
             for (size_t i = 0; i < stains.amount.size(); i++)
                 if (stains.parts[i] == uint8_t(BodyPart::Feet) && stains.wet[i] > 0.0f)
                     stains.amount[i] = uint8_t(stains.amount[i] - int(stains.amount[i] * FOOTPRINT_WIPE));
@@ -286,12 +286,12 @@ void Human::spill(World& world, float dt) {
 
     float b = bleeding();
     if (b <= 0.0f) {
-        drip_ = 0.0f;
+        gore_.drip = 0.0f;
         return;
     }
-    drip_ += (DRIP_RATE + DRIP_RATE_PER_BLEED * b) * dt;
+    gore_.drip += (DRIP_RATE + DRIP_RATE_PER_BLEED * b) * dt;
     float radius = std::min(DROP_RADIUS_MAX, DROP_RADIUS + DROP_RADIUS_PER_BLEED * b) * (dead() ? POOL_DROP_MUL : 1.0f);
-    for (; drip_ >= 1.0f; drip_ -= 1.0f) {
+    for (; gore_.drip >= 1.0f; gore_.drip -= 1.0f) {
         float pick = rng_.range(0.0f, b), x = fx, y = fy - rng_.range(1.0f, 4.0f);
         const Wound* w = &wounds.back();
         for (const Wound& o : wounds)
@@ -317,7 +317,7 @@ void Human::spill(World& world, float dt) {
 bool Human::startWash(World& world) {
     // The brave put up with more blood on them before bothering.
     float put = 0.5f + traits.brave;
-    if (hungry() || thirsty() || fear_ > 0.0f || foe_ >= 0) return false;
+    if (hungry() || thirsty() || fight_.fear > 0.0f || fight_.foe >= 0) return false;
     bool bloody = stains.total(false) >= WASH_MIN * put || stains.feet() >= WASH_FEET_MIN * put;
     if (!bloody && !wantsWashing()) return false;
     auto water = [&](Vec2i c) -> std::optional<Vec2i> {
@@ -336,20 +336,20 @@ bool Human::startWash(World& world) {
         startWalking(Goal::Wash, *p);
         return true;
     }
-    washAt_ = *water(cell);
-    if (washAt_.x != cell.x) facingLeft = washAt_.x < cell.x;
+    gore_.washAt = *water(cell);
+    if (gore_.washAt.x != cell.x) facingLeft = gore_.washAt.x < cell.x;
     state = State::Washing;
     moving = false;
     path_.clear();
     timer = WASH_STEP;
     note(bloody ? "WASHED OFF BLOOD" : "WASHED OFF SHIT");
-    offendDrinkers(world, washAt_);
+    offendDrinkers(world, gore_.washAt);
     return true;
 }
 
 void Human::wash(World& world) {
     if (observe(world)) rethink_ = true;
-    if (rethink_ || hungry() || thirsty() || fear_ > 0.0f || foe_ >= 0) return choose(world);
+    if (rethink_ || hungry() || thirsty() || fight_.fear > 0.0f || fight_.foe >= 0) return choose(world);
     int left = WASH_INK, off = 0;
     for (size_t i = 0; i < stains.amount.size() && left > 0; i++) {
         int k = std::min({int(stains.amount[i]), WASH_PIXEL_INK, left});
@@ -359,11 +359,11 @@ void Human::wash(World& world) {
     }
     stains.version++;
     float tint = off / 255.0f * WASH_TINT_PER_PIXEL;
-    world.blood().tintWater(washAt_, tint);
+    world.blood().tintWater(gore_.washAt, tint);
     for (Vec2i d : DIRS4)
-        if (drinkable(world.tile(washAt_ + d))) world.blood().tintWater(washAt_ + d, tint / 2.0f);
+        if (drinkable(world.tile(gore_.washAt + d))) world.blood().tintWater(gore_.washAt + d, tint / 2.0f);
     // Feces once the blood is off, fouling the water (human_relief.cpp).
-    bool dirty = !stains.any() && washDirt(world, washAt_);
+    bool dirty = !stains.any() && washDirt(world, gore_.washAt);
     if (!stains.any() && !dirty) return choose(world);
     timer = WASH_STEP;
 }
@@ -389,8 +389,8 @@ bool Human::noticeBlood(const World& world, Vec2i c) {
                 sayLater(talk::Moment::OwnPool);
             }
         } else if (s.wet > 0.0f && cheb(cell, c) < POOL_FEAR_DIST) {
-            scare_ = c;
-            scaredUntil_ = clock_ + POOL_FEAR_TIME;
+            gore_.scare = c;
+            gore_.scaredUntil = clock_ + POOL_FEAR_TIME;
             scare(DREAD_POOL);
             note("SAW A FRESH POOL OF BLOOD");
             rememberAt(c, Episode::What::Pool, EPISODE_POOL);
@@ -410,12 +410,12 @@ bool Human::judge(const Human& o) {
     float fresh = o.stains.freshness();
     float weight = std::max(fresh, std::clamp((total - DRY_MIN) / (DRY_FULL - DRY_MIN), 0.0f, 1.0f));
     if (weight < SUSPECT_WEIGHT) return false;
-    auto it = suspects_.find(o.id);
-    bool known = it != suspects_.end() && it->second.until > clock_;
+    auto it = gore_.suspects.find(o.id);
+    bool known = it != gore_.suspects.end() && it->second.until > clock_;
     bool news = !known || weight >= it->second.weight + HEAVIER;
     float until = clock_ + SUSPECT_TIME * weight;
     if (known) until = std::max(until, it->second.until);
-    suspects_[o.id] = {until, weight};
+    gore_.suspects[o.id] = {until, weight};
     if (news) {
         note(fresh >= ACCUSE_WEIGHT     ? "@ WAS BLOODY WITHOUT A WOUND"
              : weight >= ACCUSE_WEIGHT ? "@ WAS CAKED IN DRIED BLOOD"
@@ -430,8 +430,8 @@ bool Human::judge(const Human& o) {
 }
 
 bool Human::suspicious(int id) const {
-    auto it = suspects_.find(id);
-    return it != suspects_.end() && it->second.until > clock_;
+    auto it = gore_.suspects.find(id);
+    return it != gore_.suspects.end() && it->second.until > clock_;
 }
 
 // The well off would rather not cross where someone bled lately.
@@ -444,7 +444,7 @@ int Human::bloodCost(Vec2i c) const {
 
 // Foes are kept away from like suspects.
 bool Human::shuns(const Human& o) const {
-    return &o != this && !o.dead() && o.id != foe_ && (suspicious(o.id) || isFoe(o.id)) && sight.sees(o.cell) &&
+    return &o != this && !o.dead() && o.id != fight_.foe && (suspicious(o.id) || isFoe(o.id)) && sight.sees(o.cell) &&
            !(starving() && o.cakes > 0);
 }
 
@@ -466,8 +466,8 @@ bool Human::keepAway(World& world) {
     Vec2i from;
     int dist = 0;
     // Neither the starving nor the erratic mind blood.
-    if (scaredUntil_ > clock_ && !starving() && !isErratic() && cheb(cell, scare_) < POOL_FEAR_DIST) {
-        from = scare_;
+    if (gore_.scaredUntil > clock_ && !starving() && !isErratic() && cheb(cell, gore_.scare) < POOL_FEAR_DIST) {
+        from = gore_.scare;
         dist = POOL_FEAR_DIST;
     } else {
         for (const auto& o : world.humans()) {
@@ -484,10 +484,10 @@ bool Human::keepAway(World& world) {
 }
 
 bool Human::wouldEscort(const Human& o) const {
-    return traits.sociable >= LONER && escortee_ < 0 && escort_ < 0 && !hungry() && health >= HELPER_HEALTH &&
-           cakes > 0 && foe_ < 0 &&
-           fear_ <= 0.0f && &o != this && !o.dead() && !o.wounds.empty() && o.stains.total() >= SUSPECT_BLOOD &&
-           o.escort_ < 0 && o.escortee_ < 0 && !o.hungry() && o.foe_ < 0 && o.fear_ <= 0.0f &&
+    return traits.sociable >= LONER && escorting_.escortee < 0 && escorting_.by < 0 && !hungry() && health >= HELPER_HEALTH &&
+           cakes > 0 && fight_.foe < 0 &&
+           fight_.fear <= 0.0f && &o != this && !o.dead() && !o.wounds.empty() && o.stains.total() >= SUSPECT_BLOOD &&
+           o.escorting_.by < 0 && o.escorting_.escortee < 0 && !o.hungry() && o.fight_.foe < 0 && o.fight_.fear <= 0.0f &&
            o.state != State::Washing && !suspicious(o.id) && !isFoe(o.id) && !o.isFoe(id) && sight.sees(o.cell) &&
            cheb(cell, o.cell) <= ESCORT_MEET;
 }
@@ -513,14 +513,14 @@ bool Human::offerEscort(World& world) {
         memory.see(end, o->memory.tile(end));
         for (Vec2i d : DIRS4)
             if (drinkable(o->memory.tile(end + d))) memory.see(end + d, o->memory.tile(end + d));
-        escortTo_ = end;
+        escorting_.to = end;
     } else {
-        escortTo_ = mine->empty() ? cell : mine->back();
+        escorting_.to = mine->empty() ? cell : mine->back();
     }
-    escortee_ = o->id;
-    escortArrived_ = false;
-    escortDrink_ = false;
-    o->escort_ = id;
+    escorting_.escortee = o->id;
+    escorting_.arrived = false;
+    escorting_.drink = false;
+    o->escorting_.by = id;
     o->rethink_ = true;
     if (!leadEscort(world)) return false;
     note("TOOK @ TO WATER", o->id);
@@ -534,13 +534,13 @@ bool Human::offerEscort(World& world) {
 
 // There, it shows them the water and waits until they are done washing.
 bool Human::leadEscort(World& world) {
-    if (escortee_ < 0) return false;
-    Human& o = world.human(escortee_);
-    bool on = !o.dead() && !hungry() && foe_ < 0 && fear_ <= 0.0f && o.foe_ < 0 && o.fear_ <= 0.0f && !o.hungry();
-    if (on && escortArrived_) {
+    if (escorting_.escortee < 0) return false;
+    Human& o = world.human(escorting_.escortee);
+    bool on = !o.dead() && !hungry() && fight_.foe < 0 && fight_.fear <= 0.0f && o.fight_.foe < 0 && o.fight_.fear <= 0.0f && !o.hungry();
+    if (on && escorting_.arrived) {
         // Still standing by after being let go, until it sees them wash, or
         // drink when it led them to drink (human_thirst.cpp).
-        on = escortDrink_ ? o.state == State::Drinking || o.goal == Goal::Drink || o.goal == Goal::Escorted
+        on = escorting_.drink ? o.state == State::Drinking || o.goal == Goal::Drink || o.goal == Goal::Escorted
                           : o.state == State::Washing || o.goal == Goal::Wash || o.goal == Goal::Escorted;
         if (on) {
             startIdle(ESCORT_WAIT_MIN, ESCORT_WAIT_MAX);
@@ -548,17 +548,17 @@ bool Human::leadEscort(World& world) {
             return true;
         }
     }
-    if (!on || o.escort_ != id) {
-        if (o.escort_ == id) o.escort_ = -1;
-        escortee_ = -1;
+    if (!on || o.escorting_.by != id) {
+        if (o.escorting_.by == id) o.escorting_.by = -1;
+        escorting_.escortee = -1;
         return false;
     }
-    if (cell == escortTo_) {
-        escortArrived_ = true;
+    if (cell == escorting_.to) {
+        escorting_.arrived = true;
         o.regard(id, TRUST_LED_TO_WATER);
         for (Vec2i d : DIRS4)
             if (drinkable(memory.tile(cell + d))) o.memory.see(cell + d, memory.tile(cell + d));
-        o.escort_ = -1;
+        o.escorting_.by = -1;
         o.rethink_ = true;
         startIdle(ESCORT_WAIT_MIN, ESCORT_WAIT_MAX);
         goal = Goal::Escort;
@@ -569,11 +569,11 @@ bool Human::leadEscort(World& world) {
         goal = Goal::Escort;
         return true;
     }
-    Vec2i to = escortTo_;
+    Vec2i to = escorting_.to;
     auto p = search(world, [&](Vec2i c) { return c == to; });
     if (!p) {
-        o.escort_ = -1;
-        escortee_ = -1;
+        o.escorting_.by = -1;
+        escorting_.escortee = -1;
         return false;
     }
     startWalking(Goal::Escort, *p);
@@ -581,12 +581,12 @@ bool Human::leadEscort(World& world) {
 }
 
 bool Human::followEscort(World& world) {
-    if (escort_ < 0) return false;
-    Human& h = world.human(escort_);
+    if (escorting_.by < 0) return false;
+    Human& h = world.human(escorting_.by);
     // Dead out of sight, they are gone after until come upon.
     bool gone = h.dead() && (sight.sees(h.cell) || cheb(cell, h.cell) <= ESCORT_FOLLOW);
-    if (gone || h.escortee_ != id || hungry() || foe_ >= 0 || fear_ > 0.0f) {
-        escort_ = -1;
+    if (gone || h.escorting_.escortee != id || hungry() || fight_.foe >= 0 || fight_.fear > 0.0f) {
+        escorting_.by = -1;
         return false;
     }
     if (cheb(cell, h.cell) <= ESCORT_FOLLOW) {
@@ -597,7 +597,7 @@ bool Human::followEscort(World& world) {
     Vec2i at = h.cell;
     auto p = search(world, [&](Vec2i c) { return c != at && cheb(c, at) <= ESCORT_FOLLOW; });
     if (!p) {
-        escort_ = -1;
+        escorting_.by = -1;
         return false;
     }
     startWalking(Goal::Escorted, *p);
@@ -613,13 +613,13 @@ bool Human::track(World& world) {
         for (int dx = -1; dx <= 1; dx++)
             if (const Stain* s = world.blood().at(cell + Vec2i{dx, dy}); s && s->share(id) < OWN_BLOOD)
                 here = std::max(here, s->wet);
-    std::erase_if(tracked_, [&](const auto& t) { return clock_ - t.second >= TRACK_FORGET; });
+    std::erase_if(gore_.tracked, [&](const auto& t) { return clock_ - t.second >= TRACK_FORGET; });
     std::optional<Vec2i> best;
     float bestWet = here;
     sight.forEach([&](Vec2i c) {
         const Stain* s = world.blood().at(c);
         if (s && s->wet > bestWet && s->share(id) < OWN_BLOOD && cheb(cell, c) <= TRACK_RANGE && cheb(cell, c) > 1 &&
-            !tracked_.count(c)) {
+            !gore_.tracked.count(c)) {
             best = c;
             bestWet = s->wet;
         }
@@ -628,7 +628,7 @@ bool Human::track(World& world) {
     Vec2i to = *best;
     auto p = search(world, [&](Vec2i c) { return cheb(c, to) <= 1; });
     if (!p || p->empty()) return false;
-    tracked_[to] = clock_;
+    gore_.tracked[to] = clock_;
     startWalking(Goal::Track, *p);
     return true;
 }

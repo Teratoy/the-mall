@@ -10,12 +10,13 @@
 
 Human::Human(int id, const HumanLook& look, Vec2i cell, uint64_t seed, std::string chosenName)
     : id(id), name(chosenName.empty() ? randomName(seed) : std::move(chosenName)), look(look), traits(Traits::random(seed)), cell(cell), prev(cell), stains(look), dirt(look), soaked(look),
-      rng_(seed), target_(cell), trod_(cell) {
+      rng_(seed), target_(cell) {
+    gore_.trod = cell;
     hunger = rng_.range(0.0f, START_HUNGER_MAX);
     thirst = rng_.range(0.0f, START_THIRST_MAX);
     tiredness = rng_.range(0.0f, START_TIRED_MAX);
     timer = rng_.range(WAKE_LIE_MIN, WAKE_LIE_MAX);
-    hunch_ = rng_.range(0.0f, TAU);
+    escape_.hunch = rng_.range(0.0f, TAU);
 }
 
 void Human::update(World& world, float dt) {
@@ -36,7 +37,7 @@ void Human::update(World& world, float dt) {
     // then it answers the blow like anyone.
     if (state == State::Sleeping) {
         // Nodding off it may still say something; lying down, nothing more.
-        if (animTime >= LIE_DOWN_TIME) sayings_.clear();
+        if (animTime >= LIE_DOWN_TIME) voice_.sayings.clear();
         speak(world, dt);
         if (hurtTime <= 0.0f) return sleep(world, dt);
         wakeUp(world, true, -1, "WOKE UP HURT");
@@ -46,7 +47,7 @@ void Human::update(World& world, float dt) {
     callForHelp(world, dt);
     timer -= dt;
     // A hit is answered at once, or as soon as the step under way is done.
-    if (provoked_ && stunned_ <= 0.0f && (!moving || timer <= 0.0f)) {
+    if (fight_.provoked && sleep_.stunned <= 0.0f && (!moving || timer <= 0.0f)) {
         react(world);
         if (state == State::Walking) step(world);
         return;
@@ -63,15 +64,15 @@ void Human::update(World& world, float dt) {
             // On watch, anything that needs it up and about.
             if (goal == Goal::Watch && watchCalls(world)) rethink_ = true;
         }
-        if ((rethink_ && !comingTo_) || timer <= 0.0f) startRising();
+        if ((rethink_ && !escape_.comingTo) || timer <= 0.0f) startRising();
         return;
     }
     if (timer > 0.0f) return;
     switch (state) {
     case State::Greeting: {
         // Not walking off mid-sentence, while the other still stands there.
-        const Human& p = world.human(partner_);
-        bool with = !p.dead() && p.state == State::Greeting && p.partner_ == id;
+        const Human& p = world.human(social_.partner);
+        bool with = !p.dead() && p.state == State::Greeting && p.social_.partner == id;
         if (with && (talking() || p.talking()) && timer > GREET_TIME - GREET_LONGEST) return;
         endGreet(world);
         return;
@@ -168,7 +169,7 @@ float Human::fleeHealth() const { return FLEE_HEALTH * sway(1.0f - traits.brave)
 void Human::scare(float how) {
     dread_ = std::min(1.0f, dread_ + how * sway(1.0f - traits.brave));
     // A big enough fright may make it wet itself (human_relief.cpp).
-    if (how >= FRIGHT_WET) frightWet_ = true;
+    if (how >= FRIGHT_WET) relief_.frightWet = true;
 }
 
 float Human::fearTime() const { return FEAR_TIME * sway(1.0f - traits.brave); }
@@ -191,22 +192,22 @@ void Human::live(World& world, float dt) {
     press(dt);
     if (hunger >= 1.0f) health -= STARVE_RATE * dt;
     if (thirst >= 1.0f) health -= PARCH_RATE * dt;
-    if (!hungry() && !thirsty() && wounds.empty() && sick_ <= 0.0f)
+    if (!hungry() && !thirsty() && wounds.empty() && mind_.sick <= 0.0f)
         health = std::min(1.0f, health + HEAL_RATE * (state == State::Sleeping ? SLEEP_HEAL : 1.0f) * dt);
     // Darts' bleeding stops short of killing, as darts do.
     float lethal, bled = bleedOut(dt, lethal);
     health -= lethal;
     if (health > DART_SURVIVE_HEALTH) health = std::max(DART_SURVIVE_HEALTH, health - (bled - lethal));
-    beating_ = std::max(0.0f, beating_ - BEATING_DECAY * dt);
+    fight_.beating = std::max(0.0f, fight_.beating - BEATING_DECAY * dt);
     hurtTime = std::max(0.0f, hurtTime - dt);
-    grudge_ -= dt;
-    stunned_ = std::max(0.0f, stunned_ - dt);
-    fear_ -= dt;
-    daze_ = std::max(0.0f, daze_ - dt / DAZE_TIME);
-    out_ = std::max(OUT_REST, out_ - (1.0f - OUT_REST) / OUT_SETTLE * dt);
+    fight_.grudge -= dt;
+    sleep_.stunned = std::max(0.0f, sleep_.stunned - dt);
+    fight_.fear -= dt;
+    escape_.daze = std::max(0.0f, escape_.daze - dt / DAZE_TIME);
+    escape_.out = std::max(OUT_REST, escape_.out - (1.0f - OUT_REST) / OUT_SETTLE * dt);
     dread_ = std::max(0.0f, dread_ - DREAD_FADE * sway(traits.brave) * (state == State::Sitting ? DREAD_SIT_FADE : 1.0f) * dt);
     float fade = TRUST_FADE * sway(traits.sociable) * dt;
-    for (auto& [who, t] : trust_) t = t > 0.0f ? std::max(0.0f, t - fade) : std::min(0.0f, t + fade);
+    for (auto& [who, t] : social_.trust) t = t > 0.0f ? std::max(0.0f, t - fade) : std::min(0.0f, t + fade);
     urgeWait_ -= dt;
     // Without hope, what going without taught it sticks.
     lessons.hoard = std::max(0.0f, lessons.hoard - LESSON_FADE * (1.0f - LESSON_GLOOM * gloom()) * dt);
@@ -307,7 +308,7 @@ float Human::stepProgress() const {
 }
 
 bool Human::observe(const World& world) {
-    sight.look(world, cell, int(std::lround(DAZE_SIGHT + (Sight::RADIUS - DAZE_SIGHT) * (1.0f - daze_))));
+    sight.look(world, cell, int(std::lround(DAZE_SIGHT + (Sight::RADIUS - DAZE_SIGHT) * (1.0f - escape_.daze))));
     bool news = false;
     // The first key, cake, door, water, human and someone else's footprints
     // it ever sees are remarked on, one a look so they don't all come out
@@ -325,7 +326,7 @@ bool Human::observe(const World& world) {
         if (drinkable(t)) firstSight(talk::Moment::FirstWater);
         if (t != Tile::Void) {
             if (memory.tile(c) == Tile::Void) {
-                lastFound_ = clock_;
+                escape_.lastFound = clock_;
                 // Water first seen is news to the thirsty not yet going to some.
                 news |= drinkable(t) && thirsty() && goal != Goal::Drink;
                 if (drinkable(t) && thirsty()) foundWater();
@@ -369,30 +370,30 @@ bool Human::observe(const World& world) {
         if (!o->dead()) firstSight(talk::Moment::FirstHuman, o->id);
         if (!o->dead()) noticeFilth(*o);
         // Died asleep, from farther off it still looks asleep.
-        if (o->dead() && o->diedAsleep_ && !seenDead_.count(o->id) && cheb(cell, o->cell) > STILL_SEEN) continue;
+        if (o->dead() && o->sleep_.diedAsleep && !deaths_.seenDead.count(o->id) && cheb(cell, o->cell) > STILL_SEEN) continue;
         if (o->dead()) {
-            seenCakes_.erase(o->id);
-            Body& b = bodies_[o->id];
+            social_.seenCakes.erase(o->id);
+            Body& b = deaths_.bodies[o->id];
             b.cell = o->cell;
             b.cakes = o->cakes;
             b.meals = o->meals();
             b.spoiled = o->spoiled();
             seeRemains(*o);
-            if (seenDead_.insert(o->id).second) {
+            if (deaths_.seenDead.insert(o->id).second) {
                 // Bare bones could be anyone's: not even a friend's are known.
-                bool known = !o->bones() || o->killer_ == id;
-                if (!known) nameless_.insert(o->id);
+                bool known = !o->bones() || o->deaths_.killer == id;
+                if (!known) deaths_.nameless.insert(o->id);
                 bool friendDead = known && isFriend(o->id);
                 scare(o->bones() ? DREAD_BONES : o->spoiled() ? DREAD_CORPSE : DREAD_CORPSE_FRESH);
                 lift(friendDead ? HOPE_FRIEND_DEAD : o->bones() ? HOPE_BONES : HOPE_BODY);
-                if (o->killer_ == id && !o->killerSaw_) {
+                if (o->deaths_.killer == id && !o->deaths_.killerSaw) {
                     note("FOUND @ DEAD. MY BEATING DID IT", o->id);
                     rememberAt(o->cell, Episode::What::Kill, EPISODE_KILLED, id, o->id);
-                } else if (o->killer_ != id) {
+                } else if (o->deaths_.killer != id) {
                     if (known)
-                        note(o->diedAsleep_ ? "FOUND @ DEAD. I THOUGHT THEY WERE ASLEEP" : "FOUND @ DEAD", o->id);
+                        note(o->sleep_.diedAsleep ? "FOUND @ DEAD. I THOUGHT THEY WERE ASLEEP" : "FOUND @ DEAD", o->id);
                     // Taken for asleep, it tries to wake them first.
-                    if (known && o->diedAsleep_) sayLater(talk::Moment::WakeThem, -1, o->id);
+                    if (known && o->sleep_.diedAsleep) sayLater(talk::Moment::WakeThem, -1, o->id);
                     else
                         note("FOUND SOMEONE'S BONES");
                     rememberAt(o->cell, Episode::What::Body, friendDead ? EPISODE_FRIEND_BODY : EPISODE_BODY, -1,
@@ -403,12 +404,12 @@ bool Human::observe(const World& world) {
             }
             continue;
         }
-        lastSeen_[o->id] = o->cell;
-        bool knewCakes = seenCakes_.count(o->id) > 0;
+        social_.lastSeen[o->id] = o->cell;
+        bool knewCakes = social_.seenCakes.count(o->id) > 0;
         if (o->cakes > 0)
-            seenCakes_[o->id] = o->cakes;
+            social_.seenCakes[o->id] = o->cakes;
         else
-            seenCakes_.erase(o->id);
+            social_.seenCakes.erase(o->id);
         news |= !met.count(o->id);
         news |= hungry() && cakes == 0 && o->cakes > 0 && !knewCakes;
         news |= o->starving() && cakes > 1 && !starving();
@@ -427,17 +428,17 @@ bool Human::observe(const World& world) {
 // left, it rests.
 void Human::choose(World& world) {
     rethink_ = false;
-    robbee_ = -1;
+    sleep_.robbee = -1;
     if (goal != Goal::OpenDoor) urged_ = false;
     takeInReach(world);
     if (dead()) return;
-    if (foe_ >= 0 && grudge_ > 0.0f && startFight(world)) return;
+    if (fight_.foe >= 0 && fight_.grudge > 0.0f && startFight(world)) return;
     // Worn out: drops asleep where it stands, once the fight is over.
     if (tiredness >= 1.0f) return startSleeping(world, true);
     // Killed to eat: eats.
-    if (prey_ >= 0 && foe_ != prey_) {
-        if (world.human(prey_).dead() && startFeed(world, prey_)) return;
-        prey_ = -1;
+    if (mind_.prey >= 0 && fight_.foe != mind_.prey) {
+        if (world.human(mind_.prey).dead() && startFeed(world, mind_.prey)) return;
+        mind_.prey = -1;
     }
     // Can't hold on: the erratic go where they stand, the rest have an
     // accident and carry on.
@@ -450,7 +451,7 @@ void Human::choose(World& world) {
         if (auto w = waterBeside(cell); w && wouldDrink(world, cell, *w)) return startDrinking(*w);
     if (thirsty()) askGroupForWater(world);
     if (helpStarving(world)) return;
-    if (foe_ >= 0 && startFight(world)) return;
+    if (fight_.foe >= 0 && startFight(world)) return;
     if (keepAway(world)) return;
     if (leadEscort(world) || followEscort(world)) return;
     if (plead(world)) return;
@@ -462,12 +463,12 @@ void Human::choose(World& world) {
     // Someone new to greet, unless hungry or thirsty, when nobody is.
     bool needy = hungry() || thirsty() || needsToGo();
     if (needy) {
-        partner_ = -1;
+        social_.partner = -1;
     } else if (Human* o = unmetInSight(world)) {
-        if (o->id != partner_) partnerSince_ = clock_;
-        partner_ = o->id;
-    } else if (goal != Goal::Meet || (greetedAt_.count(partner_) && greetedAt_[partner_] >= partnerSince_)) {
-        partner_ = -1;
+        if (o->id != social_.partner) social_.partnerSince = clock_;
+        social_.partner = o->id;
+    } else if (goal != Goal::Meet || (social_.greetedAt.count(social_.partner) && social_.greetedAt[social_.partner] >= social_.partnerSince)) {
+        social_.partner = -1;
     }
 
     struct Wish {
@@ -497,16 +498,16 @@ void Human::choose(World& world) {
         want(Want::Relieve, RELIEF_DRIVE * (std::max(bladder, bowels) - needBar()) / (1.0f - needBar()));
     if (!needy) {
         // Guilt keeps it to itself.
-        want(Want::Escort, -GUILT_ALONE * guilt_ + parchedToLead(world));
+        want(Want::Escort, -GUILT_ALONE * mind_.guilt + parchedToLead(world));
         want(Want::Wash, wantsWashing() ? FILTH_WASH * (0.5f + modesty()) : 0.0f);
-        if (partner_ >= 0) want(Want::Meet, OUT_ASK * outDrive() - GUILT_ALONE * guilt_);
+        if (social_.partner >= 0) want(Want::Meet, OUT_ASK * outDrive() - GUILT_ALONE * mind_.guilt);
     }
-    if (hunger >= fleshBar()) want(Want::Flesh, drive + appetite_);
-    if (hunger >= huntBar()) want(Want::Hunt, drive + appetite_);
-    if (rescuee_ >= 0) want(Want::Rescue);
+    if (hunger >= fleshBar()) want(Want::Flesh, drive + mind_.appetite);
+    if (hunger >= huntBar()) want(Want::Hunt, drive + mind_.appetite);
+    if (rescue_.rescuee >= 0) want(Want::Rescue);
     if (keys > 0 && (urged_ || doorUrge())) want(Want::UrgedDoor);
     if (traits.brave >= TIMID &&
-        std::any_of(bodies_.begin(), bodies_.end(), [&](const auto& b) { return worthLooting(b.first); }))
+        std::any_of(deaths_.bodies.begin(), deaths_.bodies.end(), [&](const auto& b) { return worthLooting(b.first); }))
         want(Want::Loot, -DREAD_LOOT * dread_);
     if (std::any_of(world.humans().begin(), world.humans().end(), [&](const auto& o) { return wouldRob(world, *o); }))
         want(Want::Rob, ROB_TEMPT + ROB_HUNGRY * drive);
@@ -515,16 +516,16 @@ void Human::choose(World& world) {
         want(Want::Fetch, LESSON_FETCH * std::max(fetchCakes ? lessons.hoard : 0.0f,
                                                   memory.keys.empty() ? 0.0f : lessons.keysFirst));
     // Settled, it has stopped looking for a way out, and follows nobody away.
-    if (!settled_) {
-        if (leader_ >= 0) want(Want::Follow, -GUILT_ALONE * guilt_);
+    if (!escape_.settled) {
+        if (social_.leader >= 0) want(Want::Follow, -GUILT_ALONE * mind_.guilt);
         // A group goes looking too, so keeping with one shares in wanting
         // out; a friend there pulls harder.
-        else if (companion_ >= 0 || pickCompany(world) >= 0)
-            want(Want::Company, COMPANY_OUT * outDrive() - GUILT_ALONE * guilt_ +
-                                    (companion_ >= 0 && isFriend(companion_) ? COMPANY_FRIEND : 0.0f));
+        else if (social_.companion >= 0 || pickCompany(world) >= 0)
+            want(Want::Company, COMPANY_OUT * outDrive() - GUILT_ALONE * mind_.guilt +
+                                    (social_.companion >= 0 && isFriend(social_.companion) ? COMPANY_FRIEND : 0.0f));
         // Keeping company, it leaves the looking to whoever leads.
         want(Want::Explore, OUT_EXPLORE * outDrive() - DREAD_EXPLORE * dread_ -
-                                (companion_ >= 0 && leader_ < 0 ? COMPANY_STAY : 0.0f) - waterTether() - sleepTether());
+                                (social_.companion >= 0 && social_.leader < 0 ? COMPANY_STAY : 0.0f) - waterTether() - sleepTether());
         if (keys > 0) want(Want::OpenDoor, OUT_EXPLORE * outDrive() - sleepTether());
         if (rng_.chance(CHECK_DOOR_CHANCE * sway(traits.curious, CHECK_DOOR_CURIOUS))) want(Want::CheckDoor);
     }
@@ -556,19 +557,19 @@ bool Human::pursue(World& world, Want w) {
     case Want::Wash:
         return startWash(world);
     case Want::Meet:
-        return partner_ >= 0 && startMeet(world);
+        return social_.partner >= 0 && startMeet(world);
     case Want::Rescue:
         return startRescue(world);
     case Want::UrgedDoor: {
         // Frightened, never a door that lies toward whoever scared it.
-        auto it = lastSeen_.find(feared_);
-        bool afraid = fear_ > 0.0f && it != lastSeen_.end();
+        auto it = social_.lastSeen.find(fight_.feared);
+        bool afraid = fight_.fear > 0.0f && it != social_.lastSeen.end();
         if (auto p = search(world, [&](Vec2i c) {
                 auto d = lockedDoorBeside(c);
                 return d && !(afraid && cheb(*d, it->second) < cheb(cell, it->second));
             }, afraid, [&](Vec2i c) { return hunchCost(c, HUNCH_DOOR_COST); })) {
-            if (outUrged_ && !urgedNoted_) note("TRYING A DOOR. THERE HAS TO BE A WAY OUT");
-            urgedNoted_ = outUrged_;
+            if (escape_.outUrged && !escape_.urgedNoted) note("TRYING A DOOR. THERE HAS TO BE A WAY OUT");
+            escape_.urgedNoted = escape_.outUrged;
             startWalking(Goal::OpenDoor, *p);
             return true;
         }
@@ -589,13 +590,13 @@ bool Human::pursue(World& world, Want w) {
             startWalking(Goal::FetchCake, *p);
             return true;
         }
-        if (leader_ >= 0) sayLater(talk::Moment::PartOwnKey, leader_);
-        leader_ = -1;
+        if (social_.leader >= 0) sayLater(talk::Moment::PartOwnKey, social_.leader);
+        social_.leader = -1;
         startWalking(Goal::FetchKey, *p);
         return true;
     }
     case Want::Follow:
-        return leader_ >= 0 && startFollow(world);
+        return social_.leader >= 0 && startFollow(world);
     case Want::Company:
         return keepCompany(world);
     case Want::Explore:
@@ -648,9 +649,9 @@ bool Human::pursue(World& world, Want w) {
     return false;
 }
 
-// Fades as fear_ runs out.
+// Fades as fight_.fear runs out.
 float Human::fright() const {
-    return std::max(dread_, feared_ >= 0 ? std::clamp(fear_ / fearTime(), 0.0f, 1.0f) : 0.0f);
+    return std::max(dread_, fight_.feared >= 0 ? std::clamp(fight_.fear / fearTime(), 0.0f, 1.0f) : 0.0f);
 }
 
 // Past a locked door lies ground nobody has picked over yet, a door
@@ -666,8 +667,8 @@ bool Human::doorUrge() {
     if (thirsty())
         p = std::max(p, std::clamp((thirst - THIRSTY) / (PARCHED - THIRSTY), DOOR_URGE_HUNGRY, 1.0f));
     float out = DOOR_URGE_OUT * sway(traits.curious) * std::max(0.0f, (outDrive() - OUT_URGE_FROM) / (1.0f - OUT_URGE_FROM));
-    if (out > p) outUrged_ = true, p = out;
-    else outUrged_ = false;
+    if (out > p) escape_.outUrged = true, p = out;
+    else escape_.outUrged = false;
     if (p <= 0.0f) return false;
     urgeWait_ = DOOR_URGE_EVERY;
     return urged_ = rng_.chance(p);
@@ -676,19 +677,19 @@ bool Human::doorUrge() {
 // The body stays where it fell, out of the way, with all it carried on it.
 void Human::die(World& world) {
     for (Wound& w : wounds) w.healLeft = std::min(w.healLeft, CORPSE_BLEED_TIME);
-    diedAsleep_ = state == State::Sleeping;
+    sleep_.diedAsleep = state == State::Sleeping;
     state = State::Dead;
     moving = false;
-    provoked_ = false;
-    foe_ = -1;
-    prey_ = -1;
-    meal_ = -1;
+    fight_.provoked = false;
+    fight_.foe = -1;
+    mind_.prey = -1;
+    mind_.meal = -1;
     flesh = FLESH_MEALS;
-    diedAt_ = clock_;
+    deaths_.diedAt = clock_;
     path_.clear();
     animTime = 0.0f;
-    speech_.clear();
-    sayings_.clear();
+    voice_.speech.clear();
+    voice_.sayings.clear();
     letGo(world);
     world.vacate(cell);
 }

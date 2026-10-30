@@ -195,8 +195,8 @@ bool Human::tired() const { return tiredness >= TIRED; }
 bool Human::exhausted() const { return tiredness >= EXHAUSTED; }
 
 std::optional<Vec2i> Human::sleepBase() const {
-    if (settled_) return home_;
-    if (sleptYet_) return sleptAt_;
+    if (escape_.settled) return escape_.home;
+    if (sleep_.sleptYet) return sleep_.sleptAt;
     return std::nullopt;
 }
 
@@ -279,7 +279,7 @@ bool Human::seekSleep(World& world) {
     // Where it last saw those it fears or distrusts, and who is in sight,
     // friend or not.
     std::vector<Vec2i> threats, company, anyone;
-    for (const auto& [who, at] : lastSeen_)
+    for (const auto& [who, at] : social_.lastSeen)
         if (!world.human(who).dead() && (isFoe(who) || suspicious(who) || afraidOf(who))) threats.push_back(at);
     for (const auto& o : world.humans()) {
         if (o.get() == this || o->dead() || !sight.sees(o->cell)) continue;
@@ -295,7 +295,7 @@ bool Human::seekSleep(World& world) {
         for (Vec2i d : DIRS8) n += open(c + d);
         float k = 1.0f + float(n * SLEEP_SHY);
         for (Vec2i t : threats) k += float(std::max(0, THREAT_REACH - cheb(c, t))) * THREAT_COST;
-        for (const auto& [who, b] : bodies_)
+        for (const auto& [who, b] : deaths_.bodies)
             if (cheb(c, b.cell) <= BODY_REACH) k += BODY_COST * (1.0f - traits.brave);
         for (int y = -BLOOD_REACH; y <= BLOOD_REACH; y++)
             for (int x = -BLOOD_REACH; x <= BLOOD_REACH; x++)
@@ -323,26 +323,26 @@ void Human::startSleeping(World& world, bool collapsed) {
     note(collapsed ? "COLLAPSED FROM EXHAUSTION" : "FELL ASLEEP");
     if (collapsed) learn(lessons.safeSleep, true);
     // Worn out on watch, it leaves those it watched unguarded.
-    if (watchee_ >= 0) note("FELL ASLEEP ON WATCH");
-    watchee_ = -1;
-    askedWatch_ = -1;
-    watchedBy_ = -1;
+    if (sleep_.watchee >= 0) note("FELL ASLEEP ON WATCH");
+    sleep_.watchee = -1;
+    sleep_.askedWatch = -1;
+    sleep_.watchedBy = -1;
     if (!collapsed && !askToWatch(world)) sayLater(talk::Moment::SleepNow);
     auto base = sleepBase();
-    atSleepSpot_ = !collapsed && base && cheb(cell, *base) <= BASE_NEAR;
+    sleep_.atSleepSpot = !collapsed && base && cheb(cell, *base) <= BASE_NEAR;
     // What it holds, and who is about, as it shuts its eyes.
-    cakesAsleep_ = cakes;
-    nearAsleep_ = -1;
+    sleep_.cakesAsleep = cakes;
+    sleep_.nearAsleep = -1;
     for (const auto& o : world.humans())
         if (o.get() != this && !o->dead() && o->state != State::Sleeping && sight.sees(o->cell) &&
             cheb(o->cell, cell) <= BLAME_REACH &&
-            (nearAsleep_ < 0 || cheb(o->cell, cell) < cheb(world.human(nearAsleep_).cell, cell)))
-            nearAsleep_ = o->id;
+            (sleep_.nearAsleep < 0 || cheb(o->cell, cell) < cheb(world.human(sleep_.nearAsleep).cell, cell)))
+            sleep_.nearAsleep = o->id;
     state = State::Sleeping;
     goal = Goal::Sleep;
     moving = false;
     awaiting_ = false;
-    roused_ = false;
+    sleep_.roused = false;
     path_.clear();
     timer = 0.0f;
     animTime = collapsed ? LIE_DOWN_TIME : 0.0f;
@@ -363,7 +363,7 @@ bool Human::hearsInSleep(const World& world, float dt) {
             noise |= d <= NOISE_REACH && o->animTime < DEATH_NOISE;
         else
             noise |= d <= NOISE_REACH && (o->state == State::Punching || o->hurtTime > 0.0f);
-        steps |= d <= 1 && o->moving && o.get()->robbee_ < 0;
+        steps |= d <= 1 && o->moving && o.get()->sleep_.robbee < 0;
     }
     float rate = (noise ? NOISE_WAKE : 0.0f) + (steps ? STEP_WAKE : 0.0f);
     return rate > 0.0f && rng_.chance(rate * light * dt);
@@ -385,15 +385,15 @@ void Human::sleep(World& world, float dt) {
 // there in time paid off; set on there, it was not, and it is forgotten.
 void Human::wakeUp(World& world, bool abrupt, int by, const char* what) {
     note(what ? what : "WOKE UP", by);
-    daze_ = std::max(daze_, SLEEP_DAZE);
+    escape_.daze = std::max(escape_.daze, SLEEP_DAZE);
     if (abrupt) {
-        if (by >= 0 && sleptYet_ && cheb(sleptAt_, cell) <= BASE_NEAR) sleptYet_ = false;
+        if (by >= 0 && sleep_.sleptYet && cheb(sleep_.sleptAt, cell) <= BASE_NEAR) sleep_.sleptYet = false;
         startIdle(0.0f, 0.0f);
     } else {
-        if (atSleepSpot_ && lessons.safeSleep > 0.0f) learn(lessons.safeSleep, false);
-        safeSleeps_ = sleptYet_ && cheb(sleptAt_, cell) <= BASE_NEAR ? safeSleeps_ + 1 : 1;
-        sleptAt_ = cell;
-        sleptYet_ = true;
+        if (sleep_.atSleepSpot && lessons.safeSleep > 0.0f) learn(lessons.safeSleep, false);
+        sleep_.safeSleeps = sleep_.sleptYet && cheb(sleep_.sleptAt, cell) <= BASE_NEAR ? sleep_.safeSleeps + 1 : 1;
+        sleep_.sleptAt = cell;
+        sleep_.sleptYet = true;
         // Slept right through: a little hope, a little calm.
         if (tiredness <= RESTED) {
             lift(HOPE_SLEPT);
@@ -404,7 +404,7 @@ void Human::wakeUp(World& world, bool abrupt, int by, const char* what) {
         else
             sayLater(talk::Moment::Woke);
         state = State::Rising;
-        roused_ = true;
+        sleep_.roused = true;
         animTime = 0.0f;
         timer = ROUSE_TIME + STAND_UP_TIME;
     }
@@ -415,19 +415,19 @@ void Human::wakeUp(World& world, bool abrupt, int by, const char* what) {
 // The nearest it sees on waking, if close; else whoever was nearest as it
 // fell asleep. Friends are the last it would think of.
 bool Human::missedWhileAsleep() {
-    int lost = cakesAsleep_ - cakes;
-    cakesAsleep_ = cakes;
+    int lost = sleep_.cakesAsleep - cakes;
+    sleep_.cakesAsleep = cakes;
     if (lost <= 0) return false;
     note("SOMEONE TOOK MY CAKE WHILE I SLEPT");
     lift(HOPE_ROBBED);
     int blamed = -1, best = 0;
     for (int who : inSight_) {
-        auto it = lastSeen_.find(who);
-        if (it == lastSeen_.end() || cheb(it->second, cell) > BLAME_REACH) continue;
+        auto it = social_.lastSeen.find(who);
+        if (it == social_.lastSeen.end() || cheb(it->second, cell) > BLAME_REACH) continue;
         int d = cheb(it->second, cell) + (isFriend(who) ? BLAME_REACH : 0);
         if (blamed < 0 || d < best) blamed = who, best = d;
     }
-    if (blamed < 0) blamed = nearAsleep_;
+    if (blamed < 0) blamed = sleep_.nearAsleep;
     sayLater(talk::Moment::CakeGone, -1, blamed);
     if (blamed < 0) return true;
     note("@ MUST HAVE TAKEN IT", blamed);
@@ -441,9 +441,9 @@ bool Human::wouldRob(const World& world, const Human& o) const {
         traits.greedy < ROB_GREEDY || traits.brave < ROB_BRAVE || isFriend(o.id) || inGroupWith(o) ||
         trust(o.id) >= ROB_TRUST || afraidOf(o.id) || dead())
         return false;
-    if (o.watchedBy_ >= 0) {
-        const Human& w = world.human(o.watchedBy_);
-        if (!w.dead() && w.state != State::Sleeping && w.watchee_ == o.id && cheb(w.cell, o.cell) <= WATCH_GAP + 1)
+    if (o.sleep_.watchedBy >= 0) {
+        const Human& w = world.human(o.sleep_.watchedBy);
+        if (!w.dead() && w.state != State::Sleeping && w.sleep_.watchee == o.id && cheb(w.cell, o.cell) <= WATCH_GAP + 1)
             return false;
     }
     return true;
@@ -453,14 +453,14 @@ bool Human::startRob(World& world) {
     Human* best = nullptr;
     for (const auto& o : world.humans())
         if (wouldRob(world, *o) && (!best || cheb(o->cell, cell) < cheb(best->cell, cell))) best = o.get();
-    robbee_ = -1;
+    sleep_.robbee = -1;
     return best && goRob(world, *best);
 }
 
 bool Human::goRob(World& world, Human& o) {
-    robbee_ = -1;
+    sleep_.robbee = -1;
     if (cheb(o.cell, cell) <= 1) {
-        robbee_ = o.id;
+        sleep_.robbee = o.id;
         state = State::Looting;
         moving = false;
         path_.clear();
@@ -473,17 +473,17 @@ bool Human::goRob(World& world, Human& o) {
     auto p = search(world, [&](Vec2i c) { return c != at && cheb(c, at) <= 1; }, true);
     if (!p) return false;
     startWalking(Goal::Rob, *p);
-    robbee_ = o.id;
+    sleep_.robbee = o.id;
     return true;
 }
 
 // The lighter they sleep, the likelier they wake; woken, they know who,
 // and answer it as a blow. Anyone who sees it thinks the worse of it.
 void Human::rob(World& world) {
-    Human& o = world.human(robbee_);
-    robbee_ = -1;
-    bool betrayed = betraying_;
-    betraying_ = false;
+    Human& o = world.human(sleep_.robbee);
+    sleep_.robbee = -1;
+    bool betrayed = sleep_.betraying;
+    sleep_.betraying = false;
     if (o.dead() || o.state != State::Sleeping || cheb(o.cell, cell) > 1 || o.cakes <= 0 || cakes >= carryMax())
         return startIdle(ROB_LOOK_MIN, ROB_LOOK_MAX);
     o.cakes--;
@@ -494,20 +494,20 @@ void Human::rob(World& world) {
     // Robbed by the one meant to watch over it, it is done with them.
     if (rng_.chance(ROB_WAKE * (0.5f + o.lightSleep()))) {
         note("@ WOKE UP AS I ROBBED THEM", o.id);
-        o.cakesAsleep_ = o.cakes;
+        o.sleep_.cakesAsleep = o.cakes;
         o.wakeUp(world, true, id, "WOKE UP TO @ ROBBING ME");
         o.note(betrayed ? "@ ROBBED ME ON THEIR WATCH" : "@ ROBBED ME IN MY SLEEP", id);
         o.sayLater(talk::Moment::RobbedSleep, id);
         o.lift(HOPE_WOKEN_HARM);
         o.regard(id, betrayed ? TRUST_BETRAYED : TRUST_ROBBED);
         if (betrayed) {
-            if (o.companion_ == id) o.companion_ = -1;
-            if (o.leader_ == id) o.leader_ = -1;
-            watchee_ = -1;
+            if (o.social_.companion == id) o.social_.companion = -1;
+            if (o.social_.leader == id) o.social_.leader = -1;
+            sleep_.watchee = -1;
         }
-        o.watchedBy_ = -1;
-        o.attacker_ = id;
-        o.provoked_ = true;
+        o.sleep_.watchedBy = -1;
+        o.fight_.attacker = id;
+        o.fight_.provoked = true;
     } else {
         note(betrayed ? "ROBBED @ ON MY WATCH" : "ROBBED @ IN THEIR SLEEP", o.id);
     }
@@ -515,7 +515,7 @@ void Human::rob(World& world) {
 }
 
 bool Human::sleepsWithGroup(const World& world) const {
-    if (tiredness < DROWSY || watchee_ >= 0 || askedWatch_ >= 0) return false;
+    if (tiredness < DROWSY || sleep_.watchee >= 0 || sleep_.askedWatch >= 0) return false;
     for (const auto& o : world.humans())
         if (o.get() != this && o->state == State::Sleeping && sight.sees(o->cell) &&
             cheb(o->cell, cell) <= GROUP_SLEEP_NEAR && (inGroupWith(*o) || isFriend(o->id)))
@@ -525,9 +525,9 @@ bool Human::sleepsWithGroup(const World& world) const {
 
 bool Human::wouldWatch(const World& world, const Human& o) const {
     if (&o == this || o.state != State::Sleeping || !sight.sees(o.cell) || cheb(o.cell, cell) > WATCH_REACH) return false;
-    if (!inGroupWith(o) && !isFriend(o.id) && askedWatch_ != o.id) return false;
+    if (!inGroupWith(o) && !isFriend(o.id) && sleep_.askedWatch != o.id) return false;
     for (const auto& h : world.humans())
-        if (h.get() != this && !h->dead() && h->state != State::Sleeping && h->watchee_ == o.id) return false;
+        if (h.get() != this && !h->dead() && h->state != State::Sleeping && h->sleep_.watchee == o.id) return false;
     return true;
 }
 
@@ -535,55 +535,55 @@ const Human* Human::watchThreat(const World& world, const Human& sleeper) const 
     for (const auto& o : world.humans())
         if (o.get() != this && o.get() != &sleeper && !o->dead() && o->state != State::Sleeping &&
             sight.sees(o->cell) && !inGroupWith(*o) && cheb(o->cell, sleeper.cell) <= WATCH_ALARM &&
-            (isFoe(o->id) || suspicious(o->id) || afraidOf(o->id) || o->robbee_ == sleeper.id))
+            (isFoe(o->id) || suspicious(o->id) || afraidOf(o->id) || o->sleep_.robbee == sleeper.id))
             return o.get();
     return nullptr;
 }
 
 bool Human::watchCalls(const World& world) const {
-    if (watchee_ < 0 || hungry() || thirsty() || needsToGo() || tired()) return true;
-    const Human& w = world.human(watchee_);
+    if (sleep_.watchee < 0 || hungry() || thirsty() || needsToGo() || tired()) return true;
+    const Human& w = world.human(sleep_.watchee);
     return w.state != State::Sleeping || watchThreat(world, w);
 }
 
 bool Human::keepWatch(World& world) {
-    if (hungry() || thirsty() || needsToGo() || fear_ > 0.0f) {
-        watchee_ = askedWatch_ = -1;
+    if (hungry() || thirsty() || needsToGo() || fight_.fear > 0.0f) {
+        sleep_.watchee = sleep_.askedWatch = -1;
         return false;
     }
-    if (watchee_ >= 0) {
-        const Human& w = world.human(watchee_);
-        if (w.state != State::Sleeping || !sight.sees(w.cell)) watchee_ = -1;
+    if (sleep_.watchee >= 0) {
+        const Human& w = world.human(sleep_.watchee);
+        if (w.state != State::Sleeping || !sight.sees(w.cell)) sleep_.watchee = -1;
     }
-    if (watchee_ < 0) {
+    if (sleep_.watchee < 0) {
         // Asked, it waits while they lie down.
-        if (askedWatch_ >= 0) {
-            const Human& a = world.human(askedWatch_);
+        if (sleep_.askedWatch >= 0) {
+            const Human& a = world.human(sleep_.askedWatch);
             if (!a.dead() && a.state != State::Sleeping && a.goal == Goal::Sleep && sight.sees(a.cell)) {
                 startIdle(ROB_LOOK_MIN, ROB_LOOK_MAX);
                 return true;
             }
         }
-        bool willing = askedWatch_ >= 0 || (traits.sociable >= WATCH_LONER && tiredness < WATCH_FRESH &&
+        bool willing = sleep_.askedWatch >= 0 || (traits.sociable >= WATCH_LONER && tiredness < WATCH_FRESH &&
                                             (traits.sociable + traits.brave) / 2.0f >= WATCH_WILLING);
         const Human* best = nullptr;
         if (willing) {
-            if (askedWatch_ >= 0 && wouldWatch(world, world.human(askedWatch_)))
-                best = &world.human(askedWatch_);
+            if (sleep_.askedWatch >= 0 && wouldWatch(world, world.human(sleep_.askedWatch)))
+                best = &world.human(sleep_.askedWatch);
             else
                 for (const auto& o : world.humans())
                     if (wouldWatch(world, *o) && (!best || cheb(o->cell, cell) < cheb(best->cell, cell))) best = o.get();
         }
-        askedWatch_ = -1;
+        sleep_.askedWatch = -1;
         if (!best) return false;
-        watchee_ = best->id;
-        world.human(watchee_).watchedBy_ = id;
-        note("KEEPING WATCH OVER @", watchee_);
+        sleep_.watchee = best->id;
+        world.human(sleep_.watchee).sleep_.watchedBy = id;
+        note("KEEPING WATCH OVER @", sleep_.watchee);
     }
-    Human& w = world.human(watchee_);
+    Human& w = world.human(sleep_.watchee);
     if (tired()) {
         handOverWatch(world);
-        watchee_ = -1;
+        sleep_.watchee = -1;
         return false;
     }
     if (const Human* t = watchThreat(world, w)) {
@@ -593,21 +593,21 @@ bool Human::keepWatch(World& world) {
                 o->wakeUp(world, true, id, "@ WOKE ME. SOMEONE WAS COMING");
         note("WOKE THE OTHERS: @ WAS COMING", t->id);
         sayLater(talk::Moment::WakeUp, w.id);
-        watchee_ = -1;
+        sleep_.watchee = -1;
         return false;
     }
     // Greedy and not fond of them, it may rob them instead.
     if (w.cakes > 0 && cakes < carryMax() && traits.greedy >= BETRAY_GREEDY && traits.brave >= ROB_BRAVE &&
         !isFriend(w.id) && trust(w.id) < BETRAY_TRUST && rng_.chance(BETRAY_CHANCE)) {
-        betraying_ = true;
+        sleep_.betraying = true;
         if (goRob(world, w)) return true;
-        betraying_ = false;
+        sleep_.betraying = false;
     }
     if (cheb(cell, w.cell) > WATCH_GAP) {
         Vec2i at = w.cell;
         auto p = search(world, [&](Vec2i c) { return c != at && cheb(c, at) <= WATCH_GAP; }, true);
         if (!p) {
-            watchee_ = -1;
+            sleep_.watchee = -1;
             return false;
         }
         startWalking(Goal::Watch, *p);
@@ -630,7 +630,7 @@ bool Human::handOverWatch(World& world) {
     note("WOKE @ TO TAKE A TURN ON WATCH", best->id);
     sayLater(talk::Moment::YourWatch, best->id);
     best->wakeUp(world, true, id, "@ WOKE ME TO TAKE MY TURN ON WATCH");
-    best->askedWatch_ = id;
+    best->sleep_.askedWatch = id;
     return true;
 }
 
@@ -639,8 +639,8 @@ bool Human::askToWatch(World& world) {
     Human* best = nullptr;
     for (const auto& o : world.humans())
         if (o.get() != this && !o->dead() && o->state != State::Sleeping && sight.sees(o->cell) &&
-            cheb(o->cell, cell) <= ASK_REACH && (isFriend(o->id) || inGroupWith(*o)) && o->watchee_ < 0 &&
-            o->askedWatch_ < 0 && !o->tired() && !o->hungry() && !o->thirsty() &&
+            cheb(o->cell, cell) <= ASK_REACH && (isFriend(o->id) || inGroupWith(*o)) && o->sleep_.watchee < 0 &&
+            o->sleep_.askedWatch < 0 && !o->tired() && !o->hungry() && !o->thirsty() &&
             (!best || cheb(o->cell, cell) < cheb(best->cell, cell)))
             best = o.get();
     if (!best) return false;
@@ -661,7 +661,7 @@ bool Human::askToWatch(World& world) {
         h.sayLater(talk::Moment::WatchNo, id);
         return true;
     }
-    h.askedWatch_ = id;
+    h.sleep_.askedWatch = id;
     h.rethink_ = true;
     return true;
 }
@@ -669,24 +669,24 @@ bool Human::askToWatch(World& world) {
 // Asleep, or not there: it failed them. There, and the harm came anyway:
 // they watched it happen, or it was their own doing, known otherwise.
 void Human::blameWatcher(World& world) {
-    if (watchedBy_ < 0) return;
-    const Human& w = world.human(watchedBy_);
-    watchedBy_ = -1;
+    if (sleep_.watchedBy < 0) return;
+    const Human& w = world.human(sleep_.watchedBy);
+    sleep_.watchedBy = -1;
     if (!w.dead() && w.state != State::Sleeping && cheb(w.cell, cell) <= WATCH_REACH) return;
     note("@ WAS MEANT TO KEEP WATCH", w.id);
     sayLater(talk::Moment::FailedWatch, w.id);
     regard(w.id, TRUST_FAILED_WATCH);
 }
 
-bool Human::dreamt() const { return clock_ - dreamtAt_ < DREAM_FRESH; }
+bool Human::dreamt() const { return clock_ - sleep_.dreamtAt < DREAM_FRESH; }
 
 // Every dream points somewhere else, so dreamers grow sure of ways that
 // disagree, and tell them at greetings all the same.
 void Human::dream() {
-    dreamtAt_ = clock_;
+    sleep_.dreamtAt = clock_;
     note("DREAMT OF BEFORE, I THINK");
     sayLater(talk::Moment::Dream);
-    float pull = std::remainder(rng_.range(0.0f, TAU) - hunch_, TAU) * DREAM_PULL;
-    hunch_ = std::fmod(hunch_ + pull + TAU, TAU);
-    hunchSure_ = std::min(1.0f, hunchSure_ + DREAM_SURE);
+    float pull = std::remainder(rng_.range(0.0f, TAU) - escape_.hunch, TAU) * DREAM_PULL;
+    escape_.hunch = std::fmod(escape_.hunch + pull + TAU, TAU);
+    escape_.hunchSure = std::min(1.0f, escape_.hunchSure + DREAM_SURE);
 }

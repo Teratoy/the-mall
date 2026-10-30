@@ -20,35 +20,35 @@ bool Human::sayLater(Saying s) {
     // always waits its turn.
     if (s.moment == talk::Moment::Darted || s.moment == talk::Moment::Spiked ||
         s.moment == talk::Moment::Slammed) {
-        sayings_.insert(sayings_.begin(), std::move(s));
+        voice_.sayings.insert(voice_.sayings.begin(), std::move(s));
         return true;
     }
     bool cry = talk::isCry(s.moment);
     bool word = s.tell || s.intro;
-    if (!(cry ? sayings_.empty() : word || sayings_.size() <= SPEECH_QUEUE)) return false;
-    sayings_.push_back(std::move(s));
+    if (!(cry ? voice_.sayings.empty() : word || voice_.sayings.size() <= SPEECH_QUEUE)) return false;
+    voice_.sayings.push_back(std::move(s));
     return true;
 }
 
 bool Human::hasWordFor(int to) const {
-    return std::any_of(sayings_.begin(), sayings_.end(),
+    return std::any_of(voice_.sayings.begin(), voice_.sayings.end(),
                        [&](const Saying& s) { return s.to == to && (s.tell || s.intro); });
 }
 
 void Human::awaitLine() {
-    sayings_.back().awaited = true;
+    voice_.sayings.back().awaited = true;
     awaiting_ = true;
-    answerWait_ = timer;
+    voice_.answerWait = timer;
 }
 
 void Human::speak(World& world, float dt) {
     using talk::Moment;
-    if (!speech_.empty() && (speech_.front().shown += dt) >= speech_.front().time) {
-        speech_.pop_front();
-        quietSince_ = world.time();
+    if (!voice_.speech.empty() && (voice_.speech.front().shown += dt) >= voice_.speech.front().time) {
+        voice_.speech.pop_front();
+        voice_.quietSince = world.time();
     }
-    while (!sayings_.empty()) {
-        Saying& s = sayings_.front();
+    while (!voice_.sayings.empty()) {
+        Saying& s = voice_.sayings.front();
         // Blows and cries only fill a silence, and go unsaid if they can't
         // at once; a line to someone gone out of earshot goes unsaid.
         bool cry = talk::isCry(s.moment);
@@ -57,32 +57,32 @@ void Human::speak(World& world, float dt) {
         float patience = cry ? CRY_PATIENCE : s.tell || s.intro ? WORD_PATIENCE : SPEECH_PATIENCE;
         if (gone || s.waited > patience) {
             if (s.awaited) awaiting_ = false;
-            sayings_.erase(sayings_.begin());
+            voice_.sayings.erase(voice_.sayings.begin());
             continue;
         }
-        if (!speech_.empty()) {
+        if (!voice_.speech.empty()) {
             if (cry) s.waited += dt;
             return;
         }
         if (!cry) {
             float now = world.time();
-            if (now - quietSince_ < SPEECH_PAUSE) return;
+            if (now - voice_.quietSince < SPEECH_PAUSE) return;
             // Its turn: not over the one it talks to, nor over anyone talking
             // to it; and having just spoken, it lets them answer first.
             for (const auto& h : world.humans()) {
                 if (h.get() == this || h->dead()) continue;
                 const Speech* sp = h->speaking();
                 bool party = h->id == s.to || (sp && sp->to == id);
-                bool answer = h->id == s.to && !h->sayings_.empty() && h->sayings_.front().to == id &&
-                              quietSince_ > h->quietSince_;
-                if (answer || (party && (sp || now - h->quietSince_ < SPEECH_PAUSE))) {
+                bool answer = h->id == s.to && !h->voice_.sayings.empty() && h->voice_.sayings.front().to == id &&
+                              voice_.quietSince > h->voice_.quietSince;
+                if (answer || (party && (sp || now - h->voice_.quietSince < SPEECH_PAUSE))) {
                     s.waited += dt;
                     return;
                 }
             }
         }
         Saying due = std::move(s);
-        sayings_.erase(sayings_.begin());
+        voice_.sayings.erase(voice_.sayings.begin());
         return say(world, due);
     }
 }
@@ -92,12 +92,12 @@ void Human::say(World& world, const Saying& s) {
     if (s.awaited) {
         awaiting_ = false;
         // Said: now the answer is waited for.
-        if (state == State::Idle) timer = answerWait_;
+        if (state == State::Idle) timer = voice_.answerWait;
     }
     if (to && to->dead()) return;
     const Human* about = s.about >= 0 ? &world.human(s.about) : nullptr;
     auto said = s.quiet ? std::nullopt
-                        : talk::pick(s.moment, *this, to, about, rng_, s.topic ? &*s.topic : nullptr, &chatLines_,
+                        : talk::pick(s.moment, *this, to, about, rng_, s.topic ? &*s.topic : nullptr, &voice_.chatLines,
                                      world.time());
     // A topic is raised once it is said; unsaid, it can come up again.
     if (said && to && s.topic) {
@@ -108,11 +108,11 @@ void Human::say(World& world, const Saying& s) {
         chatOn(*to, s);
     }
     if (said) {
-        speech_.push_back(
+        voice_.speech.push_back(
             {said->text, said->tone, 0.0f, SPEECH_TIME + SPEECH_PER_LETTER * float(said->text.size()), s.to, std::nullopt});
         // Telling the way, it turns and points it out.
         if (s.tell && s.tell->kind == Tell::Kind::Way && !s.tell->gloomy) {
-            speech_.back().points = s.tell->way;
+            voice_.speech.back().points = s.tell->way;
             if (std::abs(std::cos(s.tell->way)) > 0.01f) facingLeft = std::cos(s.tell->way) < 0.0f;
         }
         std::string quote = '"' + said->text + '"';
@@ -173,7 +173,7 @@ void Human::hear(World&, Human& s, const talk::Said& said, Human* to, const Huma
         if (mine && cakes > 0 && !movedBy(s.id) &&
             rng_.chance(PLEA_MOVES * sway(traits.sociable) * sway(1.0f - traits.greedy) +
                         (isFriend(s.id) ? PLEA_FRIEND : 0.0f))) {
-            moved_[s.id] = clock_ + MOVED_TIME;
+            voice_.moved[s.id] = clock_ + MOVED_TIME;
             rethink_ = true;
         }
         break;
@@ -187,7 +187,7 @@ void Human::hear(World&, Human& s, const talk::Said& said, Human* to, const Huma
         bool rushing = state == State::Walking && (goal == Goal::Fight || goal == Goal::Flee);
         bool free = state == State::Idle || state == State::Walking || state == State::Sitting ||
                     state == State::Rising;
-        if (free && !rushing && foe_ != s.id && !provoked_ && cakes > 0 && !starving() && cheb(cell, s.cell) <= THREAT_RANGE &&
+        if (free && !rushing && fight_.foe != s.id && !fight_.provoked && cakes > 0 && !starving() && cheb(cell, s.cell) <= THREAT_RANGE &&
             rng_.chance(YIELD_CHANCE * (1.0f - traits.brave) * (1.0f + fright()))) {
             sayLater(talk::Moment::Yield, s.id);
             give(s, Gift::Yield);
@@ -201,8 +201,8 @@ void Human::hear(World&, Human& s, const talk::Said& said, Human* to, const Huma
 }
 
 bool Human::movedBy(int id) const {
-    auto it = moved_.find(id);
-    return it != moved_.end() && it->second > clock_;
+    auto it = voice_.moved.find(id);
+    return it != voice_.moved.end() && it->second > clock_;
 }
 
 // Only when it knows of no cake lying about, unless starving; never a foe,
@@ -213,12 +213,12 @@ bool Human::plead(World& world) {
     for (const auto& o : world.humans()) {
         if (o.get() == this || o->dead() || o->cakes == 0 || !sight.sees(o->cell) || cheb(cell, o->cell) > HEAR_RADIUS)
             continue;
-        if (isFoe(o->id) || (fear_ > 0.0f && o->id == feared_)) continue;
-        if (auto it = begged_.find(o->id); it != begged_.end() && clock_ - it->second < BEG_AGAIN) continue;
+        if (isFoe(o->id) || (fight_.fear > 0.0f && o->id == fight_.feared)) continue;
+        if (auto it = voice_.begged.find(o->id); it != voice_.begged.end() && clock_ - it->second < BEG_AGAIN) continue;
         if (!best || cheb(cell, o->cell) < cheb(cell, best->cell)) best = o.get();
     }
     if (!best) return false;
-    begged_[best->id] = clock_;
+    voice_.begged[best->id] = clock_;
     float p = BEG_CHANCE * sway(1.0f - traits.brave) * sway(traits.sociable) * sway(1.0f - traits.greedy) +
               (starving() ? BEG_STARVING : 0.0f);
     if (!rng_.chance(p)) return false;
@@ -230,8 +230,8 @@ bool Human::plead(World& world) {
 }
 
 bool Human::threaten(Human& f) {
-    if (auto it = threatened_.find(f.id); it != threatened_.end() && clock_ - it->second < THREAT_AGAIN) return false;
-    threatened_[f.id] = clock_;
+    if (auto it = voice_.threatened.find(f.id); it != voice_.threatened.end() && clock_ - it->second < THREAT_AGAIN) return false;
+    voice_.threatened[f.id] = clock_;
     if (!rng_.chance(THREAT_BASE + THREAT_BOLD * (traits.brave + traits.greedy) / 2.0f)) return false;
     if (!sayLater(talk::Moment::Threat, f.id)) return false;
     startIdle(THREAT_WAIT_MIN, THREAT_WAIT_MAX);

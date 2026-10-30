@@ -11,13 +11,13 @@
 #include <queue>
 
 float Human::trust(int id) const {
-    auto it = trust_.find(id);
-    return it == trust_.end() ? 0.0f : it->second;
+    auto it = social_.trust.find(id);
+    return it == social_.trust.end() ? 0.0f : it->second;
 }
 
 void Human::regard(int id, float delta) {
     if (id == this->id) return;
-    float& t = trust_[id];
+    float& t = social_.trust[id];
     float was = t;
     t = std::clamp(t + delta, -1.0f, 1.0f);
     if (was < TRUST_FRIEND && t >= TRUST_FRIEND) {
@@ -38,25 +38,25 @@ bool Human::isFoe(int id) const { return trust(id) <= TRUST_FOE; }
 float Human::grudgeFor(int id) const { return GRUDGE_TIME * (1.0f + std::max(0.0f, -trust(id))); }
 
 bool Human::startMeet(World& world) {
-    Human& o = world.human(partner_);
+    Human& o = world.human(social_.partner);
     if (!wouldGreet(o)) {
-        partner_ = -1;
+        social_.partner = -1;
         return false;
     }
     bool seen = sight.sees(o.cell);
-    Vec2i at = seen ? o.cell : lastSeen_[o.id];
+    Vec2i at = seen ? o.cell : social_.lastSeen[o.id];
     if (seen && cheb(cell, at) <= GREET_RADIUS) {
         tryGreet(world, o);
         return true;
     }
     if (!seen && cheb(cell, at) <= 1) {
         // Got where they were; they're gone.
-        partner_ = -1;
+        social_.partner = -1;
         return false;
     }
     auto p = search(world, [&](Vec2i c) { return c != at && cheb(c, at) <= 1; });
     if (!p) {
-        partner_ = -1;
+        social_.partner = -1;
         return false;
     }
     startWalking(Goal::Meet, *p);
@@ -66,14 +66,14 @@ bool Human::startMeet(World& world) {
 // Both wave; someone busy waving at another, or eating, is waited for.
 void Human::tryGreet(World& world, Human& other) {
     if (other.dead()) {
-        partner_ = -1;
+        social_.partner = -1;
         return startIdle(0.0f, 0.0f);
     }
     if (!other.approachable()) return startIdle(FOLLOW_WAIT_MIN, FOLLOW_WAIT_MAX);
     // It takes two: turned away, it leaves them be a while.
     if (!other.welcomes(*this)) {
-        snubbed_[other.id] = clock_;
-        partner_ = -1;
+        social_.snubbed[other.id] = clock_;
+        social_.partner = -1;
         note("@ WOULDN'T GREET ME", other.id);
         other.note("WOULDN'T GREET @", id);
         other.sayLater(talk::Moment::Refuse, id);
@@ -101,7 +101,7 @@ std::optional<Human::Tell> Human::gossipFor(const Human& o) const {
         const std::string* n = knownName(who);
         return n && !o.knownName(who) ? *n : std::string();
     };
-    for (const auto& [who, opinion] : trust_) {
+    for (const auto& [who, opinion] : social_.trust) {
         if (who == o.id || who == id || std::abs(opinion) < GOSSIP_WORTH) continue;
         auto h = o.memory.heard.find(Memory::gossipKey(id, who));
         float told = h == o.memory.heard.end() ? 0.0f : h->second;
@@ -119,13 +119,13 @@ std::optional<Human::Tell> Human::gossipFor(const Human& o) const {
 
 int Human::friendCount() const {
     int n = 0;
-    for (const auto& [who, t] : trust_) n += t >= TRUST_FRIEND;
+    for (const auto& [who, t] : social_.trust) n += t >= TRUST_FRIEND;
     return n;
 }
 
 int Human::foeCount() const {
     int n = 0;
-    for (const auto& [who, t] : trust_) n += t <= TRUST_FOE;
+    for (const auto& [who, t] : social_.trust) n += t <= TRUST_FOE;
     return n;
 }
 
@@ -135,11 +135,11 @@ void Human::exchange(World& world, Human& o) {
         gossiping = o.gossiping = true;
     }
     // One asks; the other answers, then may ask back.
-    bool asked = std::any_of(o.sayings_.begin(), o.sayings_.end(), [&](const Saying& s) {
+    bool asked = std::any_of(o.voice_.sayings.begin(), o.voice_.sayings.end(), [&](const Saying& s) {
         return s.moment == talk::Moment::AskWay && s.to == id;
     });
     if (!asked && wouldAskWay(o)) {
-        askedWay_.insert(o.id);
+        escape_.askedWay.insert(o.id);
         if (rng_.chance(ASK_WAY_CHANCE)) sayLater(talk::Moment::AskWay, o.id);
     }
     if (auto lie = lieFor(world, o)) return tell(o, *lie);
@@ -194,19 +194,19 @@ std::optional<Human::Tell> Human::newsFor(const Human& o, bool& forPay) const {
 }
 
 bool Human::wouldAskWay(const Human& o) const {
-    return outDrive() >= ASK_WAY_FROM && !isFoe(o.id) && !askedWay_.count(o.id);
+    return outDrive() >= ASK_WAY_FROM && !isFoe(o.id) && !escape_.askedWay.count(o.id);
 }
 
 // Lies and gloom are told however unsure; an honest hunch only when it
 // has one worth the name.
 void Human::answerWay(Human& asker) {
     auto t = wayFor(asker);
-    if (t && (t->lie || t->gloomy || hunchSure_ >= WAY_UNSURE))
+    if (t && (t->lie || t->gloomy || escape_.hunchSure >= WAY_UNSURE))
         tell(asker, *t);
     else
         sayLater(talk::Moment::NoIdea, asker.id);
     if (wouldAskWay(asker)) {
-        askedWay_.insert(asker.id);
+        escape_.askedWay.insert(asker.id);
         if (rng_.chance(ASK_BACK_CHANCE)) sayLater(talk::Moment::AskWay, asker.id);
     }
 }
@@ -220,7 +220,7 @@ std::optional<Human::Tell> Human::wayFor(const Human& o) const {
         // The other way from where it thinks out is, or at spikes.
         t.lie = true;
         t.sure = WAY_LIE_SURE;
-        t.way = hunch_ + TAU / 2.0f;
+        t.way = escape_.hunch + TAU / 2.0f;
         int best = 0;
         for (const auto& [plate, kind] : memory.traps)
             if (kind == TrapKind::Spikes && !o.memory.traps.count(plate) && plate != o.cell &&
@@ -229,14 +229,14 @@ std::optional<Human::Tell> Human::wayFor(const Human& o) const {
                 t.cell = plate;
                 t.way = std::atan2(float(plate.y - o.cell.y), float(plate.x - o.cell.x));
             }
-    } else if (settled_ || gloom() >= WAY_GLOOMY) {
+    } else if (escape_.settled || gloom() >= WAY_GLOOMY) {
         t.gloomy = true;
-        t.sure = std::clamp(float(chunksIn_.size()) / WAY_SEEN_ENOUGH, hunchSure_, 1.0f);
+        t.sure = std::clamp(float(escape_.chunksIn.size()) / WAY_SEEN_ENOUGH, escape_.hunchSure, 1.0f);
     } else {
-        t.way = hunch_;
-        t.sure = hunchSure_;
+        t.way = escape_.hunch;
+        t.sure = escape_.hunchSure;
     }
-    if (auto it = wayTold_.find(o.id); it != wayTold_.end()) {
+    if (auto it = escape_.wayTold.find(o.id); it != escape_.wayTold.end()) {
         if (t.gloomy) {
             if (it->second < -TAU) return std::nullopt;
         } else if (it->second >= -TAU && std::cos(t.way - it->second) > std::cos(WAY_RETELL)) {
@@ -356,19 +356,19 @@ void Human::deliver(Human& o, const Tell& t) {
         // Believed as far as the teller is trusted, and as sure as it sounds.
         float w = std::clamp(o.trust(id) + WAY_STRANGER, 0.0f, 1.0f);
         news = true;
-        wayTold_[o.id] = t.gloomy ? -2.0f * TAU : t.way;
+        escape_.wayTold[o.id] = t.gloomy ? -2.0f * TAU : t.way;
         if (t.gloomy) {
             o.note("@ SAYS THERE IS NO WAY OUT", id);
             note("TOLD @ THERE IS NO WAY OUT", o.id);
             o.lift(-WAY_GLOOM * w * t.sure);
             break;
         }
-        float pull = w * t.sure / (t.sure + o.hunchSure_);
-        float agree = std::cos(t.way - o.hunch_);
-        float x = std::cos(o.hunch_) * (1.0f - pull) + std::cos(t.way) * pull;
-        float y = std::sin(o.hunch_) * (1.0f - pull) + std::sin(t.way) * pull;
-        if (x != 0.0f || y != 0.0f) o.hunch_ = std::atan2(y, x);
-        o.hunchSure_ = std::clamp(o.hunchSure_ + WAY_SURE * w * agree, WAY_SURE_MIN, 1.0f);
+        float pull = w * t.sure / (t.sure + o.escape_.hunchSure);
+        float agree = std::cos(t.way - o.escape_.hunch);
+        float x = std::cos(o.escape_.hunch) * (1.0f - pull) + std::cos(t.way) * pull;
+        float y = std::sin(o.escape_.hunch) * (1.0f - pull) + std::sin(t.way) * pull;
+        if (x != 0.0f || y != 0.0f) o.escape_.hunch = std::atan2(y, x);
+        o.escape_.hunchSure = std::clamp(o.escape_.hunchSure + WAY_SURE * w * agree, WAY_SURE_MIN, 1.0f);
         o.lift(WAY_HOPE * w);
         // Pointed at spikes: walking into them shows it was a lie (learnTrap).
         if (t.lie && memory.traps.count(t.cell) && !o.memory.traps.count(t.cell)) o.memory.toldBy[t.cell] = id;
@@ -390,7 +390,7 @@ void Human::deliver(Human& o, const Tell& t) {
                : "TOLD @ " + what,
          o.id);
     // A tip sold is owed for as the greeting ends; said once it is over, it went for nothing.
-    if (t.sold && o.state == State::Greeting && o.partner_ == id) o.owes_ = id;
+    if (t.sold && o.state == State::Greeting && o.social_.partner == id) o.social_.owes = id;
     if (t.kind != Tell::Kind::People) o.sayLater(talk::Moment::ThankTip, id);
 }
 
@@ -431,26 +431,26 @@ void Human::giveName(Human& other) {
 
 int Human::counterpart() const {
     switch (state) {
-    case State::Greeting: return partner_;
-    case State::Punching: return foe_;
-    case State::Giving: return sharee_;
-    case State::Looting: return robbee_ >= 0 ? robbee_ : corpse_;
-    case State::Feeding: return meal_;
+    case State::Greeting: return social_.partner;
+    case State::Punching: return fight_.foe;
+    case State::Giving: return social_.sharee;
+    case State::Looting: return sleep_.robbee >= 0 ? sleep_.robbee : deaths_.corpse;
+    case State::Feeding: return mind_.meal;
     default: break;
     }
     switch (goal) {
-    case Goal::Meet: return partner_;
-    case Goal::Follow: return leader_;
-    case Goal::Company: return companion_;
-    case Goal::Fight: return foe_;
-    case Goal::Flee: return feared_;
-    case Goal::Rob: return robbee_;
-    case Goal::Watch: return watchee_;
-    case Goal::Share: return sharee_;
-    case Goal::Escort: return escortee_;
-    case Goal::Escorted: return escort_;
-    case Goal::Loot: return corpse_;
-    case Goal::Feed: return meal_;
+    case Goal::Meet: return social_.partner;
+    case Goal::Follow: return social_.leader;
+    case Goal::Company: return social_.companion;
+    case Goal::Fight: return fight_.foe;
+    case Goal::Flee: return fight_.feared;
+    case Goal::Rob: return sleep_.robbee;
+    case Goal::Watch: return sleep_.watchee;
+    case Goal::Share: return social_.sharee;
+    case Goal::Escort: return escorting_.escortee;
+    case Goal::Escorted: return escorting_.by;
+    case Goal::Loot: return deaths_.corpse;
+    case Goal::Feed: return mind_.meal;
     default: return -1;
     }
 }
@@ -461,11 +461,11 @@ void Human::greet(Human& other) {
     gossiping = false;
     moving = false;
     path_.clear();
-    partner_ = other.id;
+    social_.partner = other.id;
     bool first = met.insert(other.id).second;
     note(first ? "MET @" : "CAUGHT UP WITH @", other.id);
     sayLater(first ? talk::Moment::Meet : talk::Moment::CatchUp, other.id);
-    greetedAt_[other.id] = clock_;
+    social_.greetedAt[other.id] = clock_;
     regard(other.id, TRUST_GREETED);
     if (other.cell.x != cell.x) facingLeft = other.cell.x < cell.x;
     timer = GREET_TIME;
@@ -473,15 +473,15 @@ void Human::greet(Human& other) {
 
 // Without a key, the human now follows a new friend who has one.
 void Human::endGreet(World& world) {
-    if (keys == 0 && world.human(partner_).keys > 0 && !isFoe(partner_) && leader_ != partner_) {
-        leader_ = partner_;
-        note("FOLLOWING @, WHO HAS A KEY", leader_);
-        sayLater(talk::Moment::Follow, leader_);
+    if (keys == 0 && world.human(social_.partner).keys > 0 && !isFoe(social_.partner) && social_.leader != social_.partner) {
+        social_.leader = social_.partner;
+        note("FOLLOWING @, WHO HAS A KEY", social_.leader);
+        sayLater(talk::Moment::Follow, social_.leader);
     }
-    partner_ = -1;
+    social_.partner = -1;
     // A tip bought is paid for now, if they are still there to pay.
-    int seller = owes_;
-    owes_ = -1;
+    int seller = social_.owes;
+    social_.owes = -1;
     if (seller >= 0) {
         Human& s = world.human(seller);
         if (!s.dead() && cakes > 0 && cheb(cell, s.cell) <= GREET_RADIUS) return give(s, Gift::Pay);
@@ -490,7 +490,7 @@ void Human::endGreet(World& world) {
 }
 
 bool Human::startFollow(World& world) {
-    Human& l = world.human(leader_);
+    Human& l = world.human(social_.leader);
     bool seen = sight.sees(l.cell);
     // Dead out of sight, they are followed on until found or lost.
     if ((seen && (l.dead() || l.keys == 0)) || suspicious(l.id) || isFoe(l.id)) {
@@ -498,16 +498,16 @@ bool Human::startFollow(World& world) {
             sayLater(talk::Moment::PartTurned, l.id);
         else if (!l.dead())
             sayLater(talk::Moment::PartNoKeys, l.id);
-        leader_ = -1;
+        social_.leader = -1;
         return false;
     }
-    Vec2i at = seen ? l.cell : lastSeen_[l.id];
+    Vec2i at = seen ? l.cell : social_.lastSeen[l.id];
     if (cheb(cell, at) <= FOLLOW_GAP) {
         if (!seen) {
             // Lost them.
-            note("LOST @", leader_);
-            sayLater(talk::Moment::PartLost, -1, leader_);
-            leader_ = -1;
+            note("LOST @", social_.leader);
+            sayLater(talk::Moment::PartLost, -1, social_.leader);
+            social_.leader = -1;
             return false;
         }
         // The leader asleep, it sits down by them to wait.
@@ -521,7 +521,7 @@ bool Human::startFollow(World& world) {
     }
     auto p = search(world, [&](Vec2i c) { return c != at && cheb(c, at) <= FOLLOW_GAP; });
     if (!p) {
-        leader_ = -1;
+        social_.leader = -1;
         return false;
     }
     startWalking(Goal::Follow, *p);
@@ -573,11 +573,11 @@ Human* Human::unmetInSight(const World& world) const {
 
 bool Human::wouldGreet(const Human& o) const {
     if (o.dead() || suspicious(o.id)) return false;
-    if (auto it = snubbed_.find(o.id); it != snubbed_.end() && clock_ - it->second < CATCH_UP_TIME) return false;
+    if (auto it = social_.snubbed.find(o.id); it != social_.snubbed.end() && clock_ - it->second < CATCH_UP_TIME) return false;
     if (isFoe(o.id)) return lieWorthy(o);
     if (!met.count(o.id)) return true;
-    auto it = greetedAt_.find(o.id);
-    if (it != greetedAt_.end() && clock_ - it->second < CATCH_UP_TIME) return false;
+    auto it = social_.greetedAt.find(o.id);
+    if (it != social_.greetedAt.end() && clock_ - it->second < CATCH_UP_TIME) return false;
     // Wanting a word with them: goes over.
     if (wantsWord(o.id)) return true;
     bool pay;
@@ -589,9 +589,9 @@ bool Human::wouldGreet(const Human& o) const {
 // pointed the wrong way may be pointed at spikes as the way out.
 bool Human::lieWorthy(const Human& o) const {
     if (traits.greedy < CUNNING_GREEDY || traits.brave < CUNNING_BRAVE || !isFoe(o.id)) return false;
-    if (o.keys == 0 && wayTold_.count(o.id)) return false;
-    auto it = greetedAt_.find(o.id);
-    if (it != greetedAt_.end() && clock_ - it->second < CATCH_UP_TIME) return false;
+    if (o.keys == 0 && escape_.wayTold.count(o.id)) return false;
+    auto it = social_.greetedAt.find(o.id);
+    if (it != social_.greetedAt.end() && clock_ - it->second < CATCH_UP_TIME) return false;
     for (const auto& [plate, kind] : memory.traps)
         if (kind == TrapKind::Spikes && !o.memory.traps.count(plate)) return true;
     return false;

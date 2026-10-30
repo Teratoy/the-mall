@@ -118,15 +118,15 @@ public:
     bool tired() const;
     bool exhausted() const;
     /// Getting up from sleep: still curled, then up.
-    bool rousing() const { return roused_ && state == State::Rising; }
+    bool rousing() const { return sleep_.roused && state == State::Rising; }
     /// Woke from a dream lately, half a memory of before.
     bool dreamt() const;
     /// Died in its sleep: lies curled as if still asleep.
-    bool diedAsleep() const { return diedAsleep_; }
+    bool diedAsleep() const { return sleep_.diedAsleep; }
     /// Kneeling by a sleeper to take a cake off them, not by a body.
-    bool robbing() const { return robbee_ >= 0; }
+    bool robbing() const { return sleep_.robbee >= 0; }
     /// The sleeper it keeps watch over; -1 none.
-    int watching() const { return watchee_; }
+    int watching() const { return sleep_.watchee; }
     /// Wants to go, and can hold it no longer; see human_relief.cpp.
     bool needsToGo() const;
     bool bursting() const;
@@ -134,7 +134,7 @@ public:
     /// and how long it holds on.
     float modesty() const;
     /// While Relieving: squatting over feces, else standing to piss.
-    bool shitting() const { return shitting_; }
+    bool shitting() const { return relief_.shitting; }
     /// Health below which it runs from a fight, and how long a fright
     /// lasts, by how brave it is.
     float fleeHealth() const;
@@ -267,8 +267,8 @@ public:
     int foeCount() const;
     /// Whom it keeps company with, -1 if nobody; and whether it is standing
     /// waiting for its group to catch up.
-    int companion() const { return companion_; }
-    bool waitingForCompany() const { return waitedFor_ > 0.0f && state == State::Idle; }
+    int companion() const { return social_.companion; }
+    bool waitingForCompany() const { return social_.waitedFor > 0.0f && state == State::Idle; }
     /// Greeting a friend, and swapping word of others while at it.
     bool gossiping = false;
     /// What it thinks of another human, -1 (a foe) to 1 (a friend), 0 for
@@ -338,32 +338,32 @@ public:
     float fright() const;
     /// How dazed it still is from waking up, 1 just come to, 0 clear-headed:
     /// it sees less far and walks slower while it lasts.
-    float dazed() const { return daze_; }
+    float dazed() const { return escape_.daze; }
     /// Thinks them a killer for the blood on them; still afraid of them since they hit it.
     bool suspects(int id) const { return suspicious(id); }
-    bool afraidOf(int id) const { return fear_ > 0.0f && feared_ == id; }
+    bool afraidOf(int id) const { return fight_.fear > 0.0f && fight_.feared == id; }
     /// Has seen id dead, and knew them for who they were.
-    bool knowsDead(int id) const { return seenDead_.count(id) > 0 && !nameless_.count(id); }
+    bool knowsDead(int id) const { return deaths_.seenDead.count(id) > 0 && !deaths_.nameless.count(id); }
     /// Can tell whose body id is: not bones it never saw as more.
-    bool knowsWhose(int id) const { return !nameless_.count(id); }
+    bool knowsWhose(int id) const { return !deaths_.nameless.count(id); }
     /// How badly it wants out of here, 0 to 1: everyone wakes wanting out,
     /// and settles to a steadier want after a while. It is why humans
     /// explore, and what sends a key holder to doors early.
-    float outUrge() const { return out_; }
+    float outUrge() const { return escape_.out; }
     /// Which way it feels the way out lies, as an angle (0 east, π/2 south).
     /// Exploring heads that way more than others.
-    float hunch() const { return hunch_; }
-    float hunchSure() const { return hunchSure_; }
+    float hunch() const { return escape_.hunch; }
+    float hunchSure() const { return escape_.hunchSure; }
     /// Whether it still believes there is a way out, 0 to 1; see
     /// human_hope.cpp. New places and opened doors lift it; dead ends,
     /// bodies, starving and more of the same wear it down. Without hope it
     /// settles: gives up looking for a way out and makes a home of a place.
-    float hope() const { return hope_; }
+    float hope() const { return escape_.hope; }
     /// How much of its hope is gone below HOPE_LOW, 0 to 1: it sits more,
     /// strays less, and its mind starts to give.
     float gloom() const;
-    bool settled() const { return settled_; }
-    Vec2i home() const { return home_; }
+    bool settled() const { return escape_.settled; }
+    Vec2i home() const { return escape_.home; }
     /// A line being said: what, in what tone, how long it has shown and
     /// how long it shows, and to whom (-1 for nobody).
     struct Speech {
@@ -375,7 +375,7 @@ public:
         std::optional<float> points;
     };
     /// The line over its head right now, if any.
-    const Speech* speaking() const { return speech_.empty() ? nullptr : &speech_.front(); }
+    const Speech* speaking() const { return voice_.speech.empty() ? nullptr : &voice_.speech.front(); }
     /// Chats it has started (human_chat.cpp).
     int chats = 0;
 
@@ -386,18 +386,18 @@ public:
     /// leaves guilt in a steady mind and appetite in an erratic one: guilt
     /// haunts, keeps it apart and holds it back from doing it again, until
     /// too much of it breaks the mind; appetite asks for more.
-    float erratic() const { return erratic_; }
+    float erratic() const { return mind_.erratic; }
     bool isErratic() const;
-    float guilt() const { return guilt_; }
-    float appetite() const { return appetite_; }
+    float guilt() const { return mind_.guilt; }
+    float appetite() const { return mind_.appetite; }
     /// Hunting someone to eat them: a fight that only ends with a death.
-    bool hunting() const { return prey_ >= 0 && foe_ == prey_; }
+    bool hunting() const { return mind_.prey >= 0 && fight_.foe == mind_.prey; }
     /// Dead: the meals of flesh left on the body, seconds since death, and
     /// how far gone it is, 0 fresh to 1 bare bones. Past spoiled() it
     /// makes whoever eats it sick.
     static constexpr int FLESH_MEALS = 3;
     int flesh = 0;
-    float deadFor() const { return dead() ? clock_ - diedAt_ : 0.0f; }
+    float deadFor() const { return dead() ? clock_ - deaths_.diedAt : 0.0f; }
     float decay() const;
     bool spoiled() const;
     bool bones() const { return decay() >= 1.0f; }
@@ -405,11 +405,9 @@ public:
     int meals() const;
 
 private:
+    /// tests/stuck_soak.cpp reads how walks are going.
+    friend struct SoakProbe;
     mutable Rng rng_;
-    /// The line being said, if any; one at a time.
-    std::deque<Speech> speech_;
-    /// World time its last line ended.
-    float quietSince_ = -1e9f;
     /// Something to say, to whom and about whom (-1 for nobody), said in
     /// turn at a later update, where the world is at hand; and how long it
     /// has waited for others to finish.
@@ -426,7 +424,6 @@ private:
         std::optional<Topic> topic;
         bool intro = false, quiet = false, awaited = false;
     };
-    std::vector<Saying> sayings_;
     /// False if the saying didn't fit in the queue and goes unsaid.
     bool sayLater(talk::Moment m, int to = -1, int about = -1);
     bool sayLater(Saying s);
@@ -437,20 +434,15 @@ private:
     /// What a tell said, and a name given, do to the one told.
     void deliver(Human& other, const Tell& t);
     void giveName(Human& other);
-    /// Waiting for its threat or plea to be said; then answerWait_ more for an answer.
+    /// Waiting for its threat or plea to be said; then voice_.answerWait more for an answer.
     bool awaiting_ = false;
-    float answerWait_ = 0.0f;
     /// Marks the saying just queued as awaited, the wait set by startIdle
     /// kept for after it is said.
     void awaitLine();
     /// Saying something, or about to.
-    bool talking() const { return !speech_.empty() || !sayings_.empty(); }
-    /// Chit-chat (human_chat.cpp): the urge to talk to each human it is
-    /// together with, 0 to 1, grown while both are calm and quiet; a full
-    /// one starts a chat. Calm enough to chat with someone, and together
-    /// with them.
-    std::unordered_map<int, float> chatUrge_;
-    float chatTick_ = 0.0f;
+    bool talking() const { return !voice_.speech.empty() || !voice_.sayings.empty(); }
+    /// Chit-chat (human_chat.cpp): calm enough to chat with someone, and
+    /// together with them.
     bool calmForChat(const Human& with) const;
     bool togetherWith(const Human& o) const;
     /// Nothing pressing on it: not hungry, thirsty, needing to go, bleeding,
@@ -460,8 +452,8 @@ private:
     bool knowsInSight(const Human& o, int range) const;
     /// Its urge to chat with o has come full.
     bool wantsWord(int o) const {
-        auto it = chatUrge_.find(o);
-        return it != chatUrge_.end() && it->second >= 1.0f;
+        auto it = chat_.urge.find(o);
+        return it != chat_.urge.end() && it->second >= 1.0f;
     }
     void chatUrges(World& world, float dt);
     /// Shut in a slam room with no key, it cries for help now and then,
@@ -487,14 +479,6 @@ private:
     /// about killing, eating or robbing the dead themselves).
     void raised(const Topic& t, int to);
     bool owns(const Episode& e) const;
-    /// By listener: what was raised with them, and when (for Someone, the
-    /// opinion it had then).
-    std::unordered_map<int, std::unordered_map<uint64_t, float>> talked_;
-    /// When it last sat down.
-    float restedAt_ = 0.0f;
-    /// The chat lines it has said, and when (world time), so it words
-    /// things differently next time.
-    std::unordered_map<std::string, float> chatLines_;
     /// Moves the line showing along, and says the next one when its turn
     /// comes: after a pause, and not over whoever it talks to, nor over
     /// anyone talking to it. Cries don't wait their turn.
@@ -506,9 +490,6 @@ private:
     /// Hears a line the speaker said to `to` (nobody in particular if null),
     /// and takes it as its tone says.
     void hear(World& world, Human& speaker, const talk::Said& said, Human* to, const Human* about);
-    /// When it last begged each human, and last threatened them; and whose
-    /// pleas moved it to share, until when.
-    std::unordered_map<int, float> begged_, threatened_, moved_;
     bool movedBy(int id) const;
     /// Hungry with no cakes: begs a holder close by, unless it begged them
     /// lately, and waits a moment to see. False if it doesn't.
@@ -533,35 +514,12 @@ private:
     bool deadEnd_ = false;
     /// Learns from going without (hard) or from a lesson paying off.
     void learn(float& lesson, bool hard);
-    /// The human being walked up to or greeted, and the one being followed.
-    int partner_ = -1;
-    int leader_ = -1;
-    /// Where each human was when last in sight.
-    std::unordered_map<int, Vec2i> lastSeen_;
-    std::unordered_map<int, float> trust_;
     /// How long it keeps fighting back whoever just hit it: longer for a foe.
     float grudgeFor(int id) const;
-    /// How many cakes each human carried when last in sight; none are left out.
-    std::unordered_map<int, int> seenCakes_;
-    /// Who this human is walking up to give a cake.
-    int sharee_ = -1;
-    /// Who this human is fighting, and for how long more without being hit.
-    int foe_ = -1;
-    float grudge_ = 0.0f;
-    /// Who it ran from, and for how long it keeps away from them.
-    int feared_ = -1;
-    float fear_ = 0.0f;
     float dread_ = 0.0f;
     /// Which of the first key, cake, door, water, human and footprints it
     /// has remarked on, a bit each in the order of talk::Moment from FirstKey.
     unsigned firstSights_ = 0;
-    /// Corpses it has seen, each a scare once, and who beat it to death.
-    std::unordered_set<int> seenDead_;
-    /// Bones it first saw as bones: someone's, it can't tell whose.
-    std::unordered_set<int> nameless_;
-    int killer_ = -1;
-    /// Whether the killer saw it die; if not, it learns it on finding the body.
-    bool killerSaw_ = false;
     /// A body it has seen, by whose it is: where it lies, the cakes last
     /// seen on it, and whether it saw it gone through, by itself or another,
     /// so nothing more is to be found on it than those cakes; and the meals
@@ -573,23 +531,6 @@ private:
         int meals = 0;
         bool spoiled = false;
     };
-    std::unordered_map<int, Body> bodies_;
-    /// The body it is going to, or kneeling by, to go through.
-    int corpse_ = -1;
-    /// Clock time of death.
-    float diedAt_ = 0.0f;
-    float erratic_ = 0.0f, guilt_ = 0.0f, appetite_ = 0.0f;
-    /// Clock times it last said it was haunted, or craving, so it doesn't keep on.
-    float hauntedAt_ = -1e9f, cravedAt_ = -1e9f;
-    /// Eating something rotten: no healing until this runs out.
-    float sick_ = 0.0f;
-    /// Who it is hunting, or killed to eat and has yet to eat. -1 if nobody.
-    int prey_ = -1;
-    /// The body it is going to, or kneeling by, to eat from.
-    int meal_ = -1;
-    /// Bodies it has eaten from; humans it has seen eat a body; bodies it
-    /// has seen half eaten.
-    std::unordered_set<int> ateFrom_, eaters_, gnawedSeen_;
     /// Keeps the mind moving: erratic, guilt and appetite growing and fading.
     void mind(float dt);
     /// How hungry it must be before it eats flesh, or hunts for it; above 1
@@ -603,7 +544,7 @@ private:
     /// Walks to the nearest body it would eat from, or kneels to eat once
     /// beside it; only from body when given. False if there is none.
     bool startFeed(World& world, int body = -1);
-    /// One meal off meal_, and what eating it does to the mind. Everyone
+    /// One meal off mind_.meal, and what eating it does to the mind. Everyone
     /// who sees it knows what it is now.
     void feed(World& world);
     /// Someone in sight it would kill to eat: the weakest, then the nearest.
@@ -622,7 +563,7 @@ private:
     /// Walks to the nearest body worth going through, or kneels by it once
     /// beside it. False if there is none it can get to.
     bool startLoot(World& world, bool cakesOnly = false);
-    /// Takes the keys off corpse_ and the cakes it has room for. Everyone
+    /// Takes the keys off deaths_.corpse and the cakes it has room for. Everyone
     /// who sees it knows the body was gone through.
     void loot(World& world);
     /// Making for a locked door out of hunger or fright, ahead of exploring,
@@ -631,34 +572,6 @@ private:
     float urgeWait_ = 0.0f;
     /// Seated: until the next look round.
     float glance_ = 0.0f;
-    /// The gate of the slam room it was shut in, while it stays shut, and
-    /// when it next cries for help.
-    std::optional<Vec2i> slamGate_;
-    float helpTimer_ = 0.0f;
-    /// Who it means to let out of a slam room, and where the gate is; whose
-    /// cries for help it has heard, each a scare once.
-    int rescuee_ = -1;
-    Vec2i rescueGate_{};
-    std::unordered_set<int> heardHelp_;
-    /// See dazed(). Sitting up after waking, it stays sat for a moment
-    /// whatever it sees (comingTo_).
-    float daze_ = 1.0f;
-    bool comingTo_ = false;
-    /// See outUrge() and hunch().
-    float out_ = 1.0f;
-    float hunch_ = 0.0f;
-    /// The last door urge came from wanting out, and that was noted.
-    bool outUrged_ = false, urgedNoted_ = false;
-    /// See hope(). Chunks it has set foot in, by id; when it last saw
-    /// somewhere it had never seen. Settled, it keeps to home_, and an
-    /// intruder found there at intrudedAt_ is driven off if it stays.
-    float hope_ = 0.7f;
-    std::unordered_set<int> chunksIn_;
-    float lastFound_ = 0.0f;
-    bool settled_ = false;
-    Vec2i home_;
-    int intruder_ = -1;
-    float intrudedAt_ = 0.0f;
     /// Hope moved by how: lost faster by the timid. Notes and mutters
     /// when it sinks below HOPE_LOW or comes back up.
     void lift(float how);
@@ -683,38 +596,12 @@ private:
     int hunchCost(Vec2i c, int most) const;
     /// Lying there done: it sits up, mutters and starts looking round.
     void sitUp();
-    /// Hit by attacker_ and not yet reacted: it does once off its step.
-    bool provoked_ = false;
-    int attacker_ = -1;
-    /// Damage of the blows taken lately, draining away with time. Past a
-    /// point a beating starts to bleed.
-    float beating_ = 0.0f;
-    /// Drops of blood owed, a whole one falling at each 1.
-    float drip_ = 0.0f;
     /// Blood thrown by a hit that wounded, the way the blow went (zero all
     /// round), and how hard: thrown at the next update, where the world is.
     struct Spray {
         float dx, dy, damage;
         BodyPart part;
     };
-    std::vector<Spray> sprays_;
-    /// The cell last checked for blood underfoot, and the steps left that
-    /// still print a bloody footprint.
-    Vec2i trod_;
-    int bloodySteps_ = 0;
-    /// Whose blood the feet print, from the stain last stepped in.
-    int feetBlood_ = -1;
-    /// Seconds until wet blood on the body next runs down a pixel.
-    float run_ = 0.0f;
-    /// The water cell being washed in.
-    Vec2i washAt_;
-    /// The water cell being drunk from.
-    Vec2i drinkAt_;
-    /// Going, for feces as well, or only to piss.
-    bool shitting_ = false;
-    /// A fresh pool of blood that scared it, and until when it stays away.
-    Vec2i scare_;
-    float scaredUntil_ = 0.0f;
     /// Those seen with blood on them but no wound to show for it: until when
     /// it keeps away from them, and how much their blood, by freshness and
     /// amount, weighed last time (0 to 1).
@@ -722,7 +609,6 @@ private:
         float until;
         float weight;
     };
-    std::unordered_map<int, Suspect> suspects_;
     /// What the blood on a cell in sight tells it: a trap beside it, or a
     /// pool. True if that is news.
     bool noticeBlood(const World& world, Vec2i c);
@@ -741,16 +627,6 @@ private:
     /// For a walk from start: whether a cell comes too near someone it
     /// shuns. Empty when it shuns nobody in sight.
     std::function<bool(Vec2i)> shunZone(const World& world, Vec2i start) const;
-
-    /// The wounded human this one is taking to water, the floor beside the
-    /// water it takes them to, and whether it got there; and the one taking
-    /// this human to water.
-    int escortee_ = -1;
-    Vec2i escortTo_;
-    bool escortArrived_ = false;
-    int escort_ = -1;
-    /// Leading escortee_ to drink, not to wash (human_thirst.cpp).
-    bool escortDrink_ = false;
     /// It would lead o, a parched (or thirsty and not going to water)
     /// friend or one it walks with, to water to drink.
     bool wouldLeadToDrink(const Human& o) const;
@@ -759,13 +635,6 @@ private:
     float parchedToLead(const World& world) const;
     /// Leads the nearest such human to the nearest water it would drink.
     bool offerDrinkEscort(World& world);
-    /// Whom it last led to drink, and when: not again straight away.
-    std::unordered_map<int, float> ledToDrink_;
-    /// Where it last drank, and whether it ever has; when it last got
-    /// thirsty; when new water last lifted its hope.
-    Vec2i lastWater_;
-    bool drankYet_ = false;
-    float thirstyAt_ = 0.0f, waterHopeAt_ = -1e9f;
     /// Getting thirsty, and parched (with what that may teach it).
     void gotThirsty();
     void gotParched(const World& world);
@@ -782,18 +651,15 @@ private:
     /// Takes the nearest such human in reach to the nearest water either of
     /// them knows. False if there is none, or no water.
     bool offerEscort(World& world);
-    /// Leads escortee_ on, waits for them to catch up, or waits by the water
+    /// Leads escorting_.escortee on, waits for them to catch up, or waits by the water
     /// while they wash. False once the escort is over.
     bool leadEscort(World& world);
-    /// Keeps close behind escort_. False once the escort is over.
+    /// Keeps close behind escorting_.by. False once the escort is over.
     bool followEscort(World& world);
     /// Hungry with no cakes: walks to the freshest blood in sight, fresher
     /// than any underfoot, toward whoever is bleeding. False if none.
     /// Blood it already walked up to is left alone a while.
     bool track(World& world);
-    /// The blood each trail step led to, and when, so it doesn't pace back
-    /// and forth at a trail's end.
-    std::unordered_map<Vec2i, float, Vec2iHash> tracked_;
     /// Puts ink of blood on pixels of the body, one at a time, picked from
     /// the given parts; with low, from the lowest of them, as on a hand.
     void stain(std::initializer_list<BodyPart> parts, int pixels, int ink, bool low = false);
@@ -840,7 +706,7 @@ private:
     void startWalking(Goal g, std::vector<Vec2i> path);
     void startPassDoor(Vec2i door);
 
-    /// Walks toward partner_, or greets them once close. False if they're lost.
+    /// Walks toward social_.partner, or greets them once close. False if they're lost.
     bool startMeet(World& world);
     void tryGreet(World& world, Human& other);
     void greet(Human& other);
@@ -858,8 +724,6 @@ private:
     /// the foe has never seen that crosses a spike plate it doesn't know
     /// of. Nothing if it isn't that sort, or knows no such plate or door.
     std::optional<Tell> lieFor(const World& world, const Human& foe) const;
-    /// Whoever it owes a cake for a tip, paid as the greeting ends.
-    int owes_ = -1;
     /// A told cell seen for what it is: nothing there, and the teller is
     /// thought worse of, or as told, and the telling is forgotten.
     void checkTold(Vec2i c, bool asTold);
@@ -881,46 +745,37 @@ private:
     /// said again to the same human unless it changed its mind.
     std::optional<Tell> wayFor(const Human& other) const;
     /// Whether, greeting other, it might ask them the way out: only while
-    /// it still wants out, never a foe, once per human (askedWay_), and
+    /// it still wants out, never a foe, once per human (escape_.askedWay), and
     /// then seldom (ASK_WAY_CHANCE).
     bool wouldAskWay(const Human& other) const;
     /// Asked the way out by asker, out loud: says what it thinks
     /// (wayFor), or that it has no idea when too unsure or unwilling.
     void answerWay(Human& asker);
-    std::unordered_set<int> askedWay_;
-    /// How sure it is of its hunch, 0 to 1: a vague feeling on waking,
-    /// firmer as others say the same, shakier as they don't. What it last
-    /// told each human of the way: the angle, or below -TAU none at all.
-    float hunchSure_ = 0.3f;
-    std::unordered_map<int, float> wayTold_;
     void endGreet(World& world);
-    /// Walks after leader_, or waits near them. False once it stops following.
+    /// Walks after social_.leader, or waits near them. False once it stops following.
     bool startFollow(World& world);
     /// Tells the leader the way to a locked door it knows and they don't, if any.
     void tellLockedDoor(World& world, Human& leader);
-    /// Groups (human_company.cpp). Whom it walks after, for a key (leader_)
-    /// or for company (companion_), -1 if nobody.
-    int follows() const { return leader_ >= 0 ? leader_ : companion_; }
+    /// Groups (human_company.cpp). Whom it walks after, for a key (social_.leader)
+    /// or for company (social_.companion), -1 if nobody.
+    int follows() const { return social_.leader >= 0 ? social_.leader : social_.companion; }
     /// How well it must think of someone met to keep with them, by how
     /// sociable it is.
     float companyTrust() const;
     /// Whether id's chain of following leads back to this human.
     bool followedBy(const World& world, int id) const;
-    /// Leaving companion_: says why, if it can tell them (human_company.cpp).
+    /// Leaving social_.companion: says why, if it can tell them (human_company.cpp).
     void partCompany(const World& world);
     /// The one in sight it would most like to keep with, -1 if none will do.
     int pickCompany(const World& world) const;
-    /// Whether it still keeps with companion_.
+    /// Whether it still keeps with social_.companion.
     bool stillCompany(const World& world) const;
-    /// Walks after companion_ (choosing one if it has none), or waits, or
+    /// Walks after social_.companion (choosing one if it has none), or waits, or
     /// sits, near them. False once it keeps company with nobody.
     bool keepCompany(World& world);
     /// Leading a group: someone in sight keeping with it has fallen behind
     /// and it hasn't waited too long already, so it waits a moment.
     bool waitForCompany(const World& world);
-    int companion_ = -1;
-    /// Seconds waited in a row for the group, back to 0 once they are close.
-    float waitedFor_ = 0.0f;
     /// The nearest human in sight worth greeting: a stranger, or someone
     /// not greeted for a while who it has news for or who may have news
     /// for it, or a foe it means to lie to.
@@ -930,12 +785,6 @@ private:
     /// either holds keys or was never pointed the wrong way: worth a lie.
     /// The cheap half of lieFor and wayFor.
     bool lieWorthy(const Human& o) const;
-    /// When it last greeted each human, and when it set out for partner_,
-    /// to tell a greeting done since from one still owed.
-    std::unordered_map<int, float> greetedAt_;
-    float partnerSince_ = 0.0f;
-    /// When each human last wouldn't greet it back; not tried again for a while.
-    std::unordered_map<int, float> snubbed_;
     /// Free to be greeted: standing about, or walking somewhere nothing
     /// presses: not fighting, running, stepping aside, passing a door,
     /// escorting or escorted, keeping away, going to food or a body, nor
@@ -987,26 +836,9 @@ private:
     bool startRob(World& world);
     /// Takes the cake, unless they woke; then they know who.
     void rob(World& world);
-    /// The sleeper it is robbing, or going to; -1 none.
-    int robbee_ = -1;
-    /// Cakes it held, and who was nearest in sight, on falling asleep.
-    int cakesAsleep_ = 0, nearAsleep_ = -1;
-    /// Woken by a blow, it is slow to answer it for this long.
-    float stunned_ = 0.0f;
-    bool diedAsleep_ = false;
-    /// When it last woke from a dream; how many times in a row it slept
-    /// safely where it last slept.
-    float dreamtAt_ = -1e9f;
-    int safeSleeps_ = 0;
     /// Waking in its own time: now and then from a dream of before, which
     /// pulls its hunch of the way out some way, and makes it surer of it.
     void dream();
-    /// Keeping watch over a sleeper of its group: whom it watches, and, on
-    /// the sleeper, who watches over it. Asked by someone to watch, or
-    /// woken to take a turn, it watches whatever it is like.
-    int watchee_ = -1, watchedBy_ = -1, askedWatch_ = -1;
-    /// Robbing the one it keeps watch over.
-    bool betraying_ = false;
     /// Someone of its group, or a friend, it would watch over: o asleep in
     /// sight, near, and nobody else already watching them.
     bool wouldWatch(const World& world, const Human& o) const;
@@ -1034,12 +866,6 @@ private:
     void blameWatcher(World& world);
     /// Goes to o asleep, or kneels by them, to take a cake.
     bool goRob(World& world, Human& o);
-    /// Got up from sleep, not from sitting.
-    bool roused_ = false;
-    /// Where it last slept and woke unharmed, if anywhere yet; and whether
-    /// it lay down there (or at home) this time.
-    Vec2i sleptAt_;
-    bool sleptYet_ = false, atSleepSpot_ = false;
     /// Where it means to sleep: home if settled, else where it last slept
     /// safely; nothing if it has no such place yet.
     std::optional<Vec2i> sleepBase() const;
@@ -1076,21 +902,12 @@ private:
     void offendDrinkers(World& world, Vec2i water);
     /// Someone it sees has made a home by this water.
     bool othersWater(const World& world, Vec2i water) const;
-    /// When it last gave offence washing.
-    float offendedAt_ = -1e9f;
-    /// Guarding water by its home: whom it lets drink there, until when.
-    std::unordered_map<int, float> letDrink_;
     bool mayDrinkHere(int who) const;
     /// Someone thirsty came into its place, which has water: lets them
     /// drink (true), maybe for a cake, or turns them away (false, refused,
     /// having told them so). In human_thirst.cpp.
     bool askedToDrink(Human& o, bool& refused);
-    /// The guard it owes a cake for water, -1 none; paid (or not) once it
-    /// has drunk its fill.
-    int owesWater_ = -1;
     void payForWater(World& world);
-    /// Homes whose settler turned it away from their water, and when.
-    std::vector<std::pair<Vec2i, float>> refusedWater_;
     /// Water to tell o of at a greeting, if thirsty: the way to the water
     /// nearest it that o has never seen, free to friends and those it walks
     /// with, sold by the grasping, kept back by the stingy; to a foe, a way
@@ -1102,15 +919,13 @@ private:
     /// Thirsty and knowing no water it can get to: asks those it walks
     /// with in sight, now and then, and one who knows tells it the way.
     void askGroupForWater(World& world);
-    float askedWaterAt_ = -1e9f;
     /// Bladder and bowels filling over dt; human_relief.cpp, like the rest
     /// of going.
     void press(float dt);
     /// What goes in comes out: this much water drunk and food eaten, as
-    /// shares of a full gulp and a whole cake, held (drunk_, eaten_) and
+    /// shares of a full gulp and a whole cake, held (relief_.drunk, relief_.eaten) and
     /// passed on to the bladder and bowels over the next minutes.
     void takeIn(float water, float food);
-    float drunk_ = 0.0f, eaten_ = 0.0f;
     /// Wants to go from here, held on longer by the modest.
     float needBar() const;
     /// Needing to go: walks to the nearest spot that feels out of the way,
@@ -1139,10 +954,6 @@ private:
     /// Everyone else in sight of it going (accident or not; into water or
     /// not) thinks what they think of that; it is ashamed of being seen.
     void beSeenGoing(World& world, bool accident, bool intoWater);
-    /// Whom it is looking away from, giving privacy; -1 none.
-    int privacyFor_ = -1;
-    /// A fright big enough to wet itself came, to be seen to by tread().
-    bool frightWet_ = false;
     /// The toilet it knows of that the cell is in front of, if any.
     std::optional<Vec2i> toiletBefore(const World& world, Vec2i c) const;
     void endRelieving();
@@ -1165,10 +976,6 @@ private:
     bool washDirt(World& world, Vec2i water);
     /// Fouls the water at the cell this much, which seeps on from there.
     static void foulWater(World& world, Vec2i water, float amount);
-    Vec2i messTrod_;
-    int messSteps_ = 0;
-    bool ignoreMess_ = false;
-    std::unordered_set<int> filthNoted_;
     /// The nearest human remembered carrying cakes, and not to be feared.
     const Human* nearestHolder(const World& world) const;
     /// With cakes to spare: a starving human in sight to feed, or to beat up
@@ -1176,20 +983,20 @@ private:
     bool helpStarving(World& world);
     /// Whether this human would give the other a cake.
     bool wouldShare(const Human& other) const;
-    /// Walks up to sharee_ and hands them a cake. False if they're lost.
+    /// Walks up to social_.sharee and hands them a cake. False if they're lost.
     bool startShare(World& world);
     /// Why a cake is handed over: to the starving, for a tip, or under threat.
     enum class Gift { Share, Pay, Yield };
     /// Hands other a cake, who thinks better of it for a gift or a payment.
     void give(Human& other, Gift why);
-    /// Punches foe_ if close, else walks up to them, or to where they were
+    /// Punches fight_.foe if close, else walks up to them, or to where they were
     /// last seen. False once the fight is off.
     bool startFight(World& world);
     void startPunch(Human& foe);
     void landPunch(World& world);
     /// Called back from takeHit once the human can act: fights or runs.
     void react(World& world);
-    /// Runs from feared_. False when there is nowhere to run.
+    /// Runs from fight_.feared. False when there is nowhere to run.
     bool startFlee(World& world);
 
     /// Holding a key, whether hunger, fright or wanting out sends it to a
@@ -1229,4 +1036,252 @@ private:
     std::optional<std::vector<Vec2i>> searchFrom(const World& world, Vec2i start,
                                                  const std::function<bool(Vec2i)>& done, bool avoidCrowd,
                                                  const std::function<int(Vec2i)>& goalCost = {}) const;
+
+    // State of each system, kept apart so it is clear what belongs to what.
+    /// What it says, in turn (human_speech.cpp).
+    struct Voice {
+        /// The line being said, if any; one at a time.
+        std::deque<Speech> speech;
+        /// World time its last line ended.
+        float quietSince = -1e9f;
+        std::vector<Saying> sayings;
+        float answerWait = 0.0f;
+        /// The chat lines it has said, and when (world time), so it words
+        /// things differently next time.
+        std::unordered_map<std::string, float> chatLines;
+        /// When it last begged each human, and last threatened them; and whose
+        /// pleas moved it to share, until when.
+        std::unordered_map<int, float> begged, threatened, moved;
+    };
+    Voice voice_;
+    /// Chit-chat (human_chat.cpp, human_topic.cpp).
+    struct Chat {
+        /// The urge to talk to each human it is together with, 0 to 1, grown
+        /// while both are calm and quiet; a full one starts a chat.
+        std::unordered_map<int, float> urge;
+        float tick = 0.0f;
+        /// By listener: what was raised with them, and when (for Someone, the
+        /// opinion it had then).
+        std::unordered_map<int, std::unordered_map<uint64_t, float>> talked;
+        /// When it last sat down.
+        float restedAt = 0.0f;
+    };
+    Chat chat_;
+    /// Others: whom it deals with, keeps with, trusts and owes (human_social.cpp, human_company.cpp).
+    struct Social {
+        /// The human being walked up to or greeted, and the one being followed.
+        int partner = -1;
+        int leader = -1;
+        /// Where each human was when last in sight.
+        std::unordered_map<int, Vec2i> lastSeen;
+        std::unordered_map<int, float> trust;
+        /// How many cakes each human carried when last in sight; none are left out.
+        std::unordered_map<int, int> seenCakes;
+        /// Who this human is walking up to give a cake.
+        int sharee = -1;
+        /// Whoever it owes a cake for a tip, paid as the greeting ends.
+        int owes = -1;
+        int companion = -1;
+        /// Seconds waited in a row for the group, back to 0 once they are close.
+        float waitedFor = 0.0f;
+        /// When it last greeted each human, and when it set out for partner,
+        /// to tell a greeting done since from one still owed.
+        std::unordered_map<int, float> greetedAt;
+        float partnerSince = 0.0f;
+        /// When each human last wouldn't greet it back; not tried again for a while.
+        std::unordered_map<int, float> snubbed;
+    };
+    Social social_;
+    /// Fighting and running away (human_fight.cpp).
+    struct Fight {
+        /// Who this human is fighting, and for how long more without being hit.
+        int foe = -1;
+        float grudge = 0.0f;
+        /// Who it ran from, and for how long it keeps away from them.
+        int feared = -1;
+        float fear = 0.0f;
+        /// Hit by attacker and not yet reacted: it does once off its step.
+        bool provoked = false;
+        int attacker = -1;
+        /// Damage of the blows taken lately, draining away with time. Past a
+        /// point a beating starts to bleed.
+        float beating = 0.0f;
+    };
+    Fight fight_;
+    /// The dead: those it saw, the bodies it knows, and its own death.
+    struct Deaths {
+        /// Corpses it has seen, each a scare once, and who beat it to death.
+        std::unordered_set<int> seenDead;
+        /// Bones it first saw as bones: someone's, it can't tell whose.
+        std::unordered_set<int> nameless;
+        int killer = -1;
+        /// Whether the killer saw it die; if not, it learns it on finding the body.
+        bool killerSaw = false;
+        std::unordered_map<int, Body> bodies;
+        /// The body it is going to, or kneeling by, to go through.
+        int corpse = -1;
+        /// Clock time of death.
+        float diedAt = 0.0f;
+    };
+    Deaths deaths_;
+    /// The mind and flesh (human_flesh.cpp).
+    struct Mind {
+        float erratic = 0.0f, guilt = 0.0f, appetite = 0.0f;
+        /// Clock times it last said it was haunted, or craving, so it doesn't keep on.
+        float hauntedAt = -1e9f, cravedAt = -1e9f;
+        /// Eating something rotten: no healing until this runs out.
+        float sick = 0.0f;
+        /// Who it is hunting, or killed to eat and has yet to eat. -1 if nobody.
+        int prey = -1;
+        /// The body it is going to, or kneeling by, to eat from.
+        int meal = -1;
+        /// Bodies it has eaten from; humans it has seen eat a body; bodies it
+        /// has seen half eaten.
+        std::unordered_set<int> ateFrom, eaters, gnawedSeen;
+    };
+    Mind mind_;
+    /// Slam rooms: shut in, and letting others out (human_rescue.cpp).
+    struct Rescue {
+        /// The gate of the slam room it was shut in, while it stays shut, and
+        /// when it next cries for help.
+        std::optional<Vec2i> slamGate;
+        float helpTimer = 0.0f;
+        /// Who it means to let out of a slam room, and where the gate is; whose
+        /// cries for help it has heard, each a scare once.
+        int rescuee = -1;
+        Vec2i gate{};
+        std::unordered_set<int> heardHelp;
+    };
+    Rescue rescue_;
+    /// Waking, wanting out, hope and settling (human_hope.cpp, AI/escape_plan.md).
+    struct Escape {
+        /// See dazed(). Sitting up after waking, it stays sat for a moment
+        /// whatever it sees (escape_.comingTo).
+        float daze = 1.0f;
+        bool comingTo = false;
+        /// See outUrge() and hunch().
+        float out = 1.0f;
+        float hunch = 0.0f;
+        /// The last door urge came from wanting out, and that was noted.
+        bool outUrged = false, urgedNoted = false;
+        /// See hope(). Chunks it has set foot in, by id; when it last saw
+        /// somewhere it had never seen. Settled, it keeps to home, and an
+        /// intruder found there at intrudedAt is driven off if it stays.
+        float hope = 0.7f;
+        std::unordered_set<int> chunksIn;
+        float lastFound = 0.0f;
+        bool settled = false;
+        Vec2i home;
+        int intruder = -1;
+        float intrudedAt = 0.0f;
+        std::unordered_set<int> askedWay;
+        /// How sure it is of its hunch, 0 to 1: a vague feeling on waking,
+        /// firmer as others say the same, shakier as they don't. What it last
+        /// told each human of the way: the angle, or below -TAU none at all.
+        float hunchSure = 0.3f;
+        std::unordered_map<int, float> wayTold;
+    };
+    Escape escape_;
+    /// Blood: its own spilling, on the floor and on others (human_blood.cpp).
+    struct Gore {
+        /// Drops of blood owed, a whole one falling at each 1.
+        float drip = 0.0f;
+        std::vector<Spray> sprays;
+        /// The cell last checked for blood underfoot, and the steps left that
+        /// still print a bloody footprint.
+        Vec2i trod;
+        int bloodySteps = 0;
+        /// Whose blood the feet print, from the stain last stepped in.
+        int feetBlood = -1;
+        /// Seconds until wet blood on the body next runs down a pixel.
+        float run = 0.0f;
+        /// The water cell being washed in.
+        Vec2i washAt;
+        /// A fresh pool of blood that scared it, and until when it stays away.
+        Vec2i scare;
+        float scaredUntil = 0.0f;
+        std::unordered_map<int, Suspect> suspects;
+        /// The blood each trail step led to, and when, so it doesn't pace back
+        /// and forth at a trail's end.
+        std::unordered_map<Vec2i, float, Vec2iHash> tracked;
+    };
+    Gore gore_;
+    /// Taking someone to water, or being taken (human_blood.cpp, human_thirst.cpp).
+    struct Escorting {
+        /// The wounded human this one is taking to water, the floor beside the
+        /// water it takes them to, and whether it got there; and the one taking
+        /// this human to water.
+        int escortee = -1;
+        Vec2i to;
+        bool arrived = false;
+        int by = -1;
+        /// Leading escortee to drink, not to wash (human_thirst.cpp).
+        bool drink = false;
+        /// Whom it last led to drink, and when: not again straight away.
+        std::unordered_map<int, float> ledToDrink;
+    };
+    Escorting escorting_;
+    /// Drinking and water (human_thirst.cpp).
+    struct Water {
+        /// The water cell being drunk from.
+        Vec2i drinkAt;
+        /// Where it last drank, and whether it ever has; when it last got
+        /// thirsty; when new water last lifted its hope.
+        Vec2i last;
+        bool drankYet = false;
+        float thirstyAt = 0.0f, hopeAt = -1e9f;
+        /// When it last gave offence washing.
+        float offendedAt = -1e9f;
+        /// Guarding water by its home: whom it lets drink there, until when.
+        std::unordered_map<int, float> letDrink;
+        /// The guard it owes a cake for water, -1 none; paid (or not) once it
+        /// has drunk its fill.
+        int owes = -1;
+        /// Homes whose settler turned it away from their water, and when.
+        std::vector<std::pair<Vec2i, float>> refused;
+        float askedAt = -1e9f;
+    };
+    Water water_;
+    /// Sleep, robbing sleepers and keeping watch (human_sleep.cpp).
+    struct Sleep {
+        /// The sleeper it is robbing, or going to; -1 none.
+        int robbee = -1;
+        /// Cakes it held, and who was nearest in sight, on falling asleep.
+        int cakesAsleep = 0, nearAsleep = -1;
+        /// Woken by a blow, it is slow to answer it for this long.
+        float stunned = 0.0f;
+        bool diedAsleep = false;
+        /// When it last woke from a dream; how many times in a row it slept
+        /// safely where it last slept.
+        float dreamtAt = -1e9f;
+        int safeSleeps = 0;
+        /// Keeping watch over a sleeper of its group: whom it watches, and, on
+        /// the sleeper, who watches over it. Asked by someone to watch, or
+        /// woken to take a turn, it watches whatever it is like.
+        int watchee = -1, watchedBy = -1, askedWatch = -1;
+        /// Robbing the one it keeps watch over.
+        bool betraying = false;
+        /// Got up from sleep, not from sitting.
+        bool roused = false;
+        /// Where it last slept and woke unharmed, if anywhere yet; and whether
+        /// it lay down there (or at home) this time.
+        Vec2i sleptAt;
+        bool sleptYet = false, atSleepSpot = false;
+    };
+    Sleep sleep_;
+    /// Pissing, shitting and mess (human_relief.cpp).
+    struct Relief {
+        /// Going, for feces as well, or only to piss.
+        bool shitting = false;
+        float drunk = 0.0f, eaten = 0.0f;
+        /// Whom it is looking away from, giving privacy; -1 none.
+        int privacyFor = -1;
+        /// A fright big enough to wet itself came, to be seen to by tread().
+        bool frightWet = false;
+        Vec2i messTrod;
+        int messSteps = 0;
+        bool ignoreMess = false;
+        std::unordered_set<int> filthNoted;
+    };
+    Relief relief_;
 };

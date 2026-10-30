@@ -122,7 +122,7 @@ std::optional<Vec2i> Human::waterBeside(Vec2i c) const {
 // Those with a taste for flesh don't mind it either: much of what fouls
 // water is blood.
 float Human::seenFoul(const World& world, Vec2i water) const {
-    bool minds = !parched() && !isErratic() && appetite_ < BLOOD_CRAVING;
+    bool minds = !parched() && !isErratic() && mind_.appetite < BLOOD_CRAVING;
     return sight.sees(water) && minds ? world.foul(water) : 0.0f;
 }
 
@@ -130,15 +130,15 @@ float Human::seenFoul(const World& world, Vec2i water) const {
 // water put it off.
 bool Human::wouldDrink(const World& world, Vec2i from, Vec2i water) const {
     if (seenFoul(world, water) >= FOUL_REFUSE) return false;
-    bool craving = appetite_ >= BLOOD_CRAVING || isErratic();
+    bool craving = mind_.appetite >= BLOOD_CRAVING || isErratic();
     if (sight.sees(water) && !parched() && !craving && world.blood().tint(water) >= RED_WATER) return false;
     if (parched()) return true;
     // A settler who turned it away from this water, not long ago.
-    for (const auto& [home, at] : refusedWater_)
+    for (const auto& [home, at] : water_.refused)
         if (clock_ - at < WATER_REFUSED && cheb(home, water) <= OWN_WATER) return false;
     if (!isErratic() && filthAround(world, from, craving) >= FILTH_BAR * (1.5f - modesty())) return false;
     if (craving || traits.brave >= BODY_BRAVE) return true;
-    for (const auto& [who, b] : bodies_)
+    for (const auto& [who, b] : deaths_.bodies)
         if (cheb(b.cell, from) <= BODY_BY_WATER) return false;
     return true;
 }
@@ -184,12 +184,12 @@ void Human::startDrinking(Vec2i water) {
         sayLater(talk::Moment::Drink);
         dread_ = std::max(0.0f, dread_ - DRINK_CALM);
         // Found water soon after getting thirsty: keeping near it paid off.
-        if (lessons.nearWater > 0.0f && clock_ - thirstyAt_ < WATER_SOON) learn(lessons.nearWater, false);
+        if (lessons.nearWater > 0.0f && clock_ - water_.thirstyAt < WATER_SOON) learn(lessons.nearWater, false);
     }
-    lastWater_ = cell;
-    drankYet_ = true;
+    water_.last = cell;
+    water_.drankYet = true;
     goal = Goal::Drink;
-    drinkAt_ = water;
+    water_.drinkAt = water;
     if (water.x != cell.x) facingLeft = water.x < cell.x;
     state = State::Drinking;
     moving = false;
@@ -200,45 +200,45 @@ void Human::startDrinking(Vec2i water) {
 // Anything new seen sends it back to choose(), which has it go on drinking
 // while still thirsty and nothing more pressing turns up.
 void Human::drink(World& world) {
-    const Toilet* toilet = world.toilet(drinkAt_);
+    const Toilet* toilet = world.toilet(water_.drinkAt);
     // Turned away, or the water went bad, since it knelt; at a toilet, no
     // longer desperate.
-    if (toilet ? !parched() && !isErratic() : !wouldDrink(world, cell, drinkAt_)) return choose(world);
+    if (toilet ? !parched() && !isErratic() : !wouldDrink(world, cell, water_.drinkAt)) return choose(world);
     thirst = std::max(0.0f, thirst - DRINK_GULP);
     takeIn(1.0f, 0.0f);
     if (toilet) {
         float foul = toilet->dirt * TOILET_FOUL;
         if (health > FOUL_SURVIVE) health = std::max(FOUL_SURVIVE, health - FOUL_DAMAGE * foul);
-        if (foul >= FOUL_SICK && sick_ <= 0.0f) {
-            sick_ = FOUL_SICK_TIME;
+        if (foul >= FOUL_SICK && mind_.sick <= 0.0f) {
+            mind_.sick = FOUL_SICK_TIME;
             note("THE TOILET WATER MADE ME SICK");
         }
         if (observe(world)) rethink_ = true;
-        if (rethink_ || thirst <= QUENCHED || fear_ > 0.0f || foe_ >= 0) return choose(world);
+        if (rethink_ || thirst <= QUENCHED || fight_.fear > 0.0f || fight_.foe >= 0) return choose(world);
         timer = DRINK_GULP_TIME;
         return;
     }
-    if (world.blood().tint(drinkAt_) >= RED_WATER) {
-        bool glad = appetite_ >= BLOOD_CRAVING;
+    if (world.blood().tint(water_.drinkAt) >= RED_WATER) {
+        bool glad = mind_.appetite >= BLOOD_CRAVING;
         note(glad ? "DRANK BLOODY WATER, GLADLY" : "DRANK BLOODY WATER");
         if (!glad) scare(RED_DREAD);
         sayLater(talk::Moment::BloodyWater);
     }
-    if (float foul = world.foul(drinkAt_); foul > 0.0f) {
+    if (float foul = world.foul(water_.drinkAt); foul > 0.0f) {
         if (foul >= FOUL_NOTED) {
             note("DRANK FOUL WATER");
             sayLater(talk::Moment::FoulWater);
             // Strikes it more the fouler it is.
-            rememberAt(drinkAt_, Episode::What::FoulWater, std::min(1.0f, foul));
+            rememberAt(water_.drinkAt, Episode::What::FoulWater, std::min(1.0f, foul));
         }
         if (health > FOUL_SURVIVE) health = std::max(FOUL_SURVIVE, health - FOUL_DAMAGE * foul);
-        if (foul >= FOUL_SICK && sick_ <= 0.0f) {
-            sick_ = FOUL_SICK_TIME;
+        if (foul >= FOUL_SICK && mind_.sick <= 0.0f) {
+            mind_.sick = FOUL_SICK_TIME;
             note("THE FOUL WATER MADE ME SICK");
         }
     }
     if (observe(world)) rethink_ = true;
-    if (rethink_ || thirst <= QUENCHED || fear_ > 0.0f || foe_ >= 0) {
+    if (rethink_ || thirst <= QUENCHED || fight_.fear > 0.0f || fight_.foe >= 0) {
         if (thirst <= QUENCHED || !thirsty()) payForWater(world);
         return choose(world);
     }
@@ -248,8 +248,8 @@ void Human::drink(World& world) {
 // Only those who see it, and not the erratic: the thirsty, and anyone who
 // lives by that water.
 void Human::offendDrinkers(World& world, Vec2i water) {
-    if (clock_ - offendedAt_ < OFFEND_AGAIN) return;
-    offendedAt_ = clock_;
+    if (clock_ - water_.offendedAt < OFFEND_AGAIN) return;
+    water_.offendedAt = clock_;
     for (const auto& o : world.humans()) {
         if (o.get() == this || o->dead() || o->isErratic() || !o->sight.sees(cell)) continue;
         bool home = o->settled() && cheb(o->home(), water) <= OWN_WATER;
@@ -269,8 +269,8 @@ bool Human::othersWater(const World& world, Vec2i water) const {
 }
 
 bool Human::mayDrinkHere(int who) const {
-    auto it = letDrink_.find(who);
-    return it != letDrink_.end() && clock_ < it->second;
+    auto it = water_.letDrink.find(who);
+    return it != water_.letDrink.end() && clock_ < it->second;
 }
 
 // Only for water by its home, and only someone thirsty; the rest of
@@ -280,23 +280,23 @@ bool Human::askedToDrink(Human& o, bool& refused) {
     if (!o.thirsty() || isErratic()) return false;
     bool water = false;
     for (int y = -HOME_WATER; y <= HOME_WATER && !water; y++)
-        for (int x = -HOME_WATER; x <= HOME_WATER && !water; x++) water = drinkable(memory.tile(home_ + Vec2i{x, y}));
+        for (int x = -HOME_WATER; x <= HOME_WATER && !water; x++) water = drinkable(memory.tile(escape_.home + Vec2i{x, y}));
     if (!water) return false;
     bool foe = isFoe(o.id);
     if (!foe && (traits.sociable >= WATER_FREE || (o.parched() && traits.greedy < WATER_PRICE))) {
-        letDrink_[o.id] = clock_ + WATER_ALLOW;
+        water_.letDrink[o.id] = clock_ + WATER_ALLOW;
         note("LET @ DRINK MY WATER", o.id);
         sayLater(talk::Moment::WaterFree, o.id);
         return true;
     }
     if (!foe && traits.greedy >= WATER_PRICE && o.cakes > 0) {
-        letDrink_[o.id] = clock_ + WATER_ALLOW;
-        o.owesWater_ = id;
+        water_.letDrink[o.id] = clock_ + WATER_ALLOW;
+        o.water_.owes = id;
         note("ASKED @ A CAKE FOR MY WATER", o.id);
         sayLater(talk::Moment::WaterPrice, o.id);
         return true;
     }
-    o.refusedWater_.push_back({home_, o.clock_});
+    o.water_.refused.push_back({escape_.home, o.clock_});
     note("TURNED @ AWAY FROM MY WATER", o.id);
     sayLater(talk::Moment::MyWater, o.id);
     refused = true;
@@ -306,9 +306,9 @@ bool Human::askedToDrink(Human& o, bool& refused) {
 // The greedy and bold may walk off instead; a guard who sees it goes for
 // them.
 void Human::payForWater(World& world) {
-    if (owesWater_ < 0) return;
-    Human& guard = world.human(owesWater_);
-    owesWater_ = -1;
+    if (water_.owes < 0) return;
+    Human& guard = world.human(water_.owes);
+    water_.owes = -1;
     if (guard.dead()) return;
     bool cheat = cakes == 0 ||
                  (traits.greedy >= CHEAT_GREEDY && traits.brave >= CHEAT_BRAVE && rng_.chance(CHEAT_CHANCE));
@@ -326,8 +326,8 @@ void Human::payForWater(World& world) {
     guard.regard(id, TRUST_CHEATED);
     guard.note("@ DRANK MY WATER AND DIDN'T PAY", id);
     guard.sayLater(talk::Moment::WaterCheat, id);
-    guard.foe_ = id;
-    guard.grudge_ = guard.grudgeFor(id);
+    guard.fight_.foe = id;
+    guard.fight_.grudge = guard.grudgeFor(id);
     guard.rethink_ = true;
 }
 
@@ -379,8 +379,8 @@ std::optional<Human::Tell> Human::waterFor(const World& world, const Human& o, b
 }
 
 void Human::askGroupForWater(World& world) {
-    if (clock_ - askedWaterAt_ < ASK_WATER_EVERY) return;
-    askedWaterAt_ = clock_;
+    if (clock_ - water_.askedAt < ASK_WATER_EVERY) return;
+    water_.askedAt = clock_;
     if (search(world, [&](Vec2i c) {
             auto w = waterBeside(c);
             return w && wouldDrink(world, c, *w);
@@ -402,12 +402,12 @@ void Human::askGroupForWater(World& world) {
 }
 
 bool Human::wouldLeadToDrink(const Human& o) const {
-    if (&o == this || o.dead() || traits.sociable < LEAD_SOCIABLE || health < LEAD_HEALTH || hungry() || foe_ >= 0 ||
-        fear_ > 0.0f || escortee_ >= 0 || escort_ >= 0)
+    if (&o == this || o.dead() || traits.sociable < LEAD_SOCIABLE || health < LEAD_HEALTH || hungry() || fight_.foe >= 0 ||
+        fight_.fear > 0.0f || escorting_.escortee >= 0 || escorting_.by >= 0)
         return false;
     if (!isFriend(o.id) && !inGroupWith(o)) return false;
-    if (auto it = ledToDrink_.find(o.id); it != ledToDrink_.end() && clock_ - it->second < LEAD_AGAIN) return false;
-    if (isFoe(o.id) || o.isFoe(id) || o.escort_ >= 0 || o.escortee_ >= 0 || o.foe_ >= 0 || o.fear_ > 0.0f) return false;
+    if (auto it = escorting_.ledToDrink.find(o.id); it != escorting_.ledToDrink.end() && clock_ - it->second < LEAD_AGAIN) return false;
+    if (isFoe(o.id) || o.isFoe(id) || o.escorting_.by >= 0 || o.escorting_.escortee >= 0 || o.fight_.foe >= 0 || o.fight_.fear > 0.0f) return false;
     // Parched, or thirsty and not already on the way to water.
     bool needs = o.parched() || (o.thirsty() && o.goal != Goal::Drink);
     if (!needs || o.state == State::Drinking) return false;
@@ -432,14 +432,14 @@ bool Human::offerDrinkEscort(World& world) {
         return w && wouldDrink(world, c, *w);
     });
     if (!p) return false;
-    escortTo_ = p->empty() ? cell : p->back();
-    escortee_ = o->id;
-    escortArrived_ = false;
-    escortDrink_ = true;
-    o->escort_ = id;
+    escorting_.to = p->empty() ? cell : p->back();
+    escorting_.escortee = o->id;
+    escorting_.arrived = false;
+    escorting_.drink = true;
+    o->escorting_.by = id;
     o->rethink_ = true;
     if (!leadEscort(world)) return false;
-    ledToDrink_[o->id] = clock_;
+    escorting_.ledToDrink[o->id] = clock_;
     note("TOOK @ TO WATER TO DRINK", o->id);
     o->note("@ TOOK ME TO WATER TO DRINK", id);
     sayLater(talk::Moment::LeadDrink, o->id);
@@ -448,7 +448,7 @@ bool Human::offerDrinkEscort(World& world) {
 }
 
 void Human::gotThirsty() {
-    thirstyAt_ = clock_;
+    water_.thirstyAt = clock_;
     sayLater(talk::Moment::Thirsty);
 }
 
@@ -461,21 +461,21 @@ void Human::gotParched(const World& world) {
 }
 
 void Human::foundWater() {
-    if (clock_ - waterHopeAt_ < HOPE_WATER_AGAIN) return;
-    waterHopeAt_ = clock_;
+    if (clock_ - water_.hopeAt < HOPE_WATER_AGAIN) return;
+    water_.hopeAt = clock_;
     lift(HOPE_WATER);
 }
 
 Vec2i Human::strollFrom() {
-    if (settled_) return home_;
+    if (escape_.settled) return escape_.home;
     // Drowsy, it strolls about where it means to sleep (human_sleep.cpp).
     if (auto base = sleepBase(); base && rng_.chance(drowsy())) return *base;
-    if (drankYet_ && lessons.nearWater >= TETHER_FROM && rng_.chance(lessons.nearWater)) return lastWater_;
+    if (water_.drankYet && lessons.nearWater >= TETHER_FROM && rng_.chance(lessons.nearWater)) return water_.last;
     return cell;
 }
 
 float Human::waterTether() const {
-    if (!drankYet_ || cheb(cell, lastWater_) <= WATER_TETHER) return 0.0f;
+    if (!water_.drankYet || cheb(cell, water_.last) <= WATER_TETHER) return 0.0f;
     return TETHER_EXPLORE * lessons.nearWater;
 }
 

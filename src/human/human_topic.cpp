@@ -86,9 +86,9 @@ bool Human::owns(const Episode& e) const {
 
 std::optional<Topic> Human::pickTopic(const World& world, const Human& to) const {
     using K = Topic::Kind;
-    const auto talkedIt = talked_.find(to.id);
+    const auto talkedIt = chat_.talked.find(to.id);
     auto raisedAt = [&](uint64_t key) -> const float* {
-        if (talkedIt == talked_.end()) return nullptr;
+        if (talkedIt == chat_.talked.end()) return nullptr;
         auto it = talkedIt->second.find(key);
         return it == talkedIt->second.end() ? nullptr : &it->second;
     };
@@ -115,7 +115,7 @@ std::optional<Topic> Human::pickTopic(const World& world, const Human& to) const
     }
     // Here: the most striking thing in sight, close by.
     float curious = 1.0f + HERE_CURIOUS * (traits.curious - 0.5f) * 2.0f;
-    for (const auto& [whose, b] : bodies_) {
+    for (const auto& [whose, b] : deaths_.bodies) {
         if (whose == to.id || cheb(cell, b.cell) > HERE_RANGE || !sight.sees(b.cell)) continue;
         Topic t{K::Here};
         t.thing = Topic::Thing::Body;
@@ -166,13 +166,13 @@ std::optional<Topic> Human::pickTopic(const World& world, const Human& to) const
     });
 
     // Someone: a third human it thinks firmly of, or a friend it saw dead.
-    for (const auto& [other, tr] : trust_) {
+    for (const auto& [other, tr] : social_.trust) {
         if (other == to.id || other == id) continue;
         const Human& o = world.human(other);
         if (!o.dead() && sight.sees(o.cell) && cheb(cell, o.cell) <= SOMEONE_EARSHOT) continue;
         // Someone they both know, or it can name.
         if (!(to.met.count(other) || knownName(other))) continue;
-        bool mourned = seenDead_.count(other) && isFriend(other);
+        bool mourned = deaths_.seenDead.count(other) && isFriend(other);
         if (!mourned && std::abs(tr) < SOMEONE_FIRM) continue;
         Topic t{K::Someone};
         t.who = other;
@@ -194,13 +194,13 @@ std::optional<Topic> Human::pickTopic(const World& world, const Human& to) const
     };
     if (hunger >= PECKISH && !hungry()) feel(Topic::Feel::Peckish, NEEDS_SOON * (hunger - PECKISH) / (0.5f - PECKISH));
     if (thirst >= PECKISH && !thirsty()) feel(Topic::Feel::Dry, NEEDS_SOON * (thirst - PECKISH) / (0.5f - PECKISH));
-    if (clock_ - restedAt_ >= FOOTSORE_TIME) feel(Topic::Feel::Footsore, FOOTSORE);
+    if (clock_ - chat_.restedAt >= FOOTSORE_TIME) feel(Topic::Feel::Footsore, FOOTSORE);
     if (dread_ >= UNEASY) feel(Topic::Feel::Uneasy, UNEASY_WEIGHT * dread_);
     if (gloom() > 0.0f) feel(Topic::Feel::Gloomy, GLOOMY_WEIGHT * (0.5f + 0.5f * gloom()));
-    if (hope_ >= HOPEFUL && !settled_) feel(Topic::Feel::Hopeful, HOPEFUL_WEIGHT);
+    if (escape_.hope >= HOPEFUL && !escape_.settled) feel(Topic::Feel::Hopeful, HOPEFUL_WEIGHT);
 
     // The way out.
-    if (outDrive() >= WAY_WANT && hunchSure_ >= WAY_SURE_ENOUGH) {
+    if (outDrive() >= WAY_WANT && escape_.hunchSure >= WAY_SURE_ENOUGH) {
         Topic t{K::Way};
         t.score = WAY_WEIGHT * outDrive();
         t.key = keyOf(K::Way, 0, 0);
@@ -238,5 +238,5 @@ void Human::raised(const Topic& t, int to) {
                 e.toldTo.push_back(to);
         return;
     }
-    talked_[to][t.key] = t.kind == Topic::Kind::Someone ? t.opinion : clock_;
+    chat_.talked[to][t.key] = t.kind == Topic::Kind::Someone ? t.opinion : clock_;
 }

@@ -38,8 +38,8 @@ float sway(float trait, float half) { return 1.0f + (trait - 0.5f) * 2.0f * half
 } // namespace
 
 void Human::shutIn(Vec2i gate) {
-    slamGate_ = gate;
-    helpTimer_ = rng_.range(HELP_FIRST_MIN, HELP_FIRST_MAX);
+    rescue_.slamGate = gate;
+    rescue_.helpTimer = rng_.range(HELP_FIRST_MIN, HELP_FIRST_MAX);
 }
 
 bool Human::walledIn(const World& world) const {
@@ -60,31 +60,31 @@ bool Human::walledIn(const World& world) const {
 }
 
 void Human::callForHelp(World& world, float dt) {
-    if (!slamGate_) return;
+    if (!rescue_.slamGate) return;
     // Opened, by itself or by someone else: out of it.
-    if (world.tile(*slamGate_) != Tile::DoorLocked) {
-        slamGate_.reset();
+    if (world.tile(*rescue_.slamGate) != Tile::DoorLocked) {
+        rescue_.slamGate.reset();
         return;
     }
-    if ((helpTimer_ -= dt) > 0.0f) return;
-    helpTimer_ = rng_.range(HELP_EVERY_MIN, HELP_EVERY_MAX);
+    if ((rescue_.helpTimer -= dt) > 0.0f) return;
+    rescue_.helpTimer = rng_.range(HELP_EVERY_MIN, HELP_EVERY_MAX);
     // Stepped out before the gate shut, it was never shut in; with a key it
     // lets itself out.
     if (!walledIn(world)) {
-        slamGate_.reset();
+        rescue_.slamGate.reset();
         return;
     }
     if (keys > 0) return;
     if (!sayLater(talk::Moment::Help)) return;
     for (const auto& o : world.humans())
-        if (o.get() != this && !o->dead() && cheb(o->cell, cell) <= HELP_RADIUS) o->hearHelp(*this, *slamGate_);
+        if (o.get() != this && !o->dead() && cheb(o->cell, cell) <= HELP_RADIUS) o->hearHelp(*this, *rescue_.slamGate);
 }
 
 void Human::hearHelp(const Human& caller, Vec2i gate) {
     if (dead() || state == State::Sleeping) return;
     // Behind a wall, it knows the voice only of a friend.
     bool known = isFriend(caller.id);
-    if (heardHelp_.insert(caller.id).second) {
+    if (rescue_.heardHelp.insert(caller.id).second) {
         if (known)
             note("HEARD @ CALLING FOR HELP", caller.id);
         else
@@ -92,7 +92,7 @@ void Human::hearHelp(const Human& caller, Vec2i gate) {
         scare(DREAD_HELP_HEARD);
     }
     // Only with a key, knowing where the gate is, and minded to.
-    if (rescuee_ >= 0 || keys == 0 || memory.tile(gate) == Tile::Void || isErratic() || hunting() || starving() ||
+    if (rescue_.rescuee >= 0 || keys == 0 || memory.tile(gate) == Tile::Void || isErratic() || hunting() || starving() ||
         parched() || isFoe(caller.id) || suspicious(caller.id))
         return;
     float will = RESCUE_CHANCE * sway(1.0f - traits.greedy, RESCUE_GENEROUS) * sway(traits.brave, RESCUE_BRAVE) *
@@ -103,8 +103,8 @@ void Human::hearHelp(const Human& caller, Vec2i gate) {
         will *= RESCUE_KNOWN;
     if (keys > 1) will *= RESCUE_SPARE;
     if (!rng_.chance(will)) return;
-    rescuee_ = caller.id;
-    rescueGate_ = gate;
+    rescue_.rescuee = caller.id;
+    rescue_.gate = gate;
     memory.see(gate, Tile::DoorLocked);
     rethink_ = true;
     if (known)
@@ -115,12 +115,12 @@ void Human::hearHelp(const Human& caller, Vec2i gate) {
 }
 
 bool Human::startRescue(World& world) {
-    const Human& o = world.human(rescuee_);
-    auto beside = [&](Vec2i c) { return lockedDoorBeside(c) == std::optional<Vec2i>(rescueGate_); };
+    const Human& o = world.human(rescue_.rescuee);
+    auto beside = [&](Vec2i c) { return lockedDoorBeside(c) == std::optional<Vec2i>(rescue_.gate); };
     std::optional<std::vector<Vec2i>> p;
-    if (keys > 0 && !o.dead() && memory.tile(rescueGate_) == Tile::DoorLocked) p = search(world, beside);
+    if (keys > 0 && !o.dead() && memory.tile(rescue_.gate) == Tile::DoorLocked) p = search(world, beside);
     if (!p) {
-        rescuee_ = -1;
+        rescue_.rescuee = -1;
         return false;
     }
     startWalking(Goal::OpenDoor, *p);
@@ -128,23 +128,23 @@ bool Human::startRescue(World& world) {
 }
 
 bool Human::letOut(World& world, Vec2i gate) {
-    if (rescueGate_ == gate) rescuee_ = -1;
+    if (rescue_.gate == gate) rescue_.rescuee = -1;
     bool any = false;
     for (const auto& h : world.humans()) {
         Human& o = *h;
-        if (&o == this || o.dead() || o.slamGate_ != gate) continue;
+        if (&o == this || o.dead() || o.rescue_.slamGate != gate) continue;
         any = true;
         note("LET @ OUT OF A SLAM ROOM", o.id);
         o.note("@ LET ME OUT", id);
         rememberAt(gate, Episode::What::Freed, EPISODE_FREED, id, o.id);
         o.rememberAt(gate, Episode::What::Freed, EPISODE_FREED_ME, id, o.id);
-        o.slamGate_.reset();
+        o.rescue_.slamGate.reset();
         regard(o.id, TRUST_FREER);
         o.regard(id, TRUST_FREED);
         o.lift(HOPE_FREED);
         // With no key of its own, it keeps with whoever let it out.
-        if (o.leader_ < 0 && !o.settled_ && o.keys == 0 && keys > 0) {
-            o.leader_ = id;
+        if (o.social_.leader < 0 && !o.escape_.settled && o.keys == 0 && keys > 0) {
+            o.social_.leader = id;
             o.note("FOLLOWING @, WHO LET ME OUT", id);
         }
         o.rethink_ = true;

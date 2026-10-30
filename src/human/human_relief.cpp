@@ -143,18 +143,18 @@ bool Human::needsToGo() const { return std::max(bladder, bowels) >= needBar(); }
 bool Human::bursting() const { return std::max(bladder, bowels) >= 1.0f; }
 
 void Human::takeIn(float water, float food) {
-    drunk_ += BLADDER_PER_GULP * water;
-    eaten_ += BOWELS_PER_CAKE * food;
+    relief_.drunk += BLADDER_PER_GULP * water;
+    relief_.eaten += BOWELS_PER_CAKE * food;
 }
 
 void Human::press(float dt) {
     for (float& w : dirt.wet) w = std::max(0.0f, w - dt / DIRT_DRY_TIME);
     for (float& w : soaked.wet) w = std::max(0.0f, w - dt / DIRT_DRY_TIME);
     bool needed = needsToGo(), burst = bursting();
-    float water = drunk_ * (1.0f - std::exp(-dt / WATER_PASSES));
-    float food = eaten_ * (1.0f - std::exp(-dt / FOOD_PASSES));
-    drunk_ -= water;
-    eaten_ -= food;
+    float water = relief_.drunk * (1.0f - std::exp(-dt / WATER_PASSES));
+    float food = relief_.eaten * (1.0f - std::exp(-dt / FOOD_PASSES));
+    relief_.drunk -= water;
+    relief_.eaten -= food;
     bladder = std::min(1.0f, bladder + water + BLADDER_CREEP * dt);
     bowels = std::min(1.0f, bowels + food + BOWELS_CREEP * dt);
     if ((needsToGo() && !needed) || (bursting() && !burst)) rethink_ = true;
@@ -194,7 +194,7 @@ bool Human::seekRelief(World& world) {
         if (!isErratic() && !toilet)
             for (Vec2i d : DIRS8)
                 if (drinkable(memory.tile(c + d))) return false;
-        if (settled_ && cheb(c, home_) <= RELIEF_HOME_GAP) return false;
+        if (escape_.settled && cheb(c, escape_.home) <= RELIEF_HOME_GAP) return false;
         return !watchedAt(world, c);
     };
     // Unknown ground may as well be open: only walls and the like hide it.
@@ -209,9 +209,9 @@ bool Human::seekRelief(World& world) {
         return 1 + elsewhere + int(open * shy) + int(world.mess().disgust(c, now, id) * RELIEF_MESS_COST);
     };
     // Its own mess doesn't put it off the way there.
-    ignoreMess_ = true;
+    relief_.ignoreMess = true;
     auto p = search(world, done, true, cost);
-    ignoreMess_ = false;
+    relief_.ignoreMess = false;
     if (!p) return false;
     if (p->empty()) {
         startRelieving(world);
@@ -262,7 +262,7 @@ std::optional<Vec2i> Human::toiletBefore(const World& world, Vec2i c) const {
 }
 
 void Human::startRelieving(World& world) {
-    shitting_ = bowels >= needBar() || bowels >= 1.0f;
+    relief_.shitting = bowels >= needBar() || bowels >= 1.0f;
     goal = Goal::Relieve;
     std::optional<Vec2i> toilet = toiletBefore(world, cell);
     float bar = needBar();
@@ -290,7 +290,7 @@ void Human::startRelieving(World& world) {
     moving = false;
     path_.clear();
     animTime = 0.0f;
-    timer = shitting_ ? SHIT_TIME : PISS_TIME;
+    timer = relief_.shitting ? SHIT_TIME : PISS_TIME;
     float fx = cell.x * CELL_PX + CELL_PX / 2.0f, fy = (cell.y + 1) * CELL_PX - 1.0f;
     float ahead = facingLeft ? -1.0f : 1.0f;
     // Into the toilet, it dirties the toilet; into water, it fouls the water;
@@ -308,7 +308,7 @@ void Human::startRelieving(World& world) {
         world.mess().drop(kind, at, x, y, size, world.time(), id, uint32_t(rng_.next()));
     };
     bool byWater = !toilet && drinkable(world.tile(cell + Vec2i{facingLeft ? -1 : 1, 0}));
-    if (shitting_) {
+    if (relief_.shitting) {
         // Squatting with its back to the water, the erratic let it fall in.
         drop(MessKind::Feces, fx + (byWater && isErratic() ? ahead * 4.0f : -ahead), fy,
              std::clamp(bowels / 0.8f, 0.4f, 1.2f));
@@ -326,23 +326,23 @@ void Human::startRelieving(World& world) {
 
 void Human::endRelieving() {
     bladder = 0.0f;
-    if (shitting_) bowels = 0.0f;
-    shitting_ = false;
+    if (relief_.shitting) bowels = 0.0f;
+    relief_.shitting = false;
 }
 
 float Human::filth() const { return std::min(1.0f, dirt.feet() + 4.0f * dirt.total(false) + 2.0f * soaked.total()); }
 
 void Human::tread(World& world) {
-    if (frightWet_) {
-        frightWet_ = false;
+    if (relief_.frightWet) {
+        relief_.frightWet = false;
         if (!dead() && bladder >= FRIGHT_WET_BLADDER && rng_.chance(FRIGHT_WET_CHANCE * (1.0f - traits.brave)))
             accident(world, true);
     }
-    if (dead() || cell == messTrod_) return;
-    messTrod_ = cell;
+    if (dead() || cell == relief_.messTrod) return;
+    relief_.messTrod = cell;
     float fx = cell.x * CELL_PX + CELL_PX / 2.0f, fy = float((cell.y + 1) * CELL_PX);
     if (float fresh = world.mess().freshFeces(cell, world.time()); fresh >= FECES_STICKY) {
-        messSteps_ = FOOTPRINT_STEPS;
+        relief_.messSteps = FOOTPRINT_STEPS;
         std::vector<int> feet;
         for (int i = 0; i < SPRITE_PX; i++)
             if (dirt.parts[size_t(i)] == uint8_t(BodyPart::Feet)) feet.push_back(i);
@@ -359,11 +359,11 @@ void Human::tread(World& world) {
         sayLater(talk::Moment::SteppedIn);
         return;
     }
-    if (messSteps_ <= 0) return;
+    if (relief_.messSteps <= 0) return;
     float x = fx + rng_.range(-1.0f, 1.0f), y = fy - 1.5f;
-    world.mess().drop(MessKind::Print, cell, x, y, float(messSteps_) / FOOTPRINT_STEPS, world.time(), id,
+    world.mess().drop(MessKind::Print, cell, x, y, float(relief_.messSteps) / FOOTPRINT_STEPS, world.time(), id,
                       uint32_t(rng_.next()));
-    messSteps_--;
+    relief_.messSteps--;
     for (size_t i = 0; i < dirt.amount.size(); i++)
         if (dirt.parts[i] == uint8_t(BodyPart::Feet) && dirt.wet[i] > 0.0f)
             dirt.amount[i] = uint8_t(dirt.amount[i] - int(dirt.amount[i] * FOOTPRINT_WIPE));
@@ -378,7 +378,7 @@ int Human::messCost(const World& world, Vec2i c) const {
     for (int i : *here) {
         const Dropping& d = world.mess().all()[size_t(i)];
         // Its own, but for fresh feces it would step in.
-        bool mine = ignoreMess_ && d.who == id &&
+        bool mine = relief_.ignoreMess && d.who == id &&
                     !(d.kind == MessKind::Feces && Mess::freshness(d, world.time()) >= FECES_STICKY);
         if (!memory.mess.count(i) || mine) continue;
         sum += Mess::disgust(d, world.time());
@@ -389,10 +389,10 @@ int Human::messCost(const World& world, Vec2i c) const {
 void Human::noticeFilth(const Human& o) {
     if (isErratic()) return;
     if (o.filth() < FILTHY) {
-        filthNoted_.erase(o.id);
+        relief_.filthNoted.erase(o.id);
         return;
     }
-    if (filthNoted_.insert(o.id).second) regard(o.id, TRUST_FILTHY);
+    if (relief_.filthNoted.insert(o.id).second) regard(o.id, TRUST_FILTHY);
 }
 
 bool Human::repelledBy(const Human& o) const {
@@ -431,8 +431,8 @@ bool Human::inGroupWith(const Human& o) const {
 }
 
 bool Human::givePrivacy(World& world) {
-    int before = privacyFor_;
-    privacyFor_ = -1;
+    int before = relief_.privacyFor;
+    relief_.privacyFor = -1;
     if (isErratic() || needsToGo()) return false;
     const Human* going = nullptr;
     for (const auto& o : world.humans())
@@ -441,7 +441,7 @@ bool Human::givePrivacy(World& world) {
             (!going || cheb(cell, o->cell) < cheb(cell, going->cell)))
             going = o.get();
     if (!going) return false;
-    privacyFor_ = going->id;
+    relief_.privacyFor = going->id;
     if (before != going->id) sayLater(talk::Moment::Privacy, going->id);
     if (going->cell.x != cell.x) facingLeft = going->cell.x > cell.x;
     startIdle(PRIVACY_WAIT_MIN, PRIVACY_WAIT_MAX);
@@ -476,7 +476,7 @@ void Human::accident(World& world, bool fright) {
         drop(MessKind::Feces, bowels);
         soil(dirt, {BodyPart::Legs}, ACCIDENT_FECES_PIXELS);
         soil(dirt, {BodyPart::Feet}, ACCIDENT_FECES_PIXELS / 2);
-        messSteps_ = FOOTPRINT_STEPS;
+        relief_.messSteps = FOOTPRINT_STEPS;
         bowels = 0.0f;
     }
     bladder = 0.0f;

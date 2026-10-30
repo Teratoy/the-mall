@@ -63,6 +63,8 @@ public:
     /// The foulness blood put into water since last asked, by cell, handed
     /// on to World::mess(), where it lingers long after the red clears.
     std::unordered_map<Vec2i, float, Vec2iHash> takeFoul() { return std::exchange(foul_, {}); }
+    /// The same, without handing it on.
+    const std::unordered_map<Vec2i, float, Vec2iHash>& fouled() const { return foul_; }
 
 private:
     std::unordered_map<Vec2i, Stain, Vec2iHash> stains_;

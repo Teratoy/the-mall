@@ -55,7 +55,7 @@ float sway(float t) { return 0.5f + t; }
 } // namespace
 
 bool Human::easyInMind() const {
-    return !dead() && !hungry() && !thirsty() && !needsToGo() && bleeding() <= 0.0f && fear_ <= 0.0f && hurtTime <= 0.0f;
+    return !dead() && !hungry() && !thirsty() && !needsToGo() && bleeding() <= 0.0f && fight_.fear <= 0.0f && hurtTime <= 0.0f;
 }
 
 bool Human::calmForChat(const Human& with) const {
@@ -102,24 +102,24 @@ bool Human::knowsInSight(const Human& o, int range) const {
 bool Human::togetherWith(const Human& o) const { return knowsInSight(o, CHAT_RANGE); }
 
 void Human::chatUrges(World& world, float dt) {
-    chatTick_ += dt;
-    if (chatTick_ < CHAT_TICK) return;
-    float t = chatTick_;
-    chatTick_ = 0.0f;
+    chat_.tick += dt;
+    if (chat_.tick < CHAT_TICK) return;
+    float t = chat_.tick;
+    chat_.tick = 0.0f;
     float pace = sway(traits.sociable) * (1.0f - CHAT_DREAD * dread_) * (1.0f - CHAT_GLOOM * gloom()) / CHAT_EVERY;
     bool easy = easyInMind();
     Human* best = nullptr;
     float bestUrge = 0.0f;
     for (const auto& o : world.humans()) {
         if (o.get() == this) continue;
-        auto it = chatUrge_.find(o->id);
+        auto it = chat_.urge.find(o->id);
         if (!easy || !knowsInSight(*o, CHAT_SEEN)) {
             // Out of sight, or not now: the urge ebbs, and is forgotten once gone.
-            if (it != chatUrge_.end() && (it->second -= CHAT_FADE * t) <= 0.0f) chatUrge_.erase(it);
+            if (it != chat_.urge.end() && (it->second -= CHAT_FADE * t) <= 0.0f) chat_.urge.erase(it);
             continue;
         }
         float tr = trust(o->id);
-        float u = std::min(1.0f, chatUrge_[o->id] += pace * t * (togetherWith(*o) ? 1.0f : CHAT_FAR) *
+        float u = std::min(1.0f, chat_.urge[o->id] += pace * t * (togetherWith(*o) ? 1.0f : CHAT_FAR) *
                                                      (isFriend(o->id) ? CHAT_FRIEND : tr < 0.0f ? CHAT_DISLIKED : 1.0f));
         // The fullest urge speaks first; ties to the one seen first.
         if (u >= 1.0f && u > bestUrge && togetherWith(*o) && calmForChat(*o) && o->calmForChat(*this) &&
@@ -132,8 +132,8 @@ void Human::chatUrges(World& world, float dt) {
 }
 
 void Human::quiet(Human& o) {
-    chatUrge_.erase(o.id);
-    o.chatUrge_.erase(id);
+    chat_.urge.erase(o.id);
+    o.chat_.urge.erase(id);
 }
 
 // The urge spoken: it brings up what matters most to it, about whoever
@@ -185,16 +185,16 @@ Topic::Reply Human::replyTo(const Human& sp, const Topic& t) const {
         switch (t.feel) {
         case F::Peckish: return hunger >= REPLY_PECKISH ? R::Agree : R::Add;
         case F::Dry: return thirst >= REPLY_PECKISH ? R::Agree : R::Add;
-        case F::Footsore: return clock_ - restedAt_ >= REPLY_FOOTSORE ? R::Agree : R::Add;
+        case F::Footsore: return clock_ - chat_.restedAt >= REPLY_FOOTSORE ? R::Agree : R::Add;
         case F::Uneasy: return dread_ >= REPLY_UNEASY ? R::Agree : R::Add;
-        case F::Gloomy: return gloom() > 0.0f ? R::Agree : hope_ >= REPLY_HOPEFUL ? R::Disagree : R::Add;
-        case F::Hopeful: return gloom() > 0.0f ? R::Disagree : hope_ >= REPLY_HOPEFUL ? R::Agree : R::Add;
+        case F::Gloomy: return gloom() > 0.0f ? R::Agree : escape_.hope >= REPLY_HOPEFUL ? R::Disagree : R::Add;
+        case F::Hopeful: return gloom() > 0.0f ? R::Disagree : escape_.hope >= REPLY_HOPEFUL ? R::Agree : R::Add;
         default: return R::Add;
         }
     case Topic::Kind::Way: {
         if (gloom() > 0.0f) return R::Disagree;
-        if (hunchSure_ < REPLY_UNSURE) return R::Unheard;
-        float d = std::abs(std::remainder(hunch_ - sp.hunch(), TAU));
+        if (escape_.hunchSure < REPLY_UNSURE) return R::Unheard;
+        float d = std::abs(std::remainder(escape_.hunch - sp.hunch(), TAU));
         return d <= REPLY_SAME_WAY ? R::Agree : R::Disagree;
     }
     default:
