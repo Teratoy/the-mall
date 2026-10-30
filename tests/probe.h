@@ -74,6 +74,17 @@ struct SoakProbe {
         h.memory.stashes[cell] = owner.id;
         if (const Pile* p = w.pile(cell)) h.memory.piles[cell] = *p;
     }
+    /// The same, having watched it being made.
+    static void sawStashMade(const World& w, Human& h, Vec2i cell, const Human& owner) {
+        knowStash(w, h, cell, owner);
+        h.memory.stashSeenMade.insert(cell);
+    }
+    /// teller tells to where owner's stash at cell is, as at a greeting.
+    static void tellStash(Human& teller, Human& to, Vec2i cell, const Human& owner) {
+        Human::Tell t{Human::Tell::Kind::Stash, cell};
+        t.owner = owner.id;
+        teller.tell(to, t);
+    }
     /// Stashes what it carries where it stands, as if that were its spot.
     static void stashHere(Human& h) {
         h.stash_.spot = h.cell;

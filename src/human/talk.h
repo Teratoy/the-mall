@@ -109,6 +109,11 @@ enum class Moment {
     // thief at its stash (to them); resenting a hoarder (to nobody, about
     // them).
     StealStash, CaughtStealing, Resent,
+    // A stash at a greeting: told, sold, lied about (all to the one told);
+    // its owner overhearing (to the teller); asking someone if a stash is
+    // theirs (to them), and their answer: owning up, denying it; a denial
+    // seen through (to the denier).
+    TellStash, SellStash, LieStash, StashTold, AskStash, OwnStash, DenyStash, CaughtDenying,
     Count
 };
 

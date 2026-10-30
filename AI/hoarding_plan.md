@@ -204,6 +204,37 @@ Second round (2026-10-30):
 - Owners whose stash was told of may move it.
 - Log and lines: tell_stash, sell_stash, lie_stash, deny_stash.
 
+### Built (2026-10-30, step 5)
+
+- Tell::Kind::Stash (cell, owner). `stashNewsFor`: never its own or a
+  friend's, only one the listener doesn't know of; free to friends and its
+  group, sold by the grasping (to those with a cake to spare), told to the
+  hungry with nothing by the rest. Asked after cakes, traps, keys and
+  water. Lines tell_stash, sell_stash.
+- The listener remembers the stash and whose, and the pile as the teller
+  saw it; a stash told of that isn't there is "NOTHING WAS WHERE @ SAID"
+  (trust as for a stale tip).
+- Lies (`stashLieFor`, in lieFor): to a hungry foe, the real stash of
+  someone the liar dislikes ("SET @ ON #'S STASH"), ahead of false tips;
+  and, when there is no bare table for a false cake, a stash that isn't
+  there beside a far table ("TOLD @ OF A STASH THAT ISN'T THERE"). Line
+  lie_stash.
+- An owner in earshot that sees its stash told of thinks 0.3 less of the
+  teller and marks the stash found out, to move it ("@ TOLD # ABOUT MY
+  STASH", line stash_told).
+- Asking: at a greeting, one that knows a stash of the other's and is hungry
+  with nothing, or distrusts them, asks (once in 2 minutes). A hoarder at
+  least 0.6 greedy (or cunning) denies it to all but friends: believed, the
+  stash is anyone's to the asker; seen through if the asker saw it made or
+  saw them at it (trust −0.3). Others own up. Lines ask_stash, own_stash,
+  deny_stash, caught_denying.
+- Added: seeing an owner take from its stash teaches whose it is, as
+  seeing it stash things does ("SAW @ TAKE FROM THEIR STASH").
+- Scenarios tell-stash, stash-overheard, lie-stash, false-stash, deny-stash.
+- **Still rare in normal play**: in the soak nobody learns whose a stash is,
+  so nothing from steps 3–5 happens. Hoarders stash where nobody watches,
+  and go back to it only when hungry with nothing. See open question 1.
+
 ## 6. Groups guard in turns
 
 - A group shares one stash, made by whichever member starts one (or the
@@ -240,5 +271,10 @@ Second round (2026-10-30):
 
 ## Open questions
 
-- None blocking. Tuning (the drive's weights, STASH_RANGE, how often a
-  guard hands over) comes from watching it play.
+1. **Stashes are seldom found out.** Nobody learns whose a stash is unless
+   they watch it made or used, and hoarders make sure nobody does. Should
+   a pile lying in a nook count as "someone's stash" on sight (anyone can
+   guess), or should hoarders be careless sometimes (the greedy and the
+   gloomy less careful)?
+- Tuning (the drive's weights, STASH_RANGE, how often a guard hands over)
+  comes from watching it play.

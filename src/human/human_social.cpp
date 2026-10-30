@@ -170,6 +170,8 @@ void Human::exchange(World& world, Human& o) {
     }
     auto news = newsFor(o, forPay);
     if (!news && !waterFirst) news = waterFor(world, o, forPay);
+    if (!news) news = stashNewsFor(o, forPay);
+    askAboutStash(o);
     if (!news) return;
     news->sold = forPay;
     tell(o, *news);
@@ -276,10 +278,13 @@ std::optional<Human::Tell> Human::lieFor(const World& world, const Human& foe) c
         }
     if (foe.keys > 0)
         if (auto t = routeLie(world, foe)) return t;
+    // A stash to set it on, or one that isn't there (human_stash.cpp).
+    if (auto t = stashLieFor(world, foe); t && !t->nothing) return t;
     // Nothing to bait it with: a cake or key that isn't there.
     bool forKey = !(foe.hungry() && foe.cakes == 0);
     if (forKey && foe.keys > 0) return std::nullopt;
     auto c = bareTableFor(world, foe, forKey);
+    if (!c && !forKey) return stashLieFor(world, foe);
     if (!c) return std::nullopt;
     Tell t{forKey ? Tell::Kind::Key : Tell::Kind::Cake, *c};
     t.lie = t.nothing = true;
@@ -402,6 +407,10 @@ void Human::tell(Human& o, const Tell& t) {
     case Tell::Kind::Route: s.moment = t.lie ? Moment::Lie : Moment::TellDoor; break;
     case Tell::Kind::Way: s.moment = t.gloomy ? Moment::NoWayOut : t.lie ? Moment::LieWay : Moment::TellWay; break;
     case Tell::Kind::Water: s.moment = t.lie ? Moment::LieWater : t.sold ? Moment::SellWater : Moment::TellWater; break;
+    case Tell::Kind::Stash:
+        s.moment = t.lie ? Moment::LieStash : t.sold ? Moment::SellStash : Moment::TellStash;
+        s.about = t.owner;
+        break;
     case Tell::Kind::People: {
         auto w = std::find_if(t.people.begin(), t.people.end(),
                               [&](const Tell::Word& w) { return w.opinion && w.about != o.id; });
@@ -473,6 +482,19 @@ void Human::deliver(Human& o, const Tell& t) {
             news = true;
         }
         break;
+    case Tell::Kind::Stash:
+        // Only what it hasn't seen for itself; a stash that isn't there
+        // looks like a few cakes from what it is told.
+        if (o.memory.stashes.count(t.cell) || (o.memory.piles.count(t.cell) && t.owner < 0)) break;
+        news = true;
+        o.memory.stashes[t.cell] = t.owner;
+        o.memory.stashTips[t.cell] = id;
+        if (!o.memory.piles.count(t.cell)) {
+            auto it = memory.piles.find(t.cell);
+            o.memory.piles[t.cell] = it != memory.piles.end() ? it->second : Pile{FALSE_STASH_CAKES, {}};
+        }
+        if (o.memory.tile(t.cell) == Tile::Void) o.memory.hear(t.cell, Tile::Floor);
+        break;
     case Tell::Kind::Way: {
         // Believed as far as the teller is trusted, and as sure as it sounds.
         float w = std::clamp(o.trust(id) + WAY_STRANGER, 0.0f, 1.0f);
@@ -504,10 +526,16 @@ void Human::deliver(Human& o, const Tell& t) {
     if (t.kind == Tell::Kind::Way) return;
     // Word of people is in the listener's log a piece at a time, above.
     static const char* const WHAT[] = {"WHERE A CAKE IS", "WHERE A KEY IS", "WHERE A TRAP IS", "THE WAY TO A DOOR",
-                                       "ABOUT OTHERS", "THE WAY OUT", "THE WAY TO WATER"};
+                                       "ABOUT OTHERS", "THE WAY OUT", "THE WAY TO WATER", "WHERE A STASH IS"};
+    static_assert(std::size(WHAT) == size_t(Tell::Kind::Stash) + 1);
     std::string what = WHAT[size_t(t.kind)];
     if (t.kind != Tell::Kind::People) o.note("@ TOLD ME " + what, id);
     std::string over = std::string(" OVER ") + trapWord(t.trap);
+    if (t.kind == Tell::Kind::Stash && t.lie && !t.nothing)
+        note("SET @ ON #'S STASH", o.id, t.owner);
+    else if (t.kind == Tell::Kind::Stash && t.nothing)
+        note("TOLD @ OF A STASH THAT ISN'T THERE", o.id);
+    else
     note(!t.lie                          ? "TOLD @ " + what
          : t.gain && t.kind == Tell::Kind::Trap ? std::string("SOLD @ A TRAP THAT ISN'T THERE")
          : t.gain                        ? std::string("SENT @ AWAY FROM A CAKE I WANT")

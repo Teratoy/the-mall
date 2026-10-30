@@ -367,11 +367,18 @@ bool Human::observe(const World& world) {
         // stash it checks once it has looked round (who was beside it).
         if (isMine(c)) checks.push_back(c);
         if (const Pile* p = world.pile(c)) {
+            memory.stashTips.erase(c);
             bool fresh = !memory.piles.count(c);
             memory.piles[c] = *p;
             news |= fresh && !othersStash(c) && ((hungry() && p->cakes > 0) || (thirsty() && p->water() > 0.0f));
             if (othersStash(c)) resent(c, *p, memory.stashes.at(c));
         } else {
+            // A stash it was told of that isn't there.
+            if (auto it = memory.stashTips.find(c); it != memory.stashTips.end()) {
+                note("NOTHING WAS WHERE @ SAID", it->second);
+                regard(it->second, TRUST_STALE);
+                memory.stashTips.erase(it);
+            }
             memory.piles.erase(c);
             memory.stashes.erase(c);
         }

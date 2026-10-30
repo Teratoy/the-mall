@@ -68,6 +68,13 @@ constexpr float STEAL_NEED = 0.5f, STEAL_DESPERATE = 0.4f;
 constexpr float STEAL_GREEDY = 0.5f, STEAL_BRAVE = 0.3f, STEAL_GUILT = 0.5f, STEAL_TRUST = 0.5f;
 constexpr float STEAL_BAR = 0.6f;
 constexpr float TRUST_STOLEN = -0.5f, TRUST_SAW_STEAL = -0.3f;
+/// Overheard telling of its stash, the owner thinks this much less of the
+/// teller. Asked about a stash, a hoarder this greedy (or cunning) denies
+/// it to all but friends; seen through, the asker thinks this much less of
+/// it. Each owner is asked about it once in ASK_STASH_AGAIN.
+constexpr float TRUST_STASH_TOLD = -0.3f;
+constexpr float DENY_GREEDY = 0.6f, TRUST_DENIED = -0.3f;
+constexpr float ASK_STASH_AGAIN = 120.0f;
 /// Resentment: a stash of at least RESENT_SIZE cakes seen while hungry with
 /// none (or thirsty with nothing to drink, for water) and no stash of its
 /// own costs the owner up to RESENT_TRUST, by how big and how needy; once
@@ -243,11 +250,12 @@ bool Human::wouldSteal(const World& world, Vec2i c, const Pile& p) const {
         }
     if (!forFood && !forWater) return false;
     bool desperate = (needFood && starving()) || (needWater && parched());
-    const Human& o = world.human(owner);
-    if (!o.dead()) {
-        if ((isFriend(owner) || inGroupWith(o)) && !desperate) return false;
-        // Not under the owner's eyes, unless desperate.
-        if (sight.sees(o.cell) && o.sight.sees(c) && !desperate) return false;
+    // Whose it is may not be known: someone's.
+    const Human* o = owner >= 0 ? &world.human(owner) : nullptr;
+    if (o && !o->dead() && !desperate) {
+        if (isFriend(owner) || inGroupWith(*o)) return false;
+        // Not under the owner's eyes.
+        if (sight.sees(o->cell) && o->sight.sees(c)) return false;
     }
     float urge = (needFood || needWater ? STEAL_NEED : 0.0f) + (desperate ? STEAL_DESPERATE : 0.0f) +
                  STEAL_GREEDY * traits.greedy + STEAL_BRAVE * traits.brave - STEAL_GUILT * mind_.guilt -
@@ -256,6 +264,11 @@ bool Human::wouldSteal(const World& world, Vec2i c, const Pile& p) const {
 }
 
 void Human::stoleFrom(World& world, Vec2i c, int owner, const std::string& what) {
+    if (owner < 0) {
+        note("TOOK " + what + " FROM SOMEONE'S STASH");
+        sayLater(talk::Moment::StealStash);
+        return;
+    }
     note("TOOK " + what + " FROM @'S STASH", owner);
     sayLater(talk::Moment::StealStash, -1, owner);
     for (const auto& o : world.humans()) {
@@ -278,7 +291,7 @@ void Human::stoleFrom(World& world, Vec2i c, int owner, const std::string& what)
 }
 
 void Human::resent(Vec2i, const Pile& p, int owner) {
-    if (owner == id || !stash_.mine.empty()) return;
+    if (owner < 0 || owner == id || !stash_.mine.empty()) return;
     bool food = hungry() && cakes == 0 && p.cakes >= RESENT_SIZE;
     bool water = thirsty() && sippable() < 0 && p.water() >= 1.0f;
     if (!food && !water) return;
@@ -371,14 +384,7 @@ void Human::finishStash(World& world) {
             memory.piles[c] = *p;
             if (isMine(c)) stash_.left[c] = *p;
         }
-        // Seen stashing, the pile is known for its stash.
-        for (const auto& o : world.humans()) {
-            if (!stash_.stashing || o.get() == this || o->dead() || !o->sight.sees(c)) continue;
-            if (!o->memory.stashes.emplace(c, id).second) continue;
-            o->note("SAW @ STASH THINGS", id);
-            o->sayLater(talk::Moment::SawStash, -1, id);
-            if (const Pile* p = world.pile(c)) o->resent(c, *p, id);
-        }
+        if (stash_.stashing) seenAtStash(world, c, true);
         std::vector<std::string> parts;
         if (n > 0) parts.push_back(count(n, "A CAKE", " CAKES"));
         if (!down.empty()) parts.push_back(count(int(down.size()), "A BOTTLE", " BOTTLES"));
@@ -426,6 +432,7 @@ void Human::finishStash(World& world) {
         memory.piles[c] = *p;
     else
         memory.piles.erase(c);
+    if (own && (gotCakes > 0 || gotBottles > 0 || poured > 0.0f)) seenAtStash(world, c, false);
     // What it took itself is no theft: it remembers the stash as it left it.
     if (own && p) {
         stash_.left[c] = *p;
@@ -467,4 +474,117 @@ std::optional<std::vector<Vec2i>> Human::pilePath(const World& world, bool food,
             if (cheb(c, at) <= 1) return true;
         return false;
     });
+}
+
+// Seen at it is as good as seen making it: nobody can talk them out of it.
+void Human::seenAtStash(World& world, Vec2i c, bool stashing) {
+    for (const auto& o : world.humans()) {
+        if (o.get() == this || o->dead() || o->state == State::Sleeping || !o->sight.sees(c)) continue;
+        o->memory.stashSeenMade.insert(c);
+        o->memory.stashTips.erase(c);
+        if (!o->memory.stashes.emplace(c, id).second) continue;
+        o->note(stashing ? "SAW @ STASH THINGS" : "SAW @ TAKE FROM THEIR STASH", id);
+        o->sayLater(talk::Moment::SawStash, -1, id);
+        if (const Pile* p = world.pile(c)) o->resent(c, *p, id);
+    }
+}
+
+// Never its own, nor a friend's; only what o doesn't know of, and only a
+// stash it last saw with something in it.
+std::optional<Human::Tell> Human::stashNewsFor(const Human& o, bool& forPay) const {
+    forPay = false;
+    if (isFoe(o.id)) return std::nullopt;
+    bool close = isFriend(o.id) || inGroupWith(o);
+    bool selling = !close && traits.greedy >= CUNNING_GREEDY;
+    if (selling && o.cakes <= o.spareFrom()) return std::nullopt;
+    if (!close && !selling && !(o.hungry() && o.cakes == 0)) return std::nullopt;
+    std::optional<std::pair<Vec2i, int>> best;
+    for (const auto& [c, owner] : memory.stashes) {
+        if (owner < 0 || owner == id || owner == o.id || isFriend(owner) || o.memory.stashes.count(c)) continue;
+        auto it = memory.piles.find(c);
+        if (it == memory.piles.end() || it->second.empty()) continue;
+        if (!best || cheb(c, o.cell) < cheb(best->first, o.cell) ||
+            (cheb(c, o.cell) == cheb(best->first, o.cell) && (c.x < best->first.x || (c.x == best->first.x && c.y < best->first.y))))
+            best = {c, owner};
+    }
+    if (!best) return std::nullopt;
+    Tell t{Tell::Kind::Stash, best->first};
+    t.owner = best->second;
+    forPay = selling;
+    return t;
+}
+
+// Only to the hungry with nothing: a real stash of someone it dislikes, to
+// set the two on each other; else, beside a table far off the foe never
+// saw, a stash that isn't there.
+std::optional<Human::Tell> Human::stashLieFor(const World& world, const Human& foe) const {
+    if (!cunning() || !isFoe(foe.id) || !foe.hungry() || foe.cakes > 0) return std::nullopt;
+    std::optional<std::pair<Vec2i, int>> rival;
+    for (const auto& [c, owner] : memory.stashes) {
+        if (owner < 0 || owner == id || owner == foe.id || trust(owner) >= 0.0f || foe.memory.stashes.count(c)) continue;
+        auto it = memory.piles.find(c);
+        if (it == memory.piles.end() || it->second.cakes == 0) continue;
+        if (!rival || trust(owner) < trust(rival->second)) rival = {c, owner};
+    }
+    if (rival) {
+        Tell t{Tell::Kind::Stash, rival->first};
+        t.owner = rival->second;
+        t.lie = true;
+        return t;
+    }
+    std::optional<Vec2i> best;
+    for (const Table& tb : world.tables()) {
+        if (memory.tile(tb.at) != Tile::Table || cheb(tb.at, foe.cell) < FALSE_TIP_FAR) continue;
+        for (Vec2i d : DIRS4) {
+            Vec2i c = tb.at + d;
+            if (memory.tile(c) != Tile::Floor || foe.memory.tile(c) != Tile::Void || memory.piles.count(c)) continue;
+            if (!best || cheb(c, foe.cell) < cheb(*best, foe.cell)) best = c;
+        }
+    }
+    if (!best) return std::nullopt;
+    Tell t{Tell::Kind::Stash, *best};
+    t.lie = t.nothing = true;
+    return t;
+}
+
+void Human::stashToldOf(World& world, const Tell& t, Human& to) {
+    Human& owner = world.human(t.owner);
+    if (&owner == this || &owner == &to || owner.dead() || owner.state == State::Sleeping) return;
+    if (cheb(owner.cell, cell) > HEAR_RADIUS || !owner.sight.sees(cell) || !owner.isMine(t.cell)) return;
+    if (!owner.exposed(t.cell)) owner.stash_.exposed.push_back(t.cell);
+    owner.note("@ TOLD # ABOUT MY STASH", id, to.id);
+    owner.regard(id, TRUST_STASH_TOLD);
+    owner.sayLater(talk::Moment::StashTold, id);
+}
+
+void Human::askAboutStash(Human& o) {
+    if (!(hungry() && cakes == 0) && trust(o.id) >= 0.0f) return;
+    if (auto it = stash_.askedAbout.find(o.id); it != stash_.askedAbout.end() && clock_ - it->second < ASK_STASH_AGAIN) return;
+    std::optional<Vec2i> best;
+    for (const auto& [c, owner] : memory.stashes)
+        if (owner == o.id && (!best || cheb(c, cell) < cheb(*best, cell) ||
+                              (cheb(c, cell) == cheb(*best, cell) && (c.x < best->x || (c.x == best->x && c.y < best->y)))))
+            best = c;
+    if (!best) return;
+    Vec2i c = *best;
+    stash_.askedAbout[o.id] = clock_;
+    sayLater(talk::Moment::AskStash, o.id);
+    note("ASKED @ ABOUT THEIR STASH", o.id);
+    bool deny = o.hoardDrive() >= HOARD_FROM && (o.cunning() || o.traits.greedy >= DENY_GREEDY) && !o.isFriend(id);
+    if (!deny) {
+        o.note("TOLD @ THE STASH IS MINE", id);
+        o.sayLater(talk::Moment::OwnStash, id);
+        return;
+    }
+    o.note("TOLD @ THE STASH ISN'T MINE", id);
+    o.sayLater(talk::Moment::DenyStash, id);
+    if (memory.stashSeenMade.count(c)) {
+        note("@ DENIED THEIR STASH. I SAW THEM MAKE IT", o.id);
+        regard(o.id, TRUST_DENIED);
+        sayLater(talk::Moment::CaughtDenying, o.id);
+        return;
+    }
+    // Believed: not theirs, so anyone's.
+    note("@ SAYS THE STASH ISN'T THEIRS", o.id);
+    memory.stashes.erase(c);
 }

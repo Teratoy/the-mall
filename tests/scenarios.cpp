@@ -627,6 +627,77 @@ const std::vector<Scenario> SCENARIOS = {
          s.run(30);
          return Checks{logged({"@ HOARDS WHILE I GO WITHOUT"})};
      }},
+    {"tell-stash", "a friend tells a hungry friend where someone's stash is", 99,
+     [](Stage& s) {
+         StashScene sc = stashScene(s, 25, 0.1f, seedWhere(kindly, 21000));
+         Human& hungry = P::addHuman(s.world, HumanLook::random(s.rng), s.freeNear(sc.other->cell, 2), seedWhere(kindly, 21500));
+         s.humans.push_back(&hungry);
+         P::setTrust(*sc.other, hungry, 0.6f);
+         P::setTrust(hungry, *sc.other, 0.6f);
+         hungry.hunger = 0.6f;
+         hungry.cakes = 0;
+         hungry.thirst = 0.1f;
+         s.run(40);
+         return Checks{logged({"TOLD @ WHERE A STASH IS"}), logged({"@ TOLD ME WHERE A STASH IS"})};
+     }},
+    {"stash-overheard", "a hoarder overhears its stash told of, and means to move it", 99,
+     [](Stage& s) {
+         StashScene sc = stashScene(s, 1, 0.1f, seedWhere(kindly, 21000));
+         Human& friendOf = P::addHuman(s.world, HumanLook::random(s.rng), s.freeNear(sc.other->cell, 1), seedWhere(kindly, 21500));
+         s.humans.push_back(&friendOf);
+         friendOf.hunger = friendOf.thirst = 0.1f;
+         // All three keep to where they are; the friend already knows the
+         // stash is the owner's, so it leaves it be. The owner minds the
+         // telling all the same.
+         P::settle(*sc.other, sc.other->cell);
+         P::settle(friendOf, friendOf.cell);
+         P::knowStash(s.world, friendOf, sc.at, *sc.owner);
+         s.run(12);
+         P::tellStash(*sc.other, friendOf, sc.at, *sc.owner);
+         s.run(15);
+         return Checks{logged({"@ TOLD # ABOUT MY STASH"})};
+     }},
+    {"lie-stash", "a cunning human sets a hungry foe on the stash of someone it dislikes", seedWhere(cunning),
+     [](Stage& s) {
+         Human& liar = s.first();
+         P::clearChunk(s.world, liar.cell);
+         Human& owner = s.add(seedWhere(plain, 22000), 25);
+         Vec2i at = s.freeNear(owner.cell, 2);
+         s.world.putDown(at, 4, {});
+         P::ownStash(s.world, owner, at);
+         P::knowStash(s.world, liar, at, owner);
+         P::setTrust(liar, owner, -0.3f);
+         Human& victim = s.add(seedWhere(plain, 22500));
+         setUpLie(s, liar, victim);
+         victim.hunger = 0.7f;
+         victim.cakes = 0;
+         s.run(60);
+         return Checks{logged({"SET @ ON #'S STASH"}), logged({"@ TOLD ME WHERE A STASH IS"})};
+     }},
+    {"false-stash", "with no bare table to send it to, a cunning human tells a hungry foe of a stash that isn't there",
+     seedWhere(cunning),
+     [](Stage& s) {
+         Human& liar = s.first();
+         // A cake on every table, and the liar knows it: no false cake tip.
+         for (const Table& t : s.world.tables())
+             if (World::slotOf(t.at) == World::slotOf(liar.cell)) P::addCake(s.world, t.at);
+         P::knowChunk(s.world, liar, true);
+         Human& victim = s.add(seedWhere(plain, 23000));
+         setUpLie(s, liar, victim);
+         victim.hunger = 0.7f;
+         victim.cakes = 0;
+         s.run(150);
+         return Checks{logged({"TOLD @ OF A STASH THAT ISN'T THERE"}), logged({"@ TOLD ME WHERE A STASH IS"})};
+     }},
+    {"deny-stash", "a hoarder denies its stash to a wary stranger who saw it made, and is seen through",
+     seedWhere([](const Traits& t) { return t.greedy >= 0.8f && t.sociable <= 0.3f; }),
+     [](Stage& s) {
+         StashScene sc = stashScene(s, 1, 0.1f, seedWhere(plain, 24000));
+         P::sawStashMade(s.world, *sc.other, sc.at, *sc.owner);
+         P::setTrust(*sc.other, *sc.owner, -0.2f);
+         s.run(60);
+         return Checks{logged({"TOLD @ THE STASH ISN'T MINE"}), logged({"@ DENIED THEIR STASH. I SAW THEM MAKE IT"})};
+     }},
     {"chat", "two calm acquaintances together start chatting", 99,
      [](Stage& s) {
          Human& a = s.first();

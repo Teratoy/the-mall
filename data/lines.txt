@@ -1838,3 +1838,54 @@ friend rude             | {NAME}? HOW COULD YOU?
 hungry                  | {WHO} HAS PLENTY. AND I HAVE NOTHING.
 thirsty                 | ALL THAT WATER, JUST SITTING THERE.
 brave                   | SOMEONE SHOULD TAKE IT FROM THEM.
+
+# Telling someone where a stash is, said to them, about its owner.
+[tell_stash]
+                        | {WHO} KEEPS FOOD BACK THERE.
+                        | THERE'S A STASH THAT WAY.
+                        | SOMEONE'S HIDING CAKES OVER THERE.
+friend                  | DON'T TELL ANYONE. THERE'S A STASH THAT WAY.
+they.hungry             | YOU'RE HUNGRY? I KNOW WHERE THERE'S FOOD.
+
+# Selling where a stash is, for a cake, said to them.
+[sell_stash]
+                        | I KNOW WHERE SOMEONE KEEPS FOOD. A CAKE?
+                        | A CAKE, AND I'LL TELL YOU WHERE THE STASH IS.
+
+# Lying about a stash to a foe, said to them.
+[lie_stash]
+                        | THERE'S A STASH THAT WAY. NOBODY'S GUARDING IT.
+                        | {WHO} HOARDS FOOD. HELP YOURSELF.
+                        | GO ON. THEY'LL NEVER KNOW.
+
+# Overhearing someone tell of its stash, said to them.
+[stash_told]
+rude                    | THAT'S MY STASH YOU'RE TALKING ABOUT!
+rude                    | KEEP YOUR MOUTH SHUT!
+rude                    | WHO TOLD YOU ABOUT THAT?
+
+# Asking someone if a stash it knows of is theirs, said to them.
+[ask_stash]
+                        | IS THAT STASH YOURS?
+                        | THAT FOOD BACK THERE. YOURS?
+hungry                  | YOU'VE GOT FOOD HIDDEN, HAVEN'T YOU?
+rude                    | HOARDING, ARE WE?
+
+# Owning up to a stash, said to whoever asked.
+[own_stash]
+                        | IT'S MINE. LEAVE IT.
+                        | YES. AND IT STAYS THAT WAY.
+greedy                  | MINE. HANDS OFF.
+generous                | IT'S MINE. ASK IF YOU NEED SOME.
+
+# Denying a stash is theirs, said to whoever asked.
+[deny_stash]
+                        | WHAT STASH?
+                        | NOT MINE. NEVER SEEN IT.
+                        | NO IDEA WHAT YOU MEAN.
+
+# Seeing through a denial, having seen the stash made, said to the denier.
+[caught_denying]
+rude                    | I SAW YOU PUT IT THERE.
+rude                    | LIAR. I WATCHED YOU.
+timid                   | BUT... I SAW YOU.

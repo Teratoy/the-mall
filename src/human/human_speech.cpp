@@ -143,6 +143,8 @@ void Human::say(World& world, const Saying& s) {
     // What it tells lands now, worded or not.
     if (to && s.intro) giveName(*to);
     if (to && s.tell) deliver(*to, *s.tell);
+    // Its owner, hearing a stash told of, means to move it (human_stash.cpp).
+    if (to && s.tell && s.tell->kind == Tell::Kind::Stash && s.tell->owner >= 0) stashToldOf(world, *s.tell, *to);
 }
 
 void Human::hear(World&, Human& s, const talk::Said& said, Human* to, const Human* about) {

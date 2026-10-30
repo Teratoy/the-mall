@@ -308,7 +308,7 @@ public:
     /// and what the teller thinks of them, a warning off a foe or a pointer
     /// to an ally, which the listener believes as far as it trusts them.
     struct Tell {
-        enum class Kind { Cake, Key, Trap, Route, People, Way, Water };
+        enum class Kind { Cake, Key, Trap, Route, People, Way, Water, Stash };
         Tell(Kind kind, Vec2i cell, TrapKind trap = TrapKind::Spikes) : kind(kind), cell(cell), trap(trap) {}
         Kind kind;
         Vec2i cell;
@@ -339,6 +339,10 @@ public:
         bool gain = false;
         /// Told for a cake, paid once the greeting ends.
         bool sold = false;
+        /// For Stash: whose it is (-1: someone's, it doesn't say whose). A
+        /// lie that isn't nothing is a real stash told to set a foe on its
+        /// owner.
+        int owner = -1;
     };
     /// Says the tell to other, in turn; it lands in their memory as it is
     /// said (see deliver), and is lost if it never gets said.
@@ -1141,8 +1145,9 @@ private:
         std::unordered_map<Vec2i, Pile, Vec2iHash> left;
         std::unordered_map<Vec2i, int, Vec2iHash> nearBy;
         std::vector<Vec2i> exposed;
-        /// When it last resented each hoarder.
-        std::unordered_map<int, float> resented;
+        /// When it last resented each hoarder, and last asked each owner
+        /// about a stash of theirs.
+        std::unordered_map<int, float> resented, askedAbout;
     };
     Stash stash_;
     /// How much it hoards, from greed, going hungry, being unsociable,
@@ -1179,6 +1184,24 @@ private:
     /// Hungry or thirsty with nothing, seeing someone's big stash: thinks
     /// less of them, the more the bigger it is and the needier it is.
     void resent(Vec2i c, const Pile& p, int owner);
+    /// A stash it knows of to tell o: not its own, not a friend's, one o
+    /// doesn't know of; free to friends and its group, sold by the grasping
+    /// to those with a cake to spare, told to the hungry with nothing by the
+    /// rest. Nothing if none.
+    std::optional<Tell> stashNewsFor(const Human& o, bool& forPay) const;
+    /// To a hungry foe: the stash of someone else it dislikes, to set them
+    /// on each other; else a stash that isn't there, far off.
+    std::optional<Tell> stashLieFor(const World& world, const Human& foe) const;
+    /// Seen at its own stash, putting things in (stashing) or taking them
+    /// out: whoever sees it knows the stash for its.
+    void seenAtStash(World& world, Vec2i c, bool stashing);
+    /// Overheard telling of owner's stash: the owner thinks less of it and
+    /// means to move it.
+    void stashToldOf(World& world, const Tell& t, Human& to);
+    /// At a greeting, knowing a stash of o's and wanting it: asks o whether
+    /// it is theirs. o owns up, or denies it: believed, unless the asker saw
+    /// them make it.
+    void askAboutStash(Human& o);
     /// At the stash or the spot: puts the load down.
     bool stashHere();
     /// What it would take from the pile on a cell, as it sees it: cakes
