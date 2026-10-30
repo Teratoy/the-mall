@@ -1674,3 +1674,50 @@ friend                  | I COUNTED ON YOU.
                         | HEY. YOU ALL RIGHT?
 friend                  | {WHO}, COME ON, WAKE UP.
 
+
+# ---- Someone shut in -------------------------------------------------------
+
+# Telling someone at a greeting of a human heard shut in a slam room, to
+# them, about whoever is shut in.
+[tell_shut_in]
+                        | SOMEONE'S SHUT IN, THAT WAY.
+                        | I HEARD SOMEONE CALLING FOR HELP BACK THERE.
+                        | THERE'S SOMEONE LOCKED IN, OVER THAT WAY.
+they.keys               | YOU'VE GOT A KEY. SOMEONE'S SHUT IN THAT WAY.
+they.keys plead         | PLEASE, SOMEONE NEEDS A KEY. THAT WAY.
+                        | {WHO} IS SHUT IN. THAT WAY.
+friend                  | {NAME}, SOMEONE'S CALLING FOR HELP OVER THERE.
+timid                   | I HEARD SOMEONE SCREAMING TO BE LET OUT...
+
+# Calling back through the wall to whoever is shut in, with no key, said to
+# nobody, about them.
+[call_back]
+                        | I HEAR YOU! I'LL FIND A KEY!
+                        | HANG ON! I'LL BE BACK WITH A KEY!
+                        | HOLD ON IN THERE!
+                        | {WHO}? IS THAT YOU? HOLD ON!
+timid                   | I... I DON'T HAVE A KEY. I'M SORRY.
+brave                   | DON'T GIVE UP! I'M GETTING A KEY!
+
+# Shut in, hearing someone call back through the wall, said to nobody.
+[heard_back]
+                        | YES! I'M HERE! PLEASE HURRY!
+                        | SOMEONE'S THERE!
+                        | PLEASE DON'T LEAVE ME!
+timid                   | PLEASE... PLEASE COME BACK...
+hopeless                | THEY WON'T COME BACK.
+
+# Going for a key it knows of, to let someone out, said to nobody.
+[key_for_shut_in]
+                        | A KEY. I NEED A KEY.
+                        | THERE WAS A KEY BACK THERE...
+                        | I'LL GET THAT KEY AND LET THEM OUT.
+generous                | HANG ON, WHOEVER YOU ARE.
+
+# Gone with a key to where the voice was, and found no gate, said to
+# nobody, about whoever was shut in.
+[lost_shut_in]
+                        | WHERE ARE YOU?
+                        | HELLO? ANYONE IN THERE?
+                        | I CAN'T FIND THE WAY IN.
+                        | {WHO}? I CAN'T FIND YOU!

@@ -1,0 +1,90 @@
+# Remembering the shut in
+
+A human shut in a slam room with no key cries for help (`human_rescue.cpp`).
+Until now, a hearer weighed letting them out only at the instant of the cry:
+with no key right then, it forgot about them. A test pass saw Gilla hear Borst
+at 1068 s, pick up a key at 1192 and wander off; Borst stayed shut in to the
+end.
+
+The user asked: "make people remember that they heard shut in people when
+they find keys and when they meet other people (obviously greedy and erratic
+people wont care)".
+
+## What it ties into
+
+- The cry and the rescue: `callForHelp`, `hearHelp`, `startRescue`, `letOut`
+  in `human_rescue.cpp`; `Want::Rescue` in `choose()`.
+- News at a greeting: `newsFor`, `tell`, `deliver` in `human_social.cpp`.
+  News someone lacks also makes a human go over and greet them
+  (`wouldGreet`), so word spreads the way key and cake tips do.
+- Memory: humans know only what they heard or were told. A hearer knows the
+  gate only if it has seen that tile; otherwise it knows where the voice came
+  from.
+
+## User's decisions (2026-10-30)
+
+1. The memory lasts **10 minutes** from when it last heard of them.
+2. Hearing the cry again, or being told again, **refreshes** it.
+3. A caring human with no key **goes for a key it knows of** on purpose,
+   and **may go to the voice and call back** through the wall.
+4. The chance to go is **the same as today**: one roll each time it hears
+   them, comes by a key, or is told (about 15%, swayed by generous, brave
+   and sociable; x3 for a friend, x1.5 for a known name or a spare key).
+   "Greedy" is greed of 0.67 or more (the stingy third), as for sharing.
+
+## Steps
+
+1. **Remember the cry.** `rescue_.cries`, by caller: where (the gate when it
+   knows that tile, else where the voice came from), whether that is the
+   gate, when it last heard of it, and who told it (or -1, heard itself).
+   Everyone keeps it, so news isn't told twice; only those who care act on it.
+2. **Weigh it again on getting a key.** Whenever its keys go up (picked up,
+   looted, given), it weighs each cry it remembers, as `hearHelp` does now.
+   Same refusals: erratic, greedy, hunting, starving, parched, foe,
+   suspicious.
+3. **Find the gate.** Going with only the voice to go on, it makes for the
+   known ground nearest the voice. A locked door it knows near the voice is
+   taken for the gate. Got there and none seen: it gives up and forgets.
+4. **Pass it on.** At a greeting, a caring human tells someone who hasn't
+   heard: "someone's shut in, that way". The listener keeps it as told
+   (hearsay), and, with a key, weighs going at once.
+5. **Forget it.** When it sees the gate open, sees the caller dead, greets
+   the caller, or the memory goes stale.
+6. Lines, notes and three scenarios: heard-then-key, told-with-key, and a
+   greedy or erratic hearer who does neither.
+
+## Open questions
+
+All answered above.
+
+## Built (2026-10-30)
+
+All six steps, in `human_rescue.cpp` (state in `rescue_`), with the tell in
+`human_social.cpp`.
+
+- `rescue_.cries` keeps each caller; `recallCries()` runs every update,
+  forgets the over and stale, and weighs again when keys go up.
+  `rescue_.out` keeps who it knows got out, so nobody re-tells it.
+- `weighRescue()` is the old roll, now also for the keyless (to call back,
+  once per cry). It no longer needs the gate's tile known: with only the
+  voice it goes to the voice.
+- `startRescue()`: to the gate if it knows a way; else, with a key, to the
+  edge of what it knows (a frontier) nearest the gate or voice, no farther
+  than 12 cells from it, and looks; a locked door it then knows within 8 of
+  the voice is taken for the gate. Nothing left to look at: "COULDN'T FIND
+  WHERE @ IS SHUT IN", and it forgets them. Keyless, to the known ground
+  nearest the voice, where it calls back; the one shut in, in earshot,
+  hears it and takes a little hope.
+- New `Goal::Rescue` for that walk ("GOING TO HELP @" in the HUD).
+- `Tell::Kind::ShutIn` at greetings, first of any news, from carers only,
+  to anyone who hasn't heard and doesn't know they got out. Like a route,
+  it carries the teller's way toward the gate or voice, so the listener can
+  find it. News of it makes a human go over to greet, as tips do.
+- Keyless carers who remember a cry want Fetch more (+0.8, keys first).
+- Moments at the end of `talk::Moment`: TellShutIn, CallBack, HeardBack,
+  KeyForShutIn, LostShutIn.
+- Scenarios: `shut-in-key`, `shut-in-told`, `shut-in-greedy`.
+
+Not done: the chat topics don't bring it up; the greeting tell carries it.
+In 6 crowded 25-minute worlds it was told 3 times and sent 2 humans for
+keys, but no roll came up to go: the odds are as they were.

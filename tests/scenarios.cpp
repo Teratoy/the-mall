@@ -165,6 +165,36 @@ Check straightFace(const Human& liar) {
             }};
 }
 
+/// None of these lines in anyone's log.
+Check notLogged(std::vector<std::string> noneOf) {
+    return {"not " + noneOf.front(), [noneOf](const Stage& s) {
+                for (const auto& l : noneOf)
+                    if (s.logged(l)) return false;
+                return true;
+            }};
+}
+
+/// The first human shut in a slam room with no key, nobody's keys lying
+/// about, and everyone added fed and watered.
+Human& shutInFirst(Stage& s) {
+    Human& caller = s.first();
+    P::clearChunk(s.world, caller.cell);
+    caller.keys = 0;
+    P::shutInBox(s.world, caller, {1, 0});
+    return caller;
+}
+void calm(Human& h) { h.hunger = h.thirst = h.tiredness = 0.05f; }
+/// Once all are awake, the hearers stand beside the slam room as the one
+/// shut in cries out once.
+void hearCry(Stage& s, Human& caller, std::vector<Human*> hearers) {
+    s.run(8);
+    for (Human* h : hearers) P::place(s.world, *h, s.freeNear(caller.cell, 4));
+    P::cryNow(caller);
+    s.run(1);
+}
+/// Caring about who is shut in: neither greedy nor erratic.
+bool caring(const Traits& t) { return kindly(t) && t.greedy <= 0.4f; }
+
 const std::vector<Scenario> SCENARIOS = {
     {"share", "a friend with cakes to spare feeds a starving friend", 99,
      [](Stage& s) {
@@ -398,6 +428,53 @@ const std::vector<Scenario> SCENARIOS = {
                                 if (h->chats > 0) return true;
                             return false;
                         }}};
+     }},
+    {"shut-in-key", "a hearer with no key gets one later, out of earshot, and goes back to let them out", 99,
+     [](Stage& s) {
+         Human& caller = shutInFirst(s);
+         Human& hearer = s.add(seedWhere(caring, 11000), 5);
+         calm(hearer);
+         P::setTrust(hearer, caller, 0.6f);
+         hearCry(s, caller, {&hearer});
+         // Walked off out of earshot, knowing the room.
+         P::place(s.world, hearer, s.farFrom(caller.cell, 20));
+         P::knowChunk(s.world, hearer);
+         hearer.keys = 2;
+         s.run(120);
+         return Checks{logged({"HEARD @ CALLING FOR HELP"}), logged({"LET @ OUT OF A SLAM ROOM"}),
+                       logged({"@ LET ME OUT"})};
+     }},
+    {"shut-in-told", "a hearer tells a stranger with keys, who never heard the cry, and they let them out", 99,
+     [](Stage& s) {
+         Human& caller = shutInFirst(s);
+         Human& teller = s.add(seedWhere(caring, 12000), 5);
+         calm(teller);
+         hearCry(s, caller, {&teller});
+         Human& listener = s.add(seedWhere(caring, 13000), 2);
+         P::place(s.world, teller, s.farFrom(caller.cell, 18));
+         P::place(s.world, listener, s.freeNear(teller.cell, 2));
+         calm(listener);
+         listener.keys = 2;
+         P::setTrust(listener, caller, 0.6f);
+         s.run(120);
+         return Checks{logged({"TOLD @ SOMEONE IS SHUT IN"}), logged({"@ TOLD ME SOMEONE IS SHUT IN"}),
+                       logged({"LET @ OUT OF A SLAM ROOM"})};
+     }},
+    {"shut-in-greedy", "a greedy hearer with keys neither goes to let them out nor tells anyone", 99,
+     [](Stage& s) {
+         Human& caller = shutInFirst(s);
+         Human& hearer = s.add(seedWhere([](const Traits& t) { return t.greedy >= 0.72f; }, 14000), 5);
+         calm(hearer);
+         hearer.keys = 2;
+         P::setTrust(hearer, caller, 0.6f);
+         hearCry(s, caller, {&hearer});
+         Human& other = s.add(seedWhere(caring, 15000), 2);
+         P::place(s.world, hearer, s.farFrom(caller.cell, 18));
+         P::place(s.world, other, s.freeNear(hearer.cell, 2));
+         calm(other);
+         s.run(90);
+         return Checks{logged({"HEARD @ CALLING FOR HELP"}), notLogged({"GOING TO LET @ OUT", "GOING TO CALL BACK TO @"}),
+                       notLogged({"TOLD @ SOMEONE IS SHUT IN"}), logged({"MET @", "CAUGHT UP WITH @"})};
      }},
 };
 

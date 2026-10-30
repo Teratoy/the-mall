@@ -201,6 +201,7 @@ std::string doing(const Human& h) {
     case Human::Goal::Feed: return "GOING TO " + who + "'S BODY";
     case Human::Goal::Rob: return "SNEAKING UP ON " + who;
     case Human::Goal::Watch: return "GOING TO KEEP WATCH OVER " + who;
+    case Human::Goal::Rescue: return "GOING TO HELP " + who;
     }
     return "";
 }

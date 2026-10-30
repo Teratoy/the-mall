@@ -14,6 +14,7 @@
 #include <deque>
 #include <functional>
 #include <initializer_list>
+#include <map>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -88,7 +89,7 @@ public:
     /// knowing nothing, until it sits up (Sitting) and looks round.
     enum class State { Waking, Idle, Sitting, Rising, Walking, Greeting, Eating, Drinking, Relieving, Punching, Giving, Washing, Looting, Feeding, Sleeping, Dead };
     /// Why the human is walking: what it does on arrival.
-    enum class Goal { Explore, FetchKey, OpenDoor, PassDoor, Wander, Meet, Follow, Company, FetchCake, Drink, Relieve, Fight, Flee, Share, CheckDoor, Wash, Avoid, Escort, Escorted, Track, GiveWay, Loot, Feed, Sleep, Rob, Watch };
+    enum class Goal { Explore, FetchKey, OpenDoor, PassDoor, Wander, Meet, Follow, Company, FetchCake, Drink, Relieve, Fight, Flee, Share, CheckDoor, Wash, Avoid, Escort, Escorted, Track, GiveWay, Loot, Feed, Sleep, Rob, Watch, Rescue };
     /// What the human is doing, as far as hunger, thirst and tiredness go:
     /// each costs its own of all three.
     enum class Action { Rest, Sit, Walk, Run, Greet, Eat, Drink, Relieve, Punch, Give, Wash, Loot, Feed, Sleep, Watch, Count };
@@ -163,7 +164,8 @@ public:
     /// Set off a slam room whose gate is at gate (human_rescue.cpp).
     void shutIn(Vec2i gate);
     /// Heard caller, shut in behind gate, cry for help through the walls:
-    /// with a key to spare, it may go and let them out.
+    /// with a key to spare, it may go and let them out; without one, it
+    /// remembers them, and may go and call back.
     void hearHelp(const Human& caller, Vec2i gate);
 
     const int id;
@@ -291,7 +293,7 @@ public:
     /// and what the teller thinks of them, a warning off a foe or a pointer
     /// to an ally, which the listener believes as far as it trusts them.
     struct Tell {
-        enum class Kind { Cake, Key, Trap, Route, People, Way, Water };
+        enum class Kind { Cake, Key, Trap, Route, People, Way, Water, ShutIn };
         Tell(Kind kind, Vec2i cell, TrapKind trap = TrapKind::Spikes) : kind(kind), cell(cell), trap(trap) {}
         Kind kind;
         Vec2i cell;
@@ -322,6 +324,10 @@ public:
         bool gain = false;
         /// Told for a cake, paid once the greeting ends.
         bool sold = false;
+        /// For ShutIn: who is shut in, at cell, which is their gate or else
+        /// where their voice came from.
+        int who = -1;
+        bool gate = false;
     };
     /// Says the tell to other, in turn; it lands in their memory as it is
     /// said (see deliver), and is lost if it never gets said.
@@ -518,8 +524,46 @@ private:
         int rescuee = -1;
         Vec2i gate{};
         std::unordered_set<int> heardHelp;
+        /// Someone it heard calling for help, or was told of: where (the gate,
+        /// if it knows that tile, else where the voice came from), when it last
+        /// heard of them, who told it (-1 if it heard them itself), and whether
+        /// it has been and called back.
+        struct Cry {
+            Vec2i at{};
+            bool gate = false;
+            float when = 0.0f;
+            int teller = -1;
+            bool calledBack = false;
+        };
+        std::map<int, Cry> cries;
+        /// Those it knows got out: it let them out, saw their gate open or
+        /// met them since. Nobody tells it of them again.
+        std::unordered_set<int> out;
+        /// Keys held when it last weighed the cries it remembers; whether it
+        /// has said it is off for a key to let someone out.
+        int keysWeighed = 0;
+        bool keyNoted = false;
     };
     Rescue rescue_;
+    /// Neither the erratic nor the greedy care who is shut in: they won't go
+    /// and won't pass it on.
+    bool caresForShutIn() const;
+    /// Keeps a cry for help it heard or was told of, or freshens it.
+    void hearOf(int caller, Vec2i at, bool gate, int teller);
+    /// Weighs going to the one it remembers calling: to let them out with a
+    /// key, else to call back through the wall.
+    void weighRescue(int caller);
+    /// Forgets the cries that are over or stale, and weighs the rest again
+    /// when it has come by a key.
+    void recallCries();
+    /// A locked door it knows near where a voice came from, taken for the gate.
+    std::optional<Vec2i> gateNear(Vec2i voice) const;
+    /// How much more it wants to fetch a key, to let out someone it remembers.
+    float keyForCries() const;
+    /// Someone outside called back through the wall.
+    void heardBack(int from);
+    /// The way it knows toward someone shut in, to tell along with them.
+    std::vector<Vec2i> wayToShutIn(const World& world, const Tell& t) const;
     /// Shut in a slam room with no key, it cries for help now and then,
     /// loud enough to carry through walls (human_rescue.cpp).
     void callForHelp(World& world, float dt);

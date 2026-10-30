@@ -89,6 +89,11 @@ enum class Moment {
     // (to nobody, about them).
     Tired, Exhausted, SleepNow, Woke, Dream, RobbedSleep, CakeGone, WatchMe, WatchYes, WatchCake, WatchNo, WakeUp,
     YourWatch, FailedWatch, WakeThem,
+    // Someone shut in: telling of them at a greeting (to the listener, about
+    // them); calling back through the wall (to nobody, about them), and
+    // hearing it from inside (to nobody); off for a key to let them out (to
+    // nobody); giving up on finding them (to nobody, about them).
+    TellShutIn, CallBack, HeardBack, KeyForShutIn, LostShutIn,
     Count
 };
 

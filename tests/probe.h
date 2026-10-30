@@ -61,6 +61,20 @@ struct SoakProbe {
                 w.takeKey(c);
             }
     }
+    /// A slam room shut on h: a box of floor round it, walled, with its gate
+    /// locked two cells off in dir, as if h had set it off. Returns the gate.
+    static Vec2i shutInBox(World& w, Human& h, Vec2i dir) {
+        for (int y = -2; y <= 2; y++)
+            for (int x = -2; x <= 2; x++)
+                w.setTile(h.cell + Vec2i{x, y}, std::max(std::abs(x), std::abs(y)) == 2 ? Tile::Wall : Tile::Floor);
+        Vec2i gate = h.cell + dir * 2;
+        w.setTile(gate, Tile::DoorLocked);
+        w.gates_.insert(gate);
+        h.shutIn(gate);
+        return gate;
+    }
+    /// Shut in, h cries for help on its next update.
+    static void cryNow(Human& h) { h.rescue_.helpTimer = 0.0f; }
     /// Given up on a way out, at home on home.
     static void settle(Human& h, Vec2i home) {
         h.escape_.settled = true;

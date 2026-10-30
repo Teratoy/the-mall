@@ -25,10 +25,10 @@
 using P = SoakProbe;
 
 static const char* GOAL[] = {"Explore", "FetchKey", "OpenDoor", "PassDoor", "Wander", "Meet", "Follow", "Company", "FetchCake", "Drink", "Relieve", "Fight",
-                             "Flee", "Share", "CheckDoor", "Wash", "Avoid", "Escort", "Escorted", "Track", "GiveWay", "Loot", "Feed", "Sleep", "Rob", "Watch"};
+                             "Flee", "Share", "CheckDoor", "Wash", "Avoid", "Escort", "Escorted", "Track", "GiveWay", "Loot", "Feed", "Sleep", "Rob", "Watch", "Rescue"};
 static const char* STATE[] = {"Waking", "Idle", "Sitting", "Rising", "Walking", "Greeting", "Eating", "Drinking", "Relieving", "Punching", "Giving", "Washing", "Looting", "Feeding", "Sleeping", "Dead"};
 // A goal or state added to Human needs its name here too.
-static_assert(std::size(GOAL) == size_t(Human::Goal::Watch) + 1);
+static_assert(std::size(GOAL) == size_t(Human::Goal::Rescue) + 1);
 static_assert(std::size(STATE) == size_t(Human::State::Dead) + 1);
 
 struct Track {
