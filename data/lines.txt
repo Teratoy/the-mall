@@ -1,0 +1,1676 @@
+# What humans say. Edit freely: the game reads this file at start, and
+# again when you press F5 while playing.
+#
+# [moment]        starts the lines for a moment. A number after the name is
+#                 the chance (0 to 1) that anything is said at all, e.g.
+#                 [hit 0.3]. Without one it is always said.
+#
+# Each row under it is one line, either just the words:
+#     HELLO.
+# or what it needs and its tone, then a bar, then the words:
+#     hungry !friend rude | WHAT DO YOU WANT?
+#
+# A line is picked among those whose conditions all hold, the more
+# conditions the likelier, so specific lines win over plain ones.
+#
+# Conditions about the speaker:
+#   hungry starving scared hurt bleeding cakes keys
+#   brave timid greedy generous curious homebody sociable loner
+#   erratic guilty craving   (the mind: erratic, guilty over flesh eaten,
+#                             craving more)
+#   dazed                    (only just woken up, not clear-headed yet)
+#   hopeless settled         (losing hope of a way out; given up and made
+#                             a home)
+#   sure                     (sure of its hunch of which way is out)
+#   thirsty parched          (needing water; badly)
+#   need.to.go bursting      (needing to piss or shit; about to burst)
+#   filthy                   (feces or piss on it)
+#   tired exhausted          (needing sleep; badly)
+#   dreamt                   (woke from a dream of before lately)
+# about how the speaker sees the one it talks to:
+#   friend foe liked disliked
+#   suspect (thinks them a killer)  afraid (they hit it and it ran)
+# about the one it talks to:
+#   they.hungry they.starving they.scared they.hurt they.bleeding
+#   they.cakes they.keys they.dazed they.thirsty they.parched they.filthy
+#   they.asleep
+# about the one spoken of, if dead, how far gone the body is:
+#   body.fresh body.rotting body.bones
+# Put ! in front to ask for the opposite: !hungry, !friend.
+#
+# Tones are what the line does to whoever hears it:
+#   warm    the one spoken to trusts the speaker a little more
+#   rude    the one spoken to trusts the speaker a little less
+#   plead   the one spoken to may be moved to share a cake
+#   fear    everyone in earshot who doesn't distrust the speaker gets scared
+#   threat  the one threatened may hand over a cake, or else thinks worse
+#           of the speaker; anyone else hearing it thinks a bit worse too
+# No tone: the line just gets said.
+#
+# Names, filled in only when the speaker knows them (otherwise the line
+# is skipped), and learnt by anyone hearing them who can see whose they are:
+#   {NAME}  the one spoken to    {ME}  the speaker    {WHO}  someone else
+#           (the dead, the looted, the one gossiped about)
+#
+# Keep lines short: the bubble is small. Everything shows in capitals.
+# Each moment says who is speaking to whom.
+
+
+# ---- Greetings and tells ---------------------------------------------------
+
+# Greeting someone for the first time.
+[meet]
+                        | HELLO.
+                        | HI THERE.
+sociable warm           | HELLO! NICE TO SEE A FACE.
+sociable warm           | OH, HI! COME, COME.
+loner                   | ...HI.
+loner                   | OH. SOMEONE.
+curious                 | WHO ARE YOU THEN?
+timid                   | D-DON'T COME TOO CLOSE.
+timid scared fear       | ARE YOU... FRIENDLY?
+brave                   | HELLO, STRANGER.
+greedy                  | WHAT HAVE YOU GOT THERE?
+greedy they.cakes       | NICE CAKES YOU'VE GOT.
+hungry rude             | GOT ANY FOOD? NO? FINE.
+scared fear             | THANK GOD, A PERSON.
+hurt                    | HELLO... I'M NOT WELL.
+bleeding fear           | HELP... I'M BLEEDING.
+they.bleeding           | YOU'RE BLEEDING!
+foe rude                | YOU AGAIN.
+generous warm           | HELLO! ARE YOU EATING WELL?
+dazed                   | DO YOU KNOW WHERE WE ARE?
+dazed                   | WHERE IS THIS PLACE?
+dazed                   | HOW DID I GET HERE?
+dazed                   | DID YOU BRING ME HERE?
+dazed timid fear        | WHAT DO YOU WANT WITH ME?
+dazed sociable warm     | OH THANK GOD. DO YOU KNOW THE WAY OUT?
+dazed brave             | YOU. WHAT IS THIS PLACE?
+dazed they.dazed        | YOU TOO? YOU DON'T REMEMBER EITHER?
+!dazed they.dazed       | YOU LOOK LOST. YOU JUST WOKE UP?
+!dazed they.dazed       | I DON'T KNOW WHERE WE ARE EITHER.
+
+# Greeting someone met before.
+[catch_up]
+                        | HELLO AGAIN.
+                        | YOU AGAIN!
+warm                    | {NAME}! GOOD TO SEE YOU.
+friend warm             | {NAME}, MY FRIEND!
+friend warm             | THERE YOU ARE, {NAME}.
+liked warm              | HOW ARE YOU HOLDING UP?
+loner                   | OH. YOU.
+disliked rude           | WHAT NOW, {NAME}?
+foe                     | {NAME}. WHAT A SURPRISE.
+foe                     | HELLO, OLD FRIEND.
+hungry                  | STILL NO FOOD HERE.
+scared fear             | THIS PLACE IS WRONG.
+scared fear             | I KEEP HEARING THINGS.
+curious                 | FOUND ANYTHING NEW?
+hurt                    | STILL ALIVE. JUST.
+they.hurt warm          | YOU LOOK AWFUL. SIT DOWN.
+
+# Giving one's own name.
+[introduce]
+                        | I'M {ME}.
+                        | CALL ME {ME}.
+sociable warm           | I'M {ME}! AND YOU?
+loner                   | {ME}. THAT'S ALL.
+timid                   | I'M... {ME}.
+brave                   | NAME'S {ME}.
+greedy                  | {ME}. REMEMBER IT.
+friend warm             | IT'S ME, {ME}!
+
+# Telling where a cake is.
+[tell_cake]
+                        | THERE'S A CAKE BACK THERE.
+                        | I SAW A CAKE THAT WAY.
+generous warm           | YOU LOOK HUNGRY. CAKE, THAT WAY.
+friend warm             | FOR YOU, {NAME}: A CAKE, OVER THERE.
+greedy                  | DON'T SAY I NEVER HELP.
+they.starving warm      | GO! THERE'S FOOD THAT WAY!
+
+# Telling where a key is.
+[tell_key]
+                        | THERE'S A KEY OVER THERE.
+                        | I SAW A KEY BACK THAT WAY.
+curious                 | A KEY! I WONDER WHAT IT OPENS.
+friend warm             | TAKE THE KEY, {NAME}. GO ON.
+
+# Telling of a trap the other doesn't know of.
+[tell_trap]
+fear                    | WATCH OUT, THERE'S A TRAP.
+                        | MIND YOUR STEP BACK THERE.
+scared fear             | THE FLOOR... IT BITES.
+friend warm             | {NAME}, STAY OFF THAT PLATE.
+brave                   | THERE'S A TRAP. IT'S FINE.
+
+# Selling word of a trap for a cake.
+[sell_trap]
+                        | I KNOW A TRAP. A CAKE, AND IT'S YOURS.
+greedy                  | NOTHING'S FREE. ONE CAKE.
+greedy                  | YOUR LIFE FOR A CAKE? CHEAP.
+
+# Telling the way to a locked door.
+[tell_door]
+                        | THERE'S A DOOR THAT WAY.
+                        | YOU'VE GOT A KEY? FOLLOW ME.
+curious                 | I FOUND A LOCKED DOOR!
+friend warm             | {NAME}, I KNOW A DOOR. COME.
+they.keys               | YOUR KEY. I KNOW A DOOR.
+
+# Telling a foe a way across hidden spikes, as if it were the way to a door.
+# Lines here should sound like tell_door: the point is to be believed.
+[lie]
+warm                    | I KNOW A DOOR. GO THAT WAY.
+warm                    | THE WAY'S CLEAR. TRUST ME.
+                        | STRAIGHT ON. YOU CAN'T MISS IT.
+greedy                  | GO ON, IT'S SAFE.
+
+# Gossip: warning someone about a third person.
+[warn]
+fear                    | KEEP AWAY FROM {WHO}.
+                        | DON'T TRUST {WHO}.
+                        | {WHO} IS TROUBLE.
+scared fear             | {WHO} SCARES ME.
+brave                   | IF {WHO} COMES, CALL ME.
+
+# Gossip: speaking well of a third person.
+[praise]
+warm                    | {WHO} IS ALL RIGHT.
+                        | YOU CAN TRUST {WHO}.
+sociable warm           | YOU'D LIKE {WHO}!
+                        | {WHO} HELPED ME ONCE.
+
+# Thanking someone for a tip (a cake, a key, a trap, a door; lies too).
+[thank_tip]
+                        | THANKS.
+warm                    | THANK YOU!
+loner                   | HM.
+greedy                  | ABOUT TIME.
+friend warm             | THANKS, {NAME}.
+starving warm           | YOU SAVED ME!
+disliked                | ...WHY TELL ME?
+
+# Turning away someone who comes to greet: a foe, someone it suspects
+# (covered in blood with no wound), or someone it is afraid of. Said by
+# the one refusing to the one turned away.
+[refuse 0.9]
+rude                    | NO.
+rude                    | NOT YOU.
+rude                    | KEEP WALKING.
+foe rude                | YOU? GET LOST.
+foe rude                | DON'T EVEN TRY.
+foe brave rude          | ONE MORE STEP AND YOU'LL REGRET IT.
+suspect fear            | STAY BACK! YOU'RE COVERED IN BLOOD!
+suspect rude            | WHOSE BLOOD IS THAT? GET AWAY.
+suspect timid fear      | P-PLEASE, DON'T COME CLOSER.
+suspect brave rude      | NOT WITH THAT BLOOD ON YOU.
+afraid fear             | NO! KEEP AWAY FROM ME!
+afraid timid fear       | DON'T HURT ME AGAIN!
+afraid brave rude       | YOU'VE DONE ENOUGH. GO.
+loner rude              | LEAVE ME ALONE.
+greedy rude             | NOTHING HERE FOR YOU.
+dazed fear              | WHO ARE YOU? STAY AWAY!
+they.filthy rude        | NOT LIKE THAT. YOU STINK.
+they.filthy rude        | WASH FIRST.
+they.filthy timid       | UM... YOU'VE GOT SOMETHING ON YOU.
+they.filthy greedy rude | UGH. GET AWAY FROM ME.
+
+# Turned away: what the one who came to greet says back.
+[snubbed 0.6]
+                        | OH. FINE.
+                        | SUIT YOURSELF.
+rude                    | BE LIKE THAT, THEN.
+sociable                | I ONLY WANTED TO TALK...
+timid                   | S-SORRY.
+brave rude              | YOUR LOSS.
+greedy rude             | YOU'LL BE SORRY.
+bleeding                | I'M HURT, NOT DANGEROUS!
+hurt                    | BUT I NEED HELP...
+dazed                   | WHAT DID I DO?
+foe rude                | THE FEELING'S MUTUAL.
+
+
+# ---- Cakes and fights -----------------------------------------------------
+
+# A hungry human with no cakes begging a cake holder close by.
+[beg]
+plead                   | PLEASE... SPARE A CAKE?
+plead                   | I'M SO HUNGRY.
+plead                   | JUST ONE CAKE. PLEASE.
+starving plead          | I'M STARVING! PLEASE!
+starving plead          | I'LL DIE WITHOUT FOOD.
+friend plead            | {NAME}, PLEASE. ONE CAKE.
+liked plead             | WE'RE FRIENDS, AREN'T WE?
+timid plead             | S-SORRY... ANY FOOD?
+hurt plead              | I'M HURT AND HUNGRY...
+greedy rude             | YOU'VE GOT TOO MANY CAKES.
+brave                   | SHARE. IT'S ONLY FAIR.
+
+# Handing a cake to someone starving.
+[give]
+warm                    | HERE, EAT.
+warm                    | TAKE IT.
+generous warm           | TAKE IT! EAT, EAT.
+greedy                  | FINE. JUST ONE.
+greedy                  | YOU OWE ME.
+friend warm             | FOR YOU, {NAME}.
+loner                   | HERE. NOW GO.
+
+# Thanking someone for a cake.
+[thanks]
+warm                    | THANK YOU!
+warm                    | YOU'RE KIND.
+starving warm           | OH THANK YOU THANK YOU.
+warm                    | {NAME}, I WON'T FORGET.
+greedy                  | ONLY ONE?
+loner                   | ...THANKS.
+disliked                | DON'T THINK THIS MAKES US EVEN.
+
+# Paying a cake for news, as promised.
+[pay]
+                        | HERE'S YOUR CAKE.
+                        | A DEAL'S A DEAL.
+greedy rude             | TAKE IT. THIEF.
+generous warm           | WORTH IT. THANKS.
+
+# Before a fight over cakes, threatening the holder.
+[threat]
+threat                  | GIVE ME A CAKE.
+threat                  | HAND IT OVER.
+threat                  | CAKE. NOW.
+brave threat            | GIVE IT, OR I TAKE IT.
+greedy threat           | ALL THOSE CAKES? SHARE.
+starving threat         | I'M STARVING. GIVE ME THAT!
+foe threat              | YOU OWE ME, {NAME}.
+hurt threat             | DON'T MAKE ME HURT YOU.
+
+# Threatened, handing a cake over.
+[yield]
+                        | OK! OK! TAKE IT!
+                        | DON'T HURT ME!
+timid fear              | PLEASE, JUST TAKE IT!
+scared fear             | HERE! LEAVE ME ALONE!
+                        | FINE. CHOKE ON IT.
+
+# Threatened, not handing anything over.
+[defy 0.6]
+brave rude              | COME AND GET IT.
+brave rude              | MAKE ME.
+rude                    | NO.
+greedy rude             | MINE. ALL MINE.
+rude                    | GET YOUR OWN.
+timid fear              | NO! GO AWAY!
+
+# Landing a punch.
+[hit 0.3]
+rude                    | TAKE THAT!
+rude                    | GIVE IT!
+starving                | FOOD! I NEED FOOD!
+brave rude              | STAY DOWN.
+greedy rude             | MINE!
+foe rude                | YOU HAD IT COMING.
+
+# Hit.
+[ouch 0.4]
+                        | OW!
+                        | OUCH!
+                        | STOP!
+hurt fear               | HELP!
+brave rude              | YOU'LL PAY FOR THAT.
+timid fear              | NOT THE FACE!
+friend                  | {NAME}? WHY?
+
+# Caught by a trap, said to nobody as it happens: hit by a dart, stepping
+# on spikes, shut in a slam room. Said at once, ahead of anything else.
+[darted]
+fear                    | AAH! WHAT WAS THAT?
+fear                    | A DART!
+                        | OW! FROM THE WALL?
+                        | SOMETHING STUNG ME!
+timid fear              | WHO'S SHOOTING?!
+brave                   | DARTS. KEEP LOW.
+curious                 | THE WALLS SHOOT?
+bleeding fear           | IT'S IN ME! GET IT OUT!
+erratic                 | THE WALLS HATE ME.
+
+[spiked]
+fear                    | AAAH! MY FOOT!
+fear                    | SPIKES!
+                        | ARGH! THE FLOOR!
+timid fear              | HELP! IT HURTS!
+brave                   | GAH... STUPID. WATCH THE FLOOR.
+hurt fear               | NOT AGAIN... NOT NOW...
+bleeding fear           | I'M BLEEDING BAD!
+loner                   | NOBODY SAW THAT. GOOD.
+erratic                 | THE FLOOR BIT ME!
+
+[slammed]
+fear                    | NO! LET ME OUT!
+fear                    | IT'S SHUT! IT'S SHUT!
+                        | THE DOOR!
+                        | IT'S LOCKED ME IN!
+timid fear              | HELP! ANYBODY! I'M TRAPPED!
+brave                   | A TRAP. THERE'S A WAY OUT OF THIS.
+keys                    | GOOD THING I'VE GOT A KEY.
+!keys fear              | NO KEY... NO KEY...
+homebody                | I SUPPOSE I LIVE HERE NOW.
+hopeless                | OF COURSE.
+
+# Shut in a slam room with no key, crying for help now and then. Said to
+# nobody, but it carries through the walls to anyone close enough.
+[help]
+fear                    | HELP! I'M SHUT IN!
+fear                    | IS ANYONE OUT THERE?
+fear                    | HELLO? HELP!
+                        | SOMEBODY! I'M LOCKED IN HERE!
+                        | ANYONE WITH A KEY? PLEASE!
+timid fear              | PLEASE... PLEASE, SOMEBODY...
+brave                   | HEY! I NEED A KEY IN HERE!
+sociable                | HELLO? CAN ANYONE HEAR ME?
+hungry fear             | I'M SO HUNGRY... LET ME OUT!
+starving                | PLEASE... ANYONE...
+thirsty fear            | WATER... SOMEBODY, PLEASE!
+parched                 | ...HELP...
+hurt fear               | I'M HURT! I'M LOCKED IN!
+hopeless                | ...IS ANYONE EVEN THERE?
+need.to.go fear         | LET ME OUT! I CAN'T HOLD IT!
+
+# Hearing someone shut in and setting off to let them out. Said to nobody
+# ({WHO} is them, if it knows their name).
+[help_coming]
+                        | HOLD ON! I'VE GOT A KEY!
+                        | I HEAR YOU! I'M COMING!
+                        | WHERE ARE YOU? KEEP SHOUTING!
+                        | {WHO}? HANG ON!
+brave                   | STAY THERE. I'M COMING.
+timid                   | OH NO... OKAY. OKAY. I'M COMING.
+generous                | DON'T WORRY! I'LL GET YOU OUT!
+greedy                  | THIS KEY HAD BETTER BE WORTH IT.
+
+# Let out of a slam room, to whoever opened the gate.
+[freed]
+warm                    | THANK YOU! THANK YOU!
+warm                    | YOU CAME! I THOUGHT I'D DIE IN THERE.
+warm                    | I OWE YOU MY LIFE.
+                        | FINALLY...
+starving warm           | THANK GOD. IS THERE FOOD?
+parched warm            | WATER... DO YOU KNOW WHERE THERE'S WATER?
+timid warm              | I WAS SO SCARED...
+brave warm              | I OWE YOU ONE.
+loner                   | ...THANKS.
+friend warm             | {NAME}! I KNEW YOU'D COME!
+
+# Running from whoever hit it.
+[flee 0.8]
+fear                    | RUN!
+fear                    | GET AWAY FROM ME!
+timid fear              | HELP! HELP!
+hurt fear               | I CAN'T TAKE MORE!
+brave                   | THIS ISN'T OVER.
+
+# Over someone just beaten to death.
+[killed]
+                        | ...
+                        | IT'S DONE.
+fear                    | I DIDN'T MEAN TO...
+timid fear              | WHAT HAVE I DONE?
+greedy                  | NOW, YOUR CAKES.
+brave                   | YOU SHOULD HAVE SHARED.
+                        | GOODBYE, {WHO}.
+erratic                 | HEHEHE. DINNER.
+erratic craving         | FINALLY.
+erratic                 | SHH. SLEEP NOW.
+
+
+# ---- Death and blood ------------------------------------------------------
+
+# Seeing a dead body for the first time.
+[found_body]
+fear                    | OH NO...
+!body.bones fear        | THEY'RE DEAD!
+!body.bones fear        | {WHO}! NO!
+fear                    | WHO DID THIS?
+scared fear             | WE'RE ALL GOING TO DIE HERE.
+timid fear              | I DON'T WANT TO DIE.
+brave                   | POOR SOUL.
+greedy                  | ANYTHING ON THEM?
+curious                 | WHAT HAPPENED HERE?
+loner                   | ONE LESS.
+body.fresh fear         | THEY'RE STILL WARM...
+body.fresh fear         | THIS JUST HAPPENED.
+body.fresh scared fear  | WHOEVER DID THIS IS CLOSE.
+body.fresh brave        | NOT LONG DEAD. STAY SHARP.
+body.fresh curious      | STILL WARM. WHAT HAPPENED?
+body.rotting            | UGH, THE SMELL...
+body.rotting fear       | THEY'VE BEEN HERE A WHILE.
+body.rotting timid fear | I'M GOING TO BE SICK.
+body.rotting brave      | DEAD A WHILE. NOTHING TO DO NOW.
+body.rotting hungry     | I'M NOT THAT HUNGRY.
+body.bones              | BONES...
+body.bones              | JUST BONES.
+body.bones fear         | HOW LONG HAVE THEY BEEN HERE?
+body.bones hopeless     | THAT'LL BE ME ONE DAY.
+body.bones scared fear  | NOBODY GETS OUT OF HERE.
+body.bones curious      | WHO WERE YOU?
+body.bones brave        | LONG DEAD. NOTHING TO FEAR.
+body.bones loner        | NOBODY CAME FOR THEM EITHER.
+
+# Going through a body.
+[loot]
+                        | SORRY. YOU DON'T NEED THESE.
+greedy                  | FINDERS KEEPERS.
+greedy                  | LET'S SEE WHAT YOU HAD.
+timid                   | FORGIVE ME, {WHO}.
+hungry                  | I HAVE TO EAT.
+brave                   | NO USE TO YOU NOW.
+
+# Seeing someone go through a body, and saying so to them.
+[shame 0.7]
+rude                    | HAVE YOU NO SHAME?
+rude                    | LEAVE THEM BE!
+rude                    | THAT WAS {WHO}!
+greedy                  | SAVE SOME FOR ME.
+timid                   | THAT'S... WRONG.
+
+# Seeing a fresh pool of blood.
+[pool]
+fear                    | BLOOD...
+fear                    | SO MUCH BLOOD!
+fear                    | SOMEONE GOT HURT HERE.
+scared fear             | IT'S STILL WET...
+brave                   | SOMEONE BLED HERE.
+hungry                  | BLOOD MEANS SOMEONE'S WEAK.
+
+# Seeing a fresh pool of its own blood.
+[own_pool 0.5]
+                        | THAT'S MINE...
+                        | I'M LOSING BLOOD.
+bleeding                | I NEED TO STOP THIS BLEEDING.
+bleeding fear           | THAT'S A LOT OF MY BLOOD...
+timid bleeding fear     | AM I DYING?
+brave                   | JUST A SCRATCH.
+loner                   | NOBODY'S COMING. KEEP MOVING.
+
+# Offering to take someone wounded and bloody to water.
+[escort]
+warm                    | YOU'RE BLEEDING. COME, WATER.
+warm                    | LET'S GET YOU CLEANED UP.
+friend warm             | {NAME}! LEAN ON ME.
+generous warm           | THIS WAY. THERE'S WATER.
+loner                   | COME ON. WATER'S THIS WAY.
+
+# Led to water.
+[escorted]
+warm                    | THANK YOU...
+warm                    | YOU'RE KIND.
+hurt                    | IT HURTS...
+timid fear              | AM I GOING TO DIE?
+loner                   | I CAN WALK. FINE.
+
+# Seeing someone close by covered in blood with no wound to show for it.
+[accuse 0.6]
+rude                    | WHOSE BLOOD IS THAT?
+rude                    | STAY BACK, MURDERER!
+fear                    | KEEP AWAY FROM ME!
+timid fear              | DON'T HURT ME!
+brave rude              | WHAT DID YOU DO?
+friend                  | {NAME}... WHAT HAPPENED?
+
+# ---- Lessons learnt --------------------------------------------------------
+
+# Starving with no cake: from now on it keeps more and fetches them sooner.
+# Said to nobody.
+[learn_cakes 0.7]
+                        | NEVER AGAIN. I'M KEEPING CAKES.
+                        | SHOULD HAVE TAKEN THAT CAKE...
+starving fear           | SO HUNGRY... I NEED TO STOCK UP.
+greedy                  | NEXT TIME I TAKE THEM ALL.
+generous                | I'LL KEEP ONE BY, JUST IN CASE.
+timid fear              | I DON'T WANT TO STARVE...
+brave                   | LESSON LEARNT. MORE CAKES.
+
+# A dead end at a locked door with no key: from now on it fetches keys first.
+# Said to nobody.
+[learn_keys 0.7]
+                        | LOCKED. SHOULD HAVE TAKEN THAT KEY.
+                        | NEXT KEY I SEE, I'M TAKING.
+curious                 | WHAT'S BEHIND IT? I NEED A KEY.
+timid                   | I'M STUCK IN HERE...
+timid fear              | LET ME OUT!
+brave rude              | STUPID DOOR.
+
+
+# ---- Flesh -----------------------------------------------------------------
+
+# The mind giving way: from now on it is erratic. Said to nobody.
+[snap 0.6]
+                        | HEH. HEHEHE.
+                        | THE WALLS ARE WATCHING.
+starving                | SO HUNGRY I COULD EAT... ANYONE.
+timid fear              | I CAN'T THINK STRAIGHT...
+brave                   | NO MORE RULES.
+loner                   | NOBODY'S COMING FOR US.
+
+# Going for someone to kill and eat them, said to them.
+[hunt 0.7]
+rude                    | COME HERE.
+rude                    | DON'T RUN.
+erratic rude            | YOU LOOK... TASTY.
+erratic rude            | HOLD STILL, {NAME}.
+erratic craving rude    | I KNOW WHAT YOU TASTE LIKE.
+brave rude              | SORRY. IT'S YOU OR ME.
+starving rude           | I HAVE TO EAT.
+
+# Eating from a body for the first time. Said about the dead.
+[feed]
+                        | FORGIVE ME.
+                        | I HAVE TO.
+guilty fear             | WHAT AM I DOING...
+erratic                 | STILL WARM.
+erratic craving         | MORE.
+brave                   | THEY DON'T NEED IT NOW.
+starving                | I'M SORRY, {WHO}.
+
+# Rotten flesh made it sick. Said to nobody.
+[sick 0.8]
+                        | UGH...
+                        | IT WAS ROTTEN...
+erratic                 | WORTH IT.
+fear                    | I'M GOING TO BE SICK.
+
+# Seeing someone eat a body, said to them.
+[saw_eat]
+fear                    | WHAT ARE YOU DOING?!
+fear                    | MONSTER!
+fear                    | GET AWAY FROM THEM!
+timid fear              | DON'T COME NEAR ME!
+brave rude              | YOU SICK ANIMAL.
+friend rude             | THAT WAS {WHO}!
+erratic                 | SAVE ME SOME.
+erratic craving         | MY TURN NEXT.
+
+# Seeing a body somebody has eaten from, for the first time.
+[gnawed]
+fear                    | SOMETHING ATE THEM...
+fear                    | {WHO}... WHAT'S LEFT OF THEM.
+timid fear              | THERE'S A MONSTER HERE.
+brave                   | SOMEONE GOT DESPERATE.
+erratic                 | SOMEONE GOT THERE FIRST.
+body.fresh fear         | IT'S FRESH. IT COULD STILL BE HERE.
+body.rotting fear       | EATEN... AND LEFT TO ROT.
+body.rotting craving    | WHAT A WASTE.
+
+# Seeing again a body it ate from, while it weighs on it.
+[haunted 0.7]
+                        | I'M SORRY, {WHO}.
+                        | I CAN'T LOOK AT THEM.
+guilty fear             | WHAT HAVE I BECOME?
+guilty                  | I HAD NO CHOICE...
+guilty timid fear       | IT KEEPS LOOKING AT ME.
+
+# Hungry and craving flesh, at the sight of a body with some left.
+[craving 0.6]
+                        | STILL SOME LEFT...
+craving                 | JUST A LITTLE MORE.
+erratic craving         | I CAN SMELL IT.
+erratic craving         | NOTHING TASTES LIKE IT.
+
+
+# ---- Waking ----------------------------------------------------------------
+
+# Coming to somewhere it has never seen, remembering nothing: said to
+# nobody, sitting up.
+[wake 0.8]
+                        | WHERE AM I?
+                        | WHAT IS THIS PLACE?
+                        | HOW DID I GET HERE?
+                        | HELLO?
+                        | MY HEAD...
+                        | I DON'T REMEMBER...
+curious                 | WHERE IS THIS? I HAVE TO FIND OUT.
+homebody                | I DON'T LIKE IT HERE.
+timid fear              | NO, NO, NO. LET ME OUT!
+timid                   | IS ANYONE THERE?
+brave                   | RIGHT. HOW DO I GET OUT OF HERE?
+hungry                  | SO HUNGRY... HOW LONG WAS I OUT?
+sociable                | HELLO? ANYBODY?
+loner                   | ...
+
+
+# The first time it ever sees each of these, said to nobody, once each:
+# a key, a cake, a door, water, another human, and someone else's
+# footprints in feces ({WHO} is the human, or whose prints they are, but
+# only if it knows their name).
+[first_key]
+                        | A KEY?
+                        | A KEY... WHAT DOES IT OPEN?
+curious                 | NOW WHERE DOES THIS GO?
+greedy                  | THAT'S MINE NOW.
+brave                   | A KEY. THERE'S A WAY OUT, THEN.
+timid                   | WHO LEFT THIS HERE?
+dazed                   | A KEY? IS IT MINE?
+hopeless                | A KEY. FOR WHAT, THOUGH?
+
+[first_cake]
+                        | A CAKE?
+                        | IS THAT... CAKE?
+hungry                  | FOOD! FINALLY!
+starving                | FOOD... OH, FOOD.
+greedy                  | A CAKE! MINE.
+curious                 | WHO PUTS CAKES OUT HERE?
+timid                   | IS IT SAFE TO EAT?
+loner                   | AT LEAST THERE'S FOOD.
+
+[first_door]
+                        | A DOOR.
+                        | A DOOR! WHERE DOES IT GO?
+brave                   | A DOOR. THAT'S THE WAY OUT.
+curious                 | WHAT'S BEHIND THAT?
+timid                   | WHAT'S BEHIND IT?
+hopeless                | ANOTHER WALL WITH A HANDLE.
+homebody                | I'D RATHER NOT KNOW WHAT'S BEHIND IT.
+
+[first_water]
+                        | WATER!
+                        | IS THAT WATER?
+thirsty                 | WATER! THANK GOD.
+parched                 | WATER... WATER!
+timid                   | IS IT CLEAN?
+curious                 | WHERE DOES THE WATER COME FROM?
+brave                   | GOOD. WATER.
+filthy                  | I CAN WASH, AT LEAST.
+
+[first_human]
+                        | SOMEONE ELSE!
+                        | THERE'S SOMEONE THERE.
+                        | I'M NOT ALONE.
+sociable                | A PERSON! HEY!
+loner                   | NOT ALONE, THEN. GREAT.
+timid fear              | WHO'S THAT?
+scared fear             | STAY BACK...
+brave                   | SOMEONE. GOOD.
+curious                 | WHO'S THAT, I WONDER?
+greedy                  | WONDER WHAT THEY'VE GOT.
+dazed                   | ARE THEY LOST TOO?
+
+[first_prints]
+                        | ARE THOSE... FOOTPRINTS?
+                        | UGH. SOMEONE STEPPED IN IT.
+                        | SOMEONE WALKED SHIT ALL OVER.
+                        | {WHO}, IS THAT YOU?
+curious                 | WHOSE PRINTS ARE THESE?
+curious                 | SOMEONE CAME THIS WAY.
+timid                   | DON'T STEP IN IT, DON'T STEP IN IT...
+brave                   | WATCH YOUR STEP.
+loner                   | SOMEONE'S BEEN HERE. GREAT.
+filthy                  | AT LEAST IT'S NOT ONLY ME.
+erratic                 | FOLLOW THE TRAIL...
+dazed                   | IS THAT... A TRAIL?
+
+# ---- Hope ------------------------------------------------------------------
+
+# Starting to think there is no way out. Said to nobody.
+[despair 0.8]
+                        | THERE'S NO WAY OUT, IS THERE.
+                        | IT JUST GOES ON AND ON.
+                        | ANOTHER ONE. JUST LIKE THE LAST.
+                        | HOW BIG IS THIS PLACE?
+timid fear              | I'M NEVER GETTING OUT OF HERE.
+brave                   | THERE HAS TO BE AN END. THERE HAS TO.
+curious                 | WHO WOULD BUILD A PLACE LIKE THIS?
+sociable                | WHERE IS EVERYONE GOING?
+hungry                  | I'LL STARVE IN HERE.
+erratic                 | THE WALLS MOVE. I SAW THEM MOVE.
+
+# Hope coming back. Said to nobody.
+[hope 0.8]
+                        | MAYBE THERE IS A WAY OUT.
+                        | NOT GIVING UP YET.
+                        | SOMETHING NEW... KEEP GOING.
+brave                   | THIS WAY. IT HAS TO BE THIS WAY.
+sociable                | NOT ALONE IN HERE, AT LEAST.
+
+# Giving up on a way out, making a home of where it is. Said to nobody.
+[settle]
+                        | FINE. I'LL STAY HERE THEN.
+                        | THIS WILL DO.
+                        | NO MORE DOORS.
+homebody                | HOME, I SUPPOSE.
+curious                 | I'VE SEEN ENOUGH.
+greedy                  | THIS PLACE IS MINE NOW.
+erratic                 | MINE. ALL MINE.
+timid fear              | I'LL JUST STAY HERE. WHERE IT'S SAFE.
+
+# A settler warning off someone who came into its place.
+[guard]
+rude                    | THIS IS MY PLACE.
+rude                    | KEEP WALKING.
+rude                    | GET OUT OF HERE.
+brave rude              | ONE MORE STEP AND YOU'LL REGRET IT.
+greedy rude             | NOTHING HERE FOR YOU. GO.
+erratic rude            | MINE! GET OUT!
+timid                   | P-PLEASE GO AWAY. THIS IS MY SPOT.
+foe rude                | YOU. OUT. NOW.
+they.hungry rude        | NO FOOD HERE FOR YOU.
+
+
+# ---- The way out -----------------------------------------------------------
+
+# At a first greeting, still wanting out, sometimes asking the other the
+# way. The other answers with one of the four below, then may ask back.
+[ask_way]
+                        | DO YOU KNOW THE WAY OUT?
+                        | IS THERE A WAY OUT OF HERE?
+                        | WHICH WAY IS OUT?
+dazed                   | WHERE... HOW DO I GET OUT?
+dazed                   | DO YOU KNOW WHERE WE ARE? HOW DO WE LEAVE?
+timid fear              | PLEASE, DO YOU KNOW HOW TO GET OUT?
+brave                   | YOU. WHICH WAY OUT?
+curious                 | SEEN ANYTHING LIKE AN EXIT?
+hopeless                | YOU HAVEN'T FOUND A WAY OUT, HAVE YOU?
+friend                  | {NAME}, ANY IDEA WHICH WAY IS OUT?
+
+# Answering: which way it thinks out is, pointing it out as it says it.
+# Unsure lines unless `sure`.
+[tell_way]
+                        | NOT SURE. MAYBE THAT WAY?
+                        | I'VE A HUNCH IT'S THAT WAY.
+                        | THAT WAY, I THINK. DON'T QUOTE ME.
+sure                    | THAT WAY. I'M SURE OF IT.
+sure                    | IT'S THAT WAY. EVERYONE SAYS SO.
+sure brave              | THAT WAY. COME WITH ME IF YOU LIKE.
+timid                   | M-MAYBE THAT WAY? I DON'T KNOW.
+curious                 | I'D TRY THAT WAY. FEELS RIGHT.
+dazed                   | OVER... THERE? EVERYTHING'S FUZZY.
+friend warm             | {NAME}, I'D GO THAT WAY.
+
+# Answering that there is no way out. Gloom spreads.
+[no_way_out]
+                        | THERE'S NO WAY OUT. DON'T BOTHER.
+                        | I'VE LOOKED. IT JUST GOES ON.
+                        | EVERY DOOR, MORE OF THE SAME.
+settled                 | I STOPPED LOOKING. YOU SHOULD TOO.
+settled warm            | STAY A WHILE. THERE'S NOWHERE TO GO.
+erratic                 | THERE IS NO OUT. THERE WAS NEVER AN OUT.
+timid fear              | WE'RE TRAPPED. ALL OF US.
+
+# Answering a foe: pointing the wrong way, maybe at hidden spikes.
+[lie_way]
+                        | OH, IT'S THAT WAY. DEFINITELY.
+warm                    | I'VE SEEN IT. THAT WAY. GO ON.
+greedy                  | THAT WAY. TRUST ME.
+brave                   | STRAIGHT THAT WAY. YOU CAN'T MISS IT.
+
+# Answering with no idea: too unsure, or not willing to say.
+[no_idea]
+                        | NO IDEA.
+                        | NO CLUE, SORRY.
+                        | IF I KNEW, I'D BE GONE.
+dazed                   | I JUST WOKE UP MYSELF.
+foe rude                | WHY WOULD I TELL YOU?
+loner                   | DON'T KNOW. DON'T CARE.
+hopeless                | IS THERE ONE?
+
+# Taking up with someone, to keep with them from now on.
+[join 0.5]
+                        | MIND IF I COME WITH YOU?
+                        | I'LL STICK WITH YOU.
+                        | SAFER TOGETHER.
+warm friend             | WHERE YOU GO, I GO.
+warm sociable           | LET'S STAY TOGETHER, YES?
+they.keys               | YOU'VE GOT KEYS. I'M COMING WITH YOU.
+scared                  | DON'T LEAVE ME ON MY OWN.
+dazed                   | WAIT... CAN I COME?
+timid                   | C-CAN I TAG ALONG?
+hopeless                | MIGHT AS WELL BE LOST TOGETHER.
+
+# Answering someone who just said they'd keep with it.
+[join_reply 0.8]
+                        | ALL RIGHT.
+                        | SURE. COME ON.
+warm liked              | GOOD. I'D LIKE THAT.
+warm friend             | OF COURSE. STAY CLOSE.
+warm sociable           | YES! THE MORE THE BETTER.
+generous warm           | COME ALONG. WE'LL MANAGE.
+rude loner              | IF YOU MUST.
+rude disliked           | I CAN'T STOP YOU, CAN I?
+rude suspect            | ...KEEP WHERE I CAN SEE YOU.
+greedy                  | FINE. BUT THE CAKES ARE MINE.
+timid                   | O-OKAY. YES.
+hopeless                | WHAT DIFFERENCE DOES IT MAKE.
+scared                  | YES. PLEASE. DON'T GO.
+
+# Tagging along with someone who has a key, to them.
+[follow 0.7]
+                        | LEAD THE WAY.
+                        | I'LL FOLLOW YOU.
+                        | YOU'VE GOT A KEY. I'M WITH YOU.
+greedy                  | YOUR KEY, MY LUCK.
+timid                   | I'LL STAY BEHIND YOU.
+brave                   | GO ON, I'VE GOT YOUR BACK.
+sociable warm           | LET'S FIND THE WAY OUT TOGETHER.
+hopeless                | MAYBE YOUR KEY OPENS SOMETHING.
+
+# Lost sight of whoever it was keeping with or following. Said to nobody.
+[part_lost 0.5]
+                        | WHERE DID THEY GO?
+                        | HELLO? WHERE ARE YOU?
+                        | {WHO}? {WHO}!
+                        | GREAT. ALONE AGAIN.
+timid fear              | DON'T LEAVE ME!
+loner                   | FINE. BETTER ON MY OWN.
+sociable                | WAIT FOR ME!
+brave                   | THEY'LL TURN UP.
+
+# Leaving someone it no longer trusts, to them.
+[part_turned 0.8]
+rude                    | I'M DONE WITH YOU.
+rude                    | GO YOUR OWN WAY.
+rude                    | I DON'T TRUST YOU ANY MORE.
+suspect fear            | STAY AWAY FROM ME. I KNOW WHAT YOU DID.
+foe rude                | WE'RE FINISHED.
+timid rude              | I... I THINK I'LL GO ALONE.
+brave rude              | DON'T FOLLOW ME.
+
+# Keeping away from its company until they've washed, to them.
+[part_filthy 0.8]
+rude                    | NOT UNTIL YOU WASH.
+rude                    | UGH. YOU STINK. GO CLEAN UP.
+rude                    | I'M NOT WALKING WITH THAT SMELL.
+generous                | FIND SOME WATER, THEN COME BACK.
+filthy                  | WE BOTH NEED A WASH.
+loner                   | I'LL BE OVER HERE. AWAY FROM YOU.
+
+# Leaving whoever it followed now their keys are spent, to them.
+[part_no_keys 0.8]
+                        | NO MORE KEYS? I'M GOING.
+                        | OUT OF KEYS. GOOD LUCK, THEN.
+rude greedy             | NO KEYS? THEN WHAT GOOD ARE YOU?
+warm generous           | THANKS FOR GETTING US THIS FAR.
+warm friend             | I'LL FIND ANOTHER KEY. SEE YOU AROUND.
+timid                   | SORRY... I HAVE TO KEEP LOOKING.
+
+# Leaving whoever it followed: it has a key of its own now, or is off
+# to get one. To them.
+[part_own_key 0.8]
+keys                    | I'VE GOT MY OWN KEY NOW.
+keys                    | FOUND A KEY. I'LL GO MY OWN WAY.
+keys greedy             | MY KEY NOW. SEE YOU.
+!keys                   | THERE'S A KEY BACK THERE. I'M GETTING IT.
+!keys                   | WAIT HERE? NO. I'LL GET MY OWN KEY.
+!keys brave             | I KNOW WHERE A KEY IS. I'M GOING.
+warm friend             | THANKS FOR LETTING ME TAG ALONG.
+
+# ---------------------------------------------------------------------------
+# Chit-chat: humans together with nothing pressing bring up whatever matters
+# most to them right then (a topic). Nothing here is left to chance: of the
+# lines whose conditions hold, one the speaker hasn't said in the last five
+# minutes (if any), the one with the most conditions, among equals the one
+# it said longest ago, and then each human's own favourite (fixed for it).
+# So give each situation a specific line, and leave plain ones as
+# fallbacks; several equal lines give humans different ways of saying it.
+# No [moment chance].
+#
+# Extra conditions, about the topic:
+#   here.statue here.water here.basin here.body here.blood here.mess
+#   foul (water/basin it knows is fouled)  feces (mess that is feces)
+#   statue.mug .duck .chair .teapot .toilet .toaster .lamp .clock .spoon .bulb
+#   ep.fight ep.kill ep.body ep.flesh ep.gnawed ep.trap ep.spotted ep.gift
+#   ep.door ep.place ep.pool ep.escort ep.snapped ep.friend ep.foe ep.lied
+#   ep.starving ep.parched ep.loot ep.foul ep.despair ep.settled ep.freed
+#   by.me to.me by.you to.you   (who did it, to whom: the speaker or listener)
+#   spikes darts slam   gift.share gift.pay gift.yield
+#   dark (snapped / lost hope, as against coming back)  strong  recent
+#   about.liked about.disliked about.friend about.foe about.dead
+#   they.know (the listener knows the one talked about)
+#   feel.peckish feel.dry feel.footsore feel.uneasy feel.gloomy feel.hopeful
+#   i.lead you.lead (in a group: who keeps with whom)
+# Extra fillers: {THING} the statue ("BRONZE MUG"), {N} places gone into
+# together. {WHO} is whoever the topic is about, when the speaker knows
+# their name; a line with {WHO} is skipped otherwise, so keep nameless ones.
+
+# Something in sight.
+[chat_here]
+here.statue             | LOOK AT THE SIZE OF THAT {THING}.
+here.statue             | WHO MAKES A {THING} THAT BIG?
+here.statue curious     | A {THING}. WHY A {THING}?
+here.statue homebody    | I DON'T LIKE THAT {THING}. IT WATCHES.
+here.statue statue.duck | A GIANT DUCK. OF COURSE.
+here.statue statue.toilet | EVEN THE TOILETS ARE GIANT HERE.
+here.statue statue.clock | THAT CLOCK. DOES IT EVEN TICK?
+here.statue statue.bulb | A BULB THAT BIG, AND STILL NO LIGHT.
+here.statue statue.spoon | SOMEONE LEFT THEIR SPOON.
+here.statue statue.chair | WHO SITS IN A CHAIR LIKE THAT?
+here.statue statue.mug  | I COULD DRINK FOR A YEAR FROM THAT.
+here.statue statue.teapot | A TEAPOT. ALL WE NEED IS TEA.
+here.statue statue.toaster | A TOASTER. NO BREAD, THOUGH.
+here.statue statue.lamp | THAT LAMP LOOKS LIKE IT'S STARING.
+here.water              | WATER. AT LEAST THERE'S WATER.
+here.water curious      | WHERE DOES ALL THIS WATER COME FROM?
+here.water foul         | DON'T DRINK THAT. I DID.
+here.basin              | GOOD, A BASIN. WE WON'T GO THIRSTY.
+here.basin foul         | THAT BASIN'S FOUL. TRUST ME.
+here.body               | SOMEONE DIED THERE.
+here.body               | DON'T LOOK AT IT.
+here.body               | THAT'S {WHO}. OVER THERE.
+here.body about.friend  | THAT'S {WHO}. I KNEW THEM.
+here.body timid         | I CAN'T LOOK AT IT.
+here.body brave greedy  | THEY WON'T NEED WHAT THEY'VE GOT.
+here.body erratic       | THEY LOOK PEACEFUL. AND FULL.
+here.blood              | THAT'S BLOOD, ISN'T IT?
+here.blood scared       | WHOSE BLOOD IS THAT?
+here.blood brave        | SOMEONE GOT HURT THERE. BADLY.
+here.mess               | SOMEONE WENT RIGHT THERE.
+here.mess feces         | WHAT IS THAT SMELL? OH. OH NO.
+here.mess feces sociable | AT LEAST GO IN A CORNER, PEOPLE.
+here.mess erratic       | HA. SOMEONE COULDN'T HOLD IT.
+
+# Something both remember.
+[chat_shared]
+ep.fight !by.you !to.you | YOU SAW THAT FIGHT TOO?
+ep.fight !by.me !to.me !by.you !to.you | {WHO} WAS REALLY GOING AT IT.
+ep.fight by.you !to.me  | YOU REALLY WENT FOR {WHO} BACK THERE.
+ep.fight by.you !to.me  | YOU REALLY WENT FOR THEM BACK THERE.
+ep.fight to.you !by.me  | ARE YOU ALL RIGHT? AFTER THAT FIGHT?
+ep.fight strong !by.you !to.you | I KEEP HEARING THAT FIGHT.
+ep.fight by.me to.you   | ABOUT EARLIER. SORRY I HIT YOU.
+ep.fight by.me to.you greedy | YOU HAD IT COMING, EARLIER.
+ep.fight by.you to.me   | YOU HIT ME, BACK THERE. REMEMBER?
+ep.fight to.me !by.you  | YOU SAW THEM HIT ME.
+ep.fight to.me !by.you  | YOU SAW {WHO} HIT ME.
+ep.fight by.me !to.you  | YOU SAW. THEY STARTED IT.
+ep.kill !by.you         | WE BOTH SAW IT. SOMEONE KILLED.
+ep.kill !by.me !by.you  | {WHO} KILLED SOMEONE. WE SAW IT.
+ep.kill by.you          | I SAW WHAT YOU DID BACK THERE.
+ep.kill by.me erratic   | YOU SAW WHAT I DID. GOOD.
+ep.body                 | THAT BODY BACK THERE. I CAN'T STOP SEEING IT.
+ep.body                 | YOU SAW {WHO} TOO. DEAD.
+ep.body about.friend    | {WHO} WAS MY FRIEND, YOU KNOW.
+ep.flesh !by.you        | YOU SAW IT TOO. THEY WERE EATING IT.
+ep.flesh !by.me !by.you | YOU SAW {WHO}. EATING.
+ep.flesh by.you         | I SAW YOU EAT. I HAVEN'T TOLD ANYONE.
+ep.flesh by.me erratic  | YOU SAW ME EAT. IT WAS GOOD.
+ep.gnawed               | THAT BODY WAS CHEWED. YOU SAW.
+ep.trap                 | THAT TRAP. YOU SAW IT GO OFF.
+ep.trap spikes          | THOSE SPIKES. RIGHT OUT OF THE FLOOR.
+ep.trap spikes by.me    | YOU SAW ME STEP ON THOSE SPIKES.
+ep.trap spikes by.you   | THOSE SPIKES GOT YOU. ARE YOU ALL RIGHT?
+ep.trap darts           | THOSE DARTS CAME OUT OF NOWHERE.
+ep.trap slam            | THAT ROOM SLAMMING SHUT. HORRIBLE.
+ep.spotted              | GOOD THING WE SAW THAT TRAP.
+ep.gift                 | THAT CAKE BACK THERE. REMEMBER?
+ep.gift gift.share by.you to.me warm | THANKS AGAIN FOR THAT CAKE.
+ep.gift gift.share by.me to.you | WAS THE CAKE GOOD?
+ep.gift gift.share !by.me !to.me !by.you !to.you | {WHO} SHARED A CAKE. NICE OF THEM.
+ep.gift gift.share by.you !to.me | THAT WAS KIND, GIVING THAT CAKE AWAY.
+ep.gift gift.yield by.me to.you rude | I HAVEN'T FORGOTTEN THAT CAKE.
+ep.gift gift.yield to.me by.you | NO HARD FEELINGS ABOUT THE CAKE.
+ep.gift gift.pay        | THAT TIP WAS WORTH THE CAKE.
+ep.door                 | WE GOT THAT DOOR OPEN AT LEAST.
+ep.door by.me           | GOOD THING I HAD THAT KEY.
+ep.door by.you warm     | GOOD THING YOU HAD A KEY.
+ep.place                | WE CAME IN HERE TOGETHER, REMEMBER?
+ep.place curious        | THIS PLACE. STILL NOT THE WAY OUT.
+ep.pool                 | YOU SAW ALL THAT BLOOD TOO.
+ep.escort by.you to.me warm | THANK YOU FOR TAKING ME TO THE WATER.
+ep.escort by.me to.you  | FEELING BETTER, AFTER THE WATER?
+ep.freed by.you to.me warm | YOU CAME BACK FOR ME. I WON'T FORGET IT.
+ep.freed by.me to.you   | GLAD I HEARD YOU SHOUTING.
+ep.loot !by.you         | YOU SAW. THEY WENT THROUGH THE BODY.
+ep.loot by.you          | I SAW YOU GO THROUGH THAT BODY.
+ep.loot by.me           | THEY DIDN'T NEED IT ANY MORE.
+ep.foul                 | WE SHOULDN'T HAVE DRUNK THAT WATER.
+
+# Something only the speaker went through or saw.
+[chat_story]
+ep.fight to.me          | SOMEONE HIT ME, EARLIER.
+ep.fight to.me          | {WHO} HIT ME. JUST LIKE THAT.
+ep.fight by.me          | I GOT INTO A FIGHT.
+ep.fight by.me brave    | I HIT {WHO}. THEY STARTED IT.
+ep.fight !by.me !to.me  | I SAW A FIGHT BACK THERE.
+ep.fight !by.me !to.me  | I SAW {WHO} HIT SOMEONE.
+ep.kill                 | I SAW SOMEONE KILLED.
+ep.kill                 | {WHO} KILLED SOMEONE. I SAW IT.
+ep.kill by.me erratic   | I KILLED ONE. IT WAS EASY.
+ep.body                 | I FOUND A BODY BACK THERE.
+ep.body about.friend    | I FOUND {WHO}. DEAD.
+ep.flesh                | I SAW SOMEONE EATING A BODY.
+ep.flesh                | I SAW {WHO} EATING A BODY.
+ep.flesh by.me erratic  | I'VE EATEN. YOU KNOW WHAT I MEAN.
+ep.gnawed               | I FOUND A BODY. HALF EATEN.
+ep.trap                 | THERE'S A TRAP BACK THERE.
+ep.trap spikes by.me    | I STEPPED ON SPIKES. LOOK AT ME.
+ep.trap spikes !by.me   | SPIKES CAME RIGHT UP OUT OF THE FLOOR.
+ep.trap darts by.me     | A DART HIT ME. OUT OF THE WALL.
+ep.trap darts !by.me    | I SAW DARTS FLY AT SOMEONE.
+ep.trap slam by.me      | I GOT SHUT IN A ROOM. IT SLAMMED.
+ep.trap slam !by.me     | A ROOM SLAMMED SHUT ON SOMEONE.
+ep.spotted              | THERE'S A HIDDEN TRAP BACK THERE.
+ep.gift gift.share to.me | SOMEONE GAVE ME A CAKE. JUST LIKE THAT.
+ep.gift gift.share to.me | {WHO} GAVE ME A CAKE.
+ep.gift gift.share by.me | I GAVE A CAKE AWAY.
+ep.gift gift.share !by.me !to.me | I SAW SOMEONE SHARE A CAKE.
+ep.gift gift.yield by.me | SOMEONE MADE ME HAND OVER MY CAKE.
+ep.gift gift.yield by.me | {WHO} MADE ME HAND OVER MY CAKE.
+ep.gift gift.yield to.me greedy | GOT A CAKE OFF SOMEONE. THEY GAVE IT UP.
+ep.gift gift.pay by.me  | I PAID A CAKE FOR A TIP.
+ep.gift gift.pay to.me  | SOMEONE PAID ME A CAKE TO TALK.
+ep.door by.me           | I OPENED A DOOR BACK THERE.
+ep.door !by.me          | I SAW SOMEONE OPEN A DOOR.
+ep.place                | I CAME THROUGH ANOTHER PLACE. MORE OF THE SAME.
+ep.place curious        | THE LAST PLACE WAS DIFFERENT.
+ep.pool                 | I SAW A POOL OF BLOOD. FRESH.
+ep.pool by.me           | THAT WAS MY BLOOD BACK THERE.
+ep.escort to.me         | SOMEONE TOOK ME TO WATER TO WASH.
+ep.escort to.me         | {WHO} TOOK ME TO WASH.
+ep.escort by.me         | I TOOK SOMEONE TO WASH. THEY WERE COVERED.
+ep.freed to.me          | I GOT SHUT IN. SOMEONE HEARD ME AND CAME.
+ep.freed to.me          | {WHO} LET ME OUT OF A LOCKED ROOM.
+ep.freed by.me          | I HEARD SOMEONE SHUT IN. I LET THEM OUT.
+ep.freed by.me          | I GAVE A KEY TO LET {WHO} OUT.
+ep.snapped dark         | I'M NOT RIGHT IN THE HEAD.
+ep.snapped dark erratic | SOMETHING IN ME WENT. I FEEL LIGHT.
+ep.snapped !dark        | I FEEL MORE LIKE MYSELF NOW.
+ep.friend               | I'VE MADE A FRIEND.
+ep.friend               | I GET ON WITH {WHO}.
+ep.foe                  | THERE'S SOMEONE I CAN'T STAND.
+ep.foe                  | I CAN'T STAND {WHO}.
+ep.lied                 | SOMEONE LIED TO ME.
+ep.lied                 | {WHO} LIED TO ME.
+ep.starving             | I WAS STARVING. REALLY STARVING.
+ep.starving greedy      | NEVER AGAIN. I KEEP CAKES NOW.
+ep.parched              | I NEARLY DIED OF THIRST.
+ep.loot by.me           | I WENT THROUGH A BODY. THEY DON'T NEED IT.
+ep.loot !by.me          | I SAW SOMEONE GO THROUGH A BODY.
+ep.loot !by.me          | {WHO} WENT THROUGH A BODY.
+ep.foul                 | I DRANK FOUL WATER. DON'T.
+ep.despair dark         | I DON'T THINK THERE'S A WAY OUT.
+ep.despair !dark        | THERE IS A WAY OUT. I'M SURE NOW.
+ep.settled              | I'VE MADE A HOME HERE.
+
+# Someone else, out of earshot.
+[chat_someone]
+about.liked             | THERE'S SOMEONE I LIKE, BACK THERE.
+about.liked             | {WHO} IS ALL RIGHT.
+about.liked they.know   | YOU KNOW {WHO}? GOOD PERSON.
+about.friend            | HAVE YOU SEEN {WHO}? I MISS THEM.
+about.disliked          | THERE'S SOMEONE I DON'T TRUST.
+about.disliked          | KEEP AN EYE ON {WHO}.
+about.disliked rude     | {WHO}? DON'T GET ME STARTED.
+about.foe               | STAY AWAY FROM {WHO}.
+about.dead              | SOMEONE I KNEW IS DEAD.
+about.dead about.friend | I KEEP THINKING ABOUT {WHO}.
+about.dead about.friend sociable | {WHO} SHOULDN'T HAVE DIED.
+
+# How it is doing.
+[chat_feeling]
+feel.peckish            | I COULD EAT.
+feel.peckish            | GETTING HUNGRY.
+feel.peckish greedy     | WHEN DID WE LAST EAT?
+feel.peckish cakes      | I'VE GOT A CAKE. FOR LATER.
+feel.dry                | MY MOUTH IS DRY.
+feel.dry                | I'LL NEED WATER SOON.
+feel.footsore           | MY FEET HURT.
+feel.footsore           | WE'VE BEEN WALKING FOREVER.
+feel.footsore homebody  | CAN WE SIT FOR A BIT?
+feel.uneasy             | I DON'T LIKE IT HERE.
+feel.uneasy timid       | DID YOU HEAR THAT?
+feel.uneasy brave       | SOMETHING'S WRONG. STAY CLOSE.
+feel.gloomy             | WHAT'S THE POINT?
+feel.gloomy             | IT JUST GOES ON AND ON.
+feel.gloomy settled     | I'M STAYING HERE. WHY NOT.
+feel.hopeful            | WE'LL GET OUT. I KNOW IT.
+feel.hopeful curious    | EVERY DOOR IS A CHANCE.
+
+# The way out.
+[chat_way]
+                        | I KEEP THINKING IT'S THAT WAY.
+sure                    | IT'S THAT WAY. I CAN FEEL IT.
+!sure                   | I'VE NO IDEA WHERE OUT IS.
+curious                 | DO YOU THINK IT ENDS SOMEWHERE?
+keys                    | ONE OF THESE DOORS GOES OUT.
+dazed                   | WHERE ARE WE? WHERE'S OUT?
+
+# The two of them, in a group.
+[chat_group]
+                        | {N} PLACES TOGETHER NOW.
+i.lead                  | STAY WITH ME. WE'LL BE FINE.
+i.lead                  | STAY WITH ME, {NAME}.
+you.lead                | WHERE ARE WE GOING NEXT?
+you.lead warm           | I'M GLAD I FOUND YOU.
+you.lead loner          | DON'T EXPECT ME TO STICK AROUND.
+friend                  | WE MAKE A GOOD TEAM.
+
+# Before: nobody remembers anything from before waking up here.
+[chat_before]
+                        | DO YOU REMEMBER ANYTHING? FROM BEFORE?
+                        | I WOKE UP HERE. JUST... HERE.
+                        | DO YOU KNOW HOW WE GOT HERE?
+dazed                   | MY HEAD... WHERE IS THIS?
+curious                 | THERE MUST HAVE BEEN A BEFORE.
+timid                   | I DON'T REMEMBER ANYTHING. IT SCARES ME.
+hopeless                | MAYBE THERE WAS NO BEFORE.
+brave !dazed            | NO POINT ASKING HOW WE GOT HERE.
+dreamt                  | I DREAMT OF BEFORE. I THINK.
+dreamt                  | I HAD A DREAM. THERE WAS A DOOR. AND LIGHT.
+dreamt                  | DO YOU DREAM? I DREAM OF OUTSIDE.
+dreamt curious          | MY DREAMS KEEP POINTING SOMEWHERE.
+dreamt timid            | I DREAMT I NEVER LEFT. I STILL HAVEN'T.
+dreamt hopeless         | EVEN MY DREAMS ARE OF THIS PLACE.
+
+# ---------------------------------------------------------------------------
+# Answers. The one spoken to answers from its own memory and mind: it
+# remembers or thinks the same (agree), has its own side to add (add),
+# thinks otherwise (disagree), knows nothing of it (unheard), or can't be
+# bothered (brush). Conditions are as the answerer sees it: by.you is the
+# one who brought it up. is.here is.shared is.story is.someone is.feeling
+# is.way is.group is.before say what was brought up. Chosen as chat lines
+# are, without chance.
+[reply_agree]
+                        | I KNOW.
+is.shared               | I SAW IT TOO.
+is.shared ep.fight      | I KNOW. I WAS THERE.
+is.shared strong        | I CAN'T STOP THINKING ABOUT IT EITHER.
+is.shared ep.body       | I KNOW. POOR THING.
+is.shared ep.kill       | I WISH I HADN'T SEEN IT.
+is.shared ep.trap       | I THOUGHT I WAS NEXT.
+is.shared ep.door       | WE DID IT.
+is.shared ep.place      | FEELS LIKE AGES AGO.
+is.shared ep.gift by.me to.you warm | ANY TIME.
+is.shared ep.gift by.you to.me | IT WAS. THANK YOU.
+is.shared ep.fight by.you to.me | IT'S FORGOTTEN.
+is.shared ep.fight by.you to.me disliked | I HAVEN'T FORGOTTEN.
+is.here                 | I SEE IT.
+is.here here.statue     | IT'S RIDICULOUS.
+is.here here.statue curious | I'D LOVE TO KNOW WHO BUILT IT.
+is.here here.body       | DON'T. LET'S NOT LOOK.
+is.here here.mess       | DISGUSTING.
+is.here here.water      | WE SHOULD REMEMBER THIS SPOT.
+is.here here.basin      | GOOD. DRINK WHILE WE CAN.
+is.here here.blood      | LET'S GO A DIFFERENT WAY.
+is.someone about.liked  | I LIKE THEM TOO.
+is.someone about.liked  | {WHO}'S ALL RIGHT, YES.
+is.someone about.disliked | I DON'T TRUST THEM EITHER.
+is.someone about.disliked | {WHO}. YES. CAREFUL.
+is.someone about.dead   | I KNOW. I SAW.
+is.feeling feel.peckish | ME TOO. I COULD EAT ANYTHING.
+is.feeling feel.dry     | ME TOO. WATER FIRST.
+is.feeling feel.footsore | MINE TOO.
+is.feeling feel.uneasy  | ME TOO. SOMETHING'S OFF.
+is.feeling feel.gloomy  | I KNOW. I FEEL IT TOO.
+is.feeling feel.hopeful | I THINK SO TOO.
+is.way                  | THAT'S WHAT I THINK TOO.
+is.group                | ME TOO.
+is.group you.lead       | I'M NOT GOING ANYWHERE.
+is.group i.lead         | I'LL FIND US A WAY.
+is.before               | NOTHING. I REMEMBER NOTHING EITHER.
+is.before               | SAME. I JUST WOKE UP HERE.
+is.before dazed         | MY HEAD'S STILL SPINNING.
+is.before timid         | DON'T. IT SCARES ME TOO.
+
+[reply_add]
+                        | I KNOW WHAT YOU MEAN.
+is.story                | ME TOO. SOMETHING LIKE THAT.
+is.story ep.fight       | I'VE BEEN IN A FIGHT TOO.
+is.story ep.body        | I'VE FOUND ONE TOO.
+is.story ep.trap        | I'VE SEEN TRAPS TOO.
+is.story ep.starving    | I KNOW THAT HUNGER.
+is.story ep.parched     | I KNOW THAT THIRST.
+is.story ep.lied        | SOMEONE LIED TO ME TOO.
+is.story ep.gift        | SOMEONE GAVE ME ONE TOO, ONCE.
+is.story ep.place       | THEY ALL LOOK THE SAME.
+is.story ep.foe         | THERE'S ONE I CAN'T STAND TOO.
+is.story ep.friend      | GOOD. WE NEED FRIENDS HERE.
+is.story ep.pool        | I'VE SEEN BLOOD LIKE THAT TOO.
+is.here here.body       | I KNEW THEM.
+is.here here.body       | I KNEW THEM. {WHO}.
+is.feeling feel.peckish | WE'LL FIND A CAKE.
+is.feeling feel.peckish cakes generous | I'VE GOT A CAKE IF IT GETS BAD.
+is.feeling feel.dry     | THERE'S WATER SOMEWHERE.
+is.feeling feel.footsore | WE'LL REST SOON.
+is.feeling feel.uneasy  | I'M HERE. IT'S FINE.
+is.feeling feel.uneasy brave | STAY BEHIND ME.
+is.feeling feel.gloomy  | DON'T SAY THAT. WE'LL GET OUT.
+is.feeling feel.hopeful | I HOPE YOU'RE RIGHT.
+
+[reply_disagree]
+                        | I DON'T THINK SO.
+is.someone about.liked  | I WOULDN'T TRUST THEM.
+is.someone about.liked  | {WHO}? I DON'T TRUST THEM.
+is.someone about.disliked | THEY'VE BEEN GOOD TO ME.
+is.someone about.disliked | {WHO}'S ALL RIGHT. YOU'RE WRONG.
+is.feeling feel.gloomy  | THERE IS A WAY. THERE HAS TO BE.
+is.feeling feel.hopeful | THERE'S NO WAY OUT. FACE IT.
+is.way                  | NO. I THINK IT'S THE OTHER WAY.
+is.way hopeless         | THERE IS NO WAY OUT.
+
+[reply_unheard]
+                        | HUH.
+is.story                | REALLY?
+is.story                | I DIDN'T KNOW.
+is.story ep.kill        | KILLED? HERE?
+is.story ep.body        | A BODY? WHERE?
+is.story ep.flesh       | EATING? YOU'RE NOT SERIOUS.
+is.story ep.trap        | I'LL WATCH MY STEP.
+is.story ep.spotted     | WHERE? I'LL KEEP AWAY.
+is.story ep.foul        | I'LL REMEMBER THAT.
+is.story ep.lied        | WHO WOULD DO THAT?
+is.story ep.starving timid | THAT SCARES ME.
+is.someone              | WHO?
+is.someone              | I DON'T REALLY KNOW THEM.
+is.someone about.dead   | DEAD? I DIDN'T KNOW.
+is.way                  | I'VE NO IDEA.
+
+[reply_brush]
+                        | MM.
+                        | IF YOU SAY SO.
+loner                   | I'D RATHER NOT TALK.
+hungry                  | NOT NOW. I'M HUNGRY.
+scared                  | NOT NOW.
+disliked                | LEAVE ME ALONE.
+
+# The one who brought it up, on the answer: agreed added disagreed unheard.
+[chat_follow]
+agreed                  | RIGHT?
+agreed                  | EXACTLY.
+agreed is.shared        | AT LEAST WE'RE STILL HERE.
+agreed is.before        | WHAT A PLACE TO WAKE UP IN.
+agreed is.before        | SO IT'S ALL OF US, THEN.
+agreed is.before        | MAYBE IT'LL COME BACK TO US.
+agreed is.before timid  | I'M GLAD IT'S NOT JUST ME.
+agreed is.feeling       | GOOD. IT'S NOT JUST ME.
+agreed is.feeling       | WE'RE IN THIS TOGETHER, THEN.
+agreed is.someone about.disliked | WE'LL WATCH THEM.
+agreed is.way           | THEN THAT'S WHERE WE GO.
+agreed is.here here.statue | WHO EVEN THINKS OF THESE?
+added                   | YOU TOO, HUH.
+added is.feeling        | THANKS.
+added is.feeling friend warm | I'M GLAD YOU'RE HERE.
+disagreed               | WELL. WE'LL SEE.
+disagreed is.someone    | YOU DON'T KNOW THEM LIKE I DO.
+disagreed is.way        | WE'LL SEE WHO'S RIGHT.
+unheard                 | IT'S TRUE.
+unheard is.story        | I'M NOT MAKING IT UP.
+unheard is.story ep.trap | JUST BE CAREFUL.
+unheard is.someone      | NEVER MIND.
+
+# The answerer again, closing it.
+[chat_close]
+                        | ANYWAY.
+agreed                  | LET'S KEEP GOING.
+disagreed               | FINE.
+unheard                 | ALL RIGHT.
+sociable                | GOOD TALKING TO YOU.
+friend warm             | I'M GLAD WE MET.
+
+
+# ---- Thirst and going -------------------------------------------------------
+
+# Going parched, said to nobody.
+[parched 0.7]
+                        | WATER. I NEED WATER.
+                        | MY THROAT...
+                        | SO THIRSTY...
+timid fear              | I'M GOING TO DIE OF THIRST HERE.
+brave                   | THERE HAS TO BE WATER SOMEWHERE.
+hungry                  | NOTHING TO EAT, NOTHING TO DRINK.
+erratic                 | DRY. DRY. DRY.
+
+# Drinking water fouled with blood, piss or shit, said to nobody.
+[foul_water 0.6]
+                        | UGH. IT TASTES WRONG.
+                        | THAT'S NOT RIGHT...
+parched                 | DON'T CARE. I NEED IT.
+timid fear              | WHAT'S IN THIS WATER?
+erratic                 | TASTES LIKE THE REST OF THIS PLACE.
+
+# Needing to go, said to nobody.
+[need_to_go 0.35]
+                        | I NEED TO GO.
+                        | WHERE CAN I GO?
+                        | NOT HERE. SOMEWHERE QUIET.
+timid                   | I HOPE NOBODY SEES ME.
+bursting                | I CAN'T HOLD IT MUCH LONGER.
+erratic                 | WHO CARES WHERE.
+
+# Wetting or soiling itself, said to nobody.
+[accident 0.8]
+                        | OH NO.
+                        | NO, NO, NO...
+                        | I COULDN'T HOLD IT.
+scared fear             | I... I WET MYSELF.
+timid                   | DON'T LOOK AT ME.
+brave                   | WELL. THAT HAPPENED.
+erratic                 | HA. WHATEVER.
+filthy                  | I'M DISGUSTING.
+
+# Stepping in fresh shit, said to nobody.
+[stepped_in 0.8]
+                        | UGH! I STEPPED IN IT!
+                        | OH, COME ON.
+                        | WHO LEFT THAT THERE?
+timid                   | GROSS, GROSS, GROSS.
+brave rude              | WHOEVER DID THIS...
+erratic                 | HEH. SQUISHY.
+
+# Seen going, said to the one who saw.
+[seen_going 0.8]
+                        | DO YOU MIND?
+                        | DON'T LOOK!
+                        | TURN AROUND!
+timid                   | P-PLEASE DON'T LOOK.
+brave rude              | WHAT ARE YOU STARING AT?
+bursting                | I COULDN'T WAIT, ALL RIGHT?
+friend                  | DON'T MAKE IT WEIRD.
+
+# Seeing someone go in the water, said to them.
+[into_water 0.9]
+rude                    | NOT IN THE WATER!
+rude                    | WE DRINK THAT!
+rude                    | ARE YOU SERIOUS? IN THE WATER?
+thirsty rude            | THAT WAS MY WATER!
+foe threat              | DO THAT AGAIN AND YOU'RE DEAD.
+timid                   | YOU... YOU CAN'T DO THAT THERE.
+friend                  | COME ON. NOT THERE.
+
+# Laughing at someone's accident, said to them. Only the cruel do.
+[mock 0.9]
+rude                    | HA! LOOK AT YOU!
+rude                    | DID YOU JUST WET YOURSELF?
+rude                    | BABY.
+rude                    | SMELLS LIKE SOMEONE HAD AN ACCIDENT.
+foe rude                | THAT'S ABOUT RIGHT FOR YOU.
+they.filthy rude        | YOU STINK.
+
+# Looking away while someone it walks with goes, said to them.
+[privacy 0.5]
+                        | I'LL WAIT HERE.
+                        | I'M NOT LOOKING.
+                        | GO ON, I'LL KEEP WATCH.
+friend warm             | TAKE YOUR TIME.
+loner                   | HURRY UP.
+timid                   | I'LL JUST... STAND OVER HERE.
+
+# Waiting for the toilet, said to whoever is on it.
+[toilet_wait 0.7]
+                        | HURRY UP IN THERE.
+                        | ARE YOU NEARLY DONE?
+                        | I'LL WAIT.
+bursting plead          | PLEASE, HURRY!
+friend                  | NO RUSH. WELL, SOME RUSH.
+greedy rude             | DON'T TAKE ALL DAY.
+
+# Drinking water red with blood, said to nobody.
+[bloody_water 0.7]
+                        | IT'S RED...
+                        | THERE'S BLOOD IN IT.
+parched                 | I DON'T CARE. I NEED IT.
+timid fear              | WHOSE BLOOD IS THIS?
+craving                 | MMM. IRON.
+erratic                 | SALTY. GOOD.
+
+# Seeing someone wash in water it drinks from or lives by, said to them.
+[fouled 0.8]
+rude                    | THAT'S OUR WATER!
+rude                    | WASH SOMEWHERE ELSE!
+settled rude            | NOT IN MY WATER!
+settled brave threat    | GET YOUR FILTH OUT OF MY WATER.
+thirsty rude            | I HAVE TO DRINK THAT!
+timid                   | P-PLEASE, NOT THERE...
+friend                  | HEY. WE DRINK FROM THAT.
+
+# A settler turning away someone thirsty come for the water by its home,
+# said to them.
+[my_water]
+rude                    | THIS IS MY WATER.
+rude                    | FIND YOUR OWN WATER.
+rude                    | NOT FROM HERE YOU DON'T.
+foe threat              | TOUCH MY WATER AND YOU'RE DEAD.
+greedy rude             | NOTHING'S FREE. AND YOU'VE GOT NOTHING.
+erratic threat          | MINE. ALL MINE. GO.
+timid                   | P-PLEASE... DRINK SOMEWHERE ELSE.
+
+# A settler letting someone thirsty drink its water, said to them.
+[water_free 0.8]
+warm                    | GO ON. DRINK.
+warm                    | THERE'S ENOUGH FOR TWO.
+warm sociable           | DRINK UP. STAY A WHILE.
+they.parched warm       | YOU LOOK DRY AS DUST. DRINK.
+friend warm             | ALWAYS, FOR YOU.
+
+# A settler asking a cake for a drink, said to them.
+[water_price]
+                        | A CAKE, AND YOU CAN DRINK.
+                        | WATER'S NOT FREE. ONE CAKE.
+greedy                  | YOU'VE GOT CAKES. I'VE GOT WATER.
+brave                   | PAY FIRST. WELL, AFTER. BUT PAY.
+they.parched            | THIRSTY? THAT'LL BE A CAKE.
+
+# A settler to someone who drank its water and didn't pay, said to them.
+[water_cheat]
+rude                    | HEY! YOU OWE ME A CAKE!
+threat                  | YOU DRANK. NOW PAY.
+brave threat            | NOBODY CHEATS ME.
+erratic threat          | YOU'LL PAY ONE WAY OR ANOTHER.
+
+# Telling a thirsty human the way to water, said to them.
+[tell_water]
+warm                    | THIRSTY? THERE'S WATER THAT WAY.
+warm                    | I KNOW WHERE THERE'S WATER. FOLLOW THIS.
+warm friend             | WATER? COME, I'LL SHOW YOU THE WAY.
+warm they.parched       | YOU NEED WATER. IT'S NOT FAR.
+loner                   | WATER'S OVER THERE. GO.
+
+# Selling the way to water for a cake, said to the buyer.
+[sell_water]
+                        | WATER? THAT'LL COST YOU A CAKE.
+greedy                  | A CAKE, AND I'LL TELL YOU WHERE.
+they.parched            | DESPERATE? ONE CAKE.
+
+# The cunning sending a thirsty foe to water over spikes, said to them.
+[lie_water]
+warm                    | WATER? STRAIGHT THROUGH THERE. EASY WAY.
+warm                    | GO THAT WAY. SHORTEST WAY TO WATER.
+                        | THERE'S A POOL JUST PAST THERE. GO ON.
+
+# Thirsty, asking those it walks with, said to the nearest.
+[ask_water 0.8]
+plead                   | DOES ANYONE KNOW WHERE THERE'S WATER?
+plead                   | I NEED WATER. ANY IDEA?
+parched plead           | WATER... PLEASE...
+friend                  | YOU SEEN ANY WATER?
+
+# Leading a parched friend, or one it walks with, to water, said to them.
+[lead_drink]
+warm                    | YOU NEED WATER. COME WITH ME.
+warm                    | THIS WAY. I KNOW WHERE THERE'S WATER.
+warm friend             | {NAME}, STAY WITH ME. WATER'S CLOSE.
+warm they.parched       | YOU'RE DRY AS BONE. COME ON.
+loner                   | FOLLOW ME. WATER.
+
+# Being led to water to drink, said to whoever leads.
+[led_drink]
+warm                    | THANK YOU...
+warm parched            | WATER... YES...
+warm friend             | WHAT WOULD I DO WITHOUT YOU.
+loner                   | FINE. LEAD THE WAY.
+timid                   | IS IT FAR?
+
+# Getting thirsty, said to nobody.
+[thirsty 0.35]
+                        | I COULD DO WITH A DRINK.
+                        | THIRSTY...
+                        | MY MOUTH'S DRY.
+hungry                  | HUNGRY AND THIRSTY. GREAT.
+timid                   | WHAT IF THERE'S NO WATER?
+erratic                 | DRY. DRY.
+
+# Starting to drink, said to nobody.
+[drink 0.3]
+                        | AHH.
+                        | WATER...
+                        | THAT'S BETTER.
+parched                 | FINALLY. FINALLY.
+erratic                 | GULP. GULP. GULP.
+
+# Learnt to keep near water, after going parched with none to be had, said
+# to nobody.
+[learn_water 0.7]
+                        | NEVER AGAIN. I STAY NEAR WATER.
+                        | I'M NOT GOING FAR FROM WATER AGAIN.
+timid                   | I THOUGHT I'D DIE OF THIRST.
+brave                   | NEXT TIME I KEEP WATER CLOSE.
+
+# Parched with no water to be had, drinking from a toilet, said to nobody.
+[toilet_drink 0.8]
+                        | I CAN'T BELIEVE I'M DOING THIS.
+                        | DON'T THINK ABOUT IT. JUST DRINK.
+                        | IT'S WATER. IT'S STILL WATER.
+timid                   | PLEASE NOBODY SEE THIS.
+erratic                 | TASTES FINE TO ME.
+
+# The cruel seeing someone drink from a toilet, said to them.
+[toilet_mock 0.9]
+rude                    | DID YOU JUST DRINK FROM THE TOILET?
+rude                    | ENJOY YOUR DRINK.
+rude                    | THAT'S DISGUSTING.
+foe rude                | SUITS YOU.
+
+
+# ---- Sleep -----------------------------------------------------------------
+
+# Getting tired, said to nobody.
+[tired 0.35]
+                        | I'M GETTING TIRED.
+                        | SO SLEEPY...
+                        | I COULD SLEEP.
+timid                   | WHERE CAN I SLEEP SAFELY HERE?
+loner                   | I NEED A QUIET CORNER.
+hungry                  | TIRED AND HUNGRY.
+erratic                 | SLEEP. SLEEP. SLEEP.
+
+# Exhausted, said to nobody.
+[exhausted 0.6]
+                        | I CAN BARELY STAND.
+                        | MY EYES... KEEP CLOSING.
+                        | I HAVE TO LIE DOWN. NOW.
+timid fear              | IF I DROP HERE, ANYONE COULD...
+brave                   | JUST A BIT FURTHER.
+erratic                 | HEAVY. EVERYTHING'S HEAVY.
+
+# Lying down to sleep, said to nobody.
+[sleep 0.5]
+                        | *YAWN*
+                        | JUST FOR A LITTLE WHILE.
+                        | GOODNIGHT, WHOEVER YOU ARE.
+timid                   | PLEASE LET NOBODY FIND ME.
+sociable                | WAKE ME IF ANYTHING HAPPENS.
+settled                 | HOME. SUCH AS IT IS.
+dreamt                  | MAYBE I'LL DREAM OF IT AGAIN.
+erratic                 | SHH. SHH. SHH.
+
+# Waking up in its own time, said to nobody.
+[woke 0.4]
+                        | *YAWN*
+                        | THAT'S BETTER.
+                        | STILL HERE, THEN.
+                        | HOW LONG WAS I OUT?
+hopeless                | I HOPED I'D WAKE UP SOMEWHERE ELSE.
+hungry                  | I WOKE UP STARVING.
+thirsty                 | I NEED A DRINK.
+
+# Waking from a dream of before, said to nobody.
+[dream]
+                        | I DREAMT... THERE WAS A WINDOW.
+                        | A DOOR. A BIG GREEN DOOR.
+                        | THERE WAS SKY. I'M SURE THERE WAS SKY.
+                        | SOMEONE CALLING MY NAME...
+                        | STAIRS. GOING UP. OR DOWN?
+                        | I WAS OUTSIDE. IT WAS RAINING.
+                        | THE SMELL OF BREAD...
+                        | A CAR. I WAS IN A CAR.
+                        | IT WAS JUST THIS PLACE AGAIN.
+timid                   | THEY WERE CHASING ME.
+curious                 | THAT WAS A MEMORY. IT HAS TO BE.
+hopeless                | EVEN MY DREAMS ARE THESE CORRIDORS.
+erratic                 | THE TOASTER WAS TALKING TO ME.
+sure                    | I KNOW THE WAY NOW. I SAW IT.
+
+# Woken by someone robbing it, said to them.
+[robbed_sleep]
+rude                    | THIEF!
+rude                    | GET YOUR HANDS OFF ME!
+rude                    | WHILE I WAS ASLEEP? REALLY?
+friend rude             | I TRUSTED YOU!
+timid fear              | DON'T HURT ME! TAKE IT!
+brave threat            | GIVE THAT BACK. NOW.
+
+# Waking with a cake gone, said to nobody, about whom it blames.
+[cake_gone]
+                        | MY CAKE! WHERE'S MY CAKE?
+                        | SOMEONE ROBBED ME IN MY SLEEP.
+                        | IT WAS {WHO}. IT MUST HAVE BEEN.
+                        | {WHO} WAS RIGHT HERE...
+timid                   | ANYONE COULD HAVE DONE ANYTHING TO ME.
+greedy                  | WHOEVER TOOK IT WILL PAY.
+
+# Lying down, asking someone to keep watch, said to them.
+[watch_me]
+                        | WATCH OVER ME WHILE I SLEEP?
+                        | KEEP AN EYE OUT FOR ME?
+                        | WAKE ME IF ANYONE COMES?
+friend warm             | {NAME}, WILL YOU WATCH OVER ME?
+timid plead             | PLEASE, DON'T LET ANYONE NEAR ME.
+
+# Agreeing to keep watch, said to whoever asked.
+[watch_yes]
+warm                    | SLEEP. I'LL WATCH.
+warm                    | GO ON. I'VE GOT YOU.
+                        | ALL RIGHT.
+friend warm             | OF COURSE, {NAME}.
+brave                   | NOBODY GETS PAST ME.
+
+# Keeping watch for a cake, said to whoever paid.
+[watch_cake]
+                        | FOR A CAKE? FINE.
+                        | A CAKE BUYS YOU A NAP.
+greedy                  | PLEASURE DOING BUSINESS.
+
+# Refusing to keep watch, said to whoever asked.
+[watch_no]
+                        | NOT MY JOB.
+                        | WATCH YOURSELF.
+rude                    | WHY WOULD I?
+tired                   | I CAN BARELY KEEP MY OWN EYES OPEN.
+greedy                  | WHAT'S IN IT FOR ME?
+
+# On watch, waking the others for someone coming, said to the sleeper.
+[wake_up]
+fear                    | WAKE UP! SOMEONE'S COMING!
+fear                    | UP! UP! NOW!
+                        | GET UP. WE'VE GOT COMPANY.
+friend fear             | {NAME}! WAKE UP!
+
+# Waking the next for their turn on watch, said to them.
+[your_watch]
+                        | YOUR TURN TO WATCH.
+                        | WAKE UP. I NEED TO SLEEP.
+                        | YOUR WATCH. NOTHING HAPPENED.
+friend                  | {NAME}. YOUR TURN.
+
+# Harmed asleep while the one watching slept or went, said to them.
+[failed_watch]
+rude                    | YOU WERE SUPPOSED TO WATCH!
+rude                    | SOME GUARD YOU ARE.
+rude                    | WHERE WERE YOU?
+friend                  | I COUNTED ON YOU.
+
+# Coming on someone it takes for asleep, close up, before it sees they are
+# dead, said to nobody, about them.
+[wake_them]
+                        | HEY... WAKE UP.
+                        | {WHO}? TIME TO GET UP.
+                        | HEY. YOU ALL RIGHT?
+friend                  | {WHO}, COME ON, WAKE UP.
+

@@ -1,0 +1,4 @@
+build/
+AI/APIkey.txt
+*.kate-swp
+.directory
