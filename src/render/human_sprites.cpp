@@ -52,7 +52,7 @@ Texture2D toTexture(const SpriteFrame& f) {
 
 } // namespace
 
-HumanSprites::HumanSprites(const HumanLook& look) : skin_(look.bodySkin()) {
+HumanSprites::HumanSprites(const HumanLook& look) : skin_(look.skin) {
     add(idle_, look.idle());
     add(idleCarry_, look.idle(true));
     add(guard_, look.guard());

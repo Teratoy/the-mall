@@ -25,18 +25,14 @@ constexpr float BEARD_CHANCE = 0.2f;
 /// How much colour every human keeps: 0 is greyscale, 1 the full palette.
 constexpr float COLOUR = 0.2f;
 
-/// A feral human's skin turns this much of the way to a sickly grey-green,
-/// and a little darker.
-constexpr Rgba FERAL_SALLOW = hex(0x9aa47e);
-constexpr float FERAL_SALLOW_MUCH = 0.45f, FERAL_SKIN_DARK = 0.9f;
-/// Its hair goes dark with grease, its clothes with filth.
-constexpr float FERAL_HAIR_DARK = 0.7f, FERAL_CLOTH_DARK = 0.72f;
-/// Bare feet and hands black with dirt are its skin in this much shade.
-constexpr float FERAL_DIRT = 0.72f;
-/// Eyes red and staring.
-constexpr Rgba FERAL_EYES = hex(0xc4281c);
-/// Old blood on the chin, run down the neck.
-constexpr Rgba FERAL_MOUTH = hex(0x8a1612), FERAL_DRIP = hex(0x6a100e);
+/// A feral human's hair and clothes go dull with dirt, its shoes scuffed.
+constexpr float FERAL_HAIR_DIRT = 0.88f, FERAL_CLOTH_DIRT = 0.86f, FERAL_SHOE_DIRT = 0.8f;
+/// Smudges of dirt on its skin, and its hands black with it, are the skin
+/// in this much shade: of every hundred pixels of skin, this many smudged.
+constexpr float FERAL_DIRT = 0.78f;
+constexpr int FERAL_SMUDGED = 22;
+/// Frayed cloth is darker still, by this much.
+constexpr float FERAL_FRAY_DARK = 0.75f;
 /// Of every hundred pixels of cloth at a hem (the shirt's bottom, the end
 /// of a sleeve or a trouser leg), this many are torn away to the skin; of
 /// every hundred elsewhere, this many. Of every hundred, this many more are
@@ -95,11 +91,6 @@ Rgba shade(Rgba c, float k) {
     return {uint8_t(c.r * k), uint8_t(c.g * k), uint8_t(c.b * k), c.a};
 }
 
-Rgba mix(Rgba a, Rgba b, float k) {
-    auto m = [k](uint8_t u, uint8_t v) { return uint8_t(std::lround(u + (v - u) * k)); };
-    return {m(a.r, b.r), m(a.g, b.g), m(a.b, b.b), a.a};
-}
-
 /// Whether p is c in some shade: the shades frames are drawn with run from
 /// half to full.
 bool shadeOf(Rgba p, Rgba c) {
@@ -143,19 +134,14 @@ HumanLook HumanLook::random(Rng& rng) {
     return l;
 }
 
-Rgba HumanLook::bodySkin() const {
-    return feral ? shade(mix(skin, FERAL_SALLOW, FERAL_SALLOW_MUCH), FERAL_SKIN_DARK) : skin;
-}
-
 SpriteFrame HumanLook::draw(const Stance& s) const {
     if (!feral) return drawBody(s);
-    // The same body in feral colours, its hair grown out wild, barefoot.
+    // The same body gone dull with dirt, its hair grown out and tangled.
     HumanLook l = *this;
-    l.skin = bodySkin();
-    l.hair = shade(hair, FERAL_HAIR_DARK);
-    l.top = shade(top, FERAL_CLOTH_DARK);
-    l.bottom = shade(bottom, FERAL_CLOTH_DARK);
-    l.shoes = shade(l.skin, FERAL_DIRT);
+    l.hair = shade(hair, FERAL_HAIR_DIRT);
+    l.top = shade(top, FERAL_CLOTH_DIRT);
+    l.bottom = shade(bottom, FERAL_CLOTH_DIRT);
+    l.shoes = shade(shoes, FERAL_SHOE_DIRT);
     l.hairStyle = Hair::Matted;
     SpriteFrame f = l.drawBody(s);
     l.wear(f, l.drawBody({}));
@@ -163,34 +149,23 @@ SpriteFrame HumanLook::draw(const Stance& s) const {
 }
 
 void HumanLook::wear(SpriteFrame& f, const SpriteFrame& stand) const {
-    // The standing pose's rows: the hands, and the head's top.
-    const int restLegTop = SPRITE_H - legH;
-    const int restHand = restLegTop;
-    const int restHeadTop = restLegTop - torsoH - 6;
-    const int eyes = restHeadTop + 2, chin = restHeadTop + 4;
+    // The standing pose's row of the hands.
+    const int restHand = SPRITE_H - legH;
     const uint32_t salt = uint32_t(top.r) << 24 ^ uint32_t(bottom.g) << 16 ^ uint32_t(skin.b) << 8 ^ uint32_t(hair.r);
     auto cloth = [&](Rgba p) { return (shadeOf(p, top) || shadeOf(p, bottom)) && !shadeOf(p, skin); };
     for (size_t i = 0; i < f.px.size(); i++) {
         int r = f.rest[i];
         if (r < 0) continue;
-        int rx = r % SPRITE_W, ry = r / SPRITE_W;
+        int ry = r / SPRITE_W;
         auto part = BodyPart(f.part[i]);
         Rgba& p = f.px[i];
-        if (part == BodyPart::Head) {
-            if (ry == eyes && (rx == CX - 1 || rx == CX + 1) && p.r == EYES.r && p.g == EYES.g && p.b == EYES.b)
-                p = FERAL_EYES;
-            else if (ry == chin && rx == CX + 1)
-                p = FERAL_MOUTH;
-            else if (ry == chin + 1 && rx == CX + 1)
-                p = FERAL_DRIP;
+        // Dirt on the skin: the hands black with it, smudges elsewhere.
+        if (shadeOf(p, skin)) {
+            bool hand = (part == BodyPart::FrontArm || part == BodyPart::BackArm) && ry == restHand;
+            if (hand || pixelDie(r, ~salt) < FERAL_SMUDGED) p = shade(p, FERAL_DIRT);
             continue;
         }
-        bool arm = part == BodyPart::FrontArm || part == BodyPart::BackArm;
-        if (arm && ry == restHand && shadeOf(p, skin)) {
-            p = shade(p, FERAL_DIRT);
-            continue;
-        }
-        if (part == BodyPart::Feet || !cloth(p)) continue;
+        if (part == BodyPart::Head || part == BodyPart::Feet || !cloth(p)) continue;
         // A hem: standing, the cloth stops just below.
         Rgba here = stand.px[size_t(r)];
         Rgba below = ry + 1 < SPRITE_H ? stand.px[size_t(r + SPRITE_W)] : Rgba{};
@@ -199,7 +174,7 @@ void HumanLook::wear(SpriteFrame& f, const SpriteFrame& stand) const {
         if (die < torn)
             p = skin;
         else if (die < torn + FERAL_FRAYED)
-            p = shade(p, FERAL_CLOTH_DARK);
+            p = shade(p, FERAL_FRAY_DARK);
     }
 }
 
