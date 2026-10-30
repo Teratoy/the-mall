@@ -12,7 +12,31 @@
 
 float Human::trust(int id) const {
     auto it = social_.trust.find(id);
-    return it == social_.trust.end() ? 0.0f : it->second;
+    float t = it == social_.trust.end() ? 0.0f : it->second;
+    if (auto w = social_.wronged.find(id); w != social_.wronged.end()) t = std::max(-1.0f, t - w->second.guilt);
+    return t;
+}
+
+// Nothing done back to one who hit it, nor to a foe, weighs on it.
+void Human::wrong(const Human& victim, bool known) {
+    if (victim.id == id || fight_.attacker == victim.id || isFoe(victim.id)) return;
+    auto& w = social_.wronged[victim.id];
+    w.guilt = std::min(1.0f, w.guilt - TRUST_WRONGED);
+    w.shuns = w.shuns || known || !cunning();
+    if (isFoe(victim.id)) {
+        note("@ IS A FOE NOW", victim.id);
+        remember(Episode::What::Foe, EPISODE_FOE, id, victim.id);
+    }
+    if (!w.shuns || (social_.companion != victim.id && social_.leader != victim.id)) return;
+    if (social_.companion == victim.id) social_.companion = -1;
+    if (social_.leader == victim.id) social_.leader = -1;
+    note("PARTED FROM @ AFTER WHAT I DID", victim.id);
+    sayLater(talk::Moment::PartWronged, -1, victim.id);
+}
+
+bool Human::shuns(int id) const {
+    auto it = social_.wronged.find(id);
+    return it != social_.wronged.end() && it->second.shuns;
 }
 
 void Human::regard(int id, float delta) {
@@ -600,7 +624,8 @@ void Human::greet(Human& other) {
 
 // Without a key, the human now follows a new friend who has one.
 void Human::endGreet(World& world) {
-    if (keys == 0 && world.human(social_.partner).keys > 0 && !isFoe(social_.partner) && social_.leader != social_.partner) {
+    if (keys == 0 && world.human(social_.partner).keys > 0 && !isFoe(social_.partner) && !shuns(social_.partner) &&
+        social_.leader != social_.partner) {
         social_.leader = social_.partner;
         note("FOLLOWING @, WHO HAS A KEY", social_.leader);
         sayLater(talk::Moment::Follow, social_.leader);
@@ -621,10 +646,10 @@ bool Human::startFollow(World& world) {
     Human& l = world.human(social_.leader);
     bool seen = sight.sees(l.cell);
     // Dead out of sight, they are followed on until found or lost.
-    if ((seen && (l.dead() || l.keys == 0)) || suspicious(l.id) || isFoe(l.id)) {
+    if ((seen && (l.dead() || l.keys == 0)) || suspicious(l.id) || isFoe(l.id) || shuns(l.id)) {
         if (suspicious(l.id) || isFoe(l.id))
             sayLater(talk::Moment::PartTurned, l.id);
-        else if (!l.dead())
+        else if (!l.dead() && !shuns(l.id))
             sayLater(talk::Moment::PartNoKeys, l.id);
         social_.leader = -1;
         return false;

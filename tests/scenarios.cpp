@@ -204,6 +204,36 @@ const std::vector<Scenario> SCENARIOS = {
          s.run(120);
          return Checks{logged({"ROBBED @ IN THEIR SLEEP", "@ WOKE UP AS I ROBBED THEM"})};
      }},
+    {"rob-companion", "a hungry human robs the one it keeps with, then leaves them, and never misses them",
+     seedWhere([](const Traits& t) { return t.sociable >= 0.6f && t.greedy >= 0.5f && !cunning(t); }, 4000),
+     [](Stage& s) {
+         Human& robber = s.first();
+         Human& victim = s.add(seedWhere([](const Traits& t) { return t.brave < 0.4f && t.greedy >= 0.8f; }, 5000));
+         P::clearChunk(s.world, robber.cell);
+         robber.hunger = 0.6f;
+         robber.cakes = 0;
+         victim.hunger = 0.1f;
+         victim.cakes = 2;
+         robber.thirst = victim.thirst = robber.tiredness = victim.tiredness = 0.1f;
+         P::setTrust(robber, victim, 0.2f);
+         P::setTrust(victim, robber, 0.2f);
+         P::setMet(robber, victim, 0.0f);
+         P::setMet(victim, robber, 0.0f);
+         P::setCompanion(robber, victim);
+         s.run(120);
+         // Nothing it does after the first blow treats them as company.
+         Check after{"no company line for the victim after robbing them", [&robber, &victim](const Stage&) {
+                         float hit = -1.0f;
+                         for (const auto& e : robber.log.entries()) {
+                             if (hit < 0.0f && e.what.rfind("HIT @", 0) == 0 && e.who == victim.id) hit = e.time;
+                             if (hit >= 0.0f && e.time > hit && e.who == victim.id &&
+                                 (e.what == "LOST @" || e.what == "KEEPING WITH @" || e.what == "FOLLOWING @, WHO HAS A KEY"))
+                                 return false;
+                         }
+                         return hit >= 0.0f && P::companion(robber) != victim.id;
+                     }};
+         return Checks{logged({"HIT @ AND TOOK A CAKE"}), logged({"PARTED FROM @ AFTER WHAT I DID"}), after};
+     }},
     {"water-free", "a friendly settler by the basin lets a thirsty stranger drink", seedWhere(guardsFree),
      [](Stage& s) { return guardedWater(s, false, {logged({"LET @ DRINK MY WATER"})}); }},
     {"water-price", "a grasping settler asks a cake for its water, and is paid or cheated",

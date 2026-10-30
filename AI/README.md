@@ -21,6 +21,7 @@ Status as of 2026-10-30.
 | [thirst_plan.md](thirst_plan.md) | Thirst, basins, bloody and foul water, guarded water, water tips, hope near water | All 5 steps built | Tuning from play |
 | [sleep_plan.md](sleep_plan.md) | Tiredness, sleeping, where to sleep, robbing sleepers, keeping watch, dreams | All 5 steps built | Tuning from play (aim: ~15–20 min awake, ~90 s asleep) |
 | [lies_plan.md](lies_plan.md) | Lies out of spite (bait that re-arms, rigged cakes, false tips, slander) and for gain (keeping a cake, selling made-up traps); fixes to greeting so news gets told | Steps 1, 2a, 2c, 3, 4 and gain built | Still rare in normal play (foes come from fights, so liar and foe are seldom calm together); 2b set aside; questions 1, 3–5 unanswered |
+| [wronged_company_plan.md](wronged_company_plan.md) | Leaving the one it hit or robbed: guilt that holds trust down, slow to fade; the cunning stay if never found out | Built | Guilt beyond the parting line |
 | [android_plan.md](android_plan.md) | A debug APK: `make apk` with the NDK, data files as assets, obituary in app storage, touch and the back button | Planned | The NDK isn't installed yet |
 | [pc_layout_plan.md](pc_layout_plan.md) | A wide 1014x468 canvas for PC windows: stats, log, square world, HUD over map, all always open | Built | Q1: scale on 1080p (smooth below 2x for now) |
 | [human_split_plan.md](human_split_plan.md) | Splitting Human into per-system classes | Not started | Advised against for now; if done, only system by system, when that system is being reworked anyway |

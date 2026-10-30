@@ -89,6 +89,9 @@ enum class Moment {
     // (to nobody, about them).
     Tired, Exhausted, SleepNow, Woke, Dream, RobbedSleep, CakeGone, WatchMe, WatchYes, WatchCake, WatchNo, WakeUp,
     YourWatch, FailedWatch, WakeThem,
+    // Leaving the one it kept with or followed after hitting or robbing
+    // them (to nobody, about them).
+    PartWronged,
     Count
 };
 

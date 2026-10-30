@@ -165,6 +165,7 @@ void Human::give(Human& other, Gift why) {
         remember(Episode::What::Gift, EPISODE_YIELDED, id, other.id, int(why));
         other.remember(Episode::What::Gift, EPISODE_YIELDED, id, other.id, int(why));
         if (other.fight_.foe == id) other.fight_.foe = -1;
+        other.wrong(*this, true);
         break;
     }
 }
@@ -237,6 +238,7 @@ void Human::landPunch(World& world) {
     remember(Episode::What::Fight, EPISODE_HIT, id, f.id);
     f.remember(Episode::What::Fight, took ? EPISODE_ROBBED : EPISODE_GOT_HIT, id, f.id);
     sayLater(talk::Moment::Hit, f.id);
+    wrong(f, true);
     // Wet blood on them comes off on the fist.
     if (f.stains.wetAny()) stain({BodyPart::FrontArm}, 1, 120, true);
     bool asleep = f.state == State::Sleeping;

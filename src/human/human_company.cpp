@@ -60,7 +60,7 @@ int Human::pickCompany(const World& world) const {
     for (const auto& o : world.humans()) {
         if (o.get() == this || o->dead() || !met.count(o->id) || !sight.sees(o->cell)) continue;
         // Nor someone too filthy for it to greet (human_relief.cpp).
-        if (suspicious(o->id) || isFoe(o->id) || repelledBy(*o)) continue;
+        if (suspicious(o->id) || isFoe(o->id) || shuns(o->id) || repelledBy(*o)) continue;
         float t = trust(o->id);
         if (!isFriend(o->id) && (traits.sociable < SOCIABLE_COMPANY || t < companyTrust())) continue;
         if (followedBy(world, o->id)) continue;
@@ -77,7 +77,8 @@ bool Human::stillCompany(const World& world) const {
     if (social_.companion < 0) return false;
     const Human& c = world.human(social_.companion);
     if (sight.sees(c.cell) && c.dead()) return false;
-    if (suspicious(c.id) || isFoe(c.id) || (!isFriend(c.id) && trust(c.id) < companyTrust() - TRUST_COMPANY_KEEP))
+    if (suspicious(c.id) || isFoe(c.id) || shuns(c.id) ||
+        (!isFriend(c.id) && trust(c.id) < companyTrust() - TRUST_COMPANY_KEEP))
         return false;
     // Gone filthy: kept away from until washed.
     if (sight.sees(c.cell) && repelledBy(c)) return false;
