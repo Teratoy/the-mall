@@ -70,14 +70,11 @@ struct Stage {
         humans.push_back(&h);
         return h;
     }
-    /// The basin cell nearest the first human, if one is near.
-    std::optional<Vec2i> basin() const {
-        for (int r = 0; r < 30; r++)
-            for (int y = -r; y <= r; y++)
-                for (int x = -r; x <= r; x++)
-                    if (std::max(std::abs(x), std::abs(y)) == r &&
-                        world.tile(first().cell + Vec2i{x, y}) == Tile::Basin)
-                        return first().cell + Vec2i{x, y};
+    /// Sets a basin a few cells from the first human, as the spawn room
+    /// once had, and gives its top left cell; none if there is no room.
+    std::optional<Vec2i> basin() {
+        for (Vec2i d : {Vec2i{5, 0}, Vec2i{-6, 0}, Vec2i{0, 5}, Vec2i{0, -6}, Vec2i{5, 5}, Vec2i{-6, -6}})
+            if (P::placeBasin(world, first().cell + d)) return first().cell + d;
         return std::nullopt;
     }
     void run(float seconds) {
@@ -137,7 +134,7 @@ bool plain(const Traits&) { return true; }
 Checks guardedWater(Stage& s, bool strangerHasCake, Checks expect) {
     Human& settler = s.first();
     auto b = s.basin();
-    if (!b) return {{"a basin near the spawn", [](const Stage&) { return false; }}};
+    if (!b) return {{"room for a basin near the spawn", [](const Stage&) { return false; }}};
     P::settle(settler, s.freeNear(*b, 1));
     Human& stranger = s.add(seedWhere(plain, 4000), 3);
     stranger.thirst = 0.7f;
@@ -219,10 +216,10 @@ const std::vector<Scenario> SCENARIOS = {
      seedWhere(cunning),
      [](Stage& s) {
          Human& liar = s.first();
-         // Far from the spawn basin, so the foe knows of no water; the liar
+         // Far from a basin set by the spawn, so the foe knows of no water; the liar
          // knows the whole chunk.
          auto b = s.basin();
-         if (!b) return Checks{{"a basin near the spawn", [](const Stage&) { return false; }}};
+         if (!b) return Checks{{"room for a basin near the spawn", [](const Stage&) { return false; }}};
          P::knowChunk(s.world, liar);
          P::place(s.world, liar, s.farFrom(*b, 25));
          Human& victim = s.add(seedWhere(plain, 5000));
@@ -323,15 +320,35 @@ const std::vector<Scenario> SCENARIOS = {
      seedWhere([](const Traits& t) { return cunning(t) && t.greedy >= 0.7f; }),
      [](Stage& s) {
          Human& liar = s.first();
-         // It knows the chunk and its cakes, and stands a few cells from
-         // one; the rival is a stranger, neither friend nor foe.
+         // Set up apart from how the spawn room came out: of its two tables
+         // farthest apart, a cake on one and nothing on the other. The liar
+         // knows the room and its cake, and stands about ten cells from the
+         // cake on the side away from the bare table; the rival, a stranger,
+         // wakes beside it, too far from the bare table ever to have seen it.
+         std::vector<Vec2i> tables;
+         for (const Table& t : s.world.tables())
+             if (World::slotOf(t.at) == World::slotOf(liar.cell)) tables.push_back(t.at);
+         std::optional<std::pair<Vec2i, Vec2i>> pair;
+         for (Vec2i a : tables)
+             for (Vec2i b : tables)
+                 if (!pair || cheb(a, b) > cheb(pair->first, pair->second)) pair = {a, b};
+         if (!pair || cheb(pair->first, pair->second) < 40)
+             return Checks{{"two tables far apart in the spawn chunk", [](const Stage&) { return false; }}};
+         auto [cake, bare] = *pair;
+         P::clearChunk(s.world, cake);
+         P::addCake(s.world, cake);
          P::knowChunk(s.world, liar, true);
-         std::optional<Vec2i> cake;
-         for (Vec2i c : s.world.cakes())
-             if (World::slotOf(c) == World::slotOf(liar.cell) && (!cake || c.x < cake->x || (c.x == cake->x && c.y < cake->y)))
-                 cake = c;
-         if (!cake) return Checks{{"a cake in the spawn chunk", [](const Stage&) { return false; }}};
-         P::place(s.world, liar, s.freeNear(*cake, 12));
+         std::optional<Vec2i> stand;
+         for (int y = -10; y <= 10; y++)
+             for (int x = -10; x <= 10; x++) {
+                 Vec2i c = cake + Vec2i{x, y};
+                 if (cheb(c, cake) < 8 || s.world.tile(c) != Tile::Floor || s.world.occupant(c) || s.world.table(c) ||
+                     s.world.statue(c))
+                     continue;
+                 if (!stand || cheb(c, bare) > cheb(*stand, bare)) stand = c;
+             }
+         if (!stand) return Checks{{"floor near the cake", [](const Stage&) { return false; }}};
+         P::place(s.world, liar, *stand);
          Human& rival = s.add(seedWhere(plain, 9700));
          liar.hunger = 0.4f;
          liar.cakes = 0;

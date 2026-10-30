@@ -49,6 +49,9 @@ struct SoakProbe {
                 if (items && w.hasKey(c)) h.memory.keys.insert(c);
             }
     }
+    /// A basin with its top left corner at the cell, as the world sets
+    /// them. False if it doesn't fit there.
+    static bool placeBasin(World& w, Vec2i cell) { return w.placeBasin(*w.chunkAt(World::slotOf(cell)), cell); }
     /// A cake on the cell, as if the world had made it there.
     static void addCake(World& w, Vec2i cell) { w.cakes_.insert(cell); }
     /// Takes every key and cake off the chunk the cell is in.

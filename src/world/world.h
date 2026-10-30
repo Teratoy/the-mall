@@ -26,8 +26,7 @@ struct HumanLook;
 /// for a key in a chunk with no room for one.
 /// Here and there giant household objects stand as statues, in rooms roomy
 /// enough for them, and maybe one in the spawn room.
-/// The spawn room has a basin to drink from, and so has a plaza without a
-/// fountain. Here and there, rarely, stands a toilet.
+/// A plaza without a fountain has a basin to drink from. Here and there, rarely, stands a toilet.
 /// Hidden traps lie about every chunk but the spawn: spikes in the open,
 /// darts rigged under some cakes, and in room networks slam rooms baited
 /// with a cake, each with one more key to open it again.
