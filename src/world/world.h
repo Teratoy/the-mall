@@ -247,6 +247,9 @@ private:
     void placeSpikes(Chunk& c, const std::vector<gen::SlamRoom>& slams);
     Human& addHuman(const HumanLook& look, Vec2i cell);
     Human& addHuman(const HumanLook& look, Vec2i cell, uint64_t seed, const std::string& name = {});
+    /// Lays the bottle a human wakes to find, a few steps from it, and has
+    /// it look round again to see it.
+    void layBottle(Human& h);
     void setTile(Vec2i cell, Tile t);
     /// Spikes sink, plates re-arm, gates shut, and darts fly.
     void updateTraps(float dt);

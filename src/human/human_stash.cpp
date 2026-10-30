@@ -299,8 +299,9 @@ bool Human::wantsFromPile(const World& world, Vec2i c, const Pile& p) const {
         return false;
     }
     if (p.cakes > 0 && cakes < carryMax()) return true;
+    // With no bottle, it leaves one lying until it needs it.
     for (const Bottle& b : p.bottles)
-        if (wouldTakeBottle(b) && (bottles.empty() || wouldSip(b))) return true;
+        if (wouldTakeBottle(b) && (bottles.empty() ? needsBottle() : wouldSip(b))) return true;
     return false;
 }
 

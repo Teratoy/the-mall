@@ -17,8 +17,6 @@ Human::Human(int id, const HumanLook& look, Vec2i cell, uint64_t seed, std::stri
     tiredness = rng_.range(0.0f, START_TIRED_MAX);
     timer = rng_.range(WAKE_LIE_MIN, WAKE_LIE_MAX);
     escape_.hunch = rng_.range(0.0f, TAU);
-    // Everyone wakes with a full bottle in the back hand.
-    bottles.push_back({1.0f});
 }
 
 void Human::update(World& world, float dt) {
@@ -388,6 +386,7 @@ bool Human::observe(const World& world) {
             memory.stashTips.erase(c);
             bool fresh = !memory.piles.count(c);
             memory.piles[c] = *p;
+            spotBottle(c, *p);
             news |= fresh && !othersStash(c) && ((hungry() && p->cakes > 0) || (thirsty() && p->water() > 0.0f));
             if (othersStash(c)) resent(c, *p, memory.stashes.at(c));
         } else {
@@ -399,6 +398,7 @@ bool Human::observe(const World& world) {
             }
             memory.piles.erase(c);
             memory.stashes.erase(c);
+            spotBottle(c, Pile{});
         }
         if (world.hasKey(c)) {
             firstSight(talk::Moment::FirstKey);
@@ -419,11 +419,15 @@ bool Human::observe(const World& world) {
     });
     // Cakes carried are in plain sight, and so is how starved and hurt someone looks.
     inSight_.clear();
-    // Who it sees beside its stashes, to blame if anything goes missing.
+    // Who it sees beside its stashes, and the bottle it found, to blame if
+    // anything goes missing.
+    if (!bottles.empty()) water_.found.reset();
     for (const auto& o : world.humans())
-        if (o.get() != this && !o->dead() && sight.sees(o->cell))
+        if (o.get() != this && !o->dead() && sight.sees(o->cell)) {
             for (Vec2i s : stash_.mine)
                 if (cheb(o->cell, s) <= 1) stash_.nearBy[s] = o->id;
+            if (water_.found && cheb(o->cell, *water_.found) <= 1) water_.foundNear = o->id;
+        }
     for (const auto& o : world.humans()) {
         if (o.get() == this || !sight.sees(o->cell)) continue;
         if (!o->dead()) inSight_.push_back(o->id);

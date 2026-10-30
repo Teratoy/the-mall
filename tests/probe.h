@@ -123,6 +123,19 @@ struct SoakProbe {
     static void unhinge(Human& h) { h.mind_.erratic = 1.0f; }
     /// Shut in, h cries for help on its next update.
     static void cryNow(Human& h) { h.rescue_.helpTimer = 0.0f; }
+    /// Nothing lies put down anywhere, and h knows of nothing lying: the
+    /// bottle it woke near is gone, as if never laid.
+    static void clearPiles(World& w, Human& h) {
+        w.piles_.clear();
+        h.memory.piles.clear();
+        h.water_.found.reset();
+    }
+    /// The bottle h found lying while it had none, if any.
+    static std::optional<Vec2i> foundBottle(const Human& h) { return h.water_.found; }
+    /// h has drunk somewhere, so it knows water to fill a bottle at.
+    static void setDrankYet(Human& h) { h.water_.drankYet = true; }
+    /// h has seen that water is scarce already.
+    static void setScarce(Human& h) { h.water_.scarce = true; }
     /// Kneels and puts down n cakes and these bottles where it stands.
     static void putDown(Human& h, int cakes, std::vector<size_t> bottles) { h.startPutting(cakes, std::move(bottles)); }
     /// The pile on the cell is a stash of h's, as if h had made it and seen

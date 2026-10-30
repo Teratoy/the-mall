@@ -194,3 +194,83 @@ Built:
 - A human holding an empty bottle won't take a full but dirty one, even
   parched: that follows "only clean water", and the user may want an
   exception there.
+
+## Found, not carried; water is scarce (2026-10-30)
+
+Nobody wakes holding a bottle any more. A bottle lies in the room where
+each human wakes, and it has to go back for it. The first time it runs its
+bottle dry or fills it, it sees that water is scarce and means to keep it.
+
+User's decisions:
+
+- **One bottle each**, lying a few cells from where each human wakes (one
+  human wakes per chunk, the player's in the spawn room). **Half full.**
+- **Seen and remembered**: it notes the bottle and says so, and it goes in
+  its `Memory` like any pile. It doesn't pick it up then: it leaves it
+  until it needs it, thirsty or knowing water to fill it at, and then goes
+  back for it.
+- **Gone when it comes back**: at first only a loss ("MY BOTTLE IS GONE").
+  Once it has learnt the thirst lesson (`lessons.nearWater`, from going
+  parched), it is treated as stolen, like a robbed stash: it blames whoever
+  it last saw beside it.
+- **Water is scarce, once**: the first time it empties its bottle or fills
+  it, "WATER IS SCARCE. I'M KEEPING THIS BOTTLE." and a line. From then on
+  it won't hand its only bottle to a friend.
+- **Holding on hard** once it has learnt the thirst lesson: it pours or
+  sells water only for a friend, and never leaves its own bottle in a swap
+  (the other is poured into its own instead).
+- Wording: my proposal below; the user edits `data/lines.txt`.
+
+Steps:
+
+1. World: `layBottle()` puts a half-full bottle on a free floor cell 2–3
+   cells from each human as it is placed by generation (the spawn and every
+   chunk), before the human first looks round. `Human()` no longer gives
+   one.
+2. Seeing it: bottle-less and awake, the first look at a pile holding a
+   bottle notes "FOUND A BOTTLE LYING THERE" (moment `see_bottle`); that
+   cell is `water_.found`, the bottle it means to come back for.
+3. Needing it: bottle-less, a lying bottle (not someone's stash) is taken
+   only when thirsty, or when it has drunk somewhere (knows water to fill
+   it at). Knowing water and not thirsty, `fillDrive()` sends it back for
+   the bottle as for an empty one (Want::Fill, Goal::Pick).
+4. Gone: bottle-less, seeing `water_.found` with no bottle there: "MY
+   BOTTLE IS GONE" (`bottle_gone`); with the thirst lesson, "SOMEONE TOOK
+   MY BOTTLE" and "@ MUST HAVE TAKEN IT" for whoever it last saw beside it,
+   trust down as for a robbed stash (`bottle_stolen`).
+5. Scarce: `water_.scarce`, set the first time the bottle runs dry or is
+   filled; note and `scarce` line in place of that moment's own line.
+   `keepsBottle()` stops giving its only bottle; `holdsBottleHard()` (the
+   thirst lesson held) narrows pouring and selling to friends and keeps its
+   own in a swap.
+6. Scenarios: spawn-bottle (seen, left, fetched when thirsty),
+   bottle-gone and bottle-stolen, scarce-once, scarce-keeps.
+
+### Built (2026-10-31)
+
+All six steps, as planned.
+
+- `World::layBottle()` (world.cpp): a half-full bottle (`WAKE_BOTTLE`) on
+  floor 2–3 steps' walk from each human the generator places, walked out
+  so it is never behind a wall or table. The cell is picked with dice of
+  its own (from the human's id and cell), so the rest of the mall comes out
+  exactly as before.
+- `water_.found`, `foundNear`, `scarce`; `spotBottle()`, `bottleGone()`,
+  `needsBottle()`, `bottleToFetch()`, `keepsBottle()`, `holdsBottleHard()`,
+  `sawScarcity()` in human_bottle.cpp. `wantsFromPile` leaves a lying
+  bottle until `needsBottle()`; `fillDrive`/`seekFill` send a bottle-less
+  human that has drunk somewhere back for one within 30 cells.
+- Changed from the plan: "found" is the first bottle seen lying while it has
+  none, its own or one in someone else's room, so a passer-by may also find
+  a bottle "gone" once its owner takes it.
+- Log: "FOUND A BOTTLE LYING THERE", "MY BOTTLE IS GONE", "SOMEONE TOOK MY
+  BOTTLE", "@ MUST HAVE TAKEN IT", "WATER IS SCARCE. I'M KEEPING THIS
+  BOTTLE". Moments see_bottle, bottle_gone, bottle_stolen, scarce.
+- Scenarios: wake-bottle, bottle-gone, bottle-stolen, scarce-once,
+  scarce-keeps, hard-no-sell. The other scenarios start as before (nothing
+  lying, everyone handed a full bottle) unless marked `asInPlay`.
+- Soak (6 × 15 min): 79 bottles found, 24 picked up, 38 found gone, 1 blamed
+  theft, 24 scarcity moments. **Thirst kills again: 17 died of thirst
+  (was 6), 1 starved (was 11).** No loops; target flips 1 → 3 (Feed,
+  Explore, OpenDoor, none in bottle code). Tune from play if thirst now
+  bites too hard (a fuller bottle, or taking it at once).

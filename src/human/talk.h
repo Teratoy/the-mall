@@ -142,6 +142,11 @@ enum class Moment {
     WaryCake, WarySlam,
     // Taking a fuller bottle for its own, poured into it (to nobody).
     SwapBottle,
+    // Bottle-less, finding a bottle lying (to nobody); coming back to find it
+    // gone (to nobody), or stolen once it holds on hard (to nobody, about
+    // whom it blames); the first time it runs its bottle dry or fills it,
+    // seeing that water is scarce (to nobody).
+    SeeBottle, BottleGone, BottleStolen, Scarce,
     Count
 };
 
