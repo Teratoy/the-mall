@@ -56,6 +56,28 @@ Second round (2026-10-30):
 - Art: cakes and bottles drawn in a small heap where they lie; bottles on
   their side, each showing its water.
 
+### Built (2026-10-30, step 1)
+
+- `Pile` (src/world/pile.h): cakes and bottles on a floor cell.
+  `World::piles()`, `putDown`, `takePileCakes`, `takePileBottle`,
+  `pourFromPile`. `Memory::piles`, kept up to date by observe().
+- src/human/human_stash.cpp: State::Stashing (kneeling, Pose::Search),
+  Action::Stash, Goal::Pick. `startPutting` puts cakes and bottles down where
+  it stands; `takeFromPiles` (a reflex in choose()) kneels at a pile in
+  reach and takes cakes while it has room, bottles with water it would
+  drink while it has room (any bottle when it has none), then tops its own
+  up from what is left. `pilePath` makes piles count as known food
+  (seekFood, Want::Fetch) and water (seekWater, before far water).
+- Changed from the plan: no limit per cell yet (a pile holds whatever is
+  put on it); the heap shows up to five cakes and two bottles. Walking
+  over a pile doesn't take from it: only kneeling does.
+- Art: small cakes heaped two by two, the bottles on their side in front,
+  end to end. `make shot SHOT_ARGS="--pile --reveal"` shows one.
+- Log: "PUT DOWN …", "PICKED UP … LYING THERE", "FILLED MY BOTTLE FROM ONE
+  LYING THERE"; lines put_down, pick_up. Scenarios pile-cakes, pile-water,
+  put-down. Nothing in normal play puts things down yet, so the soak is
+  unchanged.
+
 ## 2. Making a stash
 
 - **Hoarding drive**: greedy, plus the hoard lesson, minus sociable;

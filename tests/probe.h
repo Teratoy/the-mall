@@ -61,6 +61,8 @@ struct SoakProbe {
                 w.takeKey(c);
             }
     }
+    /// Kneels and puts down n cakes and these bottles where it stands.
+    static void putDown(Human& h, int cakes, std::vector<size_t> bottles) { h.startPutting(cakes, std::move(bottles)); }
     /// Given up on a way out, at home on home.
     static void settle(Human& h, Vec2i home) {
         h.escape_.settled = true;

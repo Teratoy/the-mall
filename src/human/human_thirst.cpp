@@ -186,6 +186,12 @@ bool Human::seekWater(World& world) {
         return true;
     }
     if (startSipping()) return true;
+    // Water in a bottle lying put down, nearer than any to kneel at.
+    if (auto q = pilePath(world, false, true); q && (!p || q->size() < p->size())) {
+        if (q->empty()) return takeFromPiles(world);
+        startWalking(Goal::Pick, *q);
+        return true;
+    }
     if (p) {
         startWalking(Goal::Drink, *p);
         return true;

@@ -87,12 +87,12 @@ class Human {
 public:
     /// Waking is the first thing every human does: lying where it came to,
     /// knowing nothing, until it sits up (Sitting) and looks round.
-    enum class State { Waking, Idle, Sitting, Rising, Walking, Greeting, Eating, Drinking, Relieving, Punching, Giving, Washing, Looting, Feeding, Sleeping, Sipping, Filling, Pouring, Dead };
+    enum class State { Waking, Idle, Sitting, Rising, Walking, Greeting, Eating, Drinking, Relieving, Punching, Giving, Washing, Looting, Feeding, Sleeping, Sipping, Filling, Pouring, Stashing, Dead };
     /// Why the human is walking: what it does on arrival.
-    enum class Goal { Explore, FetchKey, OpenDoor, PassDoor, Wander, Meet, Follow, Company, FetchCake, Drink, Relieve, Fight, Flee, Share, CheckDoor, Wash, Avoid, Escort, Escorted, Track, GiveWay, Loot, Feed, Sleep, Rob, Watch, Fill, Ask };
+    enum class Goal { Explore, FetchKey, OpenDoor, PassDoor, Wander, Meet, Follow, Company, FetchCake, Drink, Relieve, Fight, Flee, Share, CheckDoor, Wash, Avoid, Escort, Escorted, Track, GiveWay, Loot, Feed, Sleep, Rob, Watch, Fill, Ask, Pick };
     /// What the human is doing, as far as hunger, thirst and tiredness go:
     /// each costs its own of all three.
-    enum class Action { Rest, Sit, Walk, Run, Greet, Eat, Drink, Relieve, Punch, Give, Wash, Loot, Feed, Sleep, Watch, Fill, Pour, Count };
+    enum class Action { Rest, Sit, Walk, Run, Greet, Eat, Drink, Relieve, Punch, Give, Wash, Loot, Feed, Sleep, Watch, Fill, Pour, Stash, Count };
     /// What a human may set out to do once nothing presses. How much it
     /// wants each, by its traits and hunger, is weighed in choose(), which
     /// tries them from the most wanted down; the table of wants is in
@@ -252,6 +252,8 @@ public:
     /// water over rather than a cake.
     bool bottleInHand() const;
     bool givingWater() const { return state == State::Giving && water_.givingWater; }
+    /// Kneeling to put things down, not to pick them up.
+    bool putting() const { return state == State::Stashing && stash_.putting; }
     Memory memory;
     Sight sight;
     /// World seconds when it was made, and what it has been through since.
@@ -1119,6 +1121,31 @@ private:
     /// Pours amount of its water into o's bottle, or hands o a spare
     /// bottle when o has none; for a cake when sold. False if it can't.
     bool giveWater(World& world, Human& o, bool sold);
+    /// Putting things down on the floor and picking them up (human_stash.cpp).
+    struct Stash {
+        /// The cell it kneels at, and whether it puts things down there
+        /// (else picks them up); what it puts down: cakes, and which of its
+        /// bottles.
+        Vec2i at;
+        bool putting = false;
+        int cakes = 0;
+        std::vector<size_t> bottles;
+    };
+    Stash stash_;
+    /// What it would take from the pile on a cell, as it sees it: cakes
+    /// while it has room, a bottle with water it would drink (any bottle
+    /// when it has none) while it has room, or water poured into its own.
+    bool wantsFromPile(const Pile& p) const;
+    /// A pile it wants something from, on its cell or beside it: kneels and
+    /// takes it. False if there is none.
+    bool takeFromPiles(World& world);
+    /// Kneels and puts down cakes and bottles (by index) where it stands.
+    void startPutting(int cakes, std::vector<size_t> bottles);
+    /// Done kneeling: puts down or picks up.
+    void finishStash(World& world);
+    /// The way to the nearest pile it remembers with what it wants: cakes
+    /// (food), water (water).
+    std::optional<std::vector<Vec2i>> pilePath(const World& world, bool food, bool water) const;
     /// Sleep, robbing sleepers and keeping watch (human_sleep.cpp).
     struct Sleep {
         /// The sleeper it is robbing, or going to; -1 none.

@@ -187,6 +187,7 @@ void Human::arrive(World& world) {
         if (auto w = waterBeside(cell); w && startFilling(world, *w)) return;
         return choose(world);
     case Goal::Ask:
+    case Goal::Pick:
         return choose(world);
     case Goal::Relieve:
         if (seekRelief(world)) return;

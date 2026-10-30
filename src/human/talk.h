@@ -96,6 +96,9 @@ enum class Moment {
     // fight (to whoever took it).
     Sip, BottleDry, FillBottle, PourOut, AskDrink, GiveDrink, SellDrink, BottleLie, CaughtBottleLie, RefuseDrink,
     BottleTaken,
+    // Putting things down on the floor, and picking up what lies there
+    // (both to nobody).
+    PutDown, PickUp,
     Count
 };
 

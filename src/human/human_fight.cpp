@@ -22,13 +22,20 @@ bool Human::seekFood(World& world) {
     });
     // A body with cakes on it does as well as cakes lying about.
     auto q = lootPath(world, true);
-    size_t nearest = std::min(p ? p->size() : SIZE_MAX, q ? q->size() : SIZE_MAX);
+    // And cakes put down on the floor.
+    auto r = cakes < carryMax() ? pilePath(world, true, false) : std::nullopt;
+    size_t nearest = std::min({p ? p->size() : SIZE_MAX, q ? q->size() : SIZE_MAX, r ? r->size() : SIZE_MAX});
     const Human* h = nearestHolder(world);
     if (h && (nearest == SIZE_MAX || cheb(cell, social_.lastSeen[h->id]) < int(nearest))) {
         // Not angry at them, only after their cakes.
         fight_.foe = h->id;
         fight_.grudge = 0.0f;
         if (startFight(world)) return true;
+    }
+    if (r && r->size() == nearest) {
+        if (r->empty()) return takeFromPiles(world);
+        startWalking(Goal::Pick, *r);
+        return true;
     }
     if (q && (!p || q->size() < p->size())) return startLoot(world, true);
     if (!p) return false;

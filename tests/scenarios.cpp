@@ -167,6 +167,18 @@ Check straightFace(const Human& liar) {
             }};
 }
 
+/// Some line in someone's log starting with from and ending with to.
+Check loggedLike(std::string from, std::string to) {
+    return {from + "..." + to, [from, to](const Stage& s) {
+                for (const auto& h : s.world.humans())
+                    for (const auto& e : h->log.entries())
+                        if (e.what.rfind(from, 0) == 0 && e.what.size() >= to.size() &&
+                            e.what.compare(e.what.size() - to.size(), to.size(), to) == 0)
+                            return true;
+                return false;
+            }};
+}
+
 /// A thirsty asker with an empty bottle (or none) close to a holder with
 /// water, both far from the spawn basin, so the asker knows of no water.
 /// The asker is timid, so it asks rather than fights; the holder has made
@@ -468,6 +480,41 @@ const std::vector<Scenario> SCENARIOS = {
          thief.bottles = {Bottle{}};
          s.run(60);
          return Checks{logged({"HIT @ AND TOOK THEIR BOTTLE"}), logged({"@ HIT ME AND TOOK MY BOTTLE"})};
+     }},
+    {"pile-cakes", "a hungry human with no cakes picks up cakes lying on the floor", 99,
+     [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         s.world.putDown(s.freeNear(h.cell, 3), 3, {});
+         h.cakes = 0;
+         h.hunger = 0.7f;
+         h.thirst = 0.1f;
+         s.run(40);
+         return Checks{loggedLike("PICKED UP", "CAKES LYING THERE")};
+     }},
+    {"pile-water", "a thirsty human with an empty bottle picks up a full one lying there", 99,
+     [](Stage& s) {
+         Human& h = s.first();
+         auto b = s.basin();
+         if (!b) return Checks{{"a basin near the spawn", [](const Stage&) { return false; }}};
+         P::place(s.world, h, s.farFrom(*b, 25));
+         s.world.putDown(s.freeNear(h.cell, 2), 0, {Bottle{1.0f}});
+         h.bottles = {Bottle{}};
+         h.hunger = 0.1f;
+         h.thirst = 0.7f;
+         s.run(40);
+         return Checks{logged({"PICKED UP A BOTTLE LYING THERE"}), logged({"DRANK FROM MY BOTTLE"})};
+     }},
+    {"put-down", "a human kneels and puts cakes and a bottle down", 99,
+     [](Stage& s) {
+         Human& h = s.first();
+         h.cakes = 2;
+         h.bottles = {Bottle{1.0f}, Bottle{0.5f}};
+         h.hunger = h.thirst = 0.1f;
+         s.run(8);
+         P::putDown(h, 2, {1});
+         s.run(5);
+         return Checks{logged({"PUT DOWN 2 CAKES AND A BOTTLE"})};
      }},
     {"chat", "two calm acquaintances together start chatting", 99,
      [](Stage& s) {

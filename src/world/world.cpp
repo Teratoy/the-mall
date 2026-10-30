@@ -696,6 +696,37 @@ std::vector<Vec2i> World::deepSpots(const Chunk& c, Vec2i from) {
     return spots;
 }
 
+void World::putDown(Vec2i cell, int cakes, const std::vector<Bottle>& bottles) {
+    if (cakes <= 0 && bottles.empty()) return;
+    Pile& p = piles_[cell];
+    p.cakes += std::max(0, cakes);
+    p.bottles.insert(p.bottles.end(), bottles.begin(), bottles.end());
+}
+
+int World::takePileCakes(Vec2i cell, int n) {
+    auto it = piles_.find(cell);
+    if (it == piles_.end()) return 0;
+    int got = std::clamp(n, 0, it->second.cakes);
+    it->second.cakes -= got;
+    if (it->second.empty()) piles_.erase(it);
+    return got;
+}
+
+Bottle World::takePileBottle(Vec2i cell, size_t i) {
+    auto it = piles_.find(cell);
+    if (it == piles_.end() || i >= it->second.bottles.size()) return {};
+    Bottle b = it->second.bottles[i];
+    it->second.bottles.erase(it->second.bottles.begin() + long(i));
+    if (it->second.empty()) piles_.erase(it);
+    return b;
+}
+
+float World::pourFromPile(Vec2i cell, size_t i, Bottle& into, float amount) {
+    auto it = piles_.find(cell);
+    if (it == piles_.end() || i >= it->second.bottles.size()) return 0.0f;
+    return it->second.bottles[i].pourInto(into, amount);
+}
+
 bool World::unlock(Vec2i cell) {
     if (gates_.erase(cell) > 0) {
         setTile(cell, Tile::DoorOpen);

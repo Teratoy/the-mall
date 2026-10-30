@@ -90,6 +90,8 @@ void Human::update(World& world, float dt) {
         return fill(world);
     case State::Pouring:
         return pourOut(world);
+    case State::Stashing:
+        return finishStash(world);
     case State::Relieving:
         endRelieving();
         return choose(world);
@@ -151,6 +153,8 @@ Human::Action Human::action() const {
         return Action::Fill;
     case State::Pouring:
         return Action::Pour;
+    case State::Stashing:
+        return Action::Stash;
     case State::Relieving:
         return Action::Relieve;
     case State::Punching:
@@ -358,6 +362,14 @@ bool Human::observe(const World& world) {
             memory.blood[c] = *b;
             news |= noticeBlood(world, c);
         }
+        // What lies put down is in plain sight, bottles see-through.
+        if (const Pile* p = world.pile(c)) {
+            bool fresh = !memory.piles.count(c);
+            memory.piles[c] = *p;
+            news |= fresh && ((hungry() && p->cakes > 0) || (thirsty() && p->water() > 0.0f));
+        } else {
+            memory.piles.erase(c);
+        }
         if (world.hasKey(c)) {
             firstSight(talk::Moment::FirstKey);
             news |= memory.keys.insert(c).second;
@@ -475,6 +487,8 @@ void Human::choose(World& world) {
     // Beside water it would drink with a bottle to fill, it fills it.
     if (!thirsty() && !bottles.empty())
         if (auto w = waterBeside(cell); w && wantsFill(world, *w) && startFilling(world, *w)) return;
+    // What lies put down within reach, if it wants any of it.
+    if (takeFromPiles(world)) return;
     if (thirsty()) askGroupForWater(world);
     if (askForDrink(world)) return;
     if (helpStarving(world)) return;
@@ -541,7 +555,9 @@ void Human::choose(World& world) {
         want(Want::Loot, -DREAD_LOOT * dread_);
     if (std::any_of(world.humans().begin(), world.humans().end(), [&](const auto& o) { return wouldRob(world, *o); }))
         want(Want::Rob, ROB_TEMPT + ROB_HUNGRY * drive);
-    bool fetchCakes = cakes < carryMax() && !memory.cakes.empty();
+    bool fetchCakes = cakes < carryMax() && (!memory.cakes.empty() ||
+                                             std::any_of(memory.piles.begin(), memory.piles.end(),
+                                                         [](const auto& p) { return p.second.cakes > 0; }));
     if (fetchCakes || !memory.keys.empty())
         want(Want::Fetch, LESSON_FETCH * std::max(fetchCakes ? lessons.hoard : 0.0f,
                                                   memory.keys.empty() ? 0.0f : lessons.keysFirst));
@@ -617,6 +633,12 @@ bool Human::pursue(World& world, Want w) {
         auto p = search(world, [&](Vec2i c) {
             return inReach(c, memory.keys) || (wantCakes && inReach(c, memory.cakes));
         });
+        // Cakes lying put down do as well, when nearer.
+        if (auto q = cakes < carryMax() ? pilePath(world, true, false) : std::nullopt; q && (!p || q->size() < p->size())) {
+            if (q->empty()) return takeFromPiles(world);
+            startWalking(Goal::Pick, *q);
+            return true;
+        }
         if (!p) return false;
         if (!inReach(p->empty() ? cell : p->back(), memory.keys)) {
             startWalking(Goal::FetchCake, *p);

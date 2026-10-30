@@ -86,6 +86,6 @@ made way 25 times; blocked 0.12% of time, 44 give-ups, 1 mutual blocks, 0 blocks
 went 47 times, 7 in someone's sight (5 of those erratic or bursting)
 unmoved >=30s (not sitting): 2   loops (25+ steps on <=8 cells in 60s): 0   target flips: 0
 still by:  Greeting/Company=1  Greeting/Meet=1
-goals never seen: Escort Escorted Ask
-states never seen: Pouring
+goals never seen: Escort Escorted Ask Pick
+states never seen: Pouring Stashing
 goal time (blocked share):  Explore 38.8%(0%)  FetchKey 1.9%(0%)  OpenDoor 1.6%(0%)  PassDoor 0.1%(0%)  Wander 16.5%(0%)  Meet 6.6%(0%)  Follow 0.2%(0%)  Company 9.2%(1%)  FetchCake 3.0%(0%)  Drink 0.5%(0%)  Relieve 0.8%(0%)  Fight 2.0%(1%)  Flee 0.5%(0%)  Share 0.0%(0%)  CheckDoor 0.4%(0%)  Wash 3.5%(0%)  Avoid 1.0%(0%)  Track 2.6%(0%)  GiveWay 0.2%(0%)  Loot 1.7%(0%)  Feed 1.9%(0%)  Sleep 4.5%(0%)  Rob 0.0%(0%)  Watch 0.2%(0%)  Fill 2.0%(0%)

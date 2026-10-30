@@ -1760,3 +1760,23 @@ timid                   | SORRY. I CAN'T.
 rude                    | MY WATER!
 rude                    | GIVE IT BACK!
                         | THAT'S MINE!
+
+
+# ---- Things put down -------------------------------------------------------
+
+# Putting cakes or bottles down on the floor, said to nobody.
+[put_down 0.3]
+                        | THERE.
+                        | THAT CAN WAIT HERE.
+                        | I'LL COME BACK FOR THIS.
+greedy                  | NOBODY TOUCHES THIS.
+timid                   | I HOPE NOBODY FINDS IT.
+
+# Picking up cakes or bottles someone put down, said to nobody.
+[pick_up 0.3]
+                        | WHO LEFT THIS HERE?
+                        | DON'T MIND IF I DO.
+                        | FINDERS KEEPERS.
+hungry                  | FOOD! JUST LYING THERE.
+thirsty                 | WATER!
+timid                   | SOMEONE'S GOING TO BE ANGRY.
