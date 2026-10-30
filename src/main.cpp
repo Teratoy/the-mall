@@ -1,4 +1,5 @@
 #include "render/canvas.h"
+#include "render/icon_art.h"
 #include "scenes/menu_scene.h"
 #include <algorithm>
 #include <cmath>
@@ -27,6 +28,9 @@ int main() {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
     InitWindow(Canvas::W * WINDOW_SCALE, Canvas::H * WINDOW_SCALE, "The Mall");
     fitWindowWide();
+    Image icon = makeIcon();
+    SetWindowIcon(icon);
+    UnloadImage(icon);
     SetExitKey(KEY_NULL);
     SetTargetFPS(60);
     {
