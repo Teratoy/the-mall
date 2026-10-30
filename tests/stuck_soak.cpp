@@ -20,22 +20,8 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-#include "human/human.h"
-#include "world/world.h"
+#include "probe.h"
 
-/// Reads the walking state humans keep to themselves (paths, stuck counts),
-/// and packs extra humans in; a friend of Human and World.
-struct SoakProbe {
-    static const std::deque<Vec2i>& path(const Human& h) { return h.path_; }
-    static Vec2i target(const Human& h) { return h.target_; }
-    static int stuck(const Human& h) { return h.stuck_; }
-    static bool rethink(const Human& h) { return h.rethink_; }
-    static int partner(const Human& h) { return h.social_.partner; }
-    static int leader(const Human& h) { return h.social_.leader; }
-    static int foe(const Human& h) { return h.fight_.foe; }
-    static bool ateFlesh(const Human& h) { return !h.mind_.ateFrom.empty(); }
-    static Human& addHuman(World& w, const HumanLook& look, Vec2i cell, uint64_t seed) { return w.addHuman(look, cell, seed); }
-};
 using P = SoakProbe;
 
 static const char* GOAL[] = {"Explore", "FetchKey", "OpenDoor", "PassDoor", "Wander", "Meet", "Follow", "Company", "FetchCake", "Drink", "Relieve", "Fight",

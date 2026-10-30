@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""What the soak never got to: log lines never written and talk moments
-never said. Run by `make coverage`, which first runs the soak with
-LOGLINES=build/loglines.txt.
+"""What the tests never got to: log lines never written and talk moments
+never said. Run by `make coverage`, which first runs the soak and the
+scenarios with LOGLINES set.
 
-Usage: tools/coverage.py build/loglines.txt
+Usage: tools/coverage.py LOGLINES_FILE...   (their lines are pooled)
 
 A log line counts as written when some line in the soak's log contains one
 of the string literals in a note(...) call (ternaries give one literal per
@@ -66,12 +66,13 @@ def moments():
 
 
 def main():
-    if len(sys.argv) != 2:
+    if len(sys.argv) < 2:
         sys.exit(__doc__)
     logged = []
-    for raw in pathlib.Path(sys.argv[1]).read_text().splitlines():
-        n, what = raw.split("\t", 1)
-        logged.append(what)
+    for path in sys.argv[1:]:
+        for raw in pathlib.Path(path).read_text().splitlines():
+            n, what = raw.split("\t", 1)
+            logged.append(what)
 
     lits = note_literals()
     unseen = [(f, ln, lit) for f, ln, lit in lits if not any(lit.strip() in w for w in logged)]

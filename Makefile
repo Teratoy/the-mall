@@ -17,10 +17,12 @@ STUCK := build/stuck_soak
 # change meant to alter behaviour is followed by make golden.
 SOAK_ARGS := 6 15 1 6
 GOLDEN := tests/golden/soak.txt
+# Set-up situations for what the soak seldom reaches (tests/scenarios.cpp).
+SCENARIOS := build/scenarios
 # Screenshots without a visible window.
 SHOT := build/shot
 
-.PHONY: all run clean stuck check golden coverage shot
+.PHONY: all run clean stuck check golden coverage shot scenarios
 
 all: $(BIN)
 
@@ -34,14 +36,21 @@ build/%.o: src/%.cpp
 run: $(BIN)
 	./$(BIN)
 
-$(STUCK): tests/stuck_soak.cpp $(filter-out build/main.o,$(OBJ))
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@ $(LDLIBS)
+$(SCENARIOS): tests/scenarios.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out tests/probe.h,$^) -o $@ $(LDLIBS)
+
+scenarios: $(SCENARIOS)
+	./$(SCENARIOS)
+
+$(STUCK): tests/stuck_soak.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out tests/probe.h,$^) -o $@ $(LDLIBS)
 
 stuck: $(STUCK)
 	./$(STUCK)
 
-check: $(STUCK)
-	LOGLINES=build/loglines.txt ./$(STUCK) $(SOAK_ARGS) > build/soak.txt
+check: $(STUCK) $(SCENARIOS)
+	./$(SCENARIOS)
+	./$(STUCK) $(SOAK_ARGS) > build/soak.txt
 	@diff -u $(GOLDEN) build/soak.txt > build/soak.diff \
 		&& echo "check: soak output matches $(GOLDEN)" \
 		|| (head -40 build/soak.diff; echo "check: soak output CHANGED (full diff in build/soak.diff)"; exit 1)
@@ -51,9 +60,10 @@ golden: $(STUCK)
 	./$(STUCK) $(SOAK_ARGS) > $(GOLDEN)
 	@echo "golden: $(GOLDEN) rewritten; commit it with the change that moved it"
 
-coverage: $(STUCK)
+coverage: $(STUCK) $(SCENARIOS)
 	LOGLINES=build/loglines.txt ./$(STUCK) $(SOAK_ARGS) > /dev/null
-	python3 tools/coverage.py build/loglines.txt
+	LOGLINES=build/loglines-scenarios.txt ./$(SCENARIOS) > /dev/null || true
+	python3 tools/coverage.py build/loglines.txt build/loglines-scenarios.txt
 
 $(SHOT): tools/shot.cpp $(filter-out build/main.o,$(OBJ))
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@ $(LDLIBS)

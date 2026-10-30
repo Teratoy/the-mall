@@ -27,9 +27,10 @@ toolbox run -c claude-build make check        # soak vs golden output (~1 min)
 |---|---|
 | `make` | Builds `build/themall`. Zero warnings is the norm: keep it so |
 | `./play.sh` (from the host) | Rebuilds if needed and opens the game window |
-| `make check` | Runs the headless soak (`build/stuck_soak 6 15 1 6`) and diffs it with `tests/golden/soak.txt` |
+| `make check` | Runs the scenarios, then the headless soak (`build/stuck_soak 6 15 1 6`), diffing it with `tests/golden/soak.txt` |
+| `make scenarios` | The scenarios alone (3 s): set-up situations that check rare features still happen. `build/scenarios NAME` runs one and prints every log line |
 | `make golden` | Rewrites the golden output after a change meant to alter behaviour. Commit it with that change |
-| `make coverage` | Lists log lines (`note(...)`) and talk moments that no soak run reached |
+| `make coverage` | Lists log lines (`note(...)`) and talk moments that neither the soak nor the scenarios reached |
 | `make stuck` | The soak with its own arguments: `build/stuck_soak [seeds] [minutes] [verbose] [crowd]`. `TRACE=seed:id:from:to` follows one human |
 | `make shot SHOT_ARGS="..."` | Saves `build/shot.png` without a visible window. See `tools/shot.cpp` for the options (`--scene`, `--seconds`, `--seed`, `--zoom`, `--stats`, `--log`, `--reveal`) |
 
@@ -42,10 +43,16 @@ toolbox run -c claude-build make check        # soak vs golden output (~1 min)
 - Keep it deterministic. All dice go through the human's `rng_` or the
   world's Rng. Never use `std::rand`, the clock, or the order of a
   container keyed by pointers to decide anything.
-- The soak only covers what 6 short worlds happen to do. Many rare paths
-  never run there (`make coverage` lists them). For a change in one of
-  those, check it some other way: a screenshot, `TRACE`, or a small probe
-  in `tools/`.
+- The soak only covers what 6 short worlds happen to do. Rare features
+  get a scenario in `tests/scenarios.cpp`: a few humans set up in a fresh
+  spawn room (traits picked by seed with `seedWhere`, needs, trust and
+  memory set through `SoakProbe` in `tests/probe.h`), run for a minute or
+  so, then checked by the lines in their logs. When you build a feature
+  the soak seldom reaches, add a scenario for it. `make coverage` lists
+  what is still unreached.
+- A scenario marked `known` is a gap the tests found and the user hasn't
+  decided on yet. It's reported but doesn't fail `make check`. Once it
+  passes, drop the note.
 
 Put probes and tools in `tools/`, not in a scratchpad. Scratchpads are
 lost, and several useful probes already have been.
@@ -81,9 +88,10 @@ lost, and several useful probes already have been.
   so don't commit or reset it.
 - `AI/`: plans, one per feature, with the user's decisions and what was
   built. Start at [AI/README.md](AI/README.md).
-- `tests/stuck_soak.cpp`: the soak. It reads Human's internals through
-  the `SoakProbe` friend; `tools/shot.cpp` uses `ShotProbe` the same way.
-  Never `#define private public`.
+- `tests/stuck_soak.cpp`: the soak; `tests/scenarios.cpp`: the scenarios.
+  Both reach Human's and World's internals through the `SoakProbe` friend
+  in `tests/probe.h` (add accessors there); `tools/shot.cpp` uses
+  `ShotProbe` the same way. Never `#define private public`.
 
 ## Rules the user set
 

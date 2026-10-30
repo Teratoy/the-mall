@@ -1,0 +1,307 @@
+// Set-up situations for what random soaks seldom reach: each scenario
+// places a few humans in a fresh spawn room, sets them up (traits by seed,
+// needs, trust, memory), lets the world run, and checks that the thing
+// happened, by the lines it leaves in their logs.
+// Usage: build/scenarios [name]   (make scenarios; part of make check)
+//   With a name, runs only that scenario and prints every log line.
+//   LOGLINES=path writes every distinct log line written, as the soak does,
+//   for tools/coverage.py.
+// Exits non-zero if any scenario fails. Deterministic, like the soak.
+#include "probe.h"
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <functional>
+#include <map>
+#include <string>
+#include <vector>
+
+using P = SoakProbe;
+
+namespace {
+
+/// The first seed from from on whose traits pass: traits are rolled from
+/// the seed, so this is how a scenario picks what a human is like.
+uint64_t seedWhere(const std::function<bool(const Traits&)>& like, uint64_t from = 1) {
+    for (uint64_t s = from;; s++)
+        if (like(Traits::random(s))) return s;
+}
+
+/// A fresh world with its spawn room, and room to place more humans.
+struct Stage {
+    World world;
+    Rng rng;
+    std::vector<Human*> humans;
+
+    explicit Stage(uint64_t seed, uint64_t first) : world(seed), rng(seed) {
+        humans.push_back(&world.makeSpawn(HumanLook::random(rng), first));
+    }
+    Human& first() { return *humans[0]; }
+    const Human& first() const { return *humans[0]; }
+
+    /// Free floor nearest the first human, at least gap cells from it.
+    Vec2i freeNear(Vec2i from, int gap) const {
+        for (int r = gap; r < 30; r++)
+            for (int y = -r; y <= r; y++)
+                for (int x = -r; x <= r; x++) {
+                    if (std::max(std::abs(x), std::abs(y)) != r) continue;
+                    Vec2i c = from + Vec2i{x, y};
+                    if (world.tile(c) == Tile::Floor && !world.occupant(c) && !world.table(c) && !world.statue(c) &&
+                        !world.hasKey(c) && !world.hasCake(c))
+                        return c;
+                }
+        return from;
+    }
+    Human& add(uint64_t seed, int gap = 2) {
+        Human& h = P::addHuman(world, HumanLook::random(rng), freeNear(first().cell, gap), seed);
+        humans.push_back(&h);
+        return h;
+    }
+    /// The basin cell nearest the first human, if one is near.
+    std::optional<Vec2i> basin() const {
+        for (int r = 0; r < 30; r++)
+            for (int y = -r; y <= r; y++)
+                for (int x = -r; x <= r; x++)
+                    if (std::max(std::abs(x), std::abs(y)) == r &&
+                        world.tile(first().cell + Vec2i{x, y}) == Tile::Basin)
+                        return first().cell + Vec2i{x, y};
+        return std::nullopt;
+    }
+    void run(float seconds) {
+        const float dt = 1.0f / 30.0f;
+        for (int f = 0; f < int(seconds / dt); f++) world.update(dt);
+    }
+    /// Someone's log has this line.
+    bool logged(const std::string& line) const {
+        for (const auto& h : world.humans())
+            for (const auto& e : h->log.entries())
+                if (e.what == line) return true;
+        return false;
+    }
+};
+
+/// Something a scenario expects to have happened.
+struct Check {
+    std::string label;
+    std::function<bool(const Stage&)> ok;
+};
+/// Any one of these lines in someone's log.
+Check logged(std::vector<std::string> anyOf) {
+    std::string label = anyOf.front();
+    return {label, [anyOf](const Stage& s) {
+                for (const auto& l : anyOf)
+                    if (s.logged(l)) return true;
+                return false;
+            }};
+}
+using Checks = std::vector<Check>;
+
+struct Scenario {
+    const char* name;
+    const char* what;
+    /// The seed of the human the world is made with (its traits).
+    uint64_t first;
+    /// Sets the stage, runs it, and says what should have happened.
+    std::function<Checks(Stage&)> play;
+    /// Known not to happen yet, and why: reported, but doesn't fail the run.
+    const char* known = nullptr;
+};
+
+// Traits a scenario asks for. Seeds are searched from different starts so
+// two humans with the same wish aren't the same human.
+bool cunning(const Traits& t) { return t.greedy >= 0.55f && t.brave >= 0.5f; }
+bool kindly(const Traits& t) { return t.sociable >= 0.55f && t.greedy <= 0.45f && t.brave >= 0.45f; }
+/// Keeps its place against others (Human::territorial), and how it lets
+/// a thirsty stranger at its water: free, for a cake, or not at all.
+bool territorial(const Traits& t) { return 0.5f * t.brave + 0.5f * t.greedy - 0.4f * t.sociable >= 0.35f; }
+bool guardsFree(const Traits& t) { return territorial(t) && t.sociable >= 0.5f; }
+bool guardsForCake(const Traits& t) { return territorial(t) && t.sociable < 0.4f && t.greedy >= 0.55f; }
+bool guardsAll(const Traits& t) { return territorial(t) && t.sociable < 0.4f && t.greedy < 0.45f; }
+bool plain(const Traits&) { return true; }
+
+/// A stranger, thirsty and not yet parched, near a settler at home by
+/// the basin, with a cake or not.
+Checks guardedWater(Stage& s, bool strangerHasCake, Checks expect) {
+    Human& settler = s.first();
+    auto b = s.basin();
+    if (!b) return {{"a basin near the spawn", [](const Stage&) { return false; }}};
+    P::settle(settler, s.freeNear(*b, 1));
+    Human& stranger = s.add(seedWhere(plain, 4000), 3);
+    stranger.thirst = 0.7f;
+    stranger.cakes = strangerHasCake ? 1 : 0;
+    settler.hunger = stranger.hunger = 0.1f;
+    settler.thirst = 0.1f;
+    s.run(60);
+    return expect;
+}
+
+/// A cunning liar who counts victim a foe, knowing a spike plate (in its
+/// memory only) that victim doesn't know of, next to the liar.
+/// Past SUSPECT_DIST, where the liar doesn't yet keep away from its foe.
+constexpr int LIE_GAP = 7;
+void setUpLie(Stage& s, Human& liar, Human& victim) {
+    P::setTrust(liar, victim, -0.6f);
+    liar.learnTrap(s.freeNear(liar.cell, 1), TrapKind::Spikes);
+    liar.hunger = victim.hunger = 0.1f;
+    liar.thirst = 0.1f;
+}
+
+/// Found by these scenarios (2026-10-30): a liar counts its victim a foe,
+/// and keepAway walks it off from foes within SUSPECT_DIST, a reflex that
+/// comes before greeting. Even with that let through, the lie didn't land
+/// within a minute. A gameplay question for the user.
+constexpr const char* LIES_BLOCKED = "liars keep away from the foes they would lie to";
+
+const std::vector<Scenario> SCENARIOS = {
+    {"share", "a friend with cakes to spare feeds a starving friend", 99,
+     [](Stage& s) {
+         Human& giver = s.first();
+         Human& starving = s.add(seedWhere(kindly, 1000));
+         giver.cakes = 3;
+         giver.hunger = 0.1f;
+         starving.hunger = 0.97f;
+         starving.cakes = 0;
+         P::setTrust(giver, starving, 0.6f);
+         P::setTrust(starving, giver, 0.6f);
+         s.run(60);
+         return Checks{logged({"GAVE @ A CAKE"}), logged({"@ GAVE ME A CAKE"})};
+     }},
+    {"keep-watch", "a rested friend keeps watch over one falling asleep", 99,
+     [](Stage& s) {
+         Human& sleeper = s.first();
+         Human& watcher = s.add(seedWhere(kindly, 2000));
+         sleeper.tiredness = 0.97f;
+         watcher.tiredness = 0.0f;
+         sleeper.hunger = watcher.hunger = 0.1f;
+         sleeper.thirst = watcher.thirst = 0.1f;
+         P::setTrust(sleeper, watcher, 0.6f);
+         P::setTrust(watcher, sleeper, 0.6f);
+         s.run(90);
+         return Checks{logged({"KEEPING WATCH OVER @", "AGREED TO KEEP WATCH OVER @"})};
+     }},
+    {"rob-sleeper", "a greedy, bold stranger takes a cake off a sleeper", 99,
+     [](Stage& s) {
+         Human& sleeper = s.first();
+         Human& robber = s.add(seedWhere([](const Traits& t) { return t.greedy >= 0.65f && t.brave >= 0.5f; }, 3000));
+         sleeper.tiredness = 0.99f;
+         sleeper.cakes = 2;
+         sleeper.hunger = robber.hunger = 0.1f;
+         robber.cakes = 0;
+         robber.tiredness = 0.0f;
+         s.run(120);
+         return Checks{logged({"ROBBED @ IN THEIR SLEEP", "@ WOKE UP AS I ROBBED THEM"})};
+     }},
+    {"water-free", "a friendly settler by the basin lets a thirsty stranger drink", seedWhere(guardsFree),
+     [](Stage& s) { return guardedWater(s, false, {logged({"LET @ DRINK MY WATER"})}); }},
+    {"water-price", "a grasping settler asks a cake for its water, and is paid or cheated",
+     seedWhere(guardsForCake),
+     [](Stage& s) {
+         return guardedWater(s, true,
+                             {logged({"ASKED @ A CAKE FOR MY WATER"}),
+                              logged({"PAID @ A CAKE FOR WATER", "DRANK @'S WATER AND DIDN'T PAY"})});
+     }},
+    {"water-refused", "a stingy settler turns a thirsty stranger away", seedWhere(guardsAll),
+     [](Stage& s) { return guardedWater(s, false, {logged({"TURNED @ AWAY FROM MY WATER"})}); }},
+    {"lie-water", "a cunning human sends a thirsty foe to water over spikes", seedWhere(cunning),
+     [](Stage& s) {
+         Human& liar = s.first();
+         Human& victim = s.add(seedWhere(plain, 5000), LIE_GAP);
+         setUpLie(s, liar, victim);
+         victim.thirst = 0.7f;
+         s.run(60);
+         return Checks{logged({"TOLD @ A WAY TO WATER OVER SPIKES"})};
+     },
+     LIES_BLOCKED},
+    {"lie-route", "a cunning human sends a foe with a key to a door over spikes", seedWhere(cunning),
+     [](Stage& s) {
+         Human& liar = s.first();
+         // The liar knows its whole chunk, doors and all; the foe only
+         // what it sees.
+         Vec2i slot = World::slotOf(liar.cell);
+         for (int y = 0; y < CHUNK; y++)
+             for (int x = 0; x < CHUNK; x++) {
+                 Vec2i c{slot.x * CHUNK + x, slot.y * CHUNK + y};
+                 liar.memory.see(c, s.world.tile(c));
+             }
+         Human& victim = s.add(seedWhere(plain, 6000), LIE_GAP);
+         setUpLie(s, liar, victim);
+         victim.keys = 1;
+         victim.thirst = 0.1f;
+         s.run(60);
+         return Checks{logged({"TOLD @ A WAY OVER SPIKES"})};
+     },
+     LIES_BLOCKED},
+    {"gossip", "friends pass on a name and a warning about a third", 99,
+     [](Stage& s) {
+         Human& teller = s.first();
+         Human& friendOf = s.add(seedWhere(kindly, 7000));
+         Human& third = s.add(seedWhere(plain, 8000), 8);
+         P::setTrust(teller, friendOf, 0.6f);
+         P::setTrust(friendOf, teller, 0.6f);
+         P::setTrust(teller, third, -0.6f);
+         teller.memory.names[third.id] = third.name;
+         teller.hunger = friendOf.hunger = third.hunger = 0.1f;
+         teller.thirst = friendOf.thirst = third.thirst = 0.1f;
+         s.run(60);
+         return Checks{logged({"HEARD @'S NAME FROM #"}), logged({"# WARNED ME ABOUT @"})};
+     }},
+    {"chat", "two calm acquaintances together start chatting", 99,
+     [](Stage& s) {
+         Human& a = s.first();
+         Human& b = s.add(seedWhere(kindly, 9000));
+         P::setTrust(a, b, 0.3f);
+         P::setTrust(b, a, 0.3f);
+         P::setMet(a, b, 0.0f);
+         P::setMet(b, a, 0.0f);
+         for (Human* h : {&a, &b}) h->hunger = h->thirst = h->tiredness = 0.05f;
+         s.run(180);
+         return Checks{{"a chat started", [](const Stage& st) {
+                            for (Human* h : st.humans)
+                                if (h->chats > 0) return true;
+                            return false;
+                        }}};
+     }},
+};
+
+} // namespace
+
+int main(int argc, char** argv) {
+    const char* only = argc > 1 ? argv[1] : nullptr;
+    int failed = 0, known = 0, ran = 0;
+    std::map<std::string, int> lines;
+    for (const Scenario& sc : SCENARIOS) {
+        if (only && std::strcmp(only, sc.name)) continue;
+        ran++;
+        Stage stage(7919, sc.first);
+        Checks expect = sc.play(stage);
+        for (const auto& h : stage.world.humans())
+            for (const auto& e : h->log.entries()) lines[e.what] += e.times;
+        std::vector<std::string> missing;
+        for (const Check& c : expect)
+            if (!c.ok(stage)) missing.push_back(c.label);
+        bool ok = missing.empty() && !expect.empty();
+        const char* verdict = ok ? "PASS" : sc.known ? "KNOWN" : "FAIL";
+        failed += !ok && !sc.known;
+        known += !ok && sc.known;
+        std::printf("%-5s %-14s %s\n", verdict, sc.name, sc.what);
+        if (sc.known) std::printf(ok ? "      now passes: drop its known note (%s)\n" : "      known: %s\n", sc.known);
+        for (const auto& m : missing) std::printf("     didn't happen: %s\n", m.c_str());
+        if (only || (!ok && !sc.known))
+            for (Human* h : stage.humans)
+                for (const auto& e : h->log.entries())
+                    std::printf("     #%d %6.1f %s%s\n", h->id, e.time, e.what.c_str(),
+                                e.times > 1 ? (" X" + std::to_string(e.times)).c_str() : "");
+    }
+    if (!ran) {
+        std::printf("no scenario named %s\n", only ? only : "");
+        return 1;
+    }
+    if (const char* path = std::getenv("LOGLINES")) {
+        if (FILE* f = std::fopen(path, "w")) {
+            for (auto& [what, n] : lines) std::fprintf(f, "%d\t%s\n", n, what.c_str());
+            std::fclose(f);
+        }
+    }
+    std::printf("scenarios: %d of %d passed, %d known not to yet, %d failed\n", ran - failed - known, ran, known, failed);
+    return failed ? 1 : 0;
+}
