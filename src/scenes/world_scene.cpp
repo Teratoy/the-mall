@@ -156,7 +156,7 @@ std::string doing(const Human& h) {
     case Human::State::Sipping: return "DRINKING FROM THE BOTTLE";
     case Human::State::Filling: return "FILLING THE BOTTLE";
     case Human::State::Pouring: return "POURING THE BOTTLE OUT";
-    case Human::State::Stashing: return h.putting() ? "PUTTING THINGS DOWN" : "PICKING THINGS UP";
+    case Human::State::Stashing: return h.putting() ? "STASHING THINGS" : "PICKING THINGS UP";
     case Human::State::Relieving: return h.shitting() ? "SHITTING" : "PISSING";
     case Human::State::Punching: return (h.hunting() ? "ATTACKING " : "FIGHTING ") + who;
     case Human::State::Giving: return (h.givingWater() ? "SHARING WATER WITH " : "SHARING A CAKE WITH ") + who;
@@ -206,6 +206,7 @@ std::string doing(const Human& h) {
     case Human::Goal::Loot: return "GOING TO " + who + "'S BODY";
     case Human::Goal::Ask: return "GOING TO ASK " + who + " FOR WATER";
     case Human::Goal::Pick: return "GOING TO PICK THINGS UP";
+    case Human::Goal::Stash: return "TAKING THINGS TO A STASH";
     case Human::Goal::Feed: return "GOING TO " + who + "'S BODY";
     case Human::Goal::Rob: return "SNEAKING UP ON " + who;
     case Human::Goal::Watch: return "GOING TO KEEP WATCH OVER " + who;

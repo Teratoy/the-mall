@@ -465,6 +465,7 @@ constexpr Wanting WANTING[] = {
     {0.40f, 0.2f, 0.45f, 0.0f, -0.15f}, // Loot
     {0.30f, 0.2f, 0.6f, 0.0f, -0.2f}, // Rob
     {0.45f, 0.0f, 0.25f, 0.25f, 0.0f}, // Fetch
+    {0.30f, 0.0f, 0.30f, 0.0f, -0.2f}, // Stash
     {0.35f, 0.0f, 0.0f, 0.0f, 0.45f}, // Follow
     {0.15f, 0.0f, 0.0f, 0.0f, 0.70f}, // Company
     {0.25f, 0.0f, 0.0f, 0.35f, 0.0f}, // Explore

@@ -89,7 +89,7 @@ public:
     /// knowing nothing, until it sits up (Sitting) and looks round.
     enum class State { Waking, Idle, Sitting, Rising, Walking, Greeting, Eating, Drinking, Relieving, Punching, Giving, Washing, Looting, Feeding, Sleeping, Sipping, Filling, Pouring, Stashing, Dead };
     /// Why the human is walking: what it does on arrival.
-    enum class Goal { Explore, FetchKey, OpenDoor, PassDoor, Wander, Meet, Follow, Company, FetchCake, Drink, Relieve, Fight, Flee, Share, CheckDoor, Wash, Avoid, Escort, Escorted, Track, GiveWay, Loot, Feed, Sleep, Rob, Watch, Fill, Ask, Pick };
+    enum class Goal { Explore, FetchKey, OpenDoor, PassDoor, Wander, Meet, Follow, Company, FetchCake, Drink, Relieve, Fight, Flee, Share, CheckDoor, Wash, Avoid, Escort, Escorted, Track, GiveWay, Loot, Feed, Sleep, Rob, Watch, Fill, Ask, Pick, Stash };
     /// What the human is doing, as far as hunger, thirst and tiredness go:
     /// each costs its own of all three.
     enum class Action { Rest, Sit, Walk, Run, Greet, Eat, Drink, Relieve, Punch, Give, Wash, Loot, Feed, Sleep, Watch, Fill, Pour, Stash, Count };
@@ -97,7 +97,7 @@ public:
     /// wants each, by its traits and hunger, is weighed in choose(), which
     /// tries them from the most wanted down; the table of wants is in
     /// human_tuning.h. In the order they tie in.
-    enum class Want { Food, Drink, Relieve, Sleep, Flesh, Hunt, Track, Escort, Wash, Fill, Meet, Rescue, UrgedDoor, Loot, Rob, Fetch, Follow, Company, Explore, OpenDoor, CheckDoor, Wander, Count };
+    enum class Want { Food, Drink, Relieve, Sleep, Flesh, Hunt, Track, Escort, Wash, Fill, Meet, Rescue, UrgedDoor, Loot, Rob, Fetch, Stash, Follow, Company, Explore, OpenDoor, CheckDoor, Wander, Count };
 
     /// An empty name gives the one grown from seed.
     Human(int id, const HumanLook& look, Vec2i cell, uint64_t seed, std::string chosenName = {});
@@ -1130,12 +1130,35 @@ private:
         bool putting = false;
         int cakes = 0;
         std::vector<size_t> bottles;
+        /// Putting them in a stash of its own, not just down.
+        bool stashing = false;
+        /// Its stashes, by cell, and the one it is walking to (or the spot
+        /// for a new one).
+        std::vector<Vec2i> mine;
+        Vec2i spot;
     };
     Stash stash_;
+    /// How much it hoards, from greed, going hungry, being unsociable,
+    /// settling and gloom: from HOARD_FROM on, it keeps stashes.
+    float hoardDrive() const;
+    /// How many cakes it wants in a stash, by its drive; 0 for none.
+    int stashTarget() const;
+    bool isMine(Vec2i c) const;
+    /// Its stash nearest to it within STASH_RANGE, as it remembers it.
+    std::optional<Vec2i> nearStash() const;
+    /// Pockets full, knowing of more it can't carry (or holding a spare
+    /// bottle), with a stash not yet as big as it wants: a load to stash.
+    bool wantsToStash() const;
+    /// Takes the load to its stash, or picks a spot for a new one there.
+    bool seekStash(World& world);
+    /// At the stash or the spot: puts the load down.
+    bool stashHere();
     /// What it would take from the pile on a cell, as it sees it: cakes
     /// while it has room, a bottle with water it would drink (any bottle
     /// when it has none) while it has room, or water poured into its own.
-    bool wantsFromPile(const Pile& p) const;
+    /// From its own stash only what it needs now: a cake when hungry with
+    /// none, water when thirsty with nothing to drink.
+    bool wantsFromPile(const Pile& p, bool own) const;
     /// A pile it wants something from, on its cell or beside it: kneels and
     /// takes it. False if there is none.
     bool takeFromPiles(World& world);
@@ -1144,7 +1167,7 @@ private:
     /// Done kneeling: puts down or picks up.
     void finishStash(World& world);
     /// The way to the nearest pile it remembers with what it wants: cakes
-    /// (food), water (water).
+    /// (food), water (water); its own stashes only as wantsFromPile allows.
     std::optional<std::vector<Vec2i>> pilePath(const World& world, bool food, bool water) const;
     /// Sleep, robbing sleepers and keeping watch (human_sleep.cpp).
     struct Sleep {

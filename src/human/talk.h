@@ -99,6 +99,9 @@ enum class Moment {
     // Putting things down on the floor, and picking up what lies there
     // (both to nobody).
     PutDown, PickUp,
+    // Stashing things in a stash of its own, and taking from it (both to
+    // nobody).
+    StashIt, FromStash,
     Count
 };
 

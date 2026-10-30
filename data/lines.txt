@@ -1780,3 +1780,19 @@ timid                   | I HOPE NOBODY FINDS IT.
 hungry                  | FOOD! JUST LYING THERE.
 thirsty                 | WATER!
 timid                   | SOMEONE'S GOING TO BE ANGRY.
+
+# Putting cakes or bottles in a stash of its own, said to nobody.
+[stash 0.3]
+                        | FOR LATER.
+                        | NOBODY WILL LOOK HERE.
+                        | ONE MORE FOR THE PILE.
+greedy                  | MINE. ALL MINE.
+timid                   | IN CASE THINGS GET BAD.
+hopeless                | MIGHT AS WELL BE READY.
+
+# Taking from a stash of its own, said to nobody.
+[from_stash 0.3]
+                        | GLAD I SAVED THIS.
+                        | STILL HERE. GOOD.
+hungry                  | TIME TO DIG IN.
+greedy                  | JUST ONE.

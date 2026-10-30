@@ -369,6 +369,8 @@ bool Human::observe(const World& world) {
             news |= fresh && ((hungry() && p->cakes > 0) || (thirsty() && p->water() > 0.0f));
         } else {
             memory.piles.erase(c);
+            // Seen gone: no stash of its own there any more.
+            std::erase(stash_.mine, c);
         }
         if (world.hasKey(c)) {
             firstSight(talk::Moment::FirstKey);
@@ -557,10 +559,14 @@ void Human::choose(World& world) {
         want(Want::Rob, ROB_TEMPT + ROB_HUNGRY * drive);
     bool fetchCakes = cakes < carryMax() && (!memory.cakes.empty() ||
                                              std::any_of(memory.piles.begin(), memory.piles.end(),
-                                                         [](const auto& p) { return p.second.cakes > 0; }));
+                                                         [&](const auto& p) { return p.second.cakes > 0 && !isMine(p.first); }));
+    // A hoarder with a stash still to fill fetches the harder for it.
+    float stocking = stashTarget() > 0 && nearStash() ? hoardDrive() : 0.0f;
     if (fetchCakes || !memory.keys.empty())
         want(Want::Fetch, LESSON_FETCH * std::max(fetchCakes ? lessons.hoard : 0.0f,
-                                                  memory.keys.empty() ? 0.0f : lessons.keysFirst));
+                                                  memory.keys.empty() ? 0.0f : lessons.keysFirst) +
+                              (fetchCakes ? stocking : 0.0f));
+    if (!needy && wantsToStash()) want(Want::Stash, hoardDrive());
     // Settled, it has stopped looking for a way out, and follows nobody away.
     if (!escape_.settled) {
         if (social_.leader >= 0) want(Want::Follow, -GUILT_ALONE * mind_.guilt);
@@ -604,6 +610,8 @@ bool Human::pursue(World& world, Want w) {
         return startWash(world);
     case Want::Fill:
         return seekFill(world);
+    case Want::Stash:
+        return seekStash(world);
     case Want::Meet:
         return social_.partner >= 0 && startMeet(world);
     case Want::Rescue:

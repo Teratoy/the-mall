@@ -189,6 +189,9 @@ void Human::arrive(World& world) {
     case Goal::Ask:
     case Goal::Pick:
         return choose(world);
+    case Goal::Stash:
+        if (stashHere()) return;
+        return choose(world);
     case Goal::Relieve:
         if (seekRelief(world)) return;
         return choose(world);

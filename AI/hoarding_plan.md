@@ -100,6 +100,33 @@ Second round (2026-10-30):
 - Log: "STASHED A CAKE", "STASHED A BOTTLE", "TOOK A CAKE FROM MY STASH";
   lines: stash, from_stash.
 
+### Built (2026-10-30, step 2)
+
+- `hoardDrive()`: 0.7 greedy + 0.5 hoard lesson − 0.3 sociable, + 0.2 if
+  settled, + 0.2 gloom. From 0.3 on it keeps stashes and wants 1 to 8 cakes
+  in one (`stashTarget()`).
+- Want::Stash (WANTING row, plus the drive): pockets full and knowing of
+  cakes it can't carry, with its nearest stash under target, or holding a
+  spare bottle at least half full. Goal::Stash walks to its stash within
+  30 cells, or to a new spot: floor within 10 of where it keeps (home, its
+  sleep spot, where it last drank, else here), not by a door, not on
+  anything, nobody it sees watching (`watchedAt`), the fewer open cells
+  round it the better. It stashes all but one cake, and the spare bottle.
+- Once it has a stash, a hoarder wants Fetch more, by its drive, so it
+  refills its pockets and comes back. Before its first stash, fetching is
+  as before (giving the bonus earlier changed who fights whom over cakes).
+- From its own stash it takes only a cake when hungry with none, or a
+  bottle (or water) when thirsty with nothing to drink. Other piles as in
+  step 1. A stash seen gone is forgotten.
+- Changed from the plan: no new-stash trail yet beyond "none within 30
+  cells: make one", which is the same thing.
+- Log: "MADE A STASH", "STASHED …", "TOOK … FROM MY STASH"; lines stash,
+  from_stash. Scenarios stash, from-stash. bottle-spare's holder now has
+  a spare under half full, as a gloomy settler stashes one over half.
+- Soak (6 × 15 min): 11 stashes made, 10 bottles and 3 loads of cakes
+  stashed; 3 stashed loads picked up by others, as nobody knows yet whose
+  they are (step 3). No new stuck humans or loops.
+
 ## 3. Whose stash is it
 
 - The world knows who made each stash; a human only knows a stash is

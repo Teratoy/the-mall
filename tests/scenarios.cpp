@@ -444,7 +444,8 @@ const std::vector<Scenario> SCENARIOS = {
          return askForWater(s, {logged({"GAVE @ A BOTTLE"}), logged({"@ GAVE ME A BOTTLE"})}, [](Human& holder, Human& asker) {
              P::setTrust(holder, asker, 0.6f);
              P::setTrust(asker, holder, 0.6f);
-             holder.bottles = {Bottle{1.0f}, Bottle{0.6f}};
+             // The spare under half full: not worth stashing.
+             holder.bottles = {Bottle{1.0f}, Bottle{0.45f}};
              asker.bottles.clear();
          });
      }},
@@ -515,6 +516,30 @@ const std::vector<Scenario> SCENARIOS = {
          P::putDown(h, 2, {1});
          s.run(5);
          return Checks{logged({"PUT DOWN 2 CAKES AND A BOTTLE"})};
+     }},
+    {"stash", "a grasping loner with full pockets stashes the cakes it can't carry",
+     seedWhere([](const Traits& t) { return t.greedy >= 0.8f && t.sociable <= 0.3f; }),
+     [](Stage& s) {
+         Human& h = s.first();
+         P::knowChunk(s.world, h, true);
+         h.cakes = h.carryMax();
+         h.hunger = h.thirst = h.tiredness = 0.1f;
+         s.run(120);
+         return Checks{logged({"MADE A STASH"}), loggedLike("STASHED", "")};
+     }},
+    {"from-stash", "a hoarder, hungry with no cakes on it, eats from its stash", 99,
+     [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         Vec2i at = s.freeNear(h.cell, 4);
+         s.world.putDown(at, 3, {});
+         P::ownStash(h, at);
+         h.memory.piles[at] = *s.world.pile(at);
+         h.cakes = 0;
+         h.hunger = 0.7f;
+         h.thirst = 0.1f;
+         s.run(40);
+         return Checks{logged({"TOOK A CAKE FROM MY STASH"}), logged({"ATE A CAKE"})};
      }},
     {"chat", "two calm acquaintances together start chatting", 99,
      [](Stage& s) {
