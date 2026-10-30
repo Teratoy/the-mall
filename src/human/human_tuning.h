@@ -136,27 +136,28 @@ constexpr int FOLLOW_GAP = 2;
 constexpr float FOLLOW_WAIT_MIN = 0.2f, FOLLOW_WAIT_MAX = 0.6f;
 
 /// Hunger gained per second by each action. Everything a human does costs
-/// some; a new action needs its own cost here.
+/// some; a new action needs its own cost here. A fifth slower than thirst,
+/// so hunger kills less often than it did.
 constexpr float HUNGER_PER_SECOND[] = {
-    1.0f / 600.0f, // Rest
-    1.0f / 1500.0f, // Sit
-    1.0f / 300.0f, // Walk
-    1.0f / 160.0f, // Run
-    1.0f / 480.0f, // Greet
-    1.0f / 600.0f, // Eat
-    1.0f / 600.0f, // Drink
-    1.0f / 600.0f, // Relieve
-    1.0f / 120.0f, // Punch
-    1.0f / 480.0f, // Give
-    1.0f / 400.0f, // Wash
-    1.0f / 450.0f, // Loot
-    1.0f / 450.0f, // Feed
-    1.0f / 1800.0f, // Sleep
-    1.0f / 1500.0f, // Watch
+    1.0f / 750.0f, // Rest
+    1.0f / 1875.0f, // Sit
+    1.0f / 375.0f, // Walk
+    1.0f / 200.0f, // Run
+    1.0f / 600.0f, // Greet
+    1.0f / 750.0f, // Eat
+    1.0f / 750.0f, // Drink
+    1.0f / 750.0f, // Relieve
+    1.0f / 150.0f, // Punch
+    1.0f / 600.0f, // Give
+    1.0f / 500.0f, // Wash
+    1.0f / 562.5f, // Loot
+    1.0f / 562.5f, // Feed
+    1.0f / 2250.0f, // Sleep
+    1.0f / 1875.0f, // Watch
 };
 static_assert(std::size(HUNGER_PER_SECOND) == size_t(Human::Action::Count));
 /// Thirst gained per second by each action, the same rule: a new action
-/// needs its own cost here too. For now hunger's own rates, but for
+/// needs its own cost here too. A quarter faster than hunger, but for
 /// eating, as cake is dry, and drinking.
 constexpr float THIRST_PER_SECOND[] = {
     1.0f / 600.0f, // Rest

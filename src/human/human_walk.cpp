@@ -167,7 +167,10 @@ void Human::arrive(World& world) {
             timer = UNLOCK_TIME;
             return;
         }
-        return choose(world);
+        // Someone opened it while it wasn't looking, or it was never there:
+        // a look, so it stops coming back to a door it remembers wrong.
+        observe(world);
+        return startIdle(0.0f, LOOK_TIME_MIN);
     }
     case Goal::Explore:
         if (auto door = openDoorBeside(cell)) return startPassDoor(*door);
