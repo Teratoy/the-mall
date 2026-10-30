@@ -1260,7 +1260,7 @@ private:
     /// own holds clean water and isn't full, to pour together with another.
     bool roomForBottle() const;
     /// Whether it would take b: with none, any; holding one, b must hold
-    /// clean water too.
+    /// clean water too, unless its own is empty and it would drink b anyway.
     bool wouldTakeBottle(const Bottle& b) const;
     /// Takes b, as wouldTakeBottle allows: with none, b itself; holding one,
     /// the emptier of the two is poured into the fuller, which it keeps.

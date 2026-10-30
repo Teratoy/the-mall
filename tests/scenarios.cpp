@@ -886,6 +886,16 @@ const std::vector<Scenario> SCENARIOS = {
          return Checks{unlogged("FILLED MY BOTTLE FROM ONE LYING THERE"), unlogged("POURED MY BOTTLE INTO A FULLER ONE"),
                        unlogged("PICKED UP A BOTTLE LYING THERE")};
      }},
+    {"pile-dirty-parched", "parched, its bottle empty, a human takes a full dirty one lying there", 99,
+     [](Stage& s) {
+         Human& h = s.first();
+         s.world.putDown(s.freeNear(h.cell, 1), 0, {Bottle{0.9f, 0.4f, 0.0f}});
+         h.bottles = {Bottle{}};
+         h.hunger = 0.1f;
+         h.thirst = 0.85f;
+         s.run(40);
+         return Checks{logged({"LEFT MY EMPTY BOTTLE FOR ONE OF DIRTY WATER"})};
+     }},
     {"put-down", "a human kneels and puts cakes and a bottle down", 99,
      [](Stage& s) {
          Human& h = s.first();

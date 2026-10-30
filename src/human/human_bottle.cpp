@@ -122,8 +122,11 @@ bool Human::roomForBottle() const {
     return bottles.empty() || (!bottles.front().full() && clean(bottles.front()));
 }
 
+// Its own empty, it takes any water it would drink: dirty water, parched.
 bool Human::wouldTakeBottle(const Bottle& b) const {
-    return roomForBottle() && (bottles.empty() || (!b.empty() && clean(b)));
+    if (!roomForBottle()) return false;
+    if (bottles.empty()) return true;
+    return !b.empty() && (clean(b) || (bottles.front().empty() && wouldSip(b)));
 }
 
 // The fuller is kept; whatever doesn't fit stays in the other.
@@ -140,10 +143,12 @@ std::optional<Bottle> Human::takeBottle(Bottle b, bool* keptOwn) {
         b.pourInto(own, b.water);
         return b;
     }
-    bool hadWater = !own.empty();
+    bool hadWater = !own.empty(), dirty = !clean(b);
     own.pourInto(b, own.water);
     std::swap(own, b);
-    note(hadWater ? "POURED MY BOTTLE INTO A FULLER ONE" : "LEFT MY EMPTY BOTTLE FOR A FULLER ONE");
+    note(hadWater ? "POURED MY BOTTLE INTO A FULLER ONE"
+         : dirty  ? "LEFT MY EMPTY BOTTLE FOR ONE OF DIRTY WATER"
+                  : "LEFT MY EMPTY BOTTLE FOR A FULLER ONE");
     sayLater(talk::Moment::SwapBottle);
     return b;
 }

@@ -194,3 +194,12 @@ Built:
 - A human holding an empty bottle won't take a full but dirty one, even
   parched: that follows "only clean water", and the user may want an
   exception there.
+
+### Changed (2026-10-31): parched, an empty bottle for a dirty one
+
+User's decision: the exception is wanted. A human whose own bottle is
+empty takes a full dirty one if it would drink it (parched, erratic, or
+craving blood): `wouldTakeBottle` allows it, and the swap is logged "LEFT
+MY EMPTY BOTTLE FOR ONE OF DIRTY WATER" (moment swap_bottle). Dirt still
+never mixes: a bottle with any water in it takes only clean water.
+Scenario pile-dirty-parched. The soak doesn't reach it (unchanged).
