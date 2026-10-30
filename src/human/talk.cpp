@@ -27,7 +27,7 @@ constexpr const char* MOMENTS[] = {
     "learn_cakes", "learn_keys",
     "snap", "hunt", "feed", "sick", "saw_eat", "gnawed", "haunted", "craving",
     "wake",
-    "first_key", "first_cake", "first_door", "first_water", "first_human", "first_prints",
+    "first_key", "first_cake", "first_door", "first_water", "first_human", "first_prints", "first_toilet",
     "despair", "hope", "settle", "guard",
     "ask_way", "tell_way", "no_way_out", "lie_way", "no_idea",
     "join", "join_reply", "follow",

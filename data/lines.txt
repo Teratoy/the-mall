@@ -708,6 +708,20 @@ filthy                  | AT LEAST IT'S NOT ONLY ME.
 erratic                 | FOLLOW THE TRAIL...
 dazed                   | IS THAT... A TRAIL?
 
+[first_toilet]
+                        | IS THAT... A TOILET?
+                        | A TOILET. OUT HERE.
+                        | WELL. THAT'S CIVILISED.
+                        | WHO PUT A TOILET HERE?
+need.to.go              | OH THANK GOD.
+bursting                | HOLD IT... HOLD IT...
+curious                 | WHERE DOES IT EVEN FLUSH TO?
+timid                   | I'M NOT SITTING ON THAT.
+loner                   | AT LEAST NOBODY'S USING IT.
+filthy                  | A BIT LATE FOR THAT.
+erratic                 | A THRONE!
+dazed                   | IS THAT... A CHAIR?
+
 # ---- Hope ------------------------------------------------------------------
 
 # Starting to think there is no way out. Said to nobody.

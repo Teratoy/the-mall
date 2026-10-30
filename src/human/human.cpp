@@ -310,8 +310,8 @@ float Human::stepProgress() const {
 bool Human::observe(const World& world) {
     sight.look(world, cell, int(std::lround(DAZE_SIGHT + (Sight::RADIUS - DAZE_SIGHT) * (1.0f - escape_.daze))));
     bool news = false;
-    // The first key, cake, door, water, human and someone else's footprints
-    // it ever sees are remarked on, one a look so they don't all come out
+    // The first key, cake, door, water, human, someone else's footprints and
+    // toilet it ever sees are remarked on, one a look so they don't all come out
     // at once, and not before it has come to.
     bool remarked = state == State::Waking;
     auto firstSight = [&](talk::Moment m, int about = -1) {
@@ -324,6 +324,7 @@ bool Human::observe(const World& world) {
         Tile t = world.tile(c);
         if (t == Tile::DoorLocked || t == Tile::DoorOpen) firstSight(talk::Moment::FirstDoor);
         if (drinkable(t)) firstSight(talk::Moment::FirstWater);
+        if (world.toilet(c)) firstSight(talk::Moment::FirstToilet);
         if (t != Tile::Void) {
             if (memory.tile(c) == Tile::Void) {
                 escape_.lastFound = clock_;

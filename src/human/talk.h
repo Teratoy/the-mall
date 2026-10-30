@@ -39,8 +39,8 @@ enum class Moment {
     // Coming to somewhere it doesn't know, said to nobody.
     Wake,
     // The first key, cake, door, water, other human and someone else's
-    // shitty footprints it ever sees, said to nobody, once each.
-    FirstKey, FirstCake, FirstDoor, FirstWater, FirstHuman, FirstPrints,
+    // shitty footprints and toilet it ever sees, said to nobody, once each.
+    FirstKey, FirstCake, FirstDoor, FirstWater, FirstHuman, FirstPrints, FirstToilet,
     // Hope: losing it, getting it back, giving up and making a home (all
     // said to nobody), and warning someone off that home.
     Despair, Hope, Settle, Guard,
