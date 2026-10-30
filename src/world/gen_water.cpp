@@ -85,13 +85,37 @@ std::vector<int> clearance(const Chunk& c) {
     return dist;
 }
 
+/// Brings clearance up to date once the cells given stop being floor. New
+/// water only brings cells nearer to something, so it's enough to spread
+/// out from the new cells while that shortens the way.
+void lower(const Chunk& c, std::vector<int>& dist, const std::vector<Vec2i>& cells) {
+    std::deque<Vec2i> open;
+    for (Vec2i p : cells) {
+        dist[size_t(p.y * c.w + p.x)] = 0;
+        open.push_back(p);
+    }
+    while (!open.empty()) {
+        Vec2i p = open.front();
+        open.pop_front();
+        const int next = dist[size_t(p.y * c.w + p.x)] + 1;
+        for (Vec2i d : DIRS8) {
+            Vec2i n = p + d;
+            if (!c.inside(n) || dist[size_t(n.y * c.w + n.x)] <= next) continue;
+            dist[size_t(n.y * c.w + n.x)] = next;
+            open.push_back(n);
+        }
+    }
+}
+
 } // namespace
 
 // Each pool is a whole outline or nothing: one that would come too close
 // to anything is tried again elsewhere, at another size or turn.
+// Clearance is worked out once and lowered round each new pool, as working
+// it out afresh each time is slow on big chunks.
 void pools(Chunk& c, Rng& rng, int count) {
+    std::vector<int> clear = clearance(c);
     for (int i = 0; i < count; i++) {
-        const std::vector<int> clear = clearance(c);
         auto open = [&](Vec2i p) { return c.inside(p) && clear[size_t(p.y * c.w + p.x)] > POOL_RING; };
         std::vector<Vec2i> seeds;
         for (int y = 1; y < c.h - 1; y++)
@@ -119,6 +143,7 @@ void pools(Chunk& c, Rng& rng, int count) {
                 }
             if (!fits) continue;
             for (Vec2i p : cells) c.set(p, Tile::Water);
+            lower(c, clear, cells);
             break;
         }
     }

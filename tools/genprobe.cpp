@@ -51,7 +51,8 @@ std::vector<Shape> shapes() {
         {"S4", {{1, 0}, {2, 0}, {0, 1}, {1, 1}}},
     };
     std::vector<Shape> out = {{"1x1", boxFootprint({1, 1})}, {"2x1", boxFootprint({2, 1})},
-                              {"2x2", boxFootprint({2, 2})}};
+                              {"2x2", boxFootprint({2, 2})}, {"3x1", boxFootprint({3, 1})},
+                              {"4x1", boxFootprint({4, 1})}, {"3x3", boxFootprint({3, 3})}};
     for (const Shape& s : base) {
         std::set<std::vector<std::pair<int, int>>> seen;
         for (int m = 0; m < 2; m++)
@@ -71,6 +72,7 @@ const char* kindName(ChunkKind k) {
     case ChunkKind::Rooms: return "rooms";
     case ChunkKind::Maze: return "maze";
     case ChunkKind::WaterMaze: return "watermaze";
+    case ChunkKind::Plaza: return "plaza";
     default: return "other";
     }
 }
@@ -138,7 +140,9 @@ int main(int argc, char** argv) {
     if (png) mkdir("build/genprobe-png", 0755);
     int failed = 0, made = 0;
     for (const Shape& s : shapes())
-        for (ChunkKind kind : {ChunkKind::Rooms, ChunkKind::Maze, ChunkKind::WaterMaze}) {
+        for (ChunkKind kind : {ChunkKind::Rooms, ChunkKind::Maze, ChunkKind::WaterMaze, ChunkKind::Plaza}) {
+            const Vec2i box = footprintBox(s.parts);
+            if (kind == ChunkKind::Plaza && (box.x != box.y || s.parts.size() != size_t(box.x * box.y))) continue;
             double slowest = 0.0;
             for (int seed = 1; seed <= seeds; seed++) {
                 Rng rng(uint64_t(seed) * 7919 + uint64_t(kind));
@@ -148,6 +152,10 @@ int main(int argc, char** argv) {
                     gen::rooms(c, rng);
                     gen::connectRegions(c, 3);
                     gen::slamRooms(c, rng, c.slotCount());
+                } else if (kind == ChunkKind::Plaza) {
+                    // Half with a fountain round an island the size of a grand statue's plinth.
+                    gen::plaza(c, rng, seed % 2 ? Vec2i{14, 7} : Vec2i{});
+                    gen::connectRegions(c, 3);
                 } else {
                     gen::maze(c, rng);
                     gen::connectRegions(c, 3);
