@@ -121,19 +121,19 @@ constexpr Rectangle WIDE_LOG{float(COLUMN_W), 0, float(COLUMN_W), Canvas::H};
 constexpr Rectangle WIDE_VIEW{float(2 * COLUMN_W), 0, Canvas::H, Canvas::H};
 constexpr int HUD_X = 2 * COLUMN_W + Canvas::H;
 constexpr int HUD_LEFT = HUD_X + MARGIN, HUD_RIGHT = Canvas::WIDE_W - MARGIN;
-/// The HUD column, top down: the world's size, what they are doing in up to
-/// WIDE_DOING_ROWS rows, then the buttons in a row; the map takes the rest.
-constexpr int WIDE_DOING_ROWS = 3;
-constexpr int WIDE_DOING_Y = MARGIN + ui::ROW + MARGIN;
-constexpr int WIDE_BUTTONS_Y = WIDE_DOING_Y + WIDE_DOING_ROWS * ui::ROW + MARGIN;
+/// The HUD column, top down: the world's size, then the buttons in a row;
+/// the map takes the rest.
+constexpr int WIDE_BUTTONS_Y = MARGIN + ui::ROW + MARGIN;
 constexpr Rectangle wideButtonAt(int i) {
     return {float(HUD_LEFT + i * (BUTTON_W + BUTTON_GAP)), float(WIDE_BUTTONS_Y), float(BUTTON_W), float(BUTTON_H)};
 }
 static_assert(HUD_LEFT + 6 * BUTTON_W + 5 * BUTTON_GAP <= HUD_RIGHT, "the PC buttons fit their row");
 constexpr int WIDE_MAP_Y = WIDE_BUTTONS_Y + BUTTON_H + MARGIN;
 constexpr Rectangle WIDE_MAP{float(HUD_X), float(WIDE_MAP_Y), float(COLUMN_W), float(Canvas::H - WIDE_MAP_Y)};
-/// Over the bottom of the square once the followed human is dead.
-constexpr Rectangle WIDE_NEXT_BUTTON{WIDE_VIEW.x + Canvas::H / 2.0f - 24, Canvas::H - MARGIN - 16, 48, 16};
+/// What they are doing goes in a strip along the bottom of the square, as
+/// tall as its rows; once the followed human is dead, NEXT stands over it.
+constexpr int WIDE_DOING_W = Canvas::H - 2 * MARGIN;
+constexpr float WIDE_NEXT_W = 48, WIDE_NEXT_H = 16;
 /// The lines between the columns.
 constexpr Color COLUMN_EDGE = ui::GROUND;
 
@@ -520,8 +520,10 @@ void WorldScene::draw(const Canvas& canvas) {
     // Under the pause menu nothing else takes a tap.
     Vector2 mouse = paused_ ? Vector2{-1.0f, -1.0f} : canvas.mouse();
     if (wide) {
-        drawSpeech(world_, viewer, reveal_, ZOOMS[zoom_], view, 0, Canvas::H);
-        drawWide(viewer, mouse);
+        std::vector<std::string> rows = ui::wrap(doing(viewer), WIDE_DOING_W);
+        int stripY = Canvas::H - int(rows.size()) * ui::ROW - 2 * MARGIN;
+        drawSpeech(world_, viewer, reveal_, ZOOMS[zoom_], view, 0, stripY);
+        drawWide(viewer, mouse, rows, stripY);
     } else {
         if (!logOpen_ && !statsOpen_ && !mapOpen_) drawSpeech(world_, viewer, reveal_, ZOOMS[zoom_], view, TOP_H, BOTTOM_Y);
         drawPhone(viewer, mouse);
@@ -593,7 +595,8 @@ void WorldScene::drawPhone(const Human& viewer, Vector2 mouse) {
 
 // The same as the phone shows, laid out down one column: no strips over the
 // world, and stats, log and map always open.
-void WorldScene::drawWide(const Human& viewer, Vector2 mouse) {
+void WorldScene::drawWide(const Human& viewer, Vector2 mouse, const std::vector<std::string>& doingRows,
+                          int stripY) {
     char line[64];
     drawStats(viewer, WIDE_STATS);
     drawLog(viewer, WIDE_LOG);
@@ -623,12 +626,11 @@ void WorldScene::drawWide(const Human& viewer, Vector2 mouse) {
     ui::text(line, HUD_LEFT, MARGIN, ui::DIM);
     if (reveal_) ui::textRight("REVEAL", HUD_RIGHT, MARGIN, REVEAL_INK);
 
-    // What they are doing, centred in the rows kept for it.
-    std::vector<std::string> rows = ui::wrap(doing(viewer), HUD_RIGHT - HUD_LEFT);
-    if (int(rows.size()) > WIDE_DOING_ROWS) rows.resize(WIDE_DOING_ROWS);
-    int y = WIDE_DOING_Y + (WIDE_DOING_ROWS - int(rows.size())) * ui::ROW / 2;
-    for (const std::string& row : rows) {
-        ui::textCentred(row.c_str(), (HUD_LEFT + HUD_RIGHT) / 2, y);
+    // What they are doing, centred along the bottom of the world.
+    ui::panel({WIDE_VIEW.x, float(stripY), WIDE_VIEW.width, float(Canvas::H - stripY)});
+    int cx = int(WIDE_VIEW.x + WIDE_VIEW.width / 2), y = stripY + MARGIN;
+    for (const std::string& row : doingRows) {
+        ui::textCentred(row.c_str(), cx, y);
         y += ui::ROW;
     }
 
@@ -636,7 +638,8 @@ void WorldScene::drawWide(const Human& viewer, Vector2 mouse) {
                   wideButtonAt(5)},
                  mouse);
     drawMapIn(viewer, WIDE_MAP);
-    if (viewer.dead()) nextHuman_ |= ui::button(WIDE_NEXT_BUTTON, "NEXT", mouse);
+    Rectangle next{cx - WIDE_NEXT_W / 2, stripY - MARGIN - WIDE_NEXT_H, WIDE_NEXT_W, WIDE_NEXT_H};
+    if (viewer.dead()) nextHuman_ |= ui::button(next, "NEXT", mouse);
 }
 
 void WorldScene::drawMapIn(const Human& viewer, Rectangle area) {

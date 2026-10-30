@@ -18,11 +18,13 @@ check` must pass unchanged.
   column has the HUD on top and the map filling the rest.
 - **Strips:** the phone's top and bottom strips go into the columns: the
   name, items and the HP and need bars over the stats (left); the world
-  size, what they are doing and the buttons over the map (right). The
-  square shows only the world, its speech bubbles, and NEXT once the
-  followed human is dead.
+  size and the buttons over the map (right). The square shows the world,
+  its speech bubbles, what they are doing in a strip along its bottom, and
+  NEXT once the followed human is dead.
 - **Moved (2026-10-30, after seeing it):** name, items and bars went from
   the right column to over the stats.
+- **Moved (2026-10-30):** what they are doing went from the right column
+  to a strip along the bottom of the square, NEXT just above it.
 - **Switching:** by the window's shape. A window wider than tall uses the
   PC layout, taller than wide the phone one; resizing switches live. The
   desktop build opens wide. The menu, create and obituary screens stay
@@ -53,8 +55,9 @@ check` must pass unchanged.
   L, S and M do nothing on the PC, as all three are open.
 - Over the stats: the name, items, then HP and the three needs as
   full-width bars on rows of their own.
-- Over the map: world size and REVEAL, what they are doing (wrapped), then
-  the zoom, speed and pause buttons in a row.
+- Along the bottom of the square: what they are doing, in a shaded strip.
+- Over the map: world size and REVEAL, then the zoom, speed and pause
+  buttons in a row.
 - Pause darkens the whole canvas, its buttons in the middle.
 
 ## 4. Shots

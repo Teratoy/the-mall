@@ -7,6 +7,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 class Human;
 
@@ -32,8 +33,8 @@ class Human;
 ///
 /// In a window wider than tall it takes the PC layout instead: the world in
 /// a square, with the stats and log side by side left of it, the name,
-/// items and bars over the stats, and right of it the rest of what the
-/// strips show over the map. All three are always open there;
+/// items and bars over the stats, what they are doing along the bottom of
+/// the square, and right of it the world's size and buttons over the map. All three are always open there;
 /// the wheel scrolls the log or zooms the map when over them, and zooms the
 /// world anywhere else.
 class WorldScene : public Scene {
@@ -119,8 +120,9 @@ private:
     /// The phone's strips and buttons over the world, and whichever of the
     /// log, stats or map is open.
     void drawPhone(const Human& viewer, Vector2 mouse);
-    /// The PC's columns beside the square of world.
-    void drawWide(const Human& viewer, Vector2 mouse);
+    /// The PC's columns beside the square of world, and what they are doing,
+    /// in doingRows, in a strip from stripY down the bottom of the square.
+    void drawWide(const Human& viewer, Vector2 mouse, const std::vector<std::string>& doingRows, int stripY);
     void drawControls(const Controls& c, Vector2 mouse);
     /// The followed human's log, newest first, in area: on the phone the
     /// space between the strips left of the buttons.
