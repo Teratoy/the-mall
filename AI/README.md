@@ -21,7 +21,7 @@ Status as of 2026-10-30.
 | [relief_plan.md](relief_plan.md) | Bladder and bowels, private spots, mess, dirty feet, foul water, toilets, being seen | All 6 steps built | — |
 | [thirst_plan.md](thirst_plan.md) | Thirst, basins, bloody and foul water, guarded water, water tips, hope near water | All 5 steps built | Tuning from play |
 | [parched_lost_plan.md](parched_lost_plan.md) | Parched with no water known: no asking the same one twice, lying by a locked door calling for help, leaving one as lost, erratic going for bottles | All 4 steps built | Tuning from play |
-| [bottle_plan.md](bottle_plan.md) | Water bottles: everyone wakes with one; sipping, filling, pouring out, dirty water carried over, puddles, looted, snatched, given, sold, lied about | Built | Three calls for the user to check (two bottles at most; giving pours water; the lie). Thirst no longer kills in the soak |
+| [bottle_plan.md](bottle_plan.md) | Water bottles: everyone wakes with one, carried on top of its cakes; sipping, filling, pouring out, dirty water carried over, puddles, looted, snatched, given, sold, lied about | Built; then one bottle at most, carried on the cakes, poured bottle to bottle | Calls for the user to check: giving pours water; the lie; an empty bottle won't be swapped for a full dirty one, even parched. Thirst kills again in the soak (6 deaths in 6 worlds) |
 | [hoarding_plan.md](hoarding_plan.md) | Stashes of cakes and bottles on the floor: making, using, stealing, resentment, tips and lies, groups guarding in turns | Steps 1–5 built | Step 6 (groups guard in turns). Still rare in normal play: nobody learns whose a stash is in the soak, so steps 3–5 happen only in scenarios |
 | [foul_water_memory_plan.md](foul_water_memory_plan.md) | Remembering foul water: choosing other water, knowing lines, cravers mind only filth | Built | Telling others which water is foul |
 | [sleep_plan.md](sleep_plan.md) | Tiredness, sleeping, where to sleep, robbing sleepers, keeping watch, dreams | All 5 steps built | Tuning from play (aim: ~15–20 min awake, ~90 s asleep) |
@@ -32,6 +32,7 @@ Status as of 2026-10-30.
 | [shut_in_plan.md](shut_in_plan.md) | Remembering a cry from a slam room: going later with a key, fetching one, calling back, telling others | Built | — |
 | [lessons_plan.md](lessons_plan.md) | Self-lessons announced once, again, or for good; a slower fade; a line for surviving thirst | Built | — |
 | [trap_wary_plan.md](trap_wary_plan.md) | Wary of the next trap like one that caught it: table cakes after darts, one-door rooms after a slam | Built | Should seeing someone else caught make it wary too? |
+| [feral_plan.md](feral_plan.md) | The feral human's look: a flag that repaints every frame ragged (dirty, torn clothes, messed-up hair) on the same skeleton | Art built; never set in play | When it turns feral and what changes (not asked yet); questions 1–3 on the look |
 | [human_split_plan.md](human_split_plan.md) | Splitting Human into per-system classes | Not started | Advised against for now; if done, only system by system, when that system is being reworked anyway |
 
 ## Known gaps found by the tests

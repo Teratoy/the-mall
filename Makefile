@@ -28,8 +28,10 @@ GENPROBE := build/genprobe
 HIDEF := build/hidef
 # Human frames with bottles, scaled up, to check the bottle art by eye.
 BOTTLESHEET := build/bottle_sheet
+# A human beside itself gone feral, in every pose, with all that rides on it.
+FERALSHEET := build/feral_sheet
 
-.PHONY: all run clean stuck check golden coverage shot scenarios genprobe hidef bottlesheet trapprobe apk install-apk logcat
+.PHONY: all run clean stuck check golden coverage shot scenarios genprobe hidef bottlesheet feralsheet trapprobe apk install-apk logcat
 
 all: $(BIN)
 
@@ -95,6 +97,12 @@ $(BOTTLESHEET): tools/bottle_sheet.cpp $(filter-out build/main.o,$(OBJ))
 
 bottlesheet: $(BOTTLESHEET)
 	./$(BOTTLESHEET) build/bottle-sheet.png
+
+$(FERALSHEET): tools/feral_sheet.cpp $(filter-out build/main.o,$(OBJ))
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@ $(LDLIBS)
+
+feralsheet: $(FERALSHEET)
+	./$(FERALSHEET) build/feral-sheet.png $(FERALSHEET_ARGS)
 
 # Life logs of one soak world: build/lifelog seed [minutes] [crowd] [name] [every].
 LIFELOG := build/lifelog
