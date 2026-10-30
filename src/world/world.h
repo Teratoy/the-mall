@@ -100,8 +100,6 @@ public:
     int takePileCakes(Vec2i cell, int n);
     /// Takes the pile's i-th bottle off it.
     Bottle takePileBottle(Vec2i cell, size_t i);
-    /// Pours up to amount from the pile's i-th bottle into into; how much.
-    float pourFromPile(Vec2i cell, size_t i, Bottle& into, float amount);
 
     /// The trap set off from a cell, if any, hidden or not.
     const Trap* trap(Vec2i cell) const;

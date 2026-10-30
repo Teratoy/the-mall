@@ -159,3 +159,38 @@ This reverses the thirst plan's "water is never carried, for now".
   run dry, 14 bodies stripped of bottles, 1 snatched. **No one died of
   thirst** (before: thirst was the top killer). Tune from play if thirst
   should bite again (a smaller bottle, slower filling, or fewer basins).
+
+## One bottle, carried on the cakes (2026-10-30)
+
+User's decisions:
+
+- **Every cake carried piles up in the back hand**, not one shown for all.
+- **One bottle at most** (BOTTLE_MAX = 1), standing on top of the cakes;
+  with no cakes, in the back hand. The back pocket is gone.
+- **Bottle to bottle**: holding one and finding another (on a body, lying
+  in a pile, snatched in a fight), it pours the emptier into the fuller and
+  keeps the fuller. **Only with clean water** (both under POUR_CLEAN foul
+  and red; an empty bottle is clean). A dirty bottle is left where it is.
+- **No spares, so a friend gives its only bottle**: asked for water by a
+  friend with no bottle, a kind human not thirsty itself hands its own
+  over. Never sold.
+
+Built:
+
+- `roomForBottle()`, `wouldTakeBottle()`, `takeBottle()` in
+  human_bottle.cpp; looting, piles and snatching all go through them. Its
+  emptier bottle is left on the body or the pile; in a fight it falls to
+  the floor. Log "POURED MY BOTTLE INTO A FULLER ONE" / "LEFT MY EMPTY
+  BOTTLE FOR A FULLER ONE", line swap_bottle. Pouring a pile's bottle into
+  its own fuller one stays "FILLED MY BOTTLE FROM ONE LYING THERE"; off a
+  body, "TOOK SOME WATER OFF @'S BODY".
+- Spare-bottle stashing is gone (a stash never takes the bottle).
+- Art: `SpriteFrame::held` (the back hand, or the floor behind when
+  seated) replaces `pocket`; cakes are drawn over the frame at run time,
+  HELD_CAKE_H rows apart, the eaten one left off; the "carry" textures are
+  gone but for the curled sleeper, who hugs one cake.
+- Scenarios: bottle-spare became bottle-only; new pile-pour-over,
+  pile-top-up, pile-dirty; pile-water checks the swap.
+- A human holding an empty bottle won't take a full but dirty one, even
+  parched: that follows "only clean water", and the user may want an
+  exception there.

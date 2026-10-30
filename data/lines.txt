@@ -2084,3 +2084,11 @@ timid                   | I'M NOT TOUCHING IT.
                         | NOT WITHOUT A KEY.
                         | THAT'S HOW THEY GET YOU.
 hungry                  | NOT WORTH BEING SHUT IN FOR.
+# Taking a fuller bottle for its own, its own water poured into it, or its
+# empty one left behind, said to nobody.
+[swap_bottle 0.4]
+                        | BETTER.
+                        | THAT'S MORE LIKE IT.
+                        | ONE IS ENOUGH TO CARRY.
+thirsty                 | AT LAST.
+greedy                  | MINE NOW.

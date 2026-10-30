@@ -140,6 +140,8 @@ enum class Moment {
     // Wary after a trap, leaving a cake alone (to nobody): it might be on
     // a dart plate; it lies in a room with one door and no key in hand.
     WaryCake, WarySlam,
+    // Taking a fuller bottle for its own, poured into it (to nobody).
+    SwapBottle,
     Count
 };
 

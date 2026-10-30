@@ -240,10 +240,11 @@ public:
     int keys = 0;
     /// Cakes carried, the one being eaten included.
     int cakes = 0;
-    /// The water bottles it carries, in a back pocket, in plain sight: one
-    /// to wake with, full; no more than BOTTLE_MAX, taking another as it
-    /// takes a cake, while there is room (human_bottle.cpp).
-    static constexpr int BOTTLE_MAX = 2;
+    /// The water bottle it carries, in the back hand on top of its cakes, in
+    /// plain sight: one to wake with, full, and never more than BOTTLE_MAX.
+    /// Holding one, it takes no other: it pours the emptier into the fuller
+    /// and keeps that, clean water only (human_bottle.cpp).
+    static constexpr int BOTTLE_MAX = 1;
     std::vector<Bottle> bottles;
     /// All the water in them, 0 to the number of bottles.
     float bottleWater() const;
@@ -1255,6 +1256,17 @@ private:
     bool wantsFill(const World& world, Vec2i water) const;
     /// Low on water and not thirsty: walks to water to fill up.
     bool seekFill(World& world);
+    /// Whether another bottle could be any use to it: it has none, or its
+    /// own holds clean water and isn't full, to pour together with another.
+    bool roomForBottle() const;
+    /// Whether it would take b: with none, any; holding one, b must hold
+    /// clean water too.
+    bool wouldTakeBottle(const Bottle& b) const;
+    /// Takes b, as wouldTakeBottle allows: with none, b itself; holding one,
+    /// the emptier of the two is poured into the fuller, which it keeps.
+    /// Returns the bottle it leaves behind, if any; keptOwn says whether
+    /// that was b, poured into its own.
+    std::optional<Bottle> takeBottle(Bottle b, bool* keptOwn = nullptr);
     /// Seen a human carrying water, and how much, as it last saw it.
     const Human* nearestWaterHolder(const World& world) const;
     /// Thirsty with nothing to drink: asks someone it sees with water, close
@@ -1263,8 +1275,8 @@ private:
     /// Asked for a drink by asker, out loud: pours them some, sells it for
     /// a cake, lies that it has none, or refuses.
     void answerDrink(World& world, Human& asker);
-    /// Pours amount of its water into o's bottle, or hands o a spare
-    /// bottle when o has none; for a cake when sold. False if it can't.
+    /// Pours amount of its water into o's bottle, or, to a friend with none,
+    /// hands over its own; for a cake when sold. False if it can't.
     bool giveWater(World& world, Human& o, bool sold);
     /// Putting things down on the floor and picking them up (human_stash.cpp).
     struct Stash {

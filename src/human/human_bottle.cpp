@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <cmath>
 
-// Bottles: every human wakes with one, full, in a back pocket. Thirsty with
+// Bottles: every human wakes with one, full, in the back hand. Thirsty with
 // water far off, it drinks from it where it stands; beside water it would
 // drink, it fills it, first pouring out what it wouldn't drink, or what is
 // clearly dirtier than the water before it, in a puddle that dries. The
@@ -13,7 +13,10 @@
 // nothing to drink, a human asks someone close by it sees with water: they
 // pour it some, sell it some for a cake, lie that they have none (seen
 // through the glass), or refuse. Bottles are taken off the dead and snatched
-// in a fight (human_fight.cpp), like cakes.
+// in a fight (human_fight.cpp), like cakes. It holds one bottle at most: to
+// take another it pours the emptier into the fuller and keeps that, but
+// only when both hold clean water, so dirt never spreads from one to the
+// other.
 
 namespace {
 
@@ -73,6 +76,12 @@ constexpr float SEE_WATER = 0.1f;
 /// How much it strikes the one lied to.
 constexpr float EPISODE_BOTTLE_LIE = 0.5f;
 
+/// Bottle water no fouler and no redder than this is clean enough to pour
+/// into another; an empty bottle is clean.
+constexpr float POUR_CLEAN = 0.05f;
+
+bool clean(const Bottle& b) { return b.foul <= POUR_CLEAN && b.red <= POUR_CLEAN; }
+
 /// The fullest bottle, -1 if none holds any.
 int fullest(const std::vector<Bottle>& bottles) {
     int best = -1;
@@ -107,6 +116,36 @@ const Bottle* Human::shownBottle() const {
     if (bottles.empty()) return nullptr;
     int i = fullest(bottles);
     return &bottles[size_t(i < 0 ? 0 : i)];
+}
+
+bool Human::roomForBottle() const {
+    return bottles.empty() || (!bottles.front().full() && clean(bottles.front()));
+}
+
+bool Human::wouldTakeBottle(const Bottle& b) const {
+    return roomForBottle() && (bottles.empty() || (!b.empty() && clean(b)));
+}
+
+// The fuller is kept; whatever doesn't fit stays in the other.
+std::optional<Bottle> Human::takeBottle(Bottle b, bool* keptOwn) {
+    if (keptOwn) *keptOwn = false;
+    if (bottles.empty()) {
+        bottles.push_back(b);
+        return std::nullopt;
+    }
+    Bottle& own = bottles.front();
+    bool keep = own.water >= b.water;
+    if (keptOwn) *keptOwn = keep;
+    if (keep) {
+        b.pourInto(own, b.water);
+        return b;
+    }
+    bool hadWater = !own.empty();
+    own.pourInto(b, own.water);
+    std::swap(own, b);
+    note(hadWater ? "POURED MY BOTTLE INTO A FULLER ONE" : "LEFT MY EMPTY BOTTLE FOR A FULLER ONE");
+    sayLater(talk::Moment::SwapBottle);
+    return b;
 }
 
 int Human::sippable() const {
@@ -381,20 +420,17 @@ void Human::answerDrink(World& world, Human& asker) {
     sayLater(talk::Moment::RefuseDrink, asker.id);
 }
 
-// Poured from its fullest into the asker's emptiest; to one with no
-// bottle, a spare one is handed over, with whatever is in it.
+// Poured from its fullest into the asker's emptiest; to a friend with no
+// bottle, its own is handed over, with whatever is in it, never sold.
 bool Human::giveWater(World& world, Human& o, bool sold) {
     int from = fullest(bottles);
     if (from < 0) return false;
     std::string what;
     if (o.bottles.empty()) {
-        if (bottles.size() < 2) return false;
-        int spare = from == 0 ? 1 : 0;
-        // Something in it to drink, from the other if need be.
-        if (bottles[size_t(spare)].water < GIVE_WATER) bottles[size_t(from)].pourInto(bottles[size_t(spare)], GIVE_WATER);
-        o.bottles.push_back(bottles[size_t(spare)]);
-        bottles.erase(bottles.begin() + spare);
-        from = fullest(bottles);
+        if (sold || !isFriend(o.id)) return false;
+        o.bottles.push_back(bottles[size_t(from)]);
+        bottles.erase(bottles.begin() + from);
+        from = -1;
         what = "A BOTTLE";
     } else {
         int to = emptiest(o.bottles, 1.0f);

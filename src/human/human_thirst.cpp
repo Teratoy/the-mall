@@ -243,7 +243,7 @@ bool Human::seekWater(World& world) {
     // Nothing to drink anywhere: the nearest it saw carrying water, as the
     // hungry go for cakes (human_bottle.cpp).
     if (askForDrink(world)) return true;
-    if (bottles.size() >= size_t(BOTTLE_MAX)) return false;
+    if (!roomForBottle()) return false;
     const Human* h = nearestWaterHolder(world);
     if (!h) return false;
     fight_.foe = h->id;
