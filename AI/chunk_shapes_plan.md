@@ -6,7 +6,7 @@ its whole box. This plan makes the mall less boxy in four ways:
 
 - **Footprints that aren't rectangles**: chunks shaped like L, T, S or Z,
   up to 4 slots.
-- **Bigger rectangles**: 3x1, 1x3 and 3x3 (this takes over size work from
+- **Bigger rectangles**: 3x1, 4x1 and 3x3, and their turns (this takes over size work from
   step 6 of [worldgen_variation_plan.md](worldgen_variation_plan.md)).
 - **New kinds**: mall wing (step 5 of the variation plan, moved here),
   food court, parking/service, atrium.
@@ -30,8 +30,8 @@ chunk's kind.
 
 - "Chunk shapes" means all four: odd footprints, bigger rectangles, new
   kinds and shaped outlines.
-- Odd footprints go **up to 4 slots**: L of 3, and L, T, S/Z of 4. (The
-  straight 4 is a 4x1 rectangle; see question 1.)
+- Odd footprints go **up to 4 slots**: L of 3, and L, T, S/Z of 4.
+- **4x1 and 1x4 are in, but rare** (weight 0.3).
 - Odd footprints get **only the kinds that fit the shape**. Rooms, maze
   and water maze work on any outline. Plaza stays square only. The mall
   wing's street follows the bends of the L or T.
@@ -39,6 +39,14 @@ chunk's kind.
 - Outlines: **ring/donut, cross/plus, diagonal band, islands**.
 - Doors **stay per slot**: at least 1, at most 4 per slot, a 35% chance
   per free edge. Big chunks aren't made scarcer in doors.
+- **Outlines** go on rooms, maze, plaza and parking/service. Never on water
+  maze.
+- The **atrium's middle** rolls either water or a drop (a new tile).
+- The **food court has 3x the cakes**. It's meant to be a magnet, even if
+  it becomes a death pit.
+- **Humans remark on new places**: on first entering a food court,
+  parking or atrium, a `note()` line and a moment (step 10).
+- **Districts** are part of this plan, as its last step (step 11).
 
 ## How a chunk's footprint works now
 
@@ -83,8 +91,8 @@ Every chunk is still a rectangle, so `make check` must pass unchanged.
 
 ## 2. Bigger rectangles
 
-- `SIZES` gains `{3,1}` and `{1,3}` at 0.6 and `{3,3}` at 0.25 (from the
-  variation plan). See question 1 for 4x1.
+- `SIZES` gains `{3,1}` and `{1,3}` at 0.6, `{4,1}` and `{1,4}` at 0.3,
+  and `{3,3}` at 0.25.
 - Doors stay at up to 4 per slot, so a 3x3 may have up to 36. Keys follow
   doors as now.
 - Cakes, slam rooms, spikes and statues already scale per slot.
@@ -140,7 +148,11 @@ gets a short corridor in. That corridor must stay off a water core
 (`dig` never touches water, so it routes round). If a door can't reach,
 it's skipped as now.
 
-Which kinds take an outline, and how often, is question 2.
+Kinds that take an outline, and how often (draft): rooms 25% (a ring of
+rooms, islands of rooms joined by bridges), maze 20% (a maze in a cross
+or on a band), plaza 30% (a ring plaza round a solid core, a cross
+plaza), parking/service 25% (islands of parking joined by narrow ramps).
+Water maze never.
 
 ## 5. Mall wing (`gen_mall.cpp`)
 
@@ -160,14 +172,14 @@ As in the variation plan, plus bends:
 
 - One big hall, with counters (rows of tables) round its edge and a
   dense grid of small tables in the middle.
-- Many more cakes than other kinds (draft: 3x per slot), and 2 to 4
+- Three times the cakes per slot of other kinds (user), and 2 to 4
   basins. Every cake still lies on a table.
 - A restroom off the hall is likely (draft 70%).
 - Dart bait is likelier here, since there are long straight runs between
   tables.
 - Fits: square and near-square rectangles, and L.
-- This chunk is where crowds and fights happen. Watch the soak for it
-  turning into a death pit; see question 4.
+- This chunk is where crowds and fights happen. The user is fine with it
+  becoming a death pit; still watch the soak for stuck humans there.
 
 ## 7. Parking / service (`gen_service.cpp`)
 
@@ -185,8 +197,12 @@ As in the variation plan, plus bends:
 ## 8. Atrium / gallery (`gen_atrium.cpp`)
 
 - A ring walkway (8 to 12 cells) round a big middle you can see across
-  but not walk across: water (a huge pool) or an open void. Void would
-  need a new `Tile::Drop` (opaque: no; passable: no). See question 3.
+  but not walk across. Each atrium rolls (draft 50/50):
+  - water: a huge pool, drunk and washed at from its edge, like any;
+  - a drop: a new `Tile::Drop`, not passable and not opaque, drawn as a
+    dark well with a railing along its edge. Nothing falls in yet; that
+    may come later. Dropping goes into `sides()`, `dig` and `carve` like
+    water: nothing crosses it, nothing digs through it.
 - Shops round the outside, like the mall wing's.
 - 2 to 4 bridges may cross the middle, as chokepoints.
 - Statues at the corners of the ring.
@@ -208,11 +224,35 @@ It also saves a few `make shot` pictures per new kind. Variation steps
 3 and 4 were checked this way by hand ("1044 chunks, 20 seeds"); this
 keeps that check.
 
+## 10. Remarks on new places
+
+- A human remembers which kinds of place they've been in (in `Memory`,
+  since it's what they've seen). The first time they enter a food court,
+  a parking/service chunk or an atrium, they note it in the life log
+  ("Found a food court.") and say a line (`sayLater`).
+- Three new moments at the end of `talk::Moment`: `FoodCourt`, `Parking`,
+  `Atrium`, with lines in `data/lines.txt`. Tone follows mood: hungry and
+  hopeful at a food court ("Food! Everywhere!"), uneasy in parking.
+- Humans don't read the chunk's kind. What they recognise is what they
+  see: many tables with cakes, pillars in a bare hall, a ring round a
+  drop or a pool. Each kind leaves a sign in the world that the human can
+  see, for example its floor, and seeing it is what counts.
+- A scenario in `tests/scenarios.cpp` for each remark.
+
+## 11. Districts
+
+Moved here from variation step 6:
+- Each new chunk looks at generated neighbours. With 50% chance it copies
+  one neighbour's wall style. With 40% chance it reuses that neighbour's
+  floor palette, with a new pattern. Otherwise it rolls fresh styles.
+- Kinds may cluster too: draft, 30% chance to lean toward a neighbour's
+  kind (mall wings next to mall wings make a longer mall).
+
 ## Kind weights
 
 Draft weights per footprint. 0 means the kind doesn't fit there.
 
-| kind | 1x1 | 2x1/3x1 | 2x2 | 3x3 | L/T/S |
+| kind | 1x1 | 2x1/3x1/4x1 | 2x2 | 3x3 | L/T/S |
 |---|---|---|---|---|---|
 | Rooms | .35 | .25 | .30 | .25 | .35 |
 | Maze | .20 | .15 | .15 | .15 | .25 |
@@ -233,7 +273,9 @@ Draft weights per footprint. 0 means the kind doesn't fit there.
 6. Mall wing.
 7. Parking/service.
 8. Food court.
-9. Atrium (needs outlines).
+9. Atrium (needs outlines), with `Tile::Drop`.
+10. Remarks on new places.
+11. Districts.
 
 Each step builds, passes the probe, and is checked in the game before
 the next. The soak will change at every step from 3 on: look at the diff
@@ -241,21 +283,5 @@ for new stuck humans or blocks before `make golden`.
 
 ## Open questions
 
-1. **4x1 and 1x4**: they're 4 slots and straight, so they fit "up to 4
-   slots". Include them, or keep the long rectangles to 3?
-2. **Outlines**: which kinds take one (rooms, maze, plaza, water maze?),
-   and how often? Draft: rooms 25%, maze 20%, plaza 30% (a ring plaza,
-   a cross plaza), never water maze.
-3. **Atrium middle**: water (no new tile; you can drink and wash at the
-   edge) or a drop/void you can see across (new `Tile::Drop`, and maybe
-   falling later)?
-4. **Food court plenty**: three times the cakes may make it a magnet and
-   a death pit. Is that what you want, or should cakes there be normal
-   and it's just tables and basins?
-5. **Do humans notice places?** Chitchat has place remarks (its step 6
-   is still open). Should humans say something new on first entering a
-   food court, parking or atrium ("Food! Everywhere!"), with a `note()`
-   and a moment? Or leave places silent until chitchat step 6?
-6. **Districts**: the other half of variation step 6 (neighbours sharing
-   wall and floor styles) stays in that plan. Do it before, with, or
-   after this one?
+None yet. All six first questions were answered on 2026-10-30 (see
+"User's decisions"). Questions that come up while building go here.

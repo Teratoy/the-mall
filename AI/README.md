@@ -10,8 +10,8 @@ Status as of 2026-10-30.
 | Plan | What it covers | Status | Still open |
 |---|---|---|---|
 | [worldgeneration.txt](worldgeneration.txt) | The original world spec: endless chunks, border walls, shared exit doors, keys per door | Built | — |
-| [worldgen_variation_plan.md](worldgen_variation_plan.md) | Giant household statues, richer rooms, plazas, mall wings, districts | Steps 1–4 built | Step 5 mall wing and bigger chunks moved to chunk_shapes_plan.md; step 6 districts; statues in mazes and water mazes |
-| [chunk_shapes_plan.md](chunk_shapes_plan.md) | Odd chunk footprints (L, T, S), bigger rectangles, outlines (ring, cross, band, islands), mall wing, food court, parking, atrium | Planned | Open questions 1–6 |
+| [worldgen_variation_plan.md](worldgen_variation_plan.md) | Giant household statues, richer rooms, plazas, mall wings, districts | Steps 1–4 built | Steps 5 and 6 (mall wing, bigger chunks, districts) moved to chunk_shapes_plan.md; statues in mazes and water mazes |
+| [chunk_shapes_plan.md](chunk_shapes_plan.md) | Odd chunk footprints (L, T, S), bigger rectangles, outlines (ring, cross, band, islands), mall wing, food court, parking, atrium | Planned | Nothing built yet; first questions answered |
 | [blood_plan.md](blood_plan.md) | Wounds and bleeding, stains on world and bodies, washing, suspicion, escort, trails | All 7 steps built | Q2: should some spike victims survive? Q3: should washing or an escort slow bleeding? |
 | [cannibalism_plan.md](cannibalism_plan.md) | The erratic mind, flesh on bodies, scavenging, hunting, guilt and appetite | All 8 steps built | Erratic will be expanded later (user); snapping may need tuning if it should be rarer |
 | [talking_plan.md](talking_plan.md) | Lines in data/lines.txt, moments, tone effects, bubbles, pacing | Built | Muttering alone; accusations spreading to overhearers; lies about people |
