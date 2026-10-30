@@ -23,8 +23,10 @@ SCENARIOS := build/scenarios
 SHOT := build/shot
 # Grows chunk interiors on every footprint and checks they keep to it.
 GENPROBE := build/genprobe
+# A human drawn at twice the detail, beside the one the game draws now.
+HIDEF := build/hidef
 
-.PHONY: all run clean stuck check golden coverage shot scenarios genprobe
+.PHONY: all run clean stuck check golden coverage shot scenarios genprobe hidef
 
 all: $(BIN)
 
@@ -78,6 +80,12 @@ $(GENPROBE): tools/genprobe.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
 
 genprobe: $(GENPROBE)
 	./$(GENPROBE) $(GENPROBE_ARGS)
+
+$(HIDEF): tools/hidef.cpp $(filter-out build/main.o,$(OBJ))
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@ $(LDLIBS)
+
+hidef: $(HIDEF)
+	./$(HIDEF) build/hidef.png $(HIDEF_ARGS)
 
 clean:
 	rm -rf build
