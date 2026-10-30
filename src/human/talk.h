@@ -89,8 +89,10 @@ enum class Moment {
     // (to nobody, about them).
     Tired, Exhausted, SleepNow, Woke, Dream, RobbedSleep, CakeGone, WatchMe, WatchYes, WatchCake, WatchNo, WakeUp,
     YourWatch, FailedWatch, WakeThem,
-    // Drinking water it knew was foul (to nobody).
-    FoulAgain,
+    // Drinking water it knew was foul (to nobody); warning someone it walks
+    // with off foul water (to them); drinking foul water it was warned of
+    // (to nobody, about whoever warned it).
+    FoulAgain, WarnFoul, FoulWarned,
     Count
 };
 

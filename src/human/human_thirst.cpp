@@ -40,6 +40,9 @@ constexpr float FOUL_REFUSE = 0.3f;
 /// water it sees within FOUL_TASTE_REACH, until seen cleaner than that.
 constexpr float FOUL_NOTED = 0.1f;
 constexpr int FOUL_TASTE_REACH = 2;
+/// Someone it walks with, this close and seeing it go for water it knows
+/// is foul, warns it.
+constexpr int WARN_FOUL_REACH = 10;
 /// Water this red is refused, unless parched or craving flesh (from
 /// BLOOD_CRAVING); drunk anyway, it frightens this much.
 constexpr float RED_WATER = 0.15f;
@@ -160,8 +163,8 @@ void Human::seeWater(const World& world, Vec2i water) {
         water_.foul.erase(it);
         return;
     }
-    float filth = world.filthFoul(water);
-    it->second = {filth, world.foul(water) - filth};
+    it->second.filth = world.filthFoul(water);
+    it->second.blood = world.foul(water) - it->second.filth;
 }
 
 // Foul water it sees or remembers, red water it sees, and bodies it knows
@@ -196,17 +199,39 @@ float Human::filthAround(const World& world, Vec2i at, bool butBlood) const {
     return sum;
 }
 
+// The sleeping and the erratic warn nobody. All it knows of the water
+// round there goes with the warning.
+bool Human::warnedOfFoul(World& world, Vec2i water) {
+    if (sight.sees(water) || water_.foul.count(water)) return false;
+    for (const auto& o : world.humans()) {
+        if (o.get() == this || o->dead() || o->state == State::Sleeping || o->isErratic() || !inGroupWith(*o) ||
+            cheb(o->cell, cell) > WARN_FOUL_REACH || !o->sight.sees(cell) || !o->water_.foul.count(water))
+            continue;
+        for (const auto& [c, f] : o->water_.foul)
+            if (cheb(c, water) <= FOUL_TASTE_REACH && !water_.foul.count(c)) water_.foul[c] = {f.filth, f.blood, o->id};
+        o->note("WARNED @ THE WATER IS FOUL", id);
+        o->sayLater(talk::Moment::WarnFoul, id);
+        note("@ WARNED ME THE WATER IS FOUL", o->id);
+        return true;
+    }
+    return false;
+}
+
 // Not where someone else stands: that one may be drinking there.
 bool Human::seekWater(World& world) {
     auto foulness = [&](Vec2i c) {
         auto w = waterBeside(c);
         return w ? knownFoul(world, *w) : 0.0f;
     };
-    auto p = search(world, [&](Vec2i c) {
-        auto w = waterBeside(c);
-        return w && wouldDrink(world, c, *w);
-    }, true,
-                    [&](Vec2i c) { return 1 + int(foulness(c) * FOUL_COST); });
+    auto find = [&] {
+        return search(world, [&](Vec2i c) {
+            auto w = waterBeside(c);
+            return w && wouldDrink(world, c, *w);
+        }, true, [&](Vec2i c) { return 1 + int(foulness(c) * FOUL_COST); });
+    };
+    auto p = find();
+    // Warned off as it sets out, it thinks again.
+    if (p && !p->empty() && warnedOfFoul(world, *waterBeside(p->back()))) p = find();
     if (!p) return seekToilet(world);
     if (p->empty()) {
         startDrinking(*waterBeside(cell));
@@ -223,7 +248,9 @@ void Human::startDrinking(Vec2i water) {
         dread_ = std::max(0.0f, dread_ - DRINK_CALM);
         // Found water soon after getting thirsty: keeping near it paid off.
         if (lessons.nearWater > 0.0f && clock_ - water_.thirstyAt < WATER_SOON) learn(lessons.nearWater, false);
-        water_.knewFoul = water_.foul.count(water) > 0;
+        auto known = water_.foul.find(water);
+        water_.knewFoul = known != water_.foul.end();
+        water_.warnedBy = water_.knewFoul ? known->second.toldBy : -1;
         water_.tastedFoul = false;
     }
     water_.last = cell;
@@ -265,11 +292,20 @@ void Human::drink(World& world) {
         sayLater(talk::Moment::BloodyWater);
     }
     if (float foul = world.foul(water_.drinkAt); foul > 0.0f) {
-        // Once a drink: knowing, if it had tasted it foul there before.
+        // Once a drink: knowing, if it had tasted it foul there before or
+        // was warned of it.
         if (foul >= FOUL_NOTED && !water_.tastedFoul) {
             water_.tastedFoul = true;
-            note(water_.knewFoul ? "DRANK FOUL WATER AGAIN" : "DRANK FOUL WATER");
-            sayLater(water_.knewFoul ? talk::Moment::FoulAgain : talk::Moment::FoulWater);
+            if (!water_.knewFoul) {
+                note("DRANK FOUL WATER");
+                sayLater(talk::Moment::FoulWater);
+            } else if (water_.warnedBy >= 0) {
+                note("DRANK THE FOUL WATER @ WARNED ME OF", water_.warnedBy);
+                sayLater(talk::Moment::FoulWarned, -1, water_.warnedBy);
+            } else {
+                note("DRANK FOUL WATER AGAIN");
+                sayLater(talk::Moment::FoulAgain);
+            }
             // Strikes it more the fouler it is.
             rememberAt(water_.drinkAt, Episode::What::FoulWater, std::min(1.0f, foul));
         }

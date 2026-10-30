@@ -1336,6 +1336,25 @@ parched                 | I KNOW. I KNOW. I NEED IT.
 craving                 | TASTES OF THEM. GOOD.
 erratic                 | SAME WATER. SAME TASTE. SAME PLACE.
 
+# Someone it walks with setting off for water it knows is foul, said to
+# them.
+[warn_foul 0.9]
+                        | NOT THAT WATER. IT'S FOUL.
+                        | DON'T DRINK THERE. TRUST ME.
+                        | THAT WATER'S BAD. I TASTED IT.
+friend                  | {NAME}, NOT THAT WATER. IT'S BAD.
+rude                    | YOU'LL DRINK THAT FILTH?
+timid                   | U-UM... THAT WATER MADE ME SICK.
+
+# Drinking foul water it was warned of, said to nobody, about whoever
+# warned it.
+[foul_warned 0.6]
+                        | THEY SAID IT WAS FOUL...
+                        | I WAS WARNED. UGH.
+                        | {WHO} WAS RIGHT. IT'S FOUL.
+parched                 | I KNOW, {WHO}. I NEED IT.
+parched                 | WARNED OR NOT, I NEED IT.
+
 # Needing to go, said to nobody.
 [need_to_go 0.35]
                         | I NEED TO GO.

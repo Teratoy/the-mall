@@ -61,6 +61,8 @@ struct SoakProbe {
                 w.takeKey(c);
             }
     }
+    /// h keeps with o for company: the two walk together.
+    static void keepWith(Human& h, const Human& o) { h.social_.companion = o.id; }
     /// Turns the cell into a basin's worth of water.
     static void addWater(World& w, Vec2i cell) { w.setTile(cell, Tile::Basin); }
     /// h tasted the water at the cell this foul (with feces and piss) before.
