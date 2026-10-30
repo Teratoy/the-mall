@@ -442,9 +442,9 @@ int Human::bloodCost(Vec2i c) const {
     return extra;
 }
 
-// Foes are kept away from like suspects.
+// Foes are kept away from like suspects, but for one worth lying to.
 bool Human::shuns(const Human& o) const {
-    return &o != this && !o.dead() && o.id != fight_.foe && (suspicious(o.id) || isFoe(o.id)) && sight.sees(o.cell) &&
+    return &o != this && !o.dead() && o.id != fight_.foe && (suspicious(o.id) || (isFoe(o.id) && !lieWorthy(o))) && sight.sees(o.cell) &&
            !(starving() && o.cakes > 0);
 }
 

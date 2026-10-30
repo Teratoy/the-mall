@@ -361,6 +361,10 @@ constexpr float INTRODUCE_RETURN = 0.3f;
 /// how far it trusts the teller.
 constexpr float TRUST_CONFIDE = 0.15f;
 constexpr float GOSSIP_WORTH = 0.2f;
+/// The cunning speak of anyone they are wary of as this dangerous; a
+/// lie when it is this much worse than they really think.
+constexpr float SLANDER = -0.8f;
+constexpr float SLANDER_LIE = 0.3f;
 constexpr float GOSSIP_NEWS = 0.15f;
 constexpr float GOSSIP_WEIGHT = 0.6f;
 /// Talking: a line is heard this far off, in cells, by anyone who can see

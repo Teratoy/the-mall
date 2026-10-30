@@ -25,6 +25,23 @@ struct SoakProbe {
         h.met.insert(o.id);
         h.social_.greetedAt[o.id] = at;
     }
+    /// A real trap at the cell, armed and hidden.
+    static void addTrap(World& w, Vec2i cell, TrapKind kind) { w.traps_[cell] = Trap{kind, cell, {0, 0}}; }
+    /// Moves h to a free cell, as if it had come to there.
+    static void place(World& w, Human& h, Vec2i cell) {
+        w.moveOccupant(h.cell, cell, &h);
+        h.cell = h.prev = h.target_ = cell;
+        h.path_.clear();
+    }
+    /// h knows every tile of the chunk it stands in, doors and all.
+    static void knowChunk(const World& w, Human& h) {
+        Vec2i slot = World::slotOf(h.cell);
+        for (int y = 0; y < CHUNK; y++)
+            for (int x = 0; x < CHUNK; x++) {
+                Vec2i c{slot.x * CHUNK + x, slot.y * CHUNK + y};
+                h.memory.see(c, w.tile(c));
+            }
+    }
     /// Given up on a way out, at home on home.
     static void settle(Human& h, Vec2i home) {
         h.escape_.settled = true;

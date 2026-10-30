@@ -101,12 +101,15 @@ std::optional<Human::Tell> Human::gossipFor(const Human& o) const {
         const std::string* n = knownName(who);
         return n && !o.knownName(who) ? *n : std::string();
     };
-    for (const auto& [who, opinion] : social_.trust) {
-        if (who == o.id || who == id || std::abs(opinion) < GOSSIP_WORTH) continue;
+    for (const auto& [who, real] : social_.trust) {
+        if (who == o.id || who == id) continue;
+        // The cunning make anyone they are wary of out to be dangerous.
+        float opinion = cunning() && real < 0.0f ? std::min(real, SLANDER) : real;
+        if (std::abs(opinion) < GOSSIP_WORTH) continue;
         auto h = o.memory.heard.find(Memory::gossipKey(id, who));
         float told = h == o.memory.heard.end() ? 0.0f : h->second;
         if (std::abs(opinion - told) < GOSSIP_NEWS) continue;
-        t.people.push_back({who, nameFor(who), opinion});
+        t.people.push_back({who, nameFor(who), opinion, opinion - real <= -SLANDER_LIE});
     }
     for (const auto& [who, n] : memory.names) {
         if (who == o.id || o.knownName(who)) continue;
@@ -213,17 +216,17 @@ void Human::answerWay(Human& asker) {
 
 // Settlers have seen the most, and say so.
 std::optional<Human::Tell> Human::wayFor(const Human& o) const {
-    bool foe = isFoe(o.id), cunning = traits.greedy >= CUNNING_GREEDY && traits.brave >= CUNNING_BRAVE;
-    if (foe && !cunning) return std::nullopt;
+    bool foe = isFoe(o.id);
+    if (foe && !cunning()) return std::nullopt;
     Tell t{Tell::Kind::Way, cell};
     if (foe) {
-        // The other way from where it thinks out is, or at spikes.
+        // The other way from where it thinks out is, or at a trap.
         t.lie = true;
         t.sure = WAY_LIE_SURE;
         t.way = escape_.hunch + TAU / 2.0f;
         int best = 0;
         for (const auto& [plate, kind] : memory.traps)
-            if (kind == TrapKind::Spikes && !o.memory.traps.count(plate) && plate != o.cell &&
+            if (bait(plate) && !o.memory.traps.count(plate) && plate != o.cell &&
                 (best == 0 || cheb(plate, o.cell) < best)) {
                 best = cheb(plate, o.cell);
                 t.cell = plate;
@@ -250,10 +253,17 @@ std::optional<Human::Tell> Human::wayFor(const Human& o) const {
 // door the foe has never seen, so that going for the door takes them
 // across it, if they walk the way they were told.
 std::optional<Human::Tell> Human::lieFor(const World& world, const Human& foe) const {
-    if (traits.greedy < CUNNING_GREEDY || traits.brave < CUNNING_BRAVE || !isFoe(foe.id) || foe.keys == 0)
-        return std::nullopt;
+    if (!cunning() || !isFoe(foe.id)) return std::nullopt;
+    // Hungry with nothing to eat: a cake, and the darts under it.
+    if (foe.hungry() && foe.cakes == 0)
+        if (auto c = riggedCakeFor(foe)) {
+            Tell t{Tell::Kind::Cake, *c, TrapKind::Darts};
+            t.lie = true;
+            return t;
+        }
+    if (foe.keys == 0) return std::nullopt;
     for (const auto& [plate, kind] : memory.traps) {
-        if (kind != TrapKind::Spikes || foe.memory.traps.count(plate)) continue;
+        if (!bait(plate) || foe.memory.traps.count(plate)) continue;
         auto there = search(world, [&](Vec2i c) { return c != plate && cheb(c, plate) == 1; });
         if (!there) continue;
         auto on = searchFrom(world, plate, [&](Vec2i c) {
@@ -261,7 +271,7 @@ std::optional<Human::Tell> Human::lieFor(const World& world, const Human& foe) c
             return d && foe.memory.tile(*d) == Tile::Void;
         }, false);
         if (!on || on->empty()) continue;
-        Tell t{Tell::Kind::Route, *lockedDoorBeside(on->back())};
+        Tell t{Tell::Kind::Route, *lockedDoorBeside(on->back()), kind};
         t.lie = true;
         t.route.push_back(cell);
         t.route.insert(t.route.end(), there->begin(), there->end());
@@ -272,6 +282,25 @@ std::optional<Human::Tell> Human::lieFor(const World& world, const Human& foe) c
     }
     return std::nullopt;
 }
+
+bool Human::bait(Vec2i c) const {
+    auto it = memory.traps.find(c);
+    if (it == memory.traps.end()) return false;
+    return it->second == TrapKind::Spikes || (it->second == TrapKind::Darts && memory.tile(c) == Tile::Floor);
+}
+
+std::optional<Vec2i> Human::riggedCakeFor(const Human& o) const {
+    std::optional<Vec2i> best;
+    for (const auto& [c, kind] : memory.traps)
+        if (kind == TrapKind::Darts && memory.tile(c) == Tile::Table && memory.cakes.count(c) &&
+            !o.memory.traps.count(c) && !o.memory.cakes.count(c) && (!best || cheb(c, o.cell) < cheb(*best, o.cell)))
+            best = c;
+    return best;
+}
+
+bool Human::cunning() const { return traits.greedy >= CUNNING_GREEDY && traits.brave >= CUNNING_BRAVE; }
+
+bool Human::masks(int id) const { return cunning() && isFoe(id) && fight_.foe != id && !afraidOf(id); }
 
 // Word of people is spoken of by the first with an opinion; names alone
 // pass without a line of their own.
@@ -305,7 +334,10 @@ void Human::deliver(Human& o, const Tell& t) {
     switch (t.kind) {
     case Tell::Kind::Cake:
         news = o.memory.cakes.insert(t.cell).second;
-        if (news) o.memory.toldBy[t.cell] = id;
+        if (news) {
+            o.memory.toldBy[t.cell] = id;
+            o.memory.cakeTips[t.cell] = id;
+        }
         break;
     case Tell::Kind::Key:
         news = o.memory.keys.insert(t.cell).second;
@@ -320,10 +352,10 @@ void Human::deliver(Human& o, const Tell& t) {
         // The cells along it and all round them, so they can cut the same
         // corners; only what they have never seen, and only tiles. A way to
         // water ends beside it, so the water comes with it.
-        // Every cell they never saw is marked as told first: seeing round
-        // one cell would otherwise hide the next (a plate on a lie) as seen.
+        // Every cell along it is told as clear, seen before or not, so a
+        // trap that goes off on it is laid at the teller's door (learnTrap).
         for (Vec2i c : t.route)
-            if (o.memory.tile(c) == Tile::Void) o.memory.toldBy[c] = id;
+            if (!o.memory.traps.count(c)) o.memory.toldBy[c] = id;
         for (Vec2i c : t.route) {
             for (Vec2i d : DIRS8)
                 for (Vec2i m : {c, c + d})
@@ -348,6 +380,7 @@ void Human::deliver(Human& o, const Tell& t) {
             told = *w.opinion;
             if (delta == 0.0f) continue;
             o.note(*w.opinion < 0.0f ? "# WARNED ME ABOUT @" : "# SPOKE WELL OF @", w.about, id);
+            if (w.lie) note("LIED TO @ ABOUT #", o.id, w.about);
             o.regard(w.about, delta);
             news = true;
         }
@@ -386,8 +419,11 @@ void Human::deliver(Human& o, const Tell& t) {
                                        "ABOUT OTHERS", "THE WAY OUT", "THE WAY TO WATER"};
     std::string what = WHAT[size_t(t.kind)];
     if (t.kind != Tell::Kind::People) o.note("@ TOLD ME " + what, id);
-    note(t.lie ? (t.kind == Tell::Kind::Water ? "TOLD @ A WAY TO WATER OVER SPIKES" : "TOLD @ A WAY OVER SPIKES")
-               : "TOLD @ " + what,
+    std::string over = std::string(" OVER ") + trapWord(t.trap);
+    note(!t.lie                          ? "TOLD @ " + what
+         : t.kind == Tell::Kind::Cake    ? std::string("TOLD @ OF A RIGGED CAKE")
+         : t.kind == Tell::Kind::Water   ? "TOLD @ A WAY TO WATER" + over
+                                         : "TOLD @ A WAY" + over,
          o.id);
     // A tip sold is owed for as the greeting ends; said once it is over, it went for nothing.
     if (t.sold && o.state == State::Greeting && o.social_.partner == id) o.social_.owes = id;
@@ -588,12 +624,13 @@ bool Human::wouldGreet(const Human& o) const {
 // A foe with keys may be sent over spikes to a door; any foe not yet
 // pointed the wrong way may be pointed at spikes as the way out.
 bool Human::lieWorthy(const Human& o) const {
-    if (traits.greedy < CUNNING_GREEDY || traits.brave < CUNNING_BRAVE || !isFoe(o.id)) return false;
-    if (o.keys == 0 && escape_.wayTold.count(o.id)) return false;
+    if (!cunning() || !isFoe(o.id)) return false;
     auto it = social_.greetedAt.find(o.id);
     if (it != social_.greetedAt.end() && clock_ - it->second < CATCH_UP_TIME) return false;
+    if (o.hungry() && o.cakes == 0 && riggedCakeFor(o)) return true;
+    if (o.keys == 0 && escape_.wayTold.count(o.id)) return false;
     for (const auto& [plate, kind] : memory.traps)
-        if (kind == TrapKind::Spikes && !o.memory.traps.count(plate)) return true;
+        if (bait(plate) && !o.memory.traps.count(plate)) return true;
     return false;
 }
 
@@ -624,5 +661,6 @@ bool Human::approachable() const {
 }
 
 bool Human::welcomes(const Human& o) const {
-    return !isFoe(o.id) && !suspicious(o.id) && !afraidOf(o.id) && !repelledBy(o);
+    // A foe worth lying to is greeted back with a smile.
+    return (!isFoe(o.id) || lieWorthy(o)) && !suspicious(o.id) && !afraidOf(o.id) && !repelledBy(o);
 }

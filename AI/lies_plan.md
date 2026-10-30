@@ -4,8 +4,20 @@ Cunning humans (greedy ≥ 0.5, brave ≥ 0.4) can lie to a foe. They can send
 it on a route over spikes to a door, or to water over spikes (and, when
 asked, point the wrong way out). The code has been there since
 2026-10-29, but no soak run has ever logged a lie. This plan says why, and
-proposes how to make lies part of the game. **Nothing here is built yet:
-it waits on the user's answers to the questions at the end.**
+proposes how to make lies part of the game.
+
+## User's decisions (2026-10-30)
+
+- Build step 1 (liars reach their marks, and don't show hostility in
+  their words), 2c (bait with any trap that re-arms), 3 (lies about
+  people) and 4 (tests).
+- Not now: 2a false tips, 2b the wrong way out unasked.
+- Traps that re-arm: spikes and dart plates. Slam rooms are spent once
+  they shut, so they are never bait.
+- Questions 1, 3, 4 and 5 weren't answered, so they stay as they are:
+  lies go to foes who don't hate the liar back, they gain the liar
+  nothing but the foe's harm, and a liar found out is only thought worse
+  of by its mark.
 
 ## Why lies never happen (measured 2026-10-30)
 
@@ -86,6 +98,47 @@ They are safe, but only worth having together with step 2 below.
    can't simply walk to the spawn basin. Add a scenario for each new kind
    of lie. Keep the census of lie opportunities as a tool in `tools/`,
    to check how often lies happen after tuning.
+
+## Built (2026-10-30: steps 1, 2c, 3 and 4)
+
+- **Reaching the mark** (human_blood.cpp, human_social.cpp): `shuns()`
+  no longer keeps a liar away from a foe it means to lie to, and
+  `welcomes()` greets such a foe back.
+- **A straight face** (talk.cpp): `Human::masks(id)`. A cunning human's
+  `foe` and `disliked` line conditions are false toward a foe, unless it
+  is fighting them or afraid of them, so it doesn't greet a mark with
+  "YOU AGAIN.". `Human::cunning()` replaces the copies of the test.
+- **Bait that re-arms** (`Human::bait`): spikes, or a dart plate in the
+  floor. Route lies, water lies and the wrong way out (when asked) can
+  all go over either; their log lines say which ("TOLD @ A WAY OVER
+  DARTS"). Slam rooms never count.
+- **Rigged cakes** (`Human::riggedCakeFor`, in `lieFor`): to a hungry foe
+  with no cake, the cunning tip a cake they know sits on a table rigged
+  with darts. It sounds like an honest tip (the tell_cake lines), and the
+  liar logs "TOLD @ OF A RIGGED CAKE". Every cake tip is now kept in
+  `Memory::cakeTips`, so whoever is darted taking a cake it was told of
+  blames the teller ("@ SENT ME TO A RIGGED CAKE", TRUST_LIED), lie or
+  not. Like everyone, it only knows what it saw.
+- **Being found out on a route**: every cell of a told route now counts
+  as told clear, seen before or not. Before, a plate on ground the mark
+  had already looked at was never laid at the liar's door.
+- **Slander** (`gossipFor`): a cunning gossip speaks of anyone it is
+  wary of (trust below 0) as if they were dangerous (SLANDER -0.8, in
+  human_tuning.h). When that is at least SLANDER_LIE (0.3) worse than it
+  thinks, it is a lie: the liar logs "LIED TO @ ABOUT #", and the
+  listener hears an ordinary warning. It only reaches those who trust the
+  liar enough to gossip with it.
+- **Tests** (tests/scenarios.cpp): `lie-water` (its mark now knows of no
+  water), `lie-route`, `lie-darts` (a real plate: the mark walks into it
+  and blames the liar), `lie-cake` (a real rigged cake: the mark is
+  darted and blames the liar) and `slander`, all passing. `lie-water` and
+  `lie-route` also check that no foe line is said.
+
+**Still rare in normal play.** The soak's output didn't change at all:
+in its 6 worlds no liar ever knows a trap its foe doesn't, so no lie
+comes up. Lies now work whenever the chance arises, but the chance is
+still rare. Lies that need no trap (2a false tips, 2b the wrong way out
+unasked) are what would make them common.
 
 ## Open questions
 

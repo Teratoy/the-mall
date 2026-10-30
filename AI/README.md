@@ -19,13 +19,13 @@ Status as of 2026-10-30.
 | [relief_plan.md](relief_plan.md) | Bladder and bowels, private spots, mess, dirty feet, foul water, toilets, being seen | All 6 steps built | — |
 | [thirst_plan.md](thirst_plan.md) | Thirst, basins, bloody and foul water, guarded water, water tips, hope near water | All 5 steps built | Tuning from play |
 | [sleep_plan.md](sleep_plan.md) | Tiredness, sleeping, where to sleep, robbing sleepers, keeping watch, dreams | All 5 steps built | Tuning from play (aim: ~15–20 min awake, ~90 s asleep) |
-| [lies_plan.md](lies_plan.md) | Why lies never happen (measured), and how to make them part of the game | Proposed, not built | All five questions at the end |
+| [lies_plan.md](lies_plan.md) | Lies: reaching the mark, a straight face, bait that re-arms (spikes, floor darts, rigged cakes), slander | Steps 1, 2c, 3, 4 built | Still rare in normal play: 2a false tips and 2b the wrong way out unasked were set aside; questions 1, 3–5 unanswered |
 | [human_split_plan.md](human_split_plan.md) | Splitting Human into per-system classes | Not started | Advised against for now; if done, only system by system, when that system is being reworked anyway |
 
 ## Known gaps found by the tests
 
-- **Lies never happen** (tests/scenarios.cpp, `lie-water` and
-  `lie-route`). The full diagnosis and the proposed fix are in
+- **Lies are rare in normal play**: they work when the chance comes up,
+  but a liar seldom knows a trap its foe doesn't. See
   [lies_plan.md](lies_plan.md).
 
 ## Built without a plan file

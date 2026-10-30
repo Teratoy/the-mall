@@ -364,9 +364,10 @@ bool holds(Cond c, const Human& s, const Human* to, const Human* about, const To
     if (!to) return false;
     switch (c) {
     case Cond::Friend: return s.isFriend(to->id);
-    case Cond::Foe: return s.isFoe(to->id);
+    // The cunning keep a straight face with a foe (Human::masks).
+    case Cond::Foe: return s.isFoe(to->id) && !s.masks(to->id);
     case Cond::Liked: return s.trust(to->id) >= LIKED;
-    case Cond::Disliked: return s.trust(to->id) <= -LIKED;
+    case Cond::Disliked: return s.trust(to->id) <= -LIKED && !s.masks(to->id);
     case Cond::Suspect: return s.suspects(to->id);
     case Cond::Afraid: return s.afraidOf(to->id);
     case Cond::TheyHungry: return to->hungry();

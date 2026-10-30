@@ -52,6 +52,19 @@ struct Stage {
                 }
         return from;
     }
+    /// The free floor nearest the first human at least min cells from c.
+    Vec2i farFrom(Vec2i c, int min) const {
+        for (int r = 0; r < 60; r++)
+            for (int y = -r; y <= r; y++)
+                for (int x = -r; x <= r; x++) {
+                    if (std::max(std::abs(x), std::abs(y)) != r) continue;
+                    Vec2i at = first().cell + Vec2i{x, y};
+                    if (cheb(at, c) >= min && world.tile(at) == Tile::Floor && !world.occupant(at) &&
+                        !world.table(at) && !world.statue(at))
+                        return at;
+                }
+        return first().cell;
+    }
     Human& add(uint64_t seed, int gap = 2) {
         Human& h = P::addHuman(world, HumanLook::random(rng), freeNear(first().cell, gap), seed);
         humans.push_back(&h);
@@ -135,22 +148,22 @@ Checks guardedWater(Stage& s, bool strangerHasCake, Checks expect) {
     return expect;
 }
 
-/// A cunning liar who counts victim a foe, knowing a spike plate (in its
-/// memory only) that victim doesn't know of, next to the liar.
-/// Past SUSPECT_DIST, where the liar doesn't yet keep away from its foe.
-constexpr int LIE_GAP = 7;
-void setUpLie(Stage& s, Human& liar, Human& victim) {
+/// A cunning liar who counts victim a foe, knowing a trap (in its memory
+/// only, unless real) next to it that victim doesn't know of.
+void setUpLie(Stage& s, Human& liar, Human& victim, TrapKind bait = TrapKind::Spikes, int gap = 1) {
     P::setTrust(liar, victim, -0.6f);
-    liar.learnTrap(s.freeNear(liar.cell, 1), TrapKind::Spikes);
+    liar.learnTrap(s.freeNear(liar.cell, gap), bait);
     liar.hunger = victim.hunger = 0.1f;
-    liar.thirst = 0.1f;
+    liar.thirst = victim.thirst = 0.1f;
 }
-
-/// Found by these scenarios (2026-10-30): a liar counts its victim a foe,
-/// and keepAway walks it off from foes within SUSPECT_DIST, a reflex that
-/// comes before greeting. Even with that let through, the lie didn't land
-/// within a minute. A gameplay question for the user.
-constexpr const char* LIES_BLOCKED = "liars keep away from the foes they would lie to";
+/// The liar never lets on: no foe line said to victim.
+Check straightFace(const Human& liar) {
+    return {"no foe line from the liar", [&liar](const Stage&) {
+                for (const auto& e : liar.log.entries())
+                    if (e.what == "SAID \"YOU AGAIN.\" TO @") return false;
+                return true;
+            }};
+}
 
 const std::vector<Scenario> SCENARIOS = {
     {"share", "a friend with cakes to spare feeds a starving friend", 99,
@@ -202,35 +215,90 @@ const std::vector<Scenario> SCENARIOS = {
      }},
     {"water-refused", "a stingy settler turns a thirsty stranger away", seedWhere(guardsAll),
      [](Stage& s) { return guardedWater(s, false, {logged({"TURNED @ AWAY FROM MY WATER"})}); }},
-    {"lie-water", "a cunning human sends a thirsty foe to water over spikes", seedWhere(cunning),
+    {"lie-water", "a cunning human sends a thirsty foe, who knows of no water, to water over spikes",
+     seedWhere(cunning),
      [](Stage& s) {
          Human& liar = s.first();
-         Human& victim = s.add(seedWhere(plain, 5000), LIE_GAP);
+         // Far from the spawn basin, so the foe knows of no water; the liar
+         // knows the whole chunk.
+         auto b = s.basin();
+         if (!b) return Checks{{"a basin near the spawn", [](const Stage&) { return false; }}};
+         P::knowChunk(s.world, liar);
+         P::place(s.world, liar, s.farFrom(*b, 25));
+         Human& victim = s.add(seedWhere(plain, 5000));
          setUpLie(s, liar, victim);
          victim.thirst = 0.7f;
          s.run(60);
-         return Checks{logged({"TOLD @ A WAY TO WATER OVER SPIKES"})};
-     },
-     LIES_BLOCKED},
+         return Checks{logged({"TOLD @ A WAY TO WATER OVER SPIKES"}), straightFace(liar)};
+     }},
     {"lie-route", "a cunning human sends a foe with a key to a door over spikes", seedWhere(cunning),
      [](Stage& s) {
          Human& liar = s.first();
          // The liar knows its whole chunk, doors and all; the foe only
          // what it sees.
-         Vec2i slot = World::slotOf(liar.cell);
-         for (int y = 0; y < CHUNK; y++)
-             for (int x = 0; x < CHUNK; x++) {
-                 Vec2i c{slot.x * CHUNK + x, slot.y * CHUNK + y};
-                 liar.memory.see(c, s.world.tile(c));
-             }
-         Human& victim = s.add(seedWhere(plain, 6000), LIE_GAP);
+         P::knowChunk(s.world, liar);
+         Human& victim = s.add(seedWhere(plain, 6000));
          setUpLie(s, liar, victim);
          victim.keys = 1;
-         victim.thirst = 0.1f;
          s.run(60);
-         return Checks{logged({"TOLD @ A WAY OVER SPIKES"})};
-     },
-     LIES_BLOCKED},
+         return Checks{logged({"TOLD @ A WAY OVER SPIKES"}), logged({"@ TOLD ME THE WAY TO A DOOR"}),
+                       straightFace(liar)};
+     }},
+    {"lie-darts", "the same over a real dart plate, which the foe walks into and sees through",
+     seedWhere(cunning),
+     [](Stage& s) {
+         Human& liar = s.first();
+         P::knowChunk(s.world, liar);
+         // A restless loner: it goes its own way, down the route, not with the liar.
+         Human& victim = s.add(seedWhere([](const Traits& t) { return t.sociable < 0.3f && t.curious > 0.5f; }, 6000));
+         setUpLie(s, liar, victim, TrapKind::Darts, 4);
+         for (const auto& [c, kind] : liar.memory.traps) P::addTrap(s.world, c, kind);
+         victim.keys = 1;
+         s.run(150);
+         return Checks{logged({"TOLD @ A WAY OVER DARTS"}), logged({"@ LIED ABOUT THE WAY"})};
+     }},
+    {"lie-cake", "a cunning human sends a hungry foe to a rigged cake, and is blamed for the darts",
+     seedWhere(cunning),
+     [](Stage& s) {
+         Human& liar = s.first();
+         // The cake farthest off within the chunk, so the foe hasn't seen it,
+         // made rigged for real; the liar knows it is.
+         std::optional<Vec2i> cake;
+         for (Vec2i c : s.world.cakes())
+             if (s.world.tile(c) == Tile::Table && World::slotOf(c) == World::slotOf(liar.cell) &&
+                 (!cake || cheb(c, liar.cell) > cheb(*cake, liar.cell) ||
+                  (cheb(c, liar.cell) == cheb(*cake, liar.cell) && (c.x < cake->x || (c.x == cake->x && c.y < cake->y)))))
+                 cake = c;
+         if (!cake) return Checks{{"a cake on a table in the spawn chunk", [](const Stage&) { return false; }}};
+         P::knowChunk(s.world, liar);
+         P::addTrap(s.world, *cake, TrapKind::Darts);
+         liar.memory.cakes.insert(*cake);
+         liar.learnTrap(*cake, TrapKind::Darts);
+         Human& victim = s.add(seedWhere(plain, 7000));
+         P::setTrust(liar, victim, -0.6f);
+         liar.hunger = 0.1f;
+         liar.thirst = victim.thirst = 0.1f;
+         victim.hunger = 0.75f;
+         victim.cakes = 0;
+         s.run(150);
+         return Checks{logged({"TOLD @ OF A RIGGED CAKE"}), logged({"@ SENT ME TO A RIGGED CAKE"})};
+     }},
+    {"slander", "a cunning gossip makes someone it is only wary of out to be dangerous", seedWhere(cunning),
+     [](Stage& s) {
+         Human& teller = s.first();
+         Human& listener = s.add(seedWhere(kindly, 7500));
+         Human& third = s.add(seedWhere(plain, 8000), 12);
+         P::setTrust(teller, listener, 0.6f);
+         P::setTrust(listener, teller, 0.6f);
+         // Met long ago, so news is what brings them together again.
+         P::setMet(teller, listener, -100.0f);
+         P::setMet(listener, teller, -100.0f);
+         // Too mild to pass on honestly (GOSSIP_WORTH 0.2).
+         P::setTrust(teller, third, -0.1f);
+         for (Human* h : {&teller, &listener, &third}) h->hunger = h->thirst = 0.1f;
+         s.run(60);
+         return Checks{logged({"LIED TO @ ABOUT #"}), logged({"# WARNED ME ABOUT @"})};
+     }},
     {"gossip", "friends pass on a name and a warning about a third", 99,
      [](Stage& s) {
          Human& teller = s.first();

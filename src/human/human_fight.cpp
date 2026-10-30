@@ -351,6 +351,13 @@ void Human::learnTrap(Vec2i cell, TrapKind kind, bool mine) {
     }
     // Seen going off, told of or not: a scare.
     scare(DREAD_TRAP_SEEN);
+    // Darted lifting a cake it was told of: whoever told it set it up.
+    if (auto it = memory.cakeTips.find(cell); mine && it != memory.cakeTips.end()) {
+        note("@ SENT ME TO A RIGGED CAKE", it->second);
+        remember(Episode::What::Lied, EPISODE_LIED, it->second, id);
+        regard(it->second, TRUST_LIED);
+        memory.cakeTips.erase(it);
+    }
     // A trap it was told of, seen: true. A trap where it was told the way
     // was clear: whoever told it lied.
     if (auto it = memory.toldBy.find(cell); it != memory.toldBy.end()) {

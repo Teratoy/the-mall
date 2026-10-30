@@ -297,11 +297,13 @@ public:
         std::vector<Vec2i> route;
         /// For People: one entry per human spoken of, with their name when
         /// the listener doesn't know it and the teller does, and the
-        /// teller's opinion of them when firm enough to pass on.
+        /// teller's opinion of them when firm enough to pass on: what it
+        /// says it thinks, which from the cunning may be a lie.
         struct Word {
             int about;
             std::string name;
             std::optional<float> opinion;
+            bool lie = false;
         };
         std::vector<Word> people;
         /// For Way: which way the teller says out lies (an angle, as
@@ -309,8 +311,9 @@ public:
         /// out at all (gloomy), sure by how much of the place it has seen.
         float way = 0.0f, sure = 0.0f;
         bool gloomy = false;
-        /// A route laid over spikes on purpose; a way pointed wrong on
-        /// purpose, at a spike plate (cell) when it knows one.
+        /// A route laid over a trap (trap) on purpose; a way pointed wrong on
+        /// purpose, at a trap (cell) when it knows one; a cake on a rigged
+        /// table.
         bool lie = false;
         /// Told for a cake, paid once the greeting ends.
         bool sold = false;
@@ -323,6 +326,11 @@ public:
     /// foe, steals from them first, and holds a grudge against them longer.
     bool isFriend(int id) const;
     bool isFoe(int id) const;
+    /// Cunning: greedy and bold enough to lie, to sell what it knows, and
+    /// to keep a straight face. It never lets a foe hear it in its words,
+    /// unless it is fighting them or afraid of them (masks).
+    bool cunning() const;
+    bool masks(int id) const;
     /// A slow fear, 0 to 1, that every scare adds to, the timid more, and
     /// that fades over minutes, faster for the brave and while sitting.
     /// Scares: being hit, running from a fight, a trap going off on it or
@@ -911,10 +919,18 @@ private:
     /// greedy keep cake tips from all but friends, and sell trap tips to
     /// all but friends, to those with a cake to spare: forPay says so.
     std::optional<Tell> newsFor(const Human& other, bool& forPay) const;
-    /// Cunning, and facing a foe holding keys: a route to a locked door
-    /// the foe has never seen that crosses a spike plate it doesn't know
-    /// of. Nothing if it isn't that sort, or knows no such plate or door.
+    /// Cunning, and facing a foe: holding keys, a route to a locked door
+    /// the foe has never seen that crosses a trap it doesn't know of;
+    /// hungry with no cake, a cake on a rigged table it doesn't know is
+    /// rigged. Nothing if it isn't that sort, or knows no such trap.
     std::optional<Tell> lieFor(const World& world, const Human& foe) const;
+    /// A trap it knows of at c that can be walked into, and goes off
+    /// again and again: spikes, or darts in the floor. Slam rooms shut
+    /// once for good, so they never are.
+    bool bait(Vec2i c) const;
+    /// The nearest cake it knows of on a table it knows is rigged with
+    /// darts, that o knows of neither: what it would send o, hungry, to.
+    std::optional<Vec2i> riggedCakeFor(const Human& o) const;
     /// A told cell seen for what it is: nothing there, and the teller is
     /// thought worse of, or as told, and the telling is forgotten.
     void checkTold(Vec2i c, bool asTold);
@@ -972,9 +988,10 @@ private:
     /// for it, or a foe it means to lie to.
     Human* unmetInSight(const World& world) const;
     bool wouldGreet(const Human& o) const;
-    /// Cunning, and o is a foe who doesn't know a spike plate it does, and
-    /// either holds keys or was never pointed the wrong way: worth a lie.
-    /// The cheap half of lieFor and wayFor.
+    /// Cunning, and o is a foe who doesn't know a trap it could be baited
+    /// with, and either holds keys, is hungry with a rigged cake to send
+    /// it to, or was never pointed the wrong way: worth a lie. The cheap
+    /// half of lieFor and wayFor.
     bool lieWorthy(const Human& o) const;
     /// Free to be greeted: standing about, or walking somewhere nothing
     /// presses: not fighting, running, stepping aside, passing a door,

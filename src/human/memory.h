@@ -49,6 +49,9 @@ public:
     /// way was said to be clear, the teller was wrong or lying and is
     /// thought worse of. Cleared once seen to be true.
     std::unordered_map<Vec2i, int, Vec2iHash> toldBy;
+    /// Who told it of a cake, by its cell, kept after the cake is seen: if
+    /// the table turns out rigged when it takes it, it blames them.
+    std::unordered_map<Vec2i, int, Vec2iHash> cakeTips;
     std::unordered_map<Vec2i, Stain, Vec2iHash> blood;
     /// Pools of blood seen, and the cells on and round them, which it keeps
     /// off when it can.

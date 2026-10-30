@@ -344,14 +344,14 @@ std::optional<Human::Tell> Human::waterRoute(const World& world, const Human& o,
         t.route.insert(t.route.end(), p->begin(), p->end());
         return t;
     }
-    // To beside a plate o doesn't know, over it, and on to water.
+    // To beside a trap o doesn't know, over it, and on to water.
     for (const auto& [plate, kind] : memory.traps) {
-        if (kind != TrapKind::Spikes || o.memory.traps.count(plate)) continue;
+        if (!bait(plate) || o.memory.traps.count(plate)) continue;
         auto there = search(world, [&](Vec2i c) { return c != plate && cheb(c, plate) == 1; });
         if (!there) continue;
         auto on = searchFrom(world, plate, [&](Vec2i c) { return waterBeside(c).has_value(); }, false);
         if (!on || on->empty()) continue;
-        Tell t{Tell::Kind::Water, *waterBeside(on->back())};
+        Tell t{Tell::Kind::Water, *waterBeside(on->back()), kind};
         t.lie = true;
         t.route.push_back(cell);
         t.route.insert(t.route.end(), there->begin(), there->end());
