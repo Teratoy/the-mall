@@ -2,7 +2,8 @@
 
 The game is drawn for a phone held upright (216x468), so it should run on
 one. This plan is for a **debug** APK: built from this repo with one
-command, put on a phone over adb, played with touch. A store release
+command into an `.apk` file that installs on the phone by opening it,
+played with touch. A store release
 (signing keys, icons, Play listing) is out of scope.
 
 The desktop build, `make check` and the golden soak must not change. All
@@ -15,6 +16,7 @@ files, so the sim stays byte-identical.
 - No typing on the phone for now: the player keeps the rolled name, and
   REFRESH gives another.
 - Tab (reveal) and F5 (reload lines) are left out on the phone.
+- The APK is a file installed by opening it on the phone, not over adb.
 - The phone is a Samsung Galaxy S25 Ultra: arm64-v8a only, on Android 15
   or later. minSdk 26 still, targetSdk 35.
 - raylib 5.5's source is fetched into `build/` by the make target on the
@@ -49,9 +51,24 @@ assets. Built by a `make apk` target:
    portrait, fullscreen) with `data/lines.txt` and `data/names.txt` as
    assets.
 4. Zip in `lib/arm64-v8a/libthemall.so`, `zipalign`, `apksigner` with a
-   debug key made once by keytool in `build/android/debug.keystore`.
-5. `make install-apk` runs `adb install -r` and starts the app;
-   `make logcat` shows its stderr and raylib's log.
+   debug key, giving `build/TheMall-debug.apk`.
+5. Optional, for a phone plugged in with USB debugging on: `make
+   install-apk` runs `adb install -r`, and `make logcat` shows the game's
+   stderr and raylib's log. Not needed to play.
+
+### Installing it
+
+The APK is a normal installable file. Copy it to the phone (USB file
+transfer, Quick Share, a cloud folder, e-mail), tap it, and let the app
+that opened it "install unknown apps" when Android asks. Play Protect may
+warn about an app it doesn't know: "Install anyway". No developer options
+are needed.
+
+A newer APK installs over the old one, keeping the obituary, only if it is
+signed with the same key. So the debug key is not kept in `build/` (a
+clean would lose it, and the next APK would need the old app uninstalled,
+which deletes the obituary). It is the standard Android debug key,
+`~/.android/debug.keystore`, made by keytool if it isn't there yet.
 
 New files: `android/AndroidManifest.xml`, `android/build.sh` (or Makefile
 rules), a small `src/core/files.{h,cpp}`.
@@ -128,5 +145,5 @@ the frame rate with a big crowd at top speed.
 All answered: 1 (plain make), 2 (no typing), 4 (left out), 5 (fetched
 into `build/`).
 
-3. Answered: Samsung Galaxy S25 Ultra (arm64-v8a, Android 15+). Installed
-   over USB debugging unless the user says otherwise.
+3. Answered: Samsung Galaxy S25 Ultra (arm64-v8a, Android 15+). The APK
+   is installed by opening the file on the phone; adb is optional.
