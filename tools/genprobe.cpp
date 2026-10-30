@@ -120,7 +120,9 @@ std::string faults(const Chunk& c) {
     return "";
 }
 
-void save(const Chunk& c, const std::string& path) {
+/// Draws a chunk one pixel a cell; with a world, what stands and lies on
+/// it too: statues white, tables brown, cakes pink, keys yellow.
+void save(const Chunk& c, const std::string& path, const World* w = nullptr) {
     Image img = GenImageColor(c.w, c.h, BLACK);
     for (int y = 0; y < c.h; y++)
         for (int x = 0; x < c.w; x++) {
@@ -130,8 +132,14 @@ void save(const Chunk& c, const std::string& path) {
             case Tile::Wall: col = {70, 60, 80, 255}; break;
             case Tile::Water: col = {60, 120, 200, 255}; break;
             case Tile::DoorOpen: col = {230, 160, 40, 255}; break;
+            case Tile::DoorLocked: col = {200, 60, 40, 255}; break;
+            case Tile::Statue: col = {250, 250, 250, 255}; break;
+            case Tile::Table: col = {140, 90, 50, 255}; break;
+            case Tile::Basin: col = {60, 120, 200, 255}; break;
             default: break;
             }
+            if (w && w->hasCake(c.origin() + Vec2i{x, y})) col = {250, 80, 160, 255};
+            if (w && w->hasKey(c.origin() + Vec2i{x, y})) col = {250, 230, 0, 255};
             ImageDrawPixel(&img, x, y, col);
         }
     ExportImage(img, path.c_str());
@@ -157,7 +165,7 @@ std::string shapeName(const Chunk& c) {
 /// Grows a world from its spawn by crossing, each time, the first door (in
 /// a fixed order) that leads where nothing is yet. Returns how many chunks
 /// broke a check.
-int growWorld(uint64_t seed, std::map<std::string, Tally>& tally) {
+int growWorld(uint64_t seed, std::map<std::string, Tally>& tally, bool png) {
     using P = SoakProbe;
     World w(seed);
     Rng looks(seed);
@@ -233,6 +241,9 @@ int growWorld(uint64_t seed, std::map<std::string, Tally>& tally) {
                 if (!near(walked, k)) t.overWater++;
                 if (!near(swum, k)) why = "a cake sealed off";
             }
+        // Big plazas are rare, so any grown is drawn.
+        if (png && c.kind == ChunkKind::Plaza && c.slotCount() >= 9)
+            save(c, "build/genprobe-png/world" + std::to_string(seed) + "-plaza" + std::to_string(c.id) + ".png", &w);
         if (!why.empty()) {
             failed++;
             std::printf("FAIL  world %llu chunk %d (%s, kind %d): %s\n", (unsigned long long)seed, c.id,
@@ -288,7 +299,7 @@ int main(int argc, char** argv) {
 
     std::map<std::string, Tally> tally;
     int worldFailed = 0;
-    for (int seed = 1; seed <= seeds; seed++) worldFailed += growWorld(uint64_t(seed) * 7919, tally);
+    for (int seed = 1; seed <= seeds; seed++) worldFailed += growWorld(uint64_t(seed) * 7919, tally, png);
     int grown = 0;
     for (const auto& [shape, t] : tally) {
         grown += t.chunks;

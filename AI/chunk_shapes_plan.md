@@ -352,6 +352,31 @@ safety net.
 - The soak seldom makes a 3x3 plaza (about 1 chunk in 200), so it won't
   show much; the probe is the main check.
 
+### Built (2026-10-30)
+- `gen_plaza.cpp`: the grand pool became `fountain()`, shared with the
+  courts (same dice in the same order). `bigPlaza()` runs for plazas 3
+  slots across: avenues 6–8 cells each side of the axes, inlaid in the
+  band's floor; statues' places in pairs every 20–30 cells, 8 cells out
+  from each avenue's edge; then each quarter rolls fountain court,
+  colonnade court (round ring, square ring, or grid of the 2x2 columns)
+  or 3–6 kiosks. Courts keep 16 cells off the avenues for the statues,
+  and 4 off the grand quay and the hall's edge columns. Booths are 5x4
+  inside, open 2 cells toward the nearer avenue; stalls are an L of two
+  5-cell walls on the sides away from the avenues.
+- A fountain court's island is 14x8 (`gen::COURT_ISLAND`), which holds
+  any scale-1 statue on a plinth; World rolls one per court and centres
+  it. A court that doesn't fit becomes a colonnade court.
+- World: big plazas stand statues along the avenues instead of the ring.
+  Kiosk tables deep enough for keys go first in the spot list; the rest
+  take the first cakes. No cakes added.
+- Checks: `make check` unchanged (the six soak worlds grow no 3x3
+  plaza, and nothing else rolls new dice). genprobe, 60 worlds: 17 big
+  plazas, every door, key and cake reachable, booths included; it now
+  draws each grown big plaza with statues, tables, cakes and keys
+  (`build/genprobe-png/world*-plaza*.png`).
+- Not checked: humans living in a big plaza. Neither the soak nor a
+  scenario puts anyone in one yet.
+
 ## Kind weights
 
 Draft weights per footprint. 0 means the kind doesn't fit there.
@@ -372,7 +397,7 @@ Draft weights per footprint. 0 means the kind doesn't fit there.
 1. Footprint foundation. `make check` unchanged. Commit.
 2. Genprobe tool (step 9), against today's chunks, as the baseline.
 3. Bigger rectangles. Time 3x3 generation. `make golden`.
-3b. Big plazas (step 12). Can be built any time now that 3x3 exists.
+3b. Big plazas (step 12). **Built 2026-10-30.**
 4. Odd footprints with rooms (no mazes). Probe, shots, golden.
 5. Outlines on rooms and maze.
 6. Mall wing.

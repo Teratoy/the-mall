@@ -55,11 +55,22 @@ struct Plaza {
     /// The island's top-left and size; no fountain when the size is zero.
     Vec2i island, islandSize;
     int ring = 0;
+    /// A big plaza's avenues are lined with statues, one about each of
+    /// these cells, in place of the ring.
+    std::vector<Vec2i> lining;
+    /// Top-left of each fountain court's island, all COURT_ISLAND in size.
+    std::vector<Vec2i> courts;
+    /// The floor cell in each kiosk where its table goes.
+    std::vector<Vec2i> kiosks;
 };
+/// A fountain court's island: room for any statue at scale 1 on its plinth.
+inline constexpr Vec2i COURT_ISLAND{14, 8};
 /// One grand hall over the chunk, which must own its whole square box,
 /// inlaid with a border and maybe lined
 /// with columns, round a fountain whose pool circles an island of the
-/// given size, if it is not zero.
+/// given size, if it is not zero. A big one (3 slots across) is crossed
+/// by two avenues at the fountain, and each quarter between them is a
+/// fountain court, a colonnade court or a cluster of kiosks.
 Plaza plaza(Chunk& c, Rng& rng, Vec2i island);
 
 /// Ponds on open floor, each a plain shape (round, oval, square, L, T or

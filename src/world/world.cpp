@@ -280,8 +280,22 @@ void World::generate(Vec2i slot, Vec2i entry) {
         return std::any_of(slams.begin(), slams.end(),
                            [&](const gen::SlamRoom& r) { return r.contains(s - c.origin()); });
     });
+    // Kiosk tables come first: those deep enough take the keys, and the
+    // rest the first cakes.
+    std::vector<Vec2i> kioskCakes;
+    std::vector<Vec2i> deepKiosks;
+    for (Vec2i k : plaza.kiosks) {
+        auto it = std::find(spots.begin(), spots.end(), c.origin() + k);
+        if (it == spots.end()) {
+            kioskCakes.push_back(c.origin() + k);
+            continue;
+        }
+        spots.erase(it);
+        deepKiosks.push_back(c.origin() + k);
+    }
+    spots.insert(spots.begin(), deepKiosks.begin(), deepKiosks.end());
     TableMaterial house = randomMaterial(rng_);
-    size_t next = 0;
+    size_t next = 0, nextKiosk = 0;
     int keys = fresh + int(slams.size());
     for (int i = 0; i < keys; i++)
         if (auto s = tableSpot(c, spots, next, house, true)) keys_.insert(*s);
@@ -296,7 +310,8 @@ void World::generate(Vec2i slot, Vec2i entry) {
     }
     int cakes = rng_.range(CAKES_MIN, CAKES_MAX) * slotCount;
     for (; cakes > 0; cakes--) {
-        auto s = tableSpot(c, spots, next, house);
+        auto s = tableSpot(c, kioskCakes, nextKiosk, house);
+        if (!s) s = tableSpot(c, spots, next, house);
         if (!s) break;
         cakes_.insert(*s);
         if (!rng_.chance(DART_BAIT_CHANCE)) continue;
@@ -389,8 +404,10 @@ Statue World::rollStatue(bool grand, std::optional<StatueKind> kind) {
 }
 
 // The grand statue stands a cell in from its island's shore, or in the
-// middle of the floor when there is no fountain. The rest stand evenly
-// round a ring about the middle, each where it fits nearest its place.
+// middle of the floor when there is no fountain. A big plaza's statues
+// line its avenues, and each fountain court's stands on its plinth in the
+// middle of its island. Otherwise the rest stand evenly round a ring about
+// the middle, each where it fits nearest its place.
 void World::placePlazaStatues(Chunk& c, const gen::Plaza& plaza, Statue grand, bool toilets) {
     std::optional<StatueKind> kind;
     if (toilets) kind = StatueKind::Toilet;
@@ -398,6 +415,17 @@ void World::placePlazaStatues(Chunk& c, const gen::Plaza& plaza, Statue grand, b
         standStatue(c, grand, plaza.island + Vec2i{1, 1});
     else
         placeStatue(c, plaza.centre, {-100, -100}, true, kind);
+    for (Vec2i island : plaza.courts) {
+        Statue s = rollStatue(false, kind);
+        s.plinth = true;
+        s.size = statueSize(s);
+        const Vec2i room = gen::COURT_ISLAND - s.size;
+        standStatue(c, s, island + Vec2i{room.x / 2, room.y / 2});
+    }
+    if (!plaza.lining.empty()) {
+        for (Vec2i at : plaza.lining) placeStatue(c, at, {-100, -100}, false, kind);
+        return;
+    }
     const int count = (rng_.range(PLAZA_STATUES_MIN, PLAZA_STATUES_MAX) + (toilets ? TOILET_PLAZA_STATUES_EXTRA : 0)) *
                       c.slots.x;
     const float turn = rng_.range(0.0f, 6.2832f);
