@@ -358,16 +358,21 @@ void Human::learnTrap(Vec2i cell, TrapKind kind, bool mine) {
         regard(it->second, TRUST_LIED);
         memory.cakeTips.erase(it);
     }
+    if (fresh)
+        trapWhereTold(cell);
+    else
+        memory.toldBy.erase(cell);
+}
+
+void Human::trapWhereTold(Vec2i cell) {
     // A trap it was told of, seen: true. A trap where it was told the way
     // was clear: whoever told it lied.
-    if (auto it = memory.toldBy.find(cell); it != memory.toldBy.end()) {
-        if (fresh) {
-            note("@ LIED ABOUT THE WAY", it->second);
-            remember(Episode::What::Lied, EPISODE_LIED, it->second, id);
-            regard(it->second, TRUST_LIED);
-        }
-        memory.toldBy.erase(it);
-    }
+    auto it = memory.toldBy.find(cell);
+    if (it == memory.toldBy.end()) return;
+    note("@ LIED ABOUT THE WAY", it->second);
+    remember(Episode::What::Lied, EPISODE_LIED, it->second, id);
+    regard(it->second, TRUST_LIED);
+    memory.toldBy.erase(it);
 }
 
 // Hit by a starving human it would feed anyway, it feeds them. Otherwise,

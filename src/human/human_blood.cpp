@@ -443,9 +443,10 @@ int Human::bloodCost(Vec2i c) const {
 }
 
 // Foes are kept away from like suspects, but for one worth lying to when
-// nothing presses.
+// nothing presses, and for the one it is walking up to or greeting.
 bool Human::shuns(const Human& o) const {
-    return &o != this && !o.dead() && o.id != fight_.foe && (suspicious(o.id) || (isFoe(o.id) && !(lieWorthy(o) && freeToLie()))) && sight.sees(o.cell) &&
+    return &o != this && !o.dead() && o.id != fight_.foe && o.id != social_.partner &&
+           (suspicious(o.id) || (isFoe(o.id) && !(lieWorthy(o) && freeToLie()))) && sight.sees(o.cell) &&
            !(starving() && o.cakes > 0);
 }
 

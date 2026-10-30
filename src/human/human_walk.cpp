@@ -20,9 +20,14 @@ void Human::step(World& world) {
         choose(world);
         if (state != State::Walking) return;
     }
+    // Walking up to someone: close enough to greet, or to call out to one
+    // walking away from it, who would otherwise never be caught up with.
     if (goal == Goal::Meet && social_.partner >= 0) {
         Human& o = world.human(social_.partner);
-        if (sight.sees(o.cell) && cheb(cell, o.cell) <= GREET_RADIUS) return tryGreet(world, o);
+        Vec2i went = o.cell - o.prev, apart = o.cell - cell;
+        bool away = o.state == State::Walking && went.x * apart.x + went.y * apart.y > 0;
+        int reach = away ? HAIL_RADIUS : GREET_RADIUS;
+        if (sight.sees(o.cell) && cheb(cell, o.cell) <= reach) return tryGreet(world, o);
     }
     if (goal == Goal::Fight && fight_.foe >= 0) {
         Human& f = world.human(fight_.foe);
@@ -122,6 +127,7 @@ void Human::move(World& world, Vec2i next) {
             news |= memory.traps.emplace(cell + d, t->kind).second;
             note(std::string("SPOTTED HIDDEN ") + trapWord(t->kind));
             rememberAt(cell + d, Episode::What::Spotted, EPISODE_SPOTTED, -1, -1, int(t->kind));
+            trapWhereTold(cell + d);
         }
     checkDoorsNear();
     if (news && goal != Goal::PassDoor && goal != Goal::GiveWay) rethink_ = true;

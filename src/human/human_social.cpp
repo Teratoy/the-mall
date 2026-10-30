@@ -69,7 +69,12 @@ void Human::tryGreet(World& world, Human& other) {
         social_.partner = -1;
         return startIdle(0.0f, 0.0f);
     }
-    if (!other.approachable()) return startIdle(FOLLOW_WAIT_MIN, FOLLOW_WAIT_MAX);
+    // Busy with something that presses: left be a while, not waited on.
+    if (!other.approachable()) {
+        social_.busy[other.id] = clock_;
+        social_.partner = -1;
+        return startIdle(FOLLOW_WAIT_MIN, FOLLOW_WAIT_MAX);
+    }
     // It takes two: turned away, it leaves them be a while.
     if (!other.welcomes(*this)) {
         social_.snubbed[other.id] = clock_;
@@ -82,14 +87,15 @@ void Human::tryGreet(World& world, Human& other) {
     }
     greet(other);
     other.greet(*this);
+    // Each tells the other something, or lies to them, before names, so the
+    // news is said while the greeting lasts.
+    exchange(world, other);
+    other.exchange(world, *this);
     // Each decides whether to say who it is; being told a name invites one back.
     bool mine = wouldIntroduce(other, false);
     bool theirs = other.wouldIntroduce(*this, mine);
     if (mine) introduce(other);
     if (theirs) other.introduce(*this);
-    // And each tells the other something, or lies to them.
-    exchange(world, other);
-    other.exchange(world, *this);
 }
 
 // Only what the teller itself knows: it may vouch for or warn against
@@ -158,6 +164,10 @@ void Human::exchange(World& world, Human& o) {
             return tell(o, *w);
         }
     if (lie) return tell(o, *lie);
+    if (auto g = gainLieFor(world, o, forPay)) {
+        g->sold = forPay;
+        return tell(o, *g);
+    }
     auto news = newsFor(o, forPay);
     if (!news && !waterFirst) news = waterFor(world, o, forPay);
     if (!news) return;
@@ -269,11 +279,63 @@ std::optional<Human::Tell> Human::lieFor(const World& world, const Human& foe) c
     // Nothing to bait it with: a cake or key that isn't there.
     bool forKey = !(foe.hungry() && foe.cakes == 0);
     if (forKey && foe.keys > 0) return std::nullopt;
-    auto c = bareTableFor(world, foe);
+    auto c = bareTableFor(world, foe, forKey);
     if (!c) return std::nullopt;
     Tell t{forKey ? Tell::Kind::Key : Tell::Kind::Cake, *c};
     t.lie = t.nothing = true;
     return t;
+}
+
+std::optional<Human::Tell> Human::gainLieFor(const World& world, const Human& o, bool& forPay) const {
+    forPay = false;
+    if (!cunning() || traits.greedy < GAIN_LIE_GREEDY || isFriend(o.id) || isFoe(o.id) || inGroupWith(o))
+        return std::nullopt;
+    // A rival for a cake it wants: sent the other way.
+    std::optional<Tell> lie;
+    if (o.hungry() && o.cakes == 0 && cakes < carryMax()) {
+        std::optional<Vec2i> want;
+        for (Vec2i c : memory.cakes)
+            if (!memory.traps.count(c) && cheb(c, o.cell) <= RIVAL_NEAR && (!want || cheb(c, cell) < cheb(*want, cell)))
+                want = c;
+        if (want) {
+            std::optional<Vec2i> away;
+            for (const Table& tb : world.tables()) {
+                Vec2i c = tb.at;
+                if (memory.tile(c) != Tile::Table || o.memory.tile(c) != Tile::Void || cheb(c, o.cell) < FALSE_TIP_FAR ||
+                    memory.cakes.count(c) || memory.traps.count(c))
+                    continue;
+                if (!away || cheb(c, *want) > cheb(*away, *want)) away = c;
+            }
+            if (away && cheb(*away, *want) > cheb(o.cell, *want)) {
+                lie = Tell{Tell::Kind::Cake, *away};
+            }
+        }
+    }
+    // Trap news to sell, made up when it has none.
+    if (!lie && o.cakes > o.spareFrom()) {
+        bool real = std::any_of(memory.traps.begin(), memory.traps.end(),
+                                [&](const auto& t) { return !o.memory.traps.count(t.first); });
+        std::optional<Vec2i> spot;
+        for (int y = -FAKE_TRAP_FAR; y <= FAKE_TRAP_FAR && !real; y++)
+            for (int x = -FAKE_TRAP_FAR; x <= FAKE_TRAP_FAR; x++) {
+                Vec2i c = o.cell + Vec2i{x, y};
+                // Traps hide in plain floor, so even floor o has seen will do.
+                if (cheb(c, o.cell) < FAKE_TRAP_NEAR || memory.tile(c) != Tile::Floor || o.memory.traps.count(c) ||
+                    memory.traps.count(c))
+                    continue;
+                if (!spot || cheb(c, o.cell) < cheb(*spot, o.cell)) spot = c;
+            }
+        if (spot) {
+            lie = Tell{Tell::Kind::Trap, *spot, TrapKind::Spikes};
+            forPay = true;
+        }
+    }
+    if (!lie) {
+        forPay = false;
+        return std::nullopt;
+    }
+    lie->lie = lie->nothing = lie->gain = true;
+    return lie;
 }
 
 std::optional<Human::Tell> Human::routeLie(const World& world, const Human& foe) const {
@@ -304,12 +366,12 @@ bool Human::bait(Vec2i c) const {
     return it->second == TrapKind::Spikes || (it->second == TrapKind::Darts && memory.tile(c) == Tile::Floor);
 }
 
-std::optional<Vec2i> Human::bareTableFor(const World& world, const Human& o) const {
+std::optional<Vec2i> Human::bareTableFor(const World& world, const Human& o, bool forKey) const {
     std::optional<Vec2i> best;
     for (const Table& tb : world.tables()) {
         Vec2i c = tb.at;
         if (memory.tile(c) != Tile::Table || o.memory.tile(c) != Tile::Void || cheb(c, o.cell) < FALSE_TIP_FAR) continue;
-        if (memory.cakes.count(c) || memory.keys.count(c) || memory.traps.count(c)) continue;
+        if ((forKey ? memory.keys.count(c) : memory.cakes.count(c)) || memory.traps.count(c)) continue;
         if (!best || cheb(c, o.cell) < cheb(*best, o.cell)) best = c;
     }
     return best;
@@ -447,6 +509,8 @@ void Human::deliver(Human& o, const Tell& t) {
     if (t.kind != Tell::Kind::People) o.note("@ TOLD ME " + what, id);
     std::string over = std::string(" OVER ") + trapWord(t.trap);
     note(!t.lie                          ? "TOLD @ " + what
+         : t.gain && t.kind == Tell::Kind::Trap ? std::string("SOLD @ A TRAP THAT ISN'T THERE")
+         : t.gain                        ? std::string("SENT @ AWAY FROM A CAKE I WANT")
          : t.nothing                     ? std::string("TOLD @ OF A ") + (t.kind == Tell::Kind::Key ? "KEY" : "CAKE") + " THAT ISN'T THERE"
          : t.kind == Tell::Kind::Cake    ? std::string("TOLD @ OF A RIGGED CAKE")
          : t.kind == Tell::Kind::Water   ? "TOLD @ A WAY TO WATER" + over
@@ -547,7 +611,8 @@ void Human::endGreet(World& world) {
     social_.owes = -1;
     if (seller >= 0) {
         Human& s = world.human(seller);
-        if (!s.dead() && cakes > 0 && cheb(cell, s.cell) <= GREET_RADIUS) return give(s, Gift::Pay);
+        // Greeted from as far as one can call out, it pays from there too.
+        if (!s.dead() && cakes > 0 && cheb(cell, s.cell) <= HAIL_RADIUS) return give(s, Gift::Pay);
     }
     startIdle(0.0f, 0.0f);
 }
@@ -637,6 +702,7 @@ Human* Human::unmetInSight(const World& world) const {
 bool Human::wouldGreet(const Human& o) const {
     if (o.dead() || suspicious(o.id)) return false;
     if (auto it = social_.snubbed.find(o.id); it != social_.snubbed.end() && clock_ - it->second < CATCH_UP_TIME) return false;
+    if (auto it = social_.busy.find(o.id); it != social_.busy.end() && clock_ - it->second < BUSY_WAIT) return false;
     if (isFoe(o.id)) return lieWorthy(o);
     if (!met.count(o.id)) return true;
     auto it = social_.greetedAt.find(o.id);
