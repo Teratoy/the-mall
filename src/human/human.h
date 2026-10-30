@@ -313,8 +313,8 @@ public:
         bool gloomy = false;
         /// A route laid over a trap (trap) on purpose; a way pointed wrong on
         /// purpose, at a trap (cell) when it knows one; a cake on a rigged
-        /// table.
-        bool lie = false;
+        /// table; or, nothing, a cake or key where it knows there is none.
+        bool lie = false, nothing = false;
         /// Told for a cake, paid once the greeting ends.
         bool sold = false;
     };
@@ -919,10 +919,12 @@ private:
     /// greedy keep cake tips from all but friends, and sell trap tips to
     /// all but friends, to those with a cake to spare: forPay says so.
     std::optional<Tell> newsFor(const Human& other, bool& forPay) const;
-    /// Cunning, and facing a foe: holding keys, a route to a locked door
-    /// the foe has never seen that crosses a trap it doesn't know of;
-    /// hungry with no cake, a cake on a rigged table it doesn't know is
-    /// rigged. Nothing if it isn't that sort, or knows no such trap.
+    /// Cunning, and facing a foe: hungry with no cake, a cake on a rigged
+    /// table it doesn't know is rigged; holding keys, a route to a locked
+    /// door the foe has never seen that crosses a trap it doesn't know of;
+    /// else a false tip, a cake (to the hungry) or a key (to the keyless)
+    /// on a table far off that the foe has never seen, where the liar
+    /// knows there is none. Nothing if it isn't that sort, or has none.
     std::optional<Tell> lieFor(const World& world, const Human& foe) const;
     /// A trap it knows of at c that can be walked into, and goes off
     /// again and again: spikes, or darts in the floor. Slam rooms shut
@@ -931,6 +933,11 @@ private:
     /// The nearest cake it knows of on a table it knows is rigged with
     /// darts, that o knows of neither: what it would send o, hungry, to.
     std::optional<Vec2i> riggedCakeFor(const Human& o) const;
+    /// The nearest table it knows bare (no cake, key or trap), at least
+    /// FALSE_TIP_FAR from o and never seen by o: where a false tip sends o.
+    std::optional<Vec2i> bareTableFor(const World& world, const Human& o) const;
+    /// The route lie of lieFor, for a foe holding keys.
+    std::optional<Tell> routeLie(const World& world, const Human& foe) const;
     /// A told cell seen for what it is: nothing there, and the teller is
     /// thought worse of, or as told, and the telling is forgotten.
     void checkTold(Vec2i c, bool asTold);
@@ -988,11 +995,13 @@ private:
     /// for it, or a foe it means to lie to.
     Human* unmetInSight(const World& world) const;
     bool wouldGreet(const Human& o) const;
-    /// Cunning, and o is a foe who doesn't know a trap it could be baited
-    /// with, and either holds keys, is hungry with a rigged cake to send
-    /// it to, or was never pointed the wrong way: worth a lie. The cheap
-    /// half of lieFor and wayFor.
+    /// Cunning, and o is a foe who is hungry with no cake or has no key (a
+    /// false tip may do), or doesn't know a trap it could be baited with
+    /// and either holds keys or was never pointed the wrong way: worth a
+    /// lie. The cheap half of lieFor and wayFor.
     bool lieWorthy(const Human& o) const;
+    /// Nothing presses it (hunger, thirst, needing to go): it would go up to a foe to lie.
+    bool freeToLie() const { return !hungry() && !thirsty() && !needsToGo(); }
     /// Free to be greeted: standing about, or walking somewhere nothing
     /// presses: not fighting, running, stepping aside, passing a door,
     /// escorting or escorted, keeping away, going to food or a body, nor

@@ -33,13 +33,26 @@ struct SoakProbe {
         h.cell = h.prev = h.target_ = cell;
         h.path_.clear();
     }
-    /// h knows every tile of the chunk it stands in, doors and all.
-    static void knowChunk(const World& w, Human& h) {
+    /// h knows every tile of the chunk it stands in, doors and all, and
+    /// with items the keys and cakes lying there.
+    static void knowChunk(const World& w, Human& h, bool items = false) {
         Vec2i slot = World::slotOf(h.cell);
         for (int y = 0; y < CHUNK; y++)
             for (int x = 0; x < CHUNK; x++) {
                 Vec2i c{slot.x * CHUNK + x, slot.y * CHUNK + y};
                 h.memory.see(c, w.tile(c));
+                if (items && w.hasCake(c)) h.memory.cakes.insert(c);
+                if (items && w.hasKey(c)) h.memory.keys.insert(c);
+            }
+    }
+    /// Takes every key and cake off the chunk the cell is in.
+    static void clearChunk(World& w, Vec2i cell) {
+        Vec2i slot = World::slotOf(cell);
+        for (int y = 0; y < CHUNK; y++)
+            for (int x = 0; x < CHUNK; x++) {
+                Vec2i c{slot.x * CHUNK + x, slot.y * CHUNK + y};
+                w.takeCake(c);
+                w.takeKey(c);
             }
     }
     /// Given up on a way out, at home on home.

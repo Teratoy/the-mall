@@ -10,7 +10,8 @@ Status as of 2026-10-30.
 | Plan | What it covers | Status | Still open |
 |---|---|---|---|
 | [worldgeneration.txt](worldgeneration.txt) | The original world spec: endless chunks, border walls, shared exit doors, keys per door | Built | — |
-| [worldgen_variation_plan.md](worldgen_variation_plan.md) | Giant household statues, richer rooms, plazas, mall wings, districts | Steps 1–4 built | Step 5 mall wing, step 6 districts and bigger chunks; statues in mazes and water mazes |
+| [worldgen_variation_plan.md](worldgen_variation_plan.md) | Giant household statues, richer rooms, plazas, mall wings, districts | Steps 1–4 built | Step 5 mall wing and bigger chunks moved to chunk_shapes_plan.md; step 6 districts; statues in mazes and water mazes |
+| [chunk_shapes_plan.md](chunk_shapes_plan.md) | Odd chunk footprints (L, T, S), bigger rectangles, outlines (ring, cross, band, islands), mall wing, food court, parking, atrium | Planned | Open questions 1–6 |
 | [blood_plan.md](blood_plan.md) | Wounds and bleeding, stains on world and bodies, washing, suspicion, escort, trails | All 7 steps built | Q2: should some spike victims survive? Q3: should washing or an escort slow bleeding? |
 | [cannibalism_plan.md](cannibalism_plan.md) | The erratic mind, flesh on bodies, scavenging, hunting, guilt and appetite | All 8 steps built | Erratic will be expanded later (user); snapping may need tuning if it should be rarer |
 | [talking_plan.md](talking_plan.md) | Lines in data/lines.txt, moments, tone effects, bubbles, pacing | Built | Muttering alone; accusations spreading to overhearers; lies about people |
@@ -19,14 +20,14 @@ Status as of 2026-10-30.
 | [relief_plan.md](relief_plan.md) | Bladder and bowels, private spots, mess, dirty feet, foul water, toilets, being seen | All 6 steps built | — |
 | [thirst_plan.md](thirst_plan.md) | Thirst, basins, bloody and foul water, guarded water, water tips, hope near water | All 5 steps built | Tuning from play |
 | [sleep_plan.md](sleep_plan.md) | Tiredness, sleeping, where to sleep, robbing sleepers, keeping watch, dreams | All 5 steps built | Tuning from play (aim: ~15–20 min awake, ~90 s asleep) |
-| [lies_plan.md](lies_plan.md) | Lies: reaching the mark, a straight face, bait that re-arms (spikes, floor darts, rigged cakes), slander | Steps 1, 2c, 3, 4 built | Still rare in normal play: 2a false tips and 2b the wrong way out unasked were set aside; questions 1, 3–5 unanswered |
+| [lies_plan.md](lies_plan.md) | Lies: reaching the mark, a straight face, bait that re-arms (spikes, floor darts, rigged cakes), false tips, slander | Steps 1, 2a, 2c, 3, 4 built | Still rare in normal play (foes come from fights, so liar and foe are seldom calm together); 2b set aside; questions 1, 3–5 unanswered |
 | [human_split_plan.md](human_split_plan.md) | Splitting Human into per-system classes | Not started | Advised against for now; if done, only system by system, when that system is being reworked anyway |
 
 ## Known gaps found by the tests
 
 - **Lies are rare in normal play**: they work when the chance comes up,
-  but a liar seldom knows a trap its foe doesn't. See
-  [lies_plan.md](lies_plan.md).
+  but foes are made by fights, so a liar and its foe are seldom calm
+  together. See [lies_plan.md](lies_plan.md).
 
 ## Built without a plan file
 

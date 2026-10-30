@@ -11,7 +11,8 @@ proposes how to make lies part of the game.
 - Build step 1 (liars reach their marks, and don't show hostility in
   their words), 2c (bait with any trap that re-arms), 3 (lies about
   people) and 4 (tests).
-- Not now: 2a false tips, 2b the wrong way out unasked.
+- Not now: 2b the wrong way out unasked. 2a false tips added later the
+  same day (user: "add false tips").
 - Traps that re-arm: spikes and dart plates. Slam rooms are spent once
   they shut, so they are never bait.
 - Questions 1, 3, 4 and 5 weren't answered, so they stay as they are:
@@ -134,11 +135,35 @@ They are safe, but only worth having together with step 2 below.
   darted and blames the liar) and `slander`, all passing. `lie-water` and
   `lie-route` also check that no foe line is said.
 
-**Still rare in normal play.** The soak's output didn't change at all:
-in its 6 worlds no liar ever knows a trap its foe doesn't, so no lie
-comes up. Lies now work whenever the chance arises, but the chance is
-still rare. Lies that need no trap (2a false tips, 2b the wrong way out
-unasked) are what would make them common.
+### Built (2026-10-30: step 2a, false tips)
+
+- To a hungry foe with no cake, a cake; to a keyless foe, a key: on the
+  nearest table the liar knows is bare, at least FALSE_TIP_FAR (10) cells
+  from the foe, that the foe has never seen (`bareTableFor`). It sounds
+  like an honest tip; the liar logs "TOLD @ OF A CAKE (KEY) THAT ISN'T
+  THERE". The foe goes to look, finds nothing, and thinks a little worse
+  of the liar ("NOTHING WAS WHERE @ SAID"), as for any stale tip.
+- In `exchange`, a lie with bait in it comes first, then water for the
+  thirsty, then a false tip.
+- A foe who is hungry with no cake, or keyless, is now always worth a
+  lie (`lieWorthy`), so a cunning human goes up to such a foe
+  (LIE_URGE 0.5 on Meet) and greets it back. It only stops keeping away
+  from it when nothing presses (`freeToLie`); without that, a needy liar
+  flipped between keeping away and drinking.
+- Scenarios `false-cake` and `false-key`: told, believed, found out.
+
+**Still rare in normal play (measured).** The soak changed, but no lie
+was told in it. In its 6 worlds a lie was ready for 128 s, but at those
+moments the liar was hungry or thirsty, mid-fight, fleeing, or keeping
+away from a bloodied suspect. Foes come from fights, so a liar and its
+foe are seldom calm together. A wider stuck soak (20 worlds × 15 min,
+crowded) was unchanged from before this work: the same flips and stills,
+no loops, no long blocks, mutual blocks 0 → 2.
+
+To make lies common, foes would need to come about without a fight, e.g.
+from robbery, a found-out lie, slander, or rivalry over cakes. Or needy
+liars would have to lie too, e.g. a hungry liar sending a hungry rival
+away from the cakes it wants (question 3).
 
 ## Open questions
 

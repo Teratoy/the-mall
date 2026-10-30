@@ -147,8 +147,9 @@ Objects are 2 to 5 humans tall. Scale 2 is for plazas and big halls only.
    square island sized to the grand (1.5x, art repainted at scale, not
    stretched) statue on its plinth; else the grand statue stands on the
    floor. Statues and moat width scale with slots across, not area.
-5. Mall wing.
-6. Districts and bigger chunks.
+5. Mall wing. Moved to [chunk_shapes_plan.md](chunk_shapes_plan.md) (2026-10-30).
+6. Districts and bigger chunks. Bigger chunks moved to
+   [chunk_shapes_plan.md](chunk_shapes_plan.md); districts stay here.
 
 Each step builds and is checked in the game before the next.
 

@@ -500,7 +500,9 @@ void Human::choose(World& world) {
         // Guilt keeps it to itself.
         want(Want::Escort, -GUILT_ALONE * mind_.guilt + parchedToLead(world));
         want(Want::Wash, wantsWashing() ? FILTH_WASH * (0.5f + modesty()) : 0.0f);
-        if (social_.partner >= 0) want(Want::Meet, OUT_ASK * outDrive() - GUILT_ALONE * mind_.guilt);
+        // The cunning go out of their way to lie to a foe.
+        if (social_.partner >= 0)
+            want(Want::Meet, OUT_ASK * outDrive() - GUILT_ALONE * mind_.guilt + (isFoe(social_.partner) ? LIE_URGE : 0.0f));
     }
     if (hunger >= fleshBar()) want(Want::Flesh, drive + mind_.appetite);
     if (hunger >= huntBar()) want(Want::Hunt, drive + mind_.appetite);

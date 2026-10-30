@@ -365,6 +365,11 @@ constexpr float GOSSIP_WORTH = 0.2f;
 /// lie when it is this much worse than they really think.
 constexpr float SLANDER = -0.8f;
 constexpr float SLANDER_LIE = 0.3f;
+/// A false tip sends a foe at least this far, to a table it has never seen.
+constexpr int FALSE_TIP_FAR = 10;
+/// How much more a cunning human wants to go up to a foe worth lying to
+/// (the only foes it would greet) than to anyone else.
+constexpr float LIE_URGE = 0.5f;
 constexpr float GOSSIP_NEWS = 0.15f;
 constexpr float GOSSIP_WEIGHT = 0.6f;
 /// Talking: a line is heard this far off, in cells, by anyone who can see

@@ -283,6 +283,37 @@ const std::vector<Scenario> SCENARIOS = {
          s.run(150);
          return Checks{logged({"TOLD @ OF A RIGGED CAKE"}), logged({"@ SENT ME TO A RIGGED CAKE"})};
      }},
+    {"false-cake", "a cunning human sends a hungry foe to a bare table, and is found out", seedWhere(cunning),
+     [](Stage& s) {
+         Human& liar = s.first();
+         // Every table bare, and the liar knows it.
+         P::clearChunk(s.world, liar.cell);
+         P::knowChunk(s.world, liar, true);
+         Human& victim = s.add(seedWhere(plain, 9500));
+         P::setTrust(liar, victim, -0.6f);
+         liar.hunger = 0.1f;
+         liar.thirst = victim.thirst = 0.1f;
+         victim.hunger = 0.75f;
+         victim.cakes = 0;
+         s.run(150);
+         return Checks{logged({"TOLD @ OF A CAKE THAT ISN'T THERE"}), logged({"@ TOLD ME WHERE A CAKE IS"}),
+                       logged({"NOTHING WAS WHERE @ SAID"})};
+     }},
+    {"false-key", "a cunning human sends a keyless foe to a bare table for a key, and is found out",
+     seedWhere(cunning),
+     [](Stage& s) {
+         Human& liar = s.first();
+         P::clearChunk(s.world, liar.cell);
+         P::knowChunk(s.world, liar, true);
+         Human& victim = s.add(seedWhere(plain, 9600));
+         P::setTrust(liar, victim, -0.6f);
+         liar.hunger = victim.hunger = 0.1f;
+         liar.thirst = victim.thirst = 0.1f;
+         victim.keys = 0;
+         s.run(150);
+         return Checks{logged({"TOLD @ OF A KEY THAT ISN'T THERE"}), logged({"@ TOLD ME WHERE A KEY IS"}),
+                       logged({"NOTHING WAS WHERE @ SAID"})};
+     }},
     {"slander", "a cunning gossip makes someone it is only wary of out to be dangerous", seedWhere(cunning),
      [](Stage& s) {
          Human& teller = s.first();

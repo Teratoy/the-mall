@@ -145,7 +145,9 @@ void Human::exchange(World& world, Human& o) {
         escape_.askedWay.insert(o.id);
         if (rng_.chance(ASK_WAY_CHANCE)) sayLater(talk::Moment::AskWay, o.id);
     }
-    if (auto lie = lieFor(world, o)) return tell(o, *lie);
+    // A lie with bait in it first; a false tip only once water is seen to.
+    auto lie = lieFor(world, o);
+    if (lie && !lie->nothing) return tell(o, *lie);
     bool forPay = false;
     // Water ahead of anything else to the thirsty who'd sooner drink than
     // eat; else after it (human_thirst.cpp).
@@ -155,6 +157,7 @@ void Human::exchange(World& world, Human& o) {
             w->sold = forPay;
             return tell(o, *w);
         }
+    if (lie) return tell(o, *lie);
     auto news = newsFor(o, forPay);
     if (!news && !waterFirst) news = waterFor(world, o, forPay);
     if (!news) return;
@@ -261,7 +264,19 @@ std::optional<Human::Tell> Human::lieFor(const World& world, const Human& foe) c
             t.lie = true;
             return t;
         }
-    if (foe.keys == 0) return std::nullopt;
+    if (foe.keys > 0)
+        if (auto t = routeLie(world, foe)) return t;
+    // Nothing to bait it with: a cake or key that isn't there.
+    bool forKey = !(foe.hungry() && foe.cakes == 0);
+    if (forKey && foe.keys > 0) return std::nullopt;
+    auto c = bareTableFor(world, foe);
+    if (!c) return std::nullopt;
+    Tell t{forKey ? Tell::Kind::Key : Tell::Kind::Cake, *c};
+    t.lie = t.nothing = true;
+    return t;
+}
+
+std::optional<Human::Tell> Human::routeLie(const World& world, const Human& foe) const {
     for (const auto& [plate, kind] : memory.traps) {
         if (!bait(plate) || foe.memory.traps.count(plate)) continue;
         auto there = search(world, [&](Vec2i c) { return c != plate && cheb(c, plate) == 1; });
@@ -287,6 +302,17 @@ bool Human::bait(Vec2i c) const {
     auto it = memory.traps.find(c);
     if (it == memory.traps.end()) return false;
     return it->second == TrapKind::Spikes || (it->second == TrapKind::Darts && memory.tile(c) == Tile::Floor);
+}
+
+std::optional<Vec2i> Human::bareTableFor(const World& world, const Human& o) const {
+    std::optional<Vec2i> best;
+    for (const Table& tb : world.tables()) {
+        Vec2i c = tb.at;
+        if (memory.tile(c) != Tile::Table || o.memory.tile(c) != Tile::Void || cheb(c, o.cell) < FALSE_TIP_FAR) continue;
+        if (memory.cakes.count(c) || memory.keys.count(c) || memory.traps.count(c)) continue;
+        if (!best || cheb(c, o.cell) < cheb(*best, o.cell)) best = c;
+    }
+    return best;
 }
 
 std::optional<Vec2i> Human::riggedCakeFor(const Human& o) const {
@@ -421,6 +447,7 @@ void Human::deliver(Human& o, const Tell& t) {
     if (t.kind != Tell::Kind::People) o.note("@ TOLD ME " + what, id);
     std::string over = std::string(" OVER ") + trapWord(t.trap);
     note(!t.lie                          ? "TOLD @ " + what
+         : t.nothing                     ? std::string("TOLD @ OF A ") + (t.kind == Tell::Kind::Key ? "KEY" : "CAKE") + " THAT ISN'T THERE"
          : t.kind == Tell::Kind::Cake    ? std::string("TOLD @ OF A RIGGED CAKE")
          : t.kind == Tell::Kind::Water   ? "TOLD @ A WAY TO WATER" + over
                                          : "TOLD @ A WAY" + over,
@@ -627,8 +654,8 @@ bool Human::lieWorthy(const Human& o) const {
     if (!cunning() || !isFoe(o.id)) return false;
     auto it = social_.greetedAt.find(o.id);
     if (it != social_.greetedAt.end() && clock_ - it->second < CATCH_UP_TIME) return false;
-    if (o.hungry() && o.cakes == 0 && riggedCakeFor(o)) return true;
-    if (o.keys == 0 && escape_.wayTold.count(o.id)) return false;
+    // A false tip will nearly always do for the hungry or the keyless.
+    if ((o.hungry() && o.cakes == 0) || o.keys == 0) return true;
     for (const auto& [plate, kind] : memory.traps)
         if (bait(plate) && !o.memory.traps.count(plate)) return true;
     return false;
