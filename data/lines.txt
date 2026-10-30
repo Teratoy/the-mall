@@ -1674,3 +1674,15 @@ friend                  | I COUNTED ON YOU.
                         | HEY. YOU ALL RIGHT?
 friend                  | {WHO}, COME ON, WAKE UP.
 
+# Coming on a fresh pool of the blood it spilled itself, from someone it
+# hit or killed, said to nobody, about them.
+[spilled 0.6]
+                        | ...
+                        | THAT WAS {WHO}.
+fear                    | I DID THAT.
+timid fear              | SO MUCH OF IT...
+guilty                  | I CAN'T LOOK AT IT.
+brave                   | THEY HAD IT COMING.
+greedy                  | SHOULD HAVE SHARED, {WHO}.
+erratic                 | STILL WARM.
+erratic craving         | WASTED. ALL OF IT.

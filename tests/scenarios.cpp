@@ -383,6 +383,33 @@ const std::vector<Scenario> SCENARIOS = {
          s.run(60);
          return Checks{logged({"HEARD @'S NAME FROM #"}), logged({"# WARNED ME ABOUT @"})};
      }},
+    {"spilled-pool", "a killer looks at its victim's blood unafraid, while a bystander is frightened by it", 99,
+     [](Stage& s) {
+         Human& killer = s.first();
+         Human& victim = s.add(seedWhere(plain, 9900), 1);
+         Human& bystander = s.add(seedWhere(plain, 9950), 3);
+         for (Human* h : s.humans) h->hunger = h->thirst = h->tiredness = 0.05f;
+         s.run(6);
+         victim.takeHit(s.world, killer, 10.0f);
+         // A pool of the victim's blood, round where it fell.
+         Vec2i at = victim.cell;
+         for (int i = 0; i < 6; i++)
+             s.world.blood().drop(s.world, at.x * CELL_PX + CELL_PX / 2.0f, at.y * CELL_PX + CELL_PX / 2.0f, 4.0f,
+                                  victim.id, s.rng);
+         s.run(10);
+         auto has = [](const Human& h, const std::string& line) {
+             for (const auto& e : h.log.entries())
+                 if (e.what == line) return true;
+             return false;
+         };
+         int k = killer.id, b = bystander.id;
+         return Checks{{"killer saw the blood it spilled",
+                        [=](const Stage& st) { return has(st.world.human(k), "SAW THE BLOOD I SPILLED FROM @"); }},
+                       {"killer not frightened by it",
+                        [=](const Stage& st) { return !has(st.world.human(k), "SAW A FRESH POOL OF BLOOD"); }},
+                       {"bystander frightened by it",
+                        [=](const Stage& st) { return has(st.world.human(b), "SAW A FRESH POOL OF BLOOD"); }}};
+     }},
     {"chat", "two calm acquaintances together start chatting", 99,
      [](Stage& s) {
          Human& a = s.first();

@@ -368,8 +368,30 @@ void Human::wash(World& world) {
     timer = WASH_STEP;
 }
 
+// It knows whose blood it spilled: anyone it remembers hitting, killing or
+// eating from, and the one it is fighting now.
+bool Human::spilled(int whom) const {
+    if (whom < 0 || whom == id) return false;
+    if (fight_.foe == whom) return true;
+    for (const Episode& e : episodes_)
+        if (e.who == id && e.whom == whom &&
+            (e.what == Episode::What::Fight || e.what == Episode::What::Kill || e.what == Episode::What::Flesh))
+            return true;
+    return false;
+}
+
+// How much of the stain is blood it knows the source of: its own and what
+// it spilled. A fight leaves both mixed.
+float Human::knownBlood(const Stain& s) const {
+    float known = 0.0f;
+    for (const Stain::Bleeder& b : s.whose)
+        if (b.id >= 0 && (b.id == id || spilled(b.id))) known += s.share(b.id);
+    return known;
+}
+
 // A trap that drew blood has it all round it. Pools are kept off for good;
-// a fresh one is frightening besides, unless it is its own.
+// a fresh one is frightening besides, unless it is its own, or blood it
+// spilled itself and knows it: that one it only looks at.
 bool Human::noticeBlood(const World& world, Vec2i c) {
     const Stain& s = memory.blood[c];
     float total = s.total();
@@ -387,6 +409,12 @@ bool Human::noticeBlood(const World& world, Vec2i c) {
                 note("SAW A POOL OF MY OWN BLOOD");
                 rememberAt(c, Episode::What::Pool, EPISODE_OWN_POOL, id);
                 sayLater(talk::Moment::OwnPool);
+            }
+        } else if (knownBlood(s) >= OWN_BLOOD) {
+            int whose = s.mostly();
+            if (s.wet > 0.0f && cheb(cell, c) < POOL_FEAR_DIST && spilled(whose)) {
+                note("SAW THE BLOOD I SPILLED FROM @", whose);
+                sayLater(talk::Moment::Spilled, -1, whose);
             }
         } else if (s.wet > 0.0f && cheb(cell, c) < POOL_FEAR_DIST) {
             gore_.scare = c;

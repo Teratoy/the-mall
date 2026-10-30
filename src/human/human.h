@@ -761,6 +761,10 @@ private:
     /// What the blood on a cell in sight tells it: a trap beside it, or a
     /// pool. True if that is news.
     bool noticeBlood(const World& world, Vec2i c);
+    /// Whether it knows it spilled whom's blood: it hit, killed or ate from them.
+    bool spilled(int whom) const;
+    /// How much of a stain, 0 to 1, is its own blood or blood it spilled.
+    float knownBlood(const Stain& s) const;
     /// Whether someone in sight looks suspicious. True if newly so.
     bool judge(const Human& o);
     bool suspicious(int id) const;
