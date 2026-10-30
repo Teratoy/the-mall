@@ -169,6 +169,7 @@ std::string doing(const Human& h) {
     case Human::State::Sitting:
         if (h.dazed() >= 0.5f) return "COMING TO";
         if (h.goal == Human::Goal::Watch) return "KEEPING WATCH OVER " + who;
+        if (h.lyingDown()) return "LYING DOWN";
         [[fallthrough]];
     case Human::State::Rising: return h.rousing() ? "WAKING UP" : "RESTING";
     case Human::State::Idle:

@@ -254,6 +254,8 @@ public:
     /// water over rather than a cake.
     bool bottleInHand() const;
     bool givingWater() const { return state == State::Giving && water_.givingWater; }
+    /// Lying down awake: parched and lost, by a locked door.
+    bool lyingDown() const { return state == State::Sitting && water_.lying; }
     /// Kneeling to put things down, not to pick them up.
     bool putting() const { return state == State::Stashing && stash_.putting; }
     Memory memory;
@@ -540,6 +542,10 @@ private:
         /// when it next cries for help.
         std::optional<Vec2i> slamGate;
         float helpTimer = 0.0f;
+        /// Parched and boxed in: the locked door it lies by and calls through
+        /// for water, and when it next calls.
+        std::optional<Vec2i> callDoor;
+        float callTimer = 0.0f;
         /// Who it means to let out of a slam room, and where the gate is; whose
         /// cries for help it has heard, each a scare once.
         int rescuee = -1;
@@ -588,6 +594,8 @@ private:
     /// Shut in a slam room with no key, it cries for help now and then,
     /// loud enough to carry through walls (human_rescue.cpp).
     void callForHelp(World& world, float dt);
+    /// Parched and lying by a locked door, it calls through it now and then.
+    void callThroughDoor(World& world, float dt);
     /// Nowhere to go but a few cells: walled in.
     bool walledIn(const World& world) const;
     /// Makes for the gate of whoever it means to let out; false, and gives
@@ -925,6 +933,12 @@ private:
         /// its mind to ask, and is walking up to (-1 nobody).
         std::unordered_map<int, float> askedDrink;
         int askee = -1;
+        /// Those it asked where water is, or who asked it, and know of none,
+        /// and when it last saw them: not asked again until it has been out
+        /// of sight of them a while (they may have come across some since).
+        std::unordered_map<int, float> knewNone;
+        /// Sitting, lying down instead: parched and lost, waiting by a door.
+        bool lying = false;
     };
     Water water_;
     /// Getting thirsty, and parched (with what that may teach it).
@@ -1435,6 +1449,26 @@ private:
     /// Thirsty and knowing no water it can get to: asks those it walks
     /// with in sight, now and then, and one who knows tells it the way.
     void askGroupForWater(World& world);
+    /// Asked by asker where water is: tells the way if it knows one, else
+    /// says it knows of none, and each remembers the other knows nothing.
+    void answerWater(const World& world, Human& asker);
+    /// Keeps up when it last saw those who know of no water, and forgets
+    /// those it has been apart from long enough.
+    void keepTrackOfDry(const World& world);
+    /// Parched, with no key, nothing to drink it knows of and nowhere left
+    /// to explore: to the nearest locked door it knows, to lie or sit by it
+    /// and call through. False when there is something else to try.
+    bool languish(World& world);
+    /// Lies down where it is, awake, for a while.
+    void lieDown();
+    /// Parched too and as lost: o said they know of no water, and it would
+    /// rather look alone than wait with them.
+    bool leavesLost(const Human& o) const;
+    /// Erratic, parched but not hungry, and dry: anyone with a bottle, full
+    /// or empty, is worth a fight.
+    bool bottleRaging() const;
+    /// Goes for the nearest one it sees carrying a bottle, when raging.
+    bool bottleRage(World& world);
     /// Pissing, shitting and mess (human_relief.cpp).
     struct Relief {
         /// Going, for feces as well, or only to piss.

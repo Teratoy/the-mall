@@ -182,12 +182,14 @@ void HumanSprites::draw(Vector2 feet, Pose pose, float animTime, bool flip, int 
                         bool carrying, const Bottle* bottle, bool inHand) const {
     // Mirroring keeps the base pixel in place: it is the middle column.
     Rectangle src{0, 0, flip ? -float(SPRITE_W) : float(SPRITE_W), float(SPRITE_H)};
-    bool lying = (pose == Pose::Fall && animTime >= FALL_DOWN) || pose == Pose::Wake;
+    bool lying = (pose == Pose::Fall && animTime >= FALL_DOWN) || pose == Pose::Wake || pose == Pose::Lie;
     if (lying) {
         // Turned a quarter about the sprite's middle so the head falls back,
         // then set down with the shoulders on the bottom of the feet's cell.
-        bool shut = pose == Pose::Fall || animTime < WAKE_EYES_SHUT ||
-                    std::fmod(animTime - WAKE_EYES_SHUT, WAKE_BLINK_EVERY) >= WAKE_BLINK_EVERY - WAKE_BLINK_TIME;
+        // Lying awake, it blinks as one seated does.
+        bool shut = pose == Pose::Lie ? std::fmod(animTime, BLINK_EVERY) >= BLINK_EVERY - BLINK_TIME
+                    : pose == Pose::Fall || animTime < WAKE_EYES_SHUT ||
+                        std::fmod(animTime - WAKE_EYES_SHUT, WAKE_BLINK_EVERY) >= WAKE_BLINK_EVERY - WAKE_BLINK_TIME;
         float lift = SPRITE_W * scale / 2.0f;
         Vector2 mid{std::round(feet.x), std::round(feet.y) - lift};
         DrawTexturePro(shut ? dead_ : idle_, src, {mid.x, mid.y, float(SPRITE_W * scale), float(SPRITE_H * scale)},

@@ -188,7 +188,9 @@ bool Human::startFight(World& world) {
     // Thirsty with nothing to drink, their water is worth a fight too.
     bool forWater = thirsty() && sippable() < 0 && bottles.size() < size_t(BOTTLE_MAX) &&
                     social_.seenWater.count(fight_.foe) > 0;
-    bool forCakes = forFood || forWater;
+    // Erratic and parched, any bottle at all, while they still carry one.
+    bool forBottle = bottleRaging() && !f.bottles.empty() && (seen || social_.lastSeen.count(fight_.foe));
+    bool forCakes = forFood || forWater || forBottle;
     // Hunted, they are chased however they run, as long as they are in
     // sight or were lately.
     bool hunt = hunting() && social_.lastSeen.count(fight_.foe);
@@ -231,7 +233,8 @@ void Human::startPunch(Human& foe) {
 
 // Lands only if the foe is still within reach, and snatches one of their
 // cakes when there is room for it; thirsty with nothing to drink, their
-// fullest bottle instead, when it has room for one.
+// fullest bottle instead, when it has room for one (raging, an empty one
+// will do).
 void Human::landPunch(World& world) {
     punchLanded = true;
     timer = PUNCH_FOLLOW;
@@ -241,7 +244,8 @@ void Human::landPunch(World& world) {
     Vec2i at = f.stepProgress() < 0.5f ? f.prev : f.cell;
     if (at.x != cell.x) facingLeft = at.x < cell.x;
     if (f.dead() || cheb(cell, at) > PUNCH_REACH) return;
-    bool forWater = thirsty() && sippable() < 0 && bottles.size() < size_t(BOTTLE_MAX) && f.bottleWater() > 0.0f;
+    bool forWater = thirsty() && sippable() < 0 && bottles.size() < size_t(BOTTLE_MAX) &&
+                    (f.bottleWater() > 0.0f || (bottleRaging() && !f.bottles.empty()));
     bool took = f.cakes > 0 && cakes < carryMax() && (!forWater || hungry());
     if (took) {
         f.cakes--;

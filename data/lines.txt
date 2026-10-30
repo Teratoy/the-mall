@@ -1974,3 +1974,44 @@ generous                | IT'S MINE. ASK IF YOU NEED SOME.
 rude                    | I SAW YOU PUT IT THERE.
 rude                    | LIAR. I WATCHED YOU.
 timid                   | BUT... I SAW YOU.
+
+# ---- Parched and lost ------------------------------------------------------
+
+# Asked for water and knowing of none, said to whoever asked.
+[no_water]
+                        | NO. I'M DRY TOO.
+                        | NO IDEA. SORRY.
+                        | IF I KNEW, I'D BE THERE.
+thirsty                 | I WAS GOING TO ASK YOU.
+parched                 | NOTHING... I'M DYING TOO.
+rude                    | DO I LOOK LIKE I KNOW?
+friend warm             | I'M SORRY, {NAME}. NOTHING.
+
+# Parched, boxed in, lying or sitting by a locked door and calling through
+# it. Said to nobody, but it carries through the door to anyone close.
+[call_door]
+                        | IS ANYONE OUT THERE?
+                        | WATER... PLEASE... OPEN THE DOOR...
+                        | ANYONE WITH A KEY? WE NEED WATER!
+fear                    | HELP! THERE'S NO WATER IN HERE!
+parched                 | ...SOMEBODY... OPEN UP...
+timid                   | PLEASE... PLEASE, SOMEBODY...
+brave                   | HEY! OPEN THIS DOOR!
+hopeless                | ...IS ANYONE EVEN THERE?
+
+# Parched, leaving a companion who knows of no water either, said to them.
+[part_dry 0.8]
+                        | YOU'RE NO HELP. I'LL FIND IT MYSELF.
+                        | WE'LL DIE WAITING TOGETHER. I'M GOING.
+                        | I CAN'T JUST SIT HERE.
+loner                   | BETTER ON MY OWN.
+rude                    | YOU'RE USELESS.
+friend                  | I'M SORRY. I HAVE TO LOOK.
+
+# Erratic and parched, going for someone's bottle, full or not, said to them.
+[bottle_rage]
+                        | GIVE ME THAT BOTTLE!
+                        | THAT'S MINE NOW!
+threat                  | HAND IT OVER.
+erratic                 | WATER. MINE. MINE!
+erratic                 | I'LL WRING IT OUT OF YOU.

@@ -94,8 +94,13 @@ constexpr float TRUST_PAID_WATER = 0.1f, TRUST_CHEATED = -0.4f;
 /// to anyone else with a cake; the cunning (WATER_SELL greedy and
 /// WATER_LIE_BRAVE brave) send a thirsty foe over spikes.
 constexpr float WATER_STINGY = 0.67f, WATER_SELL = 0.5f, WATER_LIE_BRAVE = 0.4f;
-/// Knowing no water it can get to, it asks those it walks with this often.
+/// Knowing no water it can get to, it asks those it walks with this often;
+/// out of sight this long, one who knew of none may be asked again.
 constexpr float ASK_WATER_EVERY = 30.0f;
+constexpr float APART_TIME = 20.0f;
+/// Parched and lost by a locked door, it lies down this likely each time
+/// it rests there, else sits (human_walk.cpp has how long).
+constexpr float LANGUISH_LIE = 0.5f;
 /// Leading someone to drink: only those not loners (from LEAD_SOCIABLE),
 /// healthy (LEAD_HEALTH), lead friends and those they walk with within
 /// LEAD_REACH; seeing one adds LEAD_PARCHED to wanting to escort. Being
@@ -454,6 +459,17 @@ std::optional<Human::Tell> Human::waterFor(const World& world, const Human& o, b
     return t;
 }
 
+void Human::keepTrackOfDry(const World& world) {
+    for (auto it = water_.knewNone.begin(); it != water_.knewNone.end();) {
+        const Human& o = world.human(it->first);
+        if (!o.dead() && sight.sees(o.cell)) it->second = clock_;
+        if (o.dead() || clock_ - it->second > APART_TIME)
+            it = water_.knewNone.erase(it);
+        else
+            ++it;
+    }
+}
+
 void Human::askGroupForWater(World& world) {
     if (clock_ - water_.askedAt < ASK_WATER_EVERY) return;
     water_.askedAt = clock_;
@@ -462,19 +478,33 @@ void Human::askGroupForWater(World& world) {
             return w && wouldDrink(world, c, *w);
         }))
         return;
-    // Asked once, of the nearest; whoever knows answers.
+    // Asked once, of the nearest who hasn't said they know of none; whoever
+    // knows answers, and if nobody does, the one asked says so.
     Human* nearest = nullptr;
     Human* knows = nullptr;
     std::optional<Tell> way;
     for (const auto& o : world.humans()) {
         if (o.get() == this || o->dead() || !sight.sees(o->cell) || !inGroupWith(*o)) continue;
-        if (!nearest || cheb(cell, o->cell) < cheb(cell, nearest->cell)) nearest = o.get();
+        if (!water_.knewNone.count(o->id) && (!nearest || cheb(cell, o->cell) < cheb(cell, nearest->cell)))
+            nearest = o.get();
         if (!knows)
             if ((way = o->waterRoute(world, *this, false))) knows = o.get();
     }
     if (!nearest) return;
     sayLater(talk::Moment::AskWater, nearest->id);
     if (knows) knows->tell(*this, *way);
+}
+
+// Said once the asking is heard (human_speech.cpp): it plainly knows of
+// none itself, or it wouldn't ask.
+void Human::answerWater(const World& world, Human& asker) {
+    asker.note("ASKED @ WHERE THERE'S WATER", id);
+    if (dead() || asker.dead() || state == State::Sleeping) return;
+    water_.knewNone[asker.id] = clock_;
+    // Knowing a way, it has told it already (askGroupForWater).
+    if (waterRoute(world, asker, false)) return;
+    if (asker.water_.knewNone.insert({id, asker.clock_}).second) asker.note("@ KNEW OF NO WATER EITHER", id);
+    sayLater(talk::Moment::NoWater, asker.id);
 }
 
 bool Human::wouldLeadToDrink(const Human& o) const {
@@ -521,6 +551,32 @@ bool Human::offerDrinkEscort(World& world) {
     o->note("@ TOOK ME TO WATER TO DRINK", id);
     sayLater(talk::Moment::LeadDrink, o->id);
     o->sayLater(talk::Moment::LedDrink, id);
+    return true;
+}
+
+// Water, a bottle, a toilet, someone to ask or rob: all tried first
+// (seekWater). A key would open the door instead, and anywhere left to
+// explore may have water.
+bool Human::languish(World& world) {
+    if (!parched() || keys > 0) return false;
+    if (search(world, [&](Vec2i c) { return (c != cell && isFrontier(c)) || openDoorBeside(c).has_value(); }))
+        return false;
+    if (auto door = lockedDoorBeside(cell)) {
+        if (rescue_.callDoor != door) {
+            rescue_.callDoor = door;
+            rescue_.callTimer = 0.0f;
+            note("NO WATER ANYWHERE. LYING BY A LOCKED DOOR, CALLING FOR HELP");
+        }
+        if (door->x != cell.x) facingLeft = door->x < cell.x;
+        if (rng_.chance(LANGUISH_LIE))
+            lieDown();
+        else
+            sitDown();
+        return true;
+    }
+    auto p = search(world, [&](Vec2i c) { return lockedDoorBeside(c).has_value(); });
+    if (!p || p->empty()) return false;
+    startWalking(Goal::CheckDoor, *p);
     return true;
 }
 

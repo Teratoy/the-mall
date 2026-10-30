@@ -20,18 +20,24 @@ struct SoakProbe {
     static int keysOf(const Human& h) { return h.keys; }
     // What it could still go for (tools/lifelog.cpp): somewhere left to
     // explore, a locked door it knows, water it would drink, a toilet.
+    // search() breaks ties with the human's dice, so they are put back.
+    template <class F> static bool finds(const World& w, const Human& h, F done) {
+        Rng saved = h.rng_;
+        bool found = h.search(w, done).has_value();
+        h.rng_ = saved;
+        return found;
+    }
     static bool knowsFrontier(const World& w, const Human& h) {
-        return h.search(w, [&](Vec2i c) { return (c != h.cell && h.isFrontier(c)) || h.openDoorBeside(c).has_value(); })
-            .has_value();
+        return finds(w, h, [&](Vec2i c) { return (c != h.cell && h.isFrontier(c)) || h.openDoorBeside(c).has_value(); });
     }
     static bool knowsLockedDoor(const World& w, const Human& h) {
-        return h.search(w, [&](Vec2i c) { return h.lockedDoorBeside(c).has_value(); }).has_value();
+        return finds(w, h, [&](Vec2i c) { return h.lockedDoorBeside(c).has_value(); });
     }
     static bool knowsWater(const World& w, const Human& h) {
-        return h.search(w, [&](Vec2i c) { return h.waterBeside(c).has_value(); }).has_value();
+        return finds(w, h, [&](Vec2i c) { return h.waterBeside(c).has_value(); });
     }
     static bool knowsToilet(const World& w, const Human& h) {
-        return h.search(w, [&](Vec2i c) { return h.toiletBefore(w, c).has_value(); }).has_value();
+        return finds(w, h, [&](Vec2i c) { return h.toiletBefore(w, c).has_value(); });
     }
 
     // How chunks came out (tools/genprobe.cpp).
@@ -109,6 +115,10 @@ struct SoakProbe {
         h.shutIn(gate);
         return gate;
     }
+    /// h keeps company with o, as if it had chosen to.
+    static void keepWith(Human& h, const Human& o) { h.social_.companion = o.id; }
+    /// h's mind has snapped.
+    static void unhinge(Human& h) { h.mind_.erratic = 1.0f; }
     /// Shut in, h cries for help on its next update.
     static void cryNow(Human& h) { h.rescue_.helpTimer = 0.0f; }
     /// Kneels and puts down n cakes and these bottles where it stands.

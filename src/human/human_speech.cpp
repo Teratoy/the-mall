@@ -103,6 +103,8 @@ void Human::say(World& world, const Saying& s) {
         if (state == State::Idle) timer = voice_.answerWait;
     }
     if (to && to->dead()) return;
+    // Asking where water is of one who has shown since that they know of none.
+    if (to && s.moment == talk::Moment::AskWater && water_.knewNone.count(to->id)) return;
     const Human* about = s.about >= 0 ? &world.human(s.about) : nullptr;
     auto said = s.quiet ? std::nullopt
                         : talk::pick(s.moment, *this, to, about, rng_, s.topic ? &*s.topic : nullptr, &voice_.chatLines,
@@ -146,6 +148,8 @@ void Human::say(World& world, const Saying& s) {
     if (said && to && s.moment == talk::Moment::AskWay) to->answerWay(*this);
     // Asked for a drink, worded or not, the other answers (human_bottle.cpp).
     if (to && s.moment == talk::Moment::AskDrink) to->answerDrink(world, *this);
+    // Asked where water is, out loud, the other says what it knows (human_thirst.cpp).
+    if (said && to && s.moment == talk::Moment::AskWater) to->answerWater(world, *this);
     // What it tells lands now, worded or not.
     if (to && s.intro) giveName(*to);
     if (to && s.tell) deliver(*to, *s.tell);

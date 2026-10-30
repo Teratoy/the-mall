@@ -124,6 +124,11 @@ enum class Moment {
     // theirs (to them), and their answer: owning up, denying it; a denial
     // seen through (to the denier).
     TellStash, SellStash, LieStash, StashTold, AskStash, OwnStash, DenyStash, CaughtDenying,
+    // Parched and lost: asked for water and knowing of none (to the asker);
+    // boxed in, calling through a locked door (to nobody, carrying through
+    // it); leaving a companion as lost as itself (to them); erratic, going
+    // for someone's bottle (to them).
+    NoWater, CallDoor, PartDry, BottleRage,
     Count
 };
 

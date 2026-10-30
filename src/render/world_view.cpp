@@ -253,7 +253,7 @@ Pose poseOf(const Human& h) {
     case Human::State::Pouring: return Pose::Pour;
     case Human::State::Dead: return h.diedAsleep() ? Pose::DiedAsleep : Pose::Fall;
     case Human::State::Waking: return Pose::Wake;
-    case Human::State::Sitting: return Pose::Sit;
+    case Human::State::Sitting: return h.lyingDown() ? Pose::Lie : Pose::Sit;
     case Human::State::Rising: return h.rousing() ? Pose::WakeUp : Pose::Rise;
     case Human::State::Sleeping: return Pose::Sleep;
     case Human::State::Washing:

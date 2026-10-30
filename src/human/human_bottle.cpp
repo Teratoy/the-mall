@@ -271,6 +271,28 @@ const Human* Human::nearestWaterHolder(const World& world) const {
     return best;
 }
 
+bool Human::bottleRaging() const {
+    return isErratic() && parched() && !hungry() && sippable() < 0 && bottles.size() < size_t(BOTTLE_MAX);
+}
+
+// At sight: the nearest it sees, but whoever it is afraid of.
+bool Human::bottleRage(World& world) {
+    if (!bottleRaging() || fight_.foe >= 0) return false;
+    const Human* best = nullptr;
+    for (const auto& o : world.humans()) {
+        if (o.get() == this || o->dead() || o->bottles.empty() || !sight.sees(o->cell)) continue;
+        if (fight_.fear > 0.0f && o->id == fight_.feared) continue;
+        if (!best || cheb(cell, o->cell) < cheb(cell, best->cell)) best = o.get();
+    }
+    if (!best) return false;
+    fight_.foe = best->id;
+    fight_.grudge = 0.0f;
+    if (!startFight(world)) return false;
+    note("WENT FOR @'S BOTTLE, FULL OR NOT", best->id);
+    sayLater(talk::Moment::BottleRage, best->id);
+    return true;
+}
+
 // Only when nothing it would drink is near; never a foe, or whoever it is
 // afraid of. The answer comes when the asking is said (human_speech.cpp).
 bool Human::askForDrink(World& world) {

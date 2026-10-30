@@ -264,12 +264,20 @@ void Human::sitDown() {
     chat_.restedAt = clock_;
     startIdle(SIT_TIME_MIN, SIT_TIME_MAX);
     state = State::Sitting;
+    water_.lying = false;
     animTime = 0.0f;
     glance_ = SIT_GLANCE;
 }
 
+void Human::lieDown() {
+    sitDown();
+    water_.lying = true;
+    timer = rng_.range(LIE_TIME_MIN, LIE_TIME_MAX);
+}
+
 void Human::sitUp() {
     state = State::Sitting;
+    water_.lying = false;
     animTime = 0.0f;
     timer = rng_.range(WAKE_SIT_MIN, WAKE_SIT_MAX);
     glance_ = 0.0f;

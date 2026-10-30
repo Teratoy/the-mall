@@ -26,6 +26,8 @@ constexpr float SIT_CHANCE = 0.6f;
 /// A restless human sits this much less often, a stay-at-home this much more.
 constexpr float SIT_CURIOUS = 0.4f;
 constexpr float SIT_TIME_MIN = 5.0f, SIT_TIME_MAX = 15.0f;
+/// Lying down awake (parched and lost, human_thirst.cpp), it stays down this long.
+constexpr float LIE_TIME_MIN = 15.0f, LIE_TIME_MAX = 30.0f;
 constexpr float SIT_GLANCE = 0.5f;
 /// Just made, a human lies where it came to this long, then sits up and
 /// looks round this long before getting up. Dazed at first, it sees only

@@ -48,6 +48,7 @@ void Human::update(World& world, float dt) {
     chatUrges(world, dt);
     callForHelp(world, dt);
     recallCries();
+    keepTrackOfDry(world);
     timer -= dt;
     // A hit is answered at once, or as soon as the step under way is done.
     if (fight_.provoked && sleep_.stunned <= 0.0f && (!moving || timer <= 0.0f)) {
@@ -515,6 +516,8 @@ void Human::choose(World& world) {
     if (askForDrink(world)) return;
     if (helpStarving(world)) return;
     if (fight_.foe >= 0 && startFight(world)) return;
+    // Erratic and parched, any bottle it sees is worth a fight (human_bottle.cpp).
+    if (bottleRage(world)) return;
     if (keepAway(world)) return;
     if (leadEscort(world) || followEscort(world)) return;
     if (plead(world)) return;
@@ -723,6 +726,8 @@ bool Human::pursue(World& world, Want w) {
         }
         return false;
     case Want::Wander: {
+        // Parched with nothing left to try, it waits by a door instead (human_thirst.cpp).
+        if (languish(world)) return true;
         int radius = std::max(2, int(WANDER_RADIUS * sway(traits.curious) * (1.0f - DREAD_SHORT * dread_) *
                                      (1.0f - DESPAIR_SHORT * gloom())));
         // Settled, it potters about home, and so comes back to it; taught

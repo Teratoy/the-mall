@@ -20,6 +20,7 @@ Status as of 2026-10-30.
 | [chitchat_plan.md](chitchat_plan.md) | Casual talk from context: episodes, chat urge, topics, lines, replies | Steps 1–5 built | Step 6 effects (bonding trust, dread from stories, place remarks teach); step 7 probe; muttering alone (Q4). The other questions are answered under "User's decisions" |
 | [relief_plan.md](relief_plan.md) | Bladder and bowels, private spots, mess, dirty feet, foul water, toilets, being seen | All 6 steps built | — |
 | [thirst_plan.md](thirst_plan.md) | Thirst, basins, bloody and foul water, guarded water, water tips, hope near water | All 5 steps built | Tuning from play |
+| [parched_lost_plan.md](parched_lost_plan.md) | Parched with no water known: no asking the same one twice, lying by a locked door calling for help, leaving one as lost, erratic going for bottles | All 4 steps built | Tuning from play |
 | [bottle_plan.md](bottle_plan.md) | Water bottles: everyone wakes with one; sipping, filling, pouring out, dirty water carried over, puddles, looted, snatched, given, sold, lied about | Built | Three calls for the user to check (two bottles at most; giving pours water; the lie). Thirst no longer kills in the soak |
 | [hoarding_plan.md](hoarding_plan.md) | Stashes of cakes and bottles on the floor: making, using, stealing, resentment, tips and lies, groups guarding in turns | Planned | — |
 | [sleep_plan.md](sleep_plan.md) | Tiredness, sleeping, where to sleep, robbing sleepers, keeping watch, dreams | All 5 steps built | Tuning from play (aim: ~15–20 min awake, ~90 s asleep) |

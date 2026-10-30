@@ -26,7 +26,7 @@
 /// Sip drinks from a bottle held up to the mouth; Fill kneels with it in
 /// the water; Pour holds it out upside down, water running out of it;
 /// OfferBottle holds it out to someone.
-enum class Pose { Idle, Walk, Wave, Eat, Guard, Punch, Offer, Fall, Sit, Rise, Wash, Search, Feed, Wake, Point, PointUp, PointDown, Squat, Piss, Sleep, WakeUp, DiedAsleep, Sip, Fill, Pour, OfferBottle };
+enum class Pose { Idle, Walk, Wave, Eat, Guard, Punch, Offer, Fall, Sit, Rise, Wash, Search, Feed, Wake, Point, PointUp, PointDown, Squat, Piss, Sleep, WakeUp, DiedAsleep, Sip, Fill, Pour, OfferBottle, Lie };
 
 
 /// One human's frames as textures, made from its look.

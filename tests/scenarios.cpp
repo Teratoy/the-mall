@@ -190,6 +190,43 @@ Human& shutInFirst(Stage& s) {
     return caller;
 }
 void calm(Human& h) { h.hunger = h.thirst = h.tiredness = 0.05f; }
+/// Two humans parched, with empty bottles and no keys, in a spawn room they
+/// know wall to wall, with nothing in it; follower keeps company with leader.
+void lostPair(Stage& s, Human& leader, Human& follower) {
+    P::clearChunk(s.world, leader.cell);
+    for (Human* h : {&leader, &follower}) {
+        h->hunger = h->tiredness = 0.1f;
+        h->thirst = 0.85f;
+        h->keys = 0;
+        h->bottles = {Bottle{}};
+        P::knowChunk(s.world, *h);
+    }
+    P::setMet(leader, follower, 0.0f);
+    P::setMet(follower, leader, 0.0f);
+    P::setTrust(leader, follower, 0.4f);
+    P::setTrust(follower, leader, 0.4f);
+    P::keepWith(follower, leader);
+}
+/// Nobody asked anyone where water is more than once.
+Check askedOnce() {
+    return {"nobody asks the same one where water is twice", [](const Stage& s) {
+                for (const auto& h : s.world.humans()) {
+                    std::map<int, int> asked;
+                    for (const auto& e : h->log.entries())
+                        if (e.what == "ASKED @ WHERE THERE'S WATER" && (asked[e.who] += e.times) > 1) return false;
+                }
+                return true;
+            }};
+}
+/// Runs a second at a time, and says whether anyone was ever seen lying down.
+Check runSeeingLying(Stage& s, float seconds) {
+    bool lay = false;
+    for (float t = 0; t < seconds; t += 1.0f) {
+        s.run(1.0f);
+        for (const auto& h : s.world.humans()) lay |= h->lyingDown();
+    }
+    return {"someone lay down awake", [lay](const Stage&) { return lay; }};
+}
 /// Once all are awake, the hearers stand beside the slam room as the one
 /// shut in cries out once.
 void hearCry(Stage& s, Human& caller, std::vector<Human*> hearers) {
@@ -880,6 +917,85 @@ const std::vector<Scenario> SCENARIOS = {
          s.run(120);
          return Checks{logged({"TOLD @ SOMEONE IS SHUT IN"}), logged({"@ TOLD ME SOMEONE IS SHUT IN"}),
                        logged({"LET @ OUT OF A SLAM ROOM"})};
+     }},
+    {"parched-lost", "two parched humans boxed in with no water ask each other once, then lie by a door calling",
+     seedWhere([](const Traits& t) { return t.sociable >= 0.75f && t.brave >= 0.3f; }, 17000),
+     [](Stage& s) {
+         Human& leader = s.first();
+         Human& follower = s.add(seedWhere([](const Traits& t) { return t.sociable >= 0.75f; }, 17500), 2);
+         lostPair(s, leader, follower);
+         Check lying = runSeeingLying(s, 80);
+         return Checks{logged({"@ KNEW OF NO WATER EITHER"}), askedOnce(),
+                       logged({"NO WATER ANYWHERE. LYING BY A LOCKED DOOR, CALLING FOR HELP"}), lying,
+                       unlogged("LEFT @. THEY KNOW NO MORE THAN I DO")};
+     }},
+    {"parched-door", "a caring human with a key, beyond the door the parched lie calling through, opens it",
+     seedWhere([](const Traits& t) { return t.sociable >= 0.75f && t.brave >= 0.3f; }, 17000),
+     [](Stage& s) {
+         Human& leader = s.first();
+         Human& follower = s.add(seedWhere([](const Traits& t) { return t.sociable >= 0.75f; }, 17500), 2);
+         lostPair(s, leader, follower);
+         // Just beyond the room's locked door nearest the leader.
+         std::optional<Vec2i> beyond;
+         int best = 0;
+         Vec2i slot = World::slotOf(leader.cell);
+         for (int y = 0; y < CHUNK; y++)
+             for (int x = 0; x < CHUNK; x++) {
+                 Vec2i c{slot.x * CHUNK + x, slot.y * CHUNK + y};
+                 if (s.world.tile(c) != Tile::DoorLocked || (beyond && cheb(c, leader.cell) >= best)) continue;
+                 for (Vec2i d : DIRS4) {
+                     if (World::slotOf(c + d) == slot) continue;
+                     // Through the neighbour's wall too, where the door goes on.
+                     Vec2i out = c + d;
+                     s.world.ensureGenerated(out);
+                     while (s.world.tile(out) == Tile::DoorLocked) out = out + d;
+                     if (s.world.tile(out) == Tile::Floor && !s.world.occupant(out)) {
+                         beyond = out;
+                         best = cheb(c, leader.cell);
+                     }
+                 }
+             }
+         if (!beyond) return Checks{{"a locked door out of the room", [](const Stage&) { return false; }}};
+         Human& keeper = s.add(
+             seedWhere([](const Traits& t) { return caring(t) && t.sociable >= 0.75f && t.brave >= 0.6f && t.greedy <= 0.25f; },
+                       20000),
+             6);
+         P::place(s.world, keeper, *beyond);
+         calm(keeper);
+         keeper.keys = 1;
+         P::knowChunk(s.world, keeper);
+         P::setTrust(keeper, leader, 0.6f);
+         // Given up on a way out, it has no use of its own for the door.
+         P::settle(keeper, keeper.cell);
+         s.run(100);
+         return Checks{logged({"NO WATER ANYWHERE. LYING BY A LOCKED DOOR, CALLING FOR HELP"}),
+                       logged({"OPENED THE DOOR @ WAS CALLING THROUGH"}), logged({"@ LET ME OUT"})};
+     }},
+    {"parched-leave", "a bold, barely sociable parched human leaves a companion who knows of no water either",
+     seedWhere([](const Traits& t) { return t.sociable >= 0.75f; }, 18000),
+     [](Stage& s) {
+         Human& leader = s.first();
+         Human& follower =
+             s.add(seedWhere([](const Traits& t) { return t.sociable >= 0.4f && t.sociable < 0.5f && t.brave >= 0.7f; },
+                             18500),
+                   2);
+         lostPair(s, leader, follower);
+         s.run(60);
+         return Checks{logged({"@ KNEW OF NO WATER EITHER"}), logged({"LEFT @. THEY KNOW NO MORE THAN I DO"})};
+     }},
+    {"bottle-rage", "an erratic, parched human not hungry goes for a stranger's empty bottle and takes it", 99,
+     [](Stage& s) {
+         Human& holder = s.first();
+         P::clearChunk(s.world, holder.cell);
+         Human& mad = s.add(seedWhere([](const Traits& t) { return t.brave >= 0.6f; }, 19000), 3);
+         calm(holder);
+         holder.bottles = {Bottle{}};
+         mad.hunger = mad.tiredness = 0.1f;
+         mad.thirst = 0.85f;
+         mad.bottles.clear();
+         P::unhinge(mad);
+         s.run(40);
+         return Checks{logged({"WENT FOR @'S BOTTLE, FULL OR NOT"}), logged({"HIT @ AND TOOK THEIR BOTTLE"})};
      }},
     {"shut-in-greedy", "a greedy hearer with keys neither goes to let them out nor tells anyone", 99,
      [](Stage& s) {
