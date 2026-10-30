@@ -16,10 +16,12 @@
 bool Human::seekFood(World& world) {
     auto it = social_.lastSeen.find(fight_.feared);
     bool afraid = fight_.fear > 0.0f && it != social_.lastSeen.end();
+    Shy shied = Shy::None;
     auto p = search(world, [&](Vec2i c) {
-        auto k = inReach(c, memory.cakes);
+        auto k = cakeInReach(c, &shied);
         return k && !(afraid && cheb(*k, it->second) < FLEE_DIST);
     });
+    noteShy(shied);
     // A body with cakes on it does as well as cakes lying about.
     auto q = lootPath(world, true);
     size_t nearest = std::min(p ? p->size() : SIZE_MAX, q ? q->size() : SIZE_MAX);
@@ -349,6 +351,14 @@ void Human::learnTrap(Vec2i cell, TrapKind kind, bool mine) {
         note("SHUT IN A SLAM ROOM");
         sayLater(talk::Moment::Slammed);
     }
+    // Caught itself: wary of the next one like it.
+    if (mine && kind == TrapKind::Darts) {
+        wary_.darts = std::min(1.0f, wary_.darts + WARY_HIT);
+        wary_.notedDarts = false;
+    } else if (mine && kind == TrapKind::Slam) {
+        wary_.slam = std::min(1.0f, wary_.slam + WARY_HIT);
+        wary_.notedSlam = false;
+    }
     // Seen going off, told of or not: a scare.
     scare(DREAD_TRAP_SEEN);
     // Darted lifting a cake it was told of: whoever told it set it up.
@@ -373,6 +383,80 @@ void Human::trapWhereTold(Vec2i cell) {
     remember(Episode::What::Lied, EPISODE_LIED, it->second, id);
     regard(it->second, TRUST_LIED);
     memory.toldBy.erase(it);
+}
+
+// Starving, it takes any risk; tipped off by someone it trusts, it takes
+// their word. Shut in before, it wants a key in hand for a cake in a room
+// with one door. Darted before, it leaves table cakes alone until hunger
+// outweighs the wariness, the more so the more hurt it is.
+Human::Shy Human::shyOf(Vec2i c) const {
+    if (starving() || (wary_.darts <= 0.0f && wary_.slam <= 0.0f)) return Shy::None;
+    if (auto it = memory.cakeTips.find(c); it != memory.cakeTips.end() && trust(it->second) >= WARY_TIP_TRUST)
+        return Shy::None;
+    if (wary_.slam > 0.0f && keys == 0 && oneDoorRoom(c)) return Shy::Slam;
+    if (wary_.darts > 0.0f && memory.tile(c) == Tile::Table &&
+        hunger < wary_.darts * (WARY_DARTS_BASE + WARY_DARTS_HURT * (1.0f - health)))
+        return Shy::Darts;
+    return Shy::None;
+}
+
+// What it remembers round the table, up to the doors: unknown cells, or
+// too many, and it can't tell. Doors side by side are one door.
+bool Human::oneDoorRoom(Vec2i c) const {
+    std::unordered_set<Vec2i, Vec2iHash> seen{c}, doors;
+    std::queue<Vec2i> open;
+    open.push(c);
+    while (!open.empty()) {
+        Vec2i p = open.front();
+        open.pop();
+        for (Vec2i d : DIRS4) {
+            Vec2i n = p + d;
+            Tile t = memory.tile(n);
+            if (t == Tile::Void) return false;
+            if (t == Tile::Wall || !seen.insert(n).second) continue;
+            if (t == Tile::DoorOpen || t == Tile::DoorLocked) {
+                doors.insert(n);
+                continue;
+            }
+            if (int(seen.size()) > WARY_ROOM_MAX) return false;
+            open.push(n);
+        }
+    }
+    if (doors.empty()) return false;
+    // All the door cells one run of door from the first.
+    std::unordered_set<Vec2i, Vec2iHash> run{*doors.begin()};
+    std::queue<Vec2i> next;
+    next.push(*doors.begin());
+    while (!next.empty()) {
+        Vec2i p = next.front();
+        next.pop();
+        for (Vec2i d : DIRS4)
+            if (doors.count(p + d) && run.insert(p + d).second) next.push(p + d);
+    }
+    return run.size() == doors.size();
+}
+
+std::optional<Vec2i> Human::cakeInReach(Vec2i at, Shy* shied) const {
+    for (Vec2i d : REACH) {
+        Vec2i c = at + d;
+        if (!memory.cakes.count(c) || (d != Vec2i{} && (memory.tile(c) != Tile::Table || avoids(c)))) continue;
+        Shy why = shyOf(c);
+        if (why == Shy::None) return c;
+        if (shied) *shied = why;
+    }
+    return std::nullopt;
+}
+
+void Human::noteShy(Shy why) {
+    if (why == Shy::Darts && !wary_.notedDarts) {
+        wary_.notedDarts = true;
+        note("LEFT A CAKE ALONE. IT COULD BE RIGGED");
+        sayLater(talk::Moment::WaryCake);
+    } else if (why == Shy::Slam && !wary_.notedSlam) {
+        wary_.notedSlam = true;
+        note("LEFT THE CAKE IN A ROOM WITH ONE DOOR. NOT WITHOUT A KEY");
+        sayLater(talk::Moment::WarySlam);
+    }
 }
 
 // Hit by a starving human it would feed anyway, it feeds them. Otherwise,

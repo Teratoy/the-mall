@@ -520,6 +520,34 @@ private:
         std::unordered_set<int> heardHelp;
     };
     Rescue rescue_;
+    /// Wary of traps like those that caught it (human_fight.cpp). Any cake
+    /// on a table might be on a dart plate, and bait in a small room with
+    /// one door might shut it in, so one hit makes it think twice about the
+    /// next, not only that plate. A trusted tip, or starving, overrides it.
+    struct Wary {
+        /// Darted: how wary of cakes on tables, 0 to 1, raised by each
+        /// volley it set off and fading with time. Hunger weighs against
+        /// it, and being hurt for it.
+        float darts = 0.0f;
+        /// Shut in: while above 0, it takes no cake from a room with one
+        /// door unless it carries a key to let itself out.
+        float slam = 0.0f;
+        /// Said it would leave a cake alone, since it was last caught.
+        bool notedDarts = false, notedSlam = false;
+    };
+    Wary wary_;
+    enum class Shy : uint8_t { None, Darts, Slam };
+    /// Why, wary, it leaves the cake at c alone; None if it takes the risk.
+    Shy shyOf(Vec2i c) const;
+    /// A small room whose only way in is one door, as far as it has seen,
+    /// round the table at c.
+    bool oneDoorRoom(Vec2i c) const;
+    /// A remembered cake it would take standing at cell at; why it left
+    /// one alone goes in shied, if given.
+    std::optional<Vec2i> cakeInReach(Vec2i at, Shy* shied = nullptr) const;
+    /// The first time since it was caught that it leaves a cake alone: a
+    /// note and a word to nobody.
+    void noteShy(Shy why);
     /// Shut in a slam room with no key, it cries for help now and then,
     /// loud enough to carry through walls (human_rescue.cpp).
     void callForHelp(World& world, float dt);

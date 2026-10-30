@@ -61,6 +61,12 @@ struct SoakProbe {
                 w.takeKey(c);
             }
     }
+    /// Wary of cakes on tables after darts, and of rooms with one door
+    /// after a slam, as if caught that much (Human::Wary).
+    static void setWary(Human& h, float darts, float slam) {
+        h.wary_.darts = darts;
+        h.wary_.slam = slam;
+    }
     /// Given up on a way out, at home on home.
     static void settle(Human& h, Vec2i home) {
         h.escape_.settled = true;

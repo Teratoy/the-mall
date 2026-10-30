@@ -248,6 +248,20 @@ constexpr float LESSON_PAID = 0.1f;
 constexpr float LESSON_FADE = 1.0f / 1800.0f;
 constexpr float LESSON_CARRY = 2.0f;
 constexpr float LESSON_FETCH = 0.6f;
+/// Trap wariness (human_fight.cpp): what each dart volley or slam it sets
+/// off adds; how fast darts are forgotten (a full wariness in ten
+/// minutes; slams fade like lessons); the hunger it takes to risk a table
+/// cake is wariness times WARY_DARTS_BASE, plus WARY_DARTS_HURT for each
+/// bit of health gone, so one volley leaves it fetching only when hungry,
+/// and hurt or darted twice only when starving.
+constexpr float WARY_HIT = 0.5f;
+constexpr float WARY_DARTS_FADE = 1.0f / 600.0f;
+constexpr float WARY_DARTS_BASE = 1.0f;
+constexpr float WARY_DARTS_HURT = 0.8f;
+/// Most cells a room with one door may have and still look like a trap.
+constexpr int WARY_ROOM_MAX = 64;
+/// Trust in whoever tipped it off about a cake that makes the tip safe.
+constexpr float WARY_TIP_TRUST = 0.3f;
 /// Kneeling by a body, going through it.
 constexpr float LOOT_TIME = 2.0f;
 /// A starving human below this health gets beaten up rather than fed;

@@ -24,7 +24,7 @@ SHOT := build/shot
 # Grows chunk interiors on every footprint and checks they keep to it.
 GENPROBE := build/genprobe
 
-.PHONY: all run clean stuck check golden coverage shot scenarios genprobe
+.PHONY: all run clean stuck check golden coverage shot scenarios genprobe trapprobe
 
 all: $(BIN)
 
@@ -83,3 +83,12 @@ clean:
 	rm -rf build
 
 -include $(OBJ:.o=.d)
+
+# Every trap set off in the soak worlds: same plate again, or a new one.
+TRAPPROBE := build/trap_probe
+
+$(TRAPPROBE): tools/trap_probe.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out tests/probe.h,$^) -o $@ $(LDLIBS)
+
+trapprobe: $(TRAPPROBE)
+	./$(TRAPPROBE) $(TRAPPROBE_ARGS)

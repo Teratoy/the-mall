@@ -134,7 +134,7 @@ void Human::move(World& world, Vec2i next) {
     // Seen opened from afar: no need to walk up to it.
     if (goal == Goal::CheckDoor && !lockedDoorBeside(target_)) rethink_ = true;
     if (goal == Goal::Explore && !isFrontier(target_) && !openDoorBeside(target_)) rethink_ = true;
-    if (goal == Goal::FetchCake && !inReach(target_, memory.cakes)) rethink_ = true;
+    if (goal == Goal::FetchCake && !cakeInReach(target_)) rethink_ = true;
     if (goal == Goal::Loot && !worthLooting(deaths_.corpse, traits.brave < TIMID)) rethink_ = true;
     if (goal == Goal::Feed && !wouldEat(mind_.meal)) rethink_ = true;
     // They move too; keep the plan fresh.
@@ -297,7 +297,7 @@ void Human::takeInReach(World& world) {
         if (!underfoot && (world.tile(c) != Tile::Table || avoids(c))) continue;
         if (!world.hasKey(c)) memory.keys.erase(c);
         if (!world.hasCake(c)) memory.cakes.erase(c);
-        bool key = world.hasKey(c), cake = cakes < carryMax() && world.hasCake(c);
+        bool key = world.hasKey(c), cake = cakes < carryMax() && world.hasCake(c) && shyOf(c) == Shy::None;
         if (!key && !cake) continue;
         if (!underfoot) world.setOff(c, *this);
         if (key && world.takeKey(c)) {

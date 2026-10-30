@@ -89,6 +89,9 @@ enum class Moment {
     // (to nobody, about them).
     Tired, Exhausted, SleepNow, Woke, Dream, RobbedSleep, CakeGone, WatchMe, WatchYes, WatchCake, WatchNo, WakeUp,
     YourWatch, FailedWatch, WakeThem,
+    // Wary after a trap, leaving a cake alone (to nobody): it might be on
+    // a dart plate; it lies in a room with one door and no key in hand.
+    WaryCake, WarySlam,
     Count
 };
 

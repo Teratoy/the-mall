@@ -8,6 +8,7 @@
 //   for tools/coverage.py.
 // Exits non-zero if any scenario fails. Deterministic, like the soak.
 #include "probe.h"
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -107,6 +108,14 @@ Check logged(std::vector<std::string> anyOf) {
                 return false;
             }};
 }
+/// None of these lines in anyone's log.
+Check notLogged(std::vector<std::string> noneOf) {
+    return {"not " + noneOf.front(), [noneOf](const Stage& s) {
+                for (const auto& l : noneOf)
+                    if (s.logged(l)) return false;
+                return true;
+            }};
+}
 using Checks = std::vector<Check>;
 
 struct Scenario {
@@ -165,7 +174,93 @@ Check straightFace(const Human& liar) {
             }};
 }
 
+/// One human, knowing its chunk, with one cake on a table in it, darted
+/// once before (wary 0.5) and as hungry as asked. A second human, whom it
+/// trusts as asked, told it of the cake if tipped.
+Checks wareCake(Stage& s, float hunger, Checks expect, bool tipped = false) {
+    Human& h = s.first();
+    std::optional<Vec2i> cake;
+    for (Vec2i c : s.world.cakes())
+        if (s.world.tile(c) == Tile::Table && World::slotOf(c) == World::slotOf(h.cell) &&
+            (!cake || cheb(c, h.cell) < cheb(*cake, h.cell) ||
+             (cheb(c, h.cell) == cheb(*cake, h.cell) && (c.x < cake->x || (c.x == cake->x && c.y < cake->y)))))
+            cake = c;
+    if (!cake) return {{"a cake on a table in the spawn chunk", [](const Stage&) { return false; }}};
+    P::clearChunk(s.world, h.cell);
+    P::addCake(s.world, *cake);
+    P::knowChunk(s.world, h, true);
+    P::setWary(h, 0.5f, 0.0f);
+    h.hunger = hunger;
+    h.thirst = 0.1f;
+    h.cakes = 0;
+    if (tipped) {
+        Human& friend_ = s.add(seedWhere(plain, 8000), 6);
+        P::setTrust(h, friend_, 0.6f);
+        P::setMet(h, friend_, 0.0f);
+        P::setMet(friend_, h, 0.0f);
+        friend_.hunger = friend_.thirst = 0.1f;
+        h.memory.cakeTips[*cake] = friend_.id;
+    }
+    s.run(60);
+    return expect;
+}
+
+/// One human outside the gate of the slam room nearest the spawn, knowing
+/// that chunk and its bait, shut in once before, hungry, with keys or not.
+Checks wareSlam(Stage& s, int keys, Checks expect) {
+    Human& h = s.first();
+    std::optional<std::pair<Vec2i, Vec2i>> room;
+    // Chunks round the spawn, ring by ring, until one has a slam room.
+    Vec2i home = World::slotOf(h.cell);
+    for (int r = 1; r <= 3; r++)
+        for (int y = -r; y <= r; y++)
+            for (int x = -r; x <= r; x++)
+                if (std::max(std::abs(x), std::abs(y)) == r &&
+                    std::none_of(s.world.traps().begin(), s.world.traps().end(),
+                                 [](const auto& t) { return t.second.kind == TrapKind::Slam; }))
+                    s.world.ensureGenerated((home + Vec2i{x, y}) * CHUNK + Vec2i{CHUNK / 2, CHUNK / 2});
+    for (const auto& [c, t] : s.world.traps())
+        if (t.kind == TrapKind::Slam && (!room || cheb(c, h.cell) < cheb(room->first, h.cell) ||
+                                         (cheb(c, h.cell) == cheb(room->first, h.cell) &&
+                                          (c.x < room->first.x || (c.x == room->first.x && c.y < room->first.y)))))
+            room = {c, t.from};
+    if (!room) return {{"a slam room near the spawn", [](const Stage&) { return false; }}};
+    auto [plate, gate] = *room;
+    // Out of the gate, away from the plate, down the corridor and on.
+    Vec2i out{0, 0};
+    for (Vec2i d : DIRS4)
+        if (cheb(gate + d, plate) > cheb(gate, plate) && passable(s.world.tile(gate + d))) out = d;
+    Vec2i at = gate + out;
+    while (s.world.tile(at + out) == Tile::Floor && cheb(at, gate) < 14) at = at + out;
+    P::place(s.world, h, s.freeNear(at, 0));
+    P::knowChunk(s.world, h, true);
+    P::setWary(h, 0.0f, 0.5f);
+    h.keys = keys;
+    h.hunger = 0.6f;
+    h.thirst = 0.1f;
+    h.cakes = 0;
+    // The bait is the only cake it knows of.
+    h.memory.cakes = {plate};
+    s.run(60);
+    return expect;
+}
+
 const std::vector<Scenario> SCENARIOS = {
+    {"wary-darts", "darted once, a human not yet hungry leaves the next table cake alone", seedWhere(plain, 9000),
+     [](Stage& s) {
+         return wareCake(s, 0.3f, {logged({"LEFT A CAKE ALONE. IT COULD BE RIGGED"}), notLogged({"PICKED UP A CAKE"})});
+     }},
+    {"wary-starving", "darted once, a starving human still risks the table cake", seedWhere(plain, 9000),
+     [](Stage& s) { return wareCake(s, 0.85f, {logged({"PICKED UP A CAKE"})}); }},
+    {"wary-tip", "darted once, it takes a cake a friend told it of on their word", seedWhere(plain, 9000),
+     [](Stage& s) { return wareCake(s, 0.3f, {logged({"PICKED UP A CAKE"})}, true); }},
+    {"wary-slam", "shut in once, with no key it leaves the bait in a room with one door", seedWhere(plain, 9000),
+     [](Stage& s) {
+         return wareSlam(s, 0, {logged({"LEFT THE CAKE IN A ROOM WITH ONE DOOR. NOT WITHOUT A KEY"}),
+                                notLogged({"SHUT IN A SLAM ROOM"})});
+     }},
+    {"wary-slam-key", "shut in once, with a key in hand it goes for the bait anyway", seedWhere(plain, 9000),
+     [](Stage& s) { return wareSlam(s, 1, {logged({"PICKED UP A CAKE"})}); }},
     {"share", "a friend with cakes to spare feeds a starving friend", 99,
      [](Stage& s) {
          Human& giver = s.first();
