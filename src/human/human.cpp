@@ -391,12 +391,13 @@ bool Human::observe(const World& world) {
                     note("FOUND @ DEAD. MY BEATING DID IT", o->id);
                     rememberAt(o->cell, Episode::What::Kill, EPISODE_KILLED, id, o->id);
                 } else if (o->deaths_.killer != id) {
-                    if (known)
+                    if (known) {
                         note(o->sleep_.diedAsleep ? "FOUND @ DEAD. I THOUGHT THEY WERE ASLEEP" : "FOUND @ DEAD", o->id);
-                    // Taken for asleep, it tries to wake them first.
-                    if (known && o->sleep_.diedAsleep) sayLater(talk::Moment::WakeThem, -1, o->id);
-                    else
+                        // Taken for asleep, it tries to wake them first.
+                        if (o->sleep_.diedAsleep) sayLater(talk::Moment::WakeThem, -1, o->id);
+                    } else {
                         note("FOUND SOMEONE'S BONES");
+                    }
                     rememberAt(o->cell, Episode::What::Body, friendDead ? EPISODE_FRIEND_BODY : EPISODE_BODY, -1,
                                known ? o->id : -1);
                     sayLater(talk::Moment::FoundBody, -1, o->id);

@@ -104,6 +104,10 @@ Check logged(std::vector<std::string> anyOf) {
                 return false;
             }};
 }
+/// None of these lines in anyone's log.
+Check unlogged(std::string line) {
+    return {"no " + line, [line](const Stage& s) { return !s.logged(line); }};
+}
 using Checks = std::vector<Check>;
 
 struct Scenario {
@@ -399,6 +403,24 @@ const std::vector<Scenario> SCENARIOS = {
          teller.thirst = friendOf.thirst = third.thirst = 0.1f;
          s.run(60);
          return Checks{logged({"HEARD @'S NAME FROM #"}), logged({"# WARNED ME ABOUT @"})};
+     }},
+    {"body-known", "a human finds a fresh body and knows who it was, not someone's bones", 1,
+     [](Stage& s) {
+         Human& finder = s.first();
+         Human& victim = s.add(seedWhere(plain, 9900));
+         P::kill(s.world, victim);
+         finder.hunger = finder.thirst = finder.tiredness = 0.1f;
+         s.run(20);
+         return Checks{logged({"FOUND @ DEAD"}), unlogged("FOUND SOMEONE'S BONES")};
+     }},
+    {"body-bones", "a human finds a stranger's bare bones and can't tell whose", 1,
+     [](Stage& s) {
+         Human& finder = s.first();
+         Human& victim = s.add(seedWhere(plain, 9900));
+         P::kill(s.world, victim, 2000.0f);
+         finder.hunger = finder.thirst = finder.tiredness = 0.1f;
+         s.run(20);
+         return Checks{logged({"FOUND SOMEONE'S BONES"}), unlogged("FOUND @ DEAD")};
      }},
     {"chat", "two calm acquaintances together start chatting", 99,
      [](Stage& s) {
