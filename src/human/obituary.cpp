@@ -1,11 +1,13 @@
 #include "human/obituary.h"
+#include "core/files.h"
 #include <fstream>
 
 namespace obituary {
 
 namespace {
 
-constexpr const char* PATH = "data/obituary.txt";
+/// The save file: data/obituary.txt, or the app's own storage on a phone.
+std::string path() { return files::savePath("obituary.txt"); }
 
 // One field per line, a keyword, a tab and the value; a record starts at
 // HUMAN and ends at END. Names and log lines never hold tabs or newlines.
@@ -21,7 +23,7 @@ std::string flat(std::string s) {
 
 std::vector<Record> load() {
     std::vector<Record> records;
-    std::ifstream in(PATH);
+    std::ifstream in(path());
     std::string line;
     Record r;
     bool open = false;
@@ -69,12 +71,12 @@ void write(std::ofstream& out, const Record& r) {
 } // namespace
 
 void add(const Record& r) {
-    std::ofstream out(PATH, std::ios::app);
+    std::ofstream out(path(), std::ios::app);
     write(out, r);
 }
 
 void save(const std::vector<Record>& records) {
-    std::ofstream out(PATH, std::ios::trunc);
+    std::ofstream out(path(), std::ios::trunc);
     for (const Record& r : records) write(out, r);
 }
 

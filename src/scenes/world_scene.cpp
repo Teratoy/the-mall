@@ -257,7 +257,7 @@ const Human* WorldScene::nearestLiving() const {
 }
 
 void WorldScene::update(float dt, const Canvas& canvas) {
-    if (IsKeyPressed(KEY_ESCAPE)) pauseToggle_ = true;
+    if (ui::backPressed()) pauseToggle_ = true;
     if (pauseToggle_) {
         pauseToggle_ = false;
         paused_ = !paused_;

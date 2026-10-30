@@ -89,4 +89,6 @@ bool arrowButton(Rectangle r, bool up, Vector2 mouse) {
     return released(r, mouse);
 }
 
+bool backPressed() { return IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACK); }
+
 } // namespace ui

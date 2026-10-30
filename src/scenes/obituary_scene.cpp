@@ -43,7 +43,7 @@ std::string dayText(std::time_t when) {
 ObituaryScene::ObituaryScene() : records_(obituary::load()) {}
 
 void ObituaryScene::update(float, const Canvas& canvas) {
-    if (IsKeyPressed(KEY_ESCAPE)) back_ = true;
+    if (ui::backPressed()) back_ = true;
     if (cremate_) {
         cremate_ = false;
         if (!confirming_) {

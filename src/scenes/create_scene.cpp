@@ -1,4 +1,5 @@
 #include "scenes/create_scene.h"
+#include "core/files.h"
 #include "human/name.h"
 #include "render/canvas.h"
 #include "scenes/menu_scene.h"
@@ -78,13 +79,13 @@ void CreateScene::update(float dt, const Canvas&) {
                 !(ch == ' ' && chosen_.empty()))
                 chosen_ += char(ch);
         if ((IsKeyPressed(KEY_BACKSPACE) || IsKeyPressedRepeat(KEY_BACKSPACE)) && !chosen_.empty()) chosen_.pop_back();
-        if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_ESCAPE)) editing_ = false;
+        if (IsKeyPressed(KEY_ENTER) || ui::backPressed()) editing_ = false;
         if (!editing_)
             while (!chosen_.empty() && chosen_.back() == ' ') chosen_.pop_back();
     } else {
         if (IsKeyPressed(KEY_R)) refresh_ = true;
         if (IsKeyPressed(KEY_ENTER)) proceed_ = true;
-        if (IsKeyPressed(KEY_ESCAPE)) back_ = true;
+        if (ui::backPressed()) back_ = true;
     }
     if (back_) {
         next = std::make_unique<MenuScene>();
@@ -107,7 +108,8 @@ void CreateScene::draw(const Canvas& canvas) {
     // The name to tap and type over, then the human again at the size it
     // will walk the world.
     Vector2 m = canvas.mouse();
-    bool overName = CheckCollisionPointRec(m, NAME_FIELD);
+    // A phone has no keyboard to type with, so there the rolled name stays.
+    bool overName = !files::TOUCH_ONLY && CheckCollisionPointRec(m, NAME_FIELD);
     if (editing_ || overName) DrawRectangleRec(NAME_FIELD, ui::GROUND);
     std::string shown = chosen_.empty() && !editing_ ? name_ : chosen_;
     for (char& c : shown) c = char(std::toupper(uint8_t(c)));
@@ -116,7 +118,7 @@ void CreateScene::draw(const Canvas& canvas) {
         if (std::fmod(caret_, 2 * CARET_BLINK) < CARET_BLINK)
             DrawRectangle(Canvas::W / 2 + ui::textWidth(shown.c_str()) / 2 + 1, NAME_Y - 1, 1, 10, WHITE);
         ui::textCentred("TYPE A NAME, ENTER WHEN DONE", Canvas::W / 2, HINT_Y, ui::DIM);
-    } else {
+    } else if (!files::TOUCH_ONLY) {
         ui::textCentred("TAP THE NAME TO CHANGE IT", Canvas::W / 2, HINT_Y, ui::DIM);
     }
     // A press on the name starts typing; one anywhere else ends it.

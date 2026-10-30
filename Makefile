@@ -4,8 +4,9 @@
 
 CXX      := g++
 CXXFLAGS := -std=c++20 -O2 -g -Wall -Wextra -MMD -MP
-CPPFLAGS := -Isrc $(shell pkg-config --cflags raylib)
-LDLIBS   := $(shell pkg-config --libs raylib) -lm
+# Quiet when missing: make apk runs on the host, which has no raylib-devel.
+CPPFLAGS := -Isrc $(shell pkg-config --cflags raylib 2>/dev/null)
+LDLIBS   := $(shell pkg-config --libs raylib 2>/dev/null) -lm
 
 SRC := $(shell find src -name '*.cpp')
 OBJ := $(SRC:src/%.cpp=build/%.o)
@@ -24,7 +25,7 @@ SHOT := build/shot
 # Grows chunk interiors on every footprint and checks they keep to it.
 GENPROBE := build/genprobe
 
-.PHONY: all run clean stuck check golden coverage shot scenarios genprobe
+.PHONY: all run clean stuck check golden coverage shot scenarios genprobe apk install-apk logcat
 
 all: $(BIN)
 
@@ -83,3 +84,7 @@ clean:
 	rm -rf build
 
 -include $(OBJ:.o=.d)
+
+# The phone build: see android/apk.mk. Run these on the host, not in the toolbox.
+apk install-apk logcat:
+	$(MAKE) -f android/apk.mk $@

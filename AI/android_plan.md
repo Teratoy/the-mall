@@ -75,6 +75,28 @@ rules), a small `src/core/files.{h,cpp}`.
 
 ## Code changes the phone needs
 
+### Built (2026-10-30): build order 1 and steps 1–3
+
+- `make apk` (on the host) delegates to `android/apk.mk`. raylib's own
+  Android Makefile doesn't work with NDK r30 (it passes an unversioned
+  `-target aarch64`), so `apk.mk` compiles raylib's seven C files itself.
+  The first build clones raylib 5.5 into `build/android/raylib`.
+- The package is `com.teratoy.themall`, version 0.1-debug, debuggable,
+  with no icon yet (Android shows its default one).
+- `src/core/files.{h,cpp}`: `files::asset()` reads `data/lines.txt` and
+  `data/names.txt` from the APK; `files::savePath()` puts the obituary in
+  the app's storage. Both do nothing new on a computer. `files::TOUCH_ONLY`
+  is true in the Android build.
+- `ui::backPressed()` is Escape or the back button, used wherever Escape was.
+- On the phone, tapping the name does nothing and the hint is hidden.
+- Full screen comes from the theme (no status bar, drawn beside the
+  cut-out). The navigation bar isn't hidden: immersive mode needs a call on
+  Android's UI thread, which a NativeActivity with no Java code doesn't
+  have. With gesture navigation only the thin handle overlaps the
+  bottom strip. Check on the phone; a little Java could fix it later.
+- Not run on a device yet. The emulator here is x86_64 and crashed when
+  started without a window.
+
 ### Step 1. Files
 
 - `talk.cpp` and `name.cpp` find `data/*.txt` next to the exe through

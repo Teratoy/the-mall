@@ -33,5 +33,7 @@ std::string clockText(float seconds);
 bool button(Rectangle r, const char* label, Vector2 mouse);
 /// A flat button with an arrow pointing up or down instead of a label.
 bool arrowButton(Rectangle r, bool up, Vector2 mouse);
+/// Escape on a computer, or the phone's back button: pause, or go back.
+bool backPressed();
 
 } // namespace ui
