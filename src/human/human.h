@@ -1141,6 +1141,8 @@ private:
         std::unordered_map<Vec2i, Pile, Vec2iHash> left;
         std::unordered_map<Vec2i, int, Vec2iHash> nearBy;
         std::vector<Vec2i> exposed;
+        /// When it last resented each hoarder.
+        std::unordered_map<int, float> resented;
     };
     Stash stash_;
     /// How much it hoards, from greed, going hungry, being unsociable,
@@ -1166,6 +1168,17 @@ private:
         return it != memory.stashes.end() && it->second != id;
     }
     bool exposed(Vec2i c) const;
+    /// Would take from someone else's stash at c, as it sees it: needing
+    /// what is in it, or greedy and bold enough, against guilt and how much
+    /// it likes the owner; a friend's or its group's only when starving or
+    /// parched, and not under the owner's eyes unless desperate.
+    bool wouldSteal(const World& world, Vec2i c, const Pile& p) const;
+    /// Took from owner's stash at c: what it, the owner and anyone else who
+    /// saw it make of that.
+    void stoleFrom(World& world, Vec2i c, int owner, const std::string& what);
+    /// Hungry or thirsty with nothing, seeing someone's big stash: thinks
+    /// less of them, the more the bigger it is and the needier it is.
+    void resent(Vec2i c, const Pile& p, int owner);
     /// At the stash or the spot: puts the load down.
     bool stashHere();
     /// What it would take from the pile on a cell, as it sees it: cakes
@@ -1173,9 +1186,10 @@ private:
     /// when it has none) while it has room, or water poured into its own.
     /// From its own stash only what it needs now: a cake when hungry with
     /// none, water when thirsty with nothing to drink.
-    /// Nothing from someone else's stash, as far as it knows; from a stash
-    /// of its own that was found out, all it can carry, to move it.
-    bool wantsFromPile(Vec2i c, const Pile& p) const;
+    /// From someone else's stash, as far as it knows, only what it would
+    /// steal; from a stash of its own that was found out, all it can carry,
+    /// to move it.
+    bool wantsFromPile(const World& world, Vec2i c, const Pile& p) const;
     /// A pile it wants something from, on its cell or beside it: kneels and
     /// takes it. False if there is none.
     bool takeFromPiles(World& world);

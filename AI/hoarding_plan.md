@@ -171,6 +171,28 @@ Second round (2026-10-30):
 - Log: "TOOK A CAKE FROM @'S STASH", "@ TOOK FROM MY STASH",
   "@ HOARDS WHILE WE STARVE"; lines: steal_stash, stash_robbed, resent.
 
+### Built (2026-10-30, step 4)
+
+- `wouldSteal`: from a stash it knows is someone else's, once need (0.5,
+  +0.4 starving or parched), 0.5 greed and 0.3 boldness, less 0.5 guilt and
+  0.5 × its trust in the owner, reach 0.6. A friend's or its group's only
+  when desperate; never under the owner's eyes unless desperate.
+  Deterministic: no dice.
+- Stolen: "TOOK … FROM @'S STASH" (line steal_stash). An owner who sees it
+  says so ("@ TOOK FROM MY STASH", trust −0.5, line caught_stealing) and
+  goes for the thief; anyone else who sees it, trust −0.3, unless they
+  count the owner a foe.
+- Resentment: hungry with no cake (or thirsty with nothing to drink) and no
+  stash of its own, seeing a known stash of 3+ cakes (or a bottle's worth
+  of water), it thinks up to 0.2 less of the owner, by need and size, once
+  a minute per owner ("@ HOARDS WHILE I GO WITHOUT", line resent). Seeing
+  someone stash while that needy counts too. The group going for a
+  hoarder isn't separate code: resentment drives trust down, and foes'
+  stashes are stolen sooner and foes fought sooner.
+- Scenarios steal-stash, caught-stealing, resent.
+- In the soak nobody steals or resents yet: stashes are made where nobody
+  watches, so nobody learns whose they are. Step 5 (telling) spreads it.
+
 ## 5. Talking about it
 
 - Tell::Kind::Stash: where a stash is and whose. Told to friends and the

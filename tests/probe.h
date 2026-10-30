@@ -69,6 +69,11 @@ struct SoakProbe {
         h.stash_.mine.push_back(cell);
         if (const Pile* p = w.pile(cell)) h.stash_.left[cell] = *p, h.memory.piles[cell] = *p;
     }
+    /// h knows the pile on the cell is owner's stash, as if it had seen it made.
+    static void knowStash(const World& w, Human& h, Vec2i cell, const Human& owner) {
+        h.memory.stashes[cell] = owner.id;
+        if (const Pile* p = w.pile(cell)) h.memory.piles[cell] = *p;
+    }
     /// Stashes what it carries where it stands, as if that were its spot.
     static void stashHere(Human& h) {
         h.stash_.spot = h.cell;

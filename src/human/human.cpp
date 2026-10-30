@@ -370,6 +370,7 @@ bool Human::observe(const World& world) {
             bool fresh = !memory.piles.count(c);
             memory.piles[c] = *p;
             news |= fresh && !othersStash(c) && ((hungry() && p->cakes > 0) || (thirsty() && p->water() > 0.0f));
+            if (othersStash(c)) resent(c, *p, memory.stashes.at(c));
         } else {
             memory.piles.erase(c);
             memory.stashes.erase(c);

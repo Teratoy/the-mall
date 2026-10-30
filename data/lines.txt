@@ -1812,3 +1812,29 @@ greedy                  | GOOD TO KNOW.
 rude                    | {WHO}. IT WAS {WHO}.
                         | THIEVES. EVERYONE HERE IS A THIEF.
 timid                   | I HAVE TO HIDE IT BETTER.
+
+# Stealing from someone's stash, said to nobody, about them.
+[steal_stash 0.4]
+                        | THEY WON'T MISS IT.
+                        | SORRY, {WHO}.
+                        | NOBODY'S LOOKING.
+starving                | I HAVE TO EAT.
+greedy                  | FINDERS KEEPERS.
+guilty                  | WHAT HAVE I BECOME?
+
+# Catching someone at its stash, said to the thief.
+[caught_stealing]
+rude                    | HEY! THAT'S MINE!
+rude                    | THIEF!
+rude                    | GET AWAY FROM MY STASH!
+friend rude             | {NAME}? HOW COULD YOU?
+
+# Hungry with nothing, seeing someone's big stash, said to nobody, about
+# the hoarder.
+[resent 0.6]
+                        | ALL THAT FOOD, AND WE STARVE.
+                        | WHO NEEDS THAT MUCH?
+                        | KEEPING IT ALL FOR THEMSELVES.
+hungry                  | {WHO} HAS PLENTY. AND I HAVE NOTHING.
+thirsty                 | ALL THAT WATER, JUST SITTING THERE.
+brave                   | SOMEONE SHOULD TAKE IT FROM THEM.

@@ -179,6 +179,37 @@ Check loggedLike(std::string from, std::string to) {
             }};
 }
 
+/// A hoarder's stash of cakes near the spawn, known to another human for
+/// the hoarder's, with the hoarder this far off (beside it at 1); the other
+/// human that hungry, with no cakes.
+struct StashScene {
+    Human* owner;
+    Human* other;
+    Vec2i at;
+};
+StashScene stashScene(Stage& s, int ownerFar, float hunger, uint64_t otherSeed, int cakes = 5) {
+    Human& owner = s.first();
+    P::clearChunk(s.world, owner.cell);
+    Vec2i at = s.freeNear(owner.cell, 3);
+    s.world.putDown(at, cakes, {});
+    P::ownStash(s.world, owner, at);
+    if (ownerFar > 1) P::place(s.world, owner, s.farFrom(at, ownerFar));
+    else {
+        // Beside it, it stays: it has made its home there.
+        P::place(s.world, owner, s.freeNear(at, 1));
+        P::settle(owner, owner.cell);
+    }
+    Human& other = P::addHuman(s.world, HumanLook::random(s.rng), s.freeNear(at, 2), otherSeed);
+    s.humans.push_back(&other);
+    P::knowStash(s.world, other, at, owner);
+    other.cakes = 0;
+    other.hunger = hunger;
+    owner.cakes = 1;
+    owner.hunger = 0.1f;
+    owner.thirst = other.thirst = 0.1f;
+    return {&owner, &other, at};
+}
+
 /// A thirsty asker with an empty bottle (or none) close to a holder with
 /// water, both far from the spawn basin, so the asker knows of no water.
 /// The asker is timid, so it asks rather than fights; the holder has made
@@ -576,6 +607,25 @@ const std::vector<Scenario> SCENARIOS = {
          owner.thirst = other.thirst = 0.1f;
          s.run(90);
          return Checks{logged({"SOMEONE TOOK FROM MY STASH"}), loggedLike("TOOK", "FROM MY STASH TO MOVE IT")};
+     }},
+    {"steal-stash", "a hungry human steals from a stash it knows is someone's, out of their sight", 99,
+     [](Stage& s) {
+         stashScene(s, 20, 0.7f, seedWhere([](const Traits& t) { return t.greedy >= 0.4f && t.brave >= 0.4f; }, 19000));
+         s.run(60);
+         return Checks{loggedLike("TOOK", "FROM @'S STASH")};
+     }},
+    {"caught-stealing", "a starving human steals from a stash under its owner's eyes, who goes for it", 99,
+     [](Stage& s) {
+         stashScene(s, 1, 0.92f, seedWhere(plain, 19500));
+         s.run(40);
+         return Checks{loggedLike("TOOK", "FROM @'S STASH"), logged({"@ TOOK FROM MY STASH"})};
+     }},
+    {"resent", "a hungry human with nothing sees a big stash and resents its owner", 99,
+     [](Stage& s) {
+         // A timid, honest one, so it resents rather than steals.
+         stashScene(s, 20, 0.7f, seedWhere([](const Traits& t) { return t.greedy < 0.3f && t.brave < 0.3f; }, 20000), 6);
+         s.run(30);
+         return Checks{logged({"@ HOARDS WHILE I GO WITHOUT"})};
      }},
     {"chat", "two calm acquaintances together start chatting", 99,
      [](Stage& s) {

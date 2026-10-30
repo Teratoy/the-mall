@@ -20,10 +20,14 @@
 // It takes from its own stash only what it needs: a cake when hungry with
 // none on it, water when thirsty with none to drink.
 //
-// Whoever sees it stash things knows that pile is its stash, and leaves it
-// alone (stealing is human_stash's step 4); a pile nobody is known to own is
-// anyone's. Back at its stash, the owner sees what is gone, blames whoever
-// it last saw beside it, and moves what is left somewhere new.
+// Whoever sees it stash things knows that pile is its stash; a pile nobody
+// is known to own is anyone's. Back at its stash, the owner sees what is
+// gone, blames whoever it last saw beside it, and moves what is left
+// somewhere new. Someone else's stash is left alone unless it needs what is
+// in it badly, or is greedy and bold enough: then it steals, out of the
+// owner's sight unless desperate, and anyone who sees it thinks less of it;
+// an owner who catches it goes for it. The hungry with nothing resent a big
+// stash they see, and think less of whoever keeps it.
 
 namespace {
 
@@ -56,6 +60,20 @@ constexpr float STASH_BOTTLE = 0.5f;
 /// stash at least this far from where it was.
 constexpr float TRUST_STASH_BLAMED = -0.3f;
 constexpr int STASH_MOVE = 8;
+/// Stealing: it steals once need (STEAL_NEED, more when starving or
+/// parched), greed and boldness, less guilt and its trust in the owner,
+/// come to STEAL_BAR. Seen by the owner, the thief is thought this much
+/// worse of; by anyone else, the other.
+constexpr float STEAL_NEED = 0.5f, STEAL_DESPERATE = 0.4f;
+constexpr float STEAL_GREEDY = 0.5f, STEAL_BRAVE = 0.3f, STEAL_GUILT = 0.5f, STEAL_TRUST = 0.5f;
+constexpr float STEAL_BAR = 0.6f;
+constexpr float TRUST_STOLEN = -0.5f, TRUST_SAW_STEAL = -0.3f;
+/// Resentment: a stash of at least RESENT_SIZE cakes seen while hungry with
+/// none (or thirsty with nothing to drink, for water) and no stash of its
+/// own costs the owner up to RESENT_TRUST, by how big and how needy; once
+/// in RESENT_AGAIN per owner.
+constexpr int RESENT_SIZE = 3;
+constexpr float RESENT_TRUST = -0.2f, RESENT_AGAIN = 60.0f;
 
 /// The emptiest of its bottles under PILE_TOPUP, -1 if none.
 int emptiestBelow(const std::vector<Bottle>& bottles) {
@@ -213,8 +231,68 @@ bool Human::stashHere() {
     return true;
 }
 
-bool Human::wantsFromPile(Vec2i c, const Pile& p) const {
-    if (othersStash(c)) return false;
+bool Human::wouldSteal(const World& world, Vec2i c, const Pile& p) const {
+    int owner = memory.stashes.at(c);
+    bool forFood = p.cakes > 0 && cakes < carryMax();
+    bool needFood = forFood && hungry() && cakes == 0;
+    bool needWater = false, forWater = false;
+    for (const Bottle& b : p.bottles)
+        if (wouldSip(b) && bottles.size() < size_t(BOTTLE_MAX)) {
+            forWater = true;
+            needWater |= thirsty() && sippable() < 0;
+        }
+    if (!forFood && !forWater) return false;
+    bool desperate = (needFood && starving()) || (needWater && parched());
+    const Human& o = world.human(owner);
+    if (!o.dead()) {
+        if ((isFriend(owner) || inGroupWith(o)) && !desperate) return false;
+        // Not under the owner's eyes, unless desperate.
+        if (sight.sees(o.cell) && o.sight.sees(c) && !desperate) return false;
+    }
+    float urge = (needFood || needWater ? STEAL_NEED : 0.0f) + (desperate ? STEAL_DESPERATE : 0.0f) +
+                 STEAL_GREEDY * traits.greedy + STEAL_BRAVE * traits.brave - STEAL_GUILT * mind_.guilt -
+                 STEAL_TRUST * trust(owner);
+    return urge >= STEAL_BAR;
+}
+
+void Human::stoleFrom(World& world, Vec2i c, int owner, const std::string& what) {
+    note("TOOK " + what + " FROM @'S STASH", owner);
+    sayLater(talk::Moment::StealStash, -1, owner);
+    for (const auto& o : world.humans()) {
+        if (o.get() == this || o->dead() || o->state == State::Sleeping || !o->sight.sees(cell)) continue;
+        if (o->id == owner) {
+            // Caught at it: no need to wonder who, later.
+            if (const Pile* p = world.pile(c)) o->stash_.left[c] = *p;
+            o->note("@ TOOK FROM MY STASH", id);
+            o->regard(id, TRUST_STOLEN);
+            o->sayLater(talk::Moment::CaughtStealing, id);
+            o->fight_.foe = id;
+            o->fight_.grudge = o->grudgeFor(id);
+            o->rethink_ = true;
+            continue;
+        }
+        if (o->isFoe(owner)) continue;
+        o->note("SAW @ STEAL FROM #'S STASH", id, owner);
+        o->regard(id, TRUST_SAW_STEAL);
+    }
+}
+
+void Human::resent(Vec2i, const Pile& p, int owner) {
+    if (owner == id || !stash_.mine.empty()) return;
+    bool food = hungry() && cakes == 0 && p.cakes >= RESENT_SIZE;
+    bool water = thirsty() && sippable() < 0 && p.water() >= 1.0f;
+    if (!food && !water) return;
+    if (auto it = stash_.resented.find(owner); it != stash_.resented.end() && clock_ - it->second < RESENT_AGAIN) return;
+    stash_.resented[owner] = clock_;
+    float need = std::max(food ? hunger : 0.0f, water ? thirst : 0.0f);
+    float size = std::min(1.0f, float(p.cakes) / float(STASH_CAKES) + p.water() / float(BOTTLE_MAX));
+    regard(owner, RESENT_TRUST * need * (0.5f + 0.5f * size));
+    note("@ HOARDS WHILE I GO WITHOUT", owner);
+    sayLater(talk::Moment::Resent, -1, owner);
+}
+
+bool Human::wantsFromPile(const World& world, Vec2i c, const Pile& p) const {
+    if (othersStash(c)) return wouldSteal(world, c, p);
     bool own = isMine(c);
     // A stash of its own that was found out is emptied, to be moved.
     if (own && exposed(c) && p.cakes > 0 && cakes < carryMax()) return true;
@@ -245,7 +323,7 @@ bool Human::takeFromPiles(World& world) {
             continue;
         }
         memory.piles[c] = *p;
-        if (!wantsFromPile(c, *p)) continue;
+        if (!wantsFromPile(world, c, *p)) continue;
         stash_.at = c;
         stash_.putting = stash_.stashing = false;
         stash_.cakes = 0;
@@ -299,6 +377,7 @@ void Human::finishStash(World& world) {
             if (!o->memory.stashes.emplace(c, id).second) continue;
             o->note("SAW @ STASH THINGS", id);
             o->sayLater(talk::Moment::SawStash, -1, id);
+            if (const Pile* p = world.pile(c)) o->resent(c, *p, id);
         }
         std::vector<std::string> parts;
         if (n > 0) parts.push_back(count(n, "A CAKE", " CAKES"));
@@ -311,10 +390,11 @@ void Human::finishStash(World& world) {
         return choose(world);
     }
     bool own = isMine(c), moving = own && exposed(c);
+    int owner = othersStash(c) ? memory.stashes.at(c) : -1;
     const Pile* p = world.pile(c);
     int gotCakes = 0, gotBottles = 0;
     float poured = 0.0f;
-    if (p && wantsFromPile(c, *p)) {
+    if (p && wantsFromPile(world, c, *p)) {
         // From its own stash, a cake at a time, and water only to drink;
         // all it can carry when moving it.
         gotCakes = world.takePileCakes(c, own && !moving ? (hungry() && cakes == 0 ? 1 : 0) : carryMax() - cakes);
@@ -358,7 +438,9 @@ void Human::finishStash(World& world) {
     std::vector<std::string> parts;
     if (gotCakes > 0) parts.push_back(count(gotCakes, "A CAKE", " CAKES"));
     if (gotBottles > 0) parts.push_back(count(gotBottles, "A BOTTLE", " BOTTLES"));
-    if (!parts.empty()) {
+    if (!parts.empty() && owner >= 0) {
+        stoleFrom(world, c, owner, listed(parts));
+    } else if (!parts.empty()) {
         note(moving ? "TOOK " + listed(parts) + " FROM MY STASH TO MOVE IT"
              : own  ? "TOOK " + listed(parts) + " FROM MY STASH"
                     : "PICKED UP " + listed(parts) + " LYING THERE");
@@ -373,7 +455,7 @@ std::optional<std::vector<Vec2i>> Human::pilePath(const World& world, bool food,
     std::vector<Vec2i> worth;
     for (const auto& [c, p] : memory.piles) {
         bool own = isMine(c);
-        if (othersStash(c) || (own && !wantsFromPile(c, p))) continue;
+        if ((own || othersStash(c)) && !wantsFromPile(world, c, p)) continue;
         bool cakesThere = food && p.cakes > 0 && (own || cakes < carryMax());
         bool waterThere = false;
         for (const Bottle& b : p.bottles) waterThere |= water && wouldSip(b);
