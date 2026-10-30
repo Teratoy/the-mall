@@ -401,6 +401,7 @@ bool Human::observe(const World& world) {
                     rememberAt(o->cell, Episode::What::Body, friendDead ? EPISODE_FRIEND_BODY : EPISODE_BODY, -1,
                                known ? o->id : -1);
                     sayLater(talk::Moment::FoundBody, -1, o->id);
+                    if (!o->bones() && !o->spoiled()) foundFresh(*o);
                 }
                 news = true;
             }

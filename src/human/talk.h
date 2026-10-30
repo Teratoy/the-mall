@@ -91,6 +91,9 @@ enum class Moment {
     YourWatch, FailedWatch, WakeThem,
     // Looking at a fresh pool of the blood it spilled itself (to nobody, about whose).
     Spilled,
+    // Putting someone seen bloody together with a fresh body: shouted to
+    // anyone in earshot, about the one it blames.
+    Blame,
     Count
 };
 

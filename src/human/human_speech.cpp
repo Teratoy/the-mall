@@ -15,12 +15,12 @@ void Human::note(std::string what, int who, int whom) { log.add(born + clock_, s
 bool Human::sayLater(talk::Moment m, int to, int about) { return sayLater(Saying{m, to, about}); }
 
 bool Human::sayLater(Saying s) {
-    // Blows and cries only ever fill a silence, but for a trap's cry, which
-    // cuts in ahead of whatever was still to be said. Word to pass on (a
+    // Blows and cries only ever fill a silence, but for a trap's cry and the
+    // shout of who killed, which cut in ahead of whatever was still to be said. Word to pass on (a
     // tip, a lie, a name) goes ahead of small talk still to be said, after
     // the hello, so it is said while the greeting lasts.
     if (s.moment == talk::Moment::Darted || s.moment == talk::Moment::Spiked ||
-        s.moment == talk::Moment::Slammed) {
+        s.moment == talk::Moment::Slammed || s.moment == talk::Moment::Blame) {
         voice_.sayings.insert(voice_.sayings.begin(), std::move(s));
         return true;
     }
@@ -129,6 +129,12 @@ void Human::say(World& world, const Saying& s) {
         for (const auto& h : world.humans())
             if (h.get() != this && !h->dead() && cheb(h->cell, cell) <= HEAR_RADIUS && h->sight.sees(cell))
                 h->hear(world, *this, *said, to, about);
+    // Told who killed, those in earshot may believe it.
+    if (said && about && s.moment == talk::Moment::Blame)
+        for (const auto& h : world.humans())
+            if (h.get() != this && !h->dead() && h->state != State::Sleeping && cheb(h->cell, cell) <= HEAR_RADIUS &&
+                h->sight.sees(cell))
+                h->heardBlame(*this, about->id);
     }
     // Turned away out loud, it may answer back.
     if (said && to && s.moment == talk::Moment::Refuse) to->sayLater(talk::Moment::Snubbed, id);

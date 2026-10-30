@@ -64,8 +64,18 @@ struct SoakProbe {
                 w.takeKey(c);
             }
     }
-    /// Dead where it stands, ago seconds since: long enough ago, bare bones.
+    /// Fresh blood on h's face and hands, as if from someone else.
+    static void bloody(Human& h) { h.stain({BodyPart::Head, BodyPart::FrontArm, BodyPart::BackArm}, 40, 200); }
+    /// Washed clean all at once.
+    static void clean(Human& h) {
+        h.stains.amount.fill(0);
+        h.stains.wet.fill(0.0f);
+        h.stains.version++;
+    }
+    /// Drops h dead where it stands, killed by nobody anyone saw, ago seconds
+    /// since: long enough ago, bare bones.
     static void kill(World& w, Human& h, float ago = 0.0f) {
+        h.health = 0.0f;
         h.die(w);
         h.deaths_.diedAt = h.clock_ - ago;
     }
