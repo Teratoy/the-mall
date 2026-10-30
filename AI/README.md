@@ -19,17 +19,14 @@ Status as of 2026-10-30.
 | [relief_plan.md](relief_plan.md) | Bladder and bowels, private spots, mess, dirty feet, foul water, toilets, being seen | All 6 steps built | — |
 | [thirst_plan.md](thirst_plan.md) | Thirst, basins, bloody and foul water, guarded water, water tips, hope near water | All 5 steps built | Tuning from play |
 | [sleep_plan.md](sleep_plan.md) | Tiredness, sleeping, where to sleep, robbing sleepers, keeping watch, dreams | All 5 steps built | Tuning from play (aim: ~15–20 min awake, ~90 s asleep) |
+| [lies_plan.md](lies_plan.md) | Why lies never happen (measured), and how to make them part of the game | Proposed, not built | All five questions at the end |
 | [human_split_plan.md](human_split_plan.md) | Splitting Human into per-system classes | Not started | Advised against for now; if done, only system by system, when that system is being reworked anyway |
 
 ## Known gaps found by the tests
 
-- **Lies almost never happen** (tests/scenarios.cpp, `lie-water` and
-  `lie-route`, 2026-10-30). A cunning liar counts its victim a foe, and
-  keepAway walks it off from foes within SUSPECT_DIST. That reflex comes
-  before greeting, so it never gets near enough to lie. Letting liars
-  approach foes worth lying to gets them greeting, but the lie still
-  didn't land within a minute. Needs the user's call on how lies should
-  come about.
+- **Lies never happen** (tests/scenarios.cpp, `lie-water` and
+  `lie-route`). The full diagnosis and the proposed fix are in
+  [lies_plan.md](lies_plan.md).
 
 ## Built without a plan file
 
