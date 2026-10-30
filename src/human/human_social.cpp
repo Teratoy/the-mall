@@ -171,6 +171,7 @@ void Human::exchange(World& world, Human& o) {
     auto news = newsFor(o, forPay);
     if (!news && !waterFirst) news = waterFor(world, o, forPay);
     if (!news) return;
+    if (news->kind == Tell::Kind::ShutIn) news->route = wayToShutIn(world, *news);
     news->sold = forPay;
     tell(o, *news);
 }
@@ -178,6 +179,15 @@ void Human::exchange(World& world, Human& o) {
 std::optional<Human::Tell> Human::newsFor(const Human& o, bool& forPay) const {
     forPay = false;
     if (isFoe(o.id)) return std::nullopt;
+    // Someone shut in, before anything: it may be their life.
+    if (caresForShutIn())
+        for (const auto& [who, c] : rescue_.cries)
+            if (who != o.id && !o.rescue_.cries.count(who) && !o.rescue_.out.count(who)) {
+                Tell t{Tell::Kind::ShutIn, c.at};
+                t.who = who;
+                t.gate = c.gate;
+                return t;
+            }
     bool friendly = isFriend(o.id);
     // The one of the cells nearest to them that passes.
     auto nearest = [&](const std::vector<Vec2i>& cells, auto keep) {
@@ -402,6 +412,10 @@ void Human::tell(Human& o, const Tell& t) {
     case Tell::Kind::Route: s.moment = t.lie ? Moment::Lie : Moment::TellDoor; break;
     case Tell::Kind::Way: s.moment = t.gloomy ? Moment::NoWayOut : t.lie ? Moment::LieWay : Moment::TellWay; break;
     case Tell::Kind::Water: s.moment = t.lie ? Moment::LieWater : t.sold ? Moment::SellWater : Moment::TellWater; break;
+    case Tell::Kind::ShutIn:
+        s.moment = Moment::TellShutIn;
+        s.about = t.who;
+        break;
     case Tell::Kind::People: {
         auto w = std::find_if(t.people.begin(), t.people.end(),
                               [&](const Tell::Word& w) { return w.opinion && w.about != o.id; });
@@ -419,6 +433,22 @@ void Human::tell(Human& o, const Tell& t) {
 
 void Human::deliver(Human& o, const Tell& t) {
     bool news = false;
+    // The cells along a route and all round them, so they can cut the same
+    // corners; only what they have never seen, and only tiles.
+    // Every cell along it is told as clear, seen before or not, so a trap
+    // that goes off on it is laid at the teller's door (learnTrap).
+    auto learnRoute = [&] {
+        for (Vec2i c : t.route)
+            if (!o.memory.traps.count(c)) o.memory.toldBy[c] = id;
+        for (Vec2i c : t.route) {
+            for (Vec2i d : DIRS8)
+                for (Vec2i m : {c, c + d})
+                    if (Tile tile = memory.tile(m); tile != Tile::Void && o.memory.tile(m) == Tile::Void) {
+                        o.memory.hear(m, tile);
+                        news = true;
+                    }
+        }
+    };
     switch (t.kind) {
     case Tell::Kind::Cake:
         news = o.memory.cakes.insert(t.cell).second;
@@ -437,21 +467,8 @@ void Human::deliver(Human& o, const Tell& t) {
         break;
     case Tell::Kind::Route:
     case Tell::Kind::Water:
-        // The cells along it and all round them, so they can cut the same
-        // corners; only what they have never seen, and only tiles. A way to
-        // water ends beside it, so the water comes with it.
-        // Every cell along it is told as clear, seen before or not, so a
-        // trap that goes off on it is laid at the teller's door (learnTrap).
-        for (Vec2i c : t.route)
-            if (!o.memory.traps.count(c)) o.memory.toldBy[c] = id;
-        for (Vec2i c : t.route) {
-            for (Vec2i d : DIRS8)
-                for (Vec2i m : {c, c + d})
-                    if (Tile tile = memory.tile(m); tile != Tile::Void && o.memory.tile(m) == Tile::Void) {
-                        o.memory.hear(m, tile);
-                        news = true;
-                    }
-        }
+        // A way to water ends beside it, so the water comes with it.
+        learnRoute();
         break;
     case Tell::Kind::People:
         // Taken on as far as the listener trusts the teller, and only the
@@ -472,6 +489,14 @@ void Human::deliver(Human& o, const Tell& t) {
             o.regard(w.about, delta);
             news = true;
         }
+        break;
+    case Tell::Kind::ShutIn:
+        // Kept as if heard, on their word, with the way there; weighed
+        // below, once noted.
+        if (t.who == o.id) break;
+        learnRoute();
+        news = true;
+        o.hearOf(t.who, t.cell, t.gate, id);
         break;
     case Tell::Kind::Way: {
         // Believed as far as the teller is trusted, and as sure as it sounds.
@@ -504,7 +529,7 @@ void Human::deliver(Human& o, const Tell& t) {
     if (t.kind == Tell::Kind::Way) return;
     // Word of people is in the listener's log a piece at a time, above.
     static const char* const WHAT[] = {"WHERE A CAKE IS", "WHERE A KEY IS", "WHERE A TRAP IS", "THE WAY TO A DOOR",
-                                       "ABOUT OTHERS", "THE WAY OUT", "THE WAY TO WATER"};
+                                       "ABOUT OTHERS", "THE WAY OUT", "THE WAY TO WATER", "SOMEONE IS SHUT IN"};
     std::string what = WHAT[size_t(t.kind)];
     if (t.kind != Tell::Kind::People) o.note("@ TOLD ME " + what, id);
     std::string over = std::string(" OVER ") + trapWord(t.trap);
@@ -518,6 +543,7 @@ void Human::deliver(Human& o, const Tell& t) {
          o.id);
     // A tip sold is owed for as the greeting ends; said once it is over, it went for nothing.
     if (t.sold && o.state == State::Greeting && o.social_.partner == id) o.social_.owes = id;
+    if (t.kind == Tell::Kind::ShutIn) o.weighRescue(t.who);
     if (t.kind != Tell::Kind::People) o.sayLater(talk::Moment::ThankTip, id);
 }
 
@@ -578,6 +604,7 @@ int Human::counterpart() const {
     case Goal::Escorted: return escorting_.by;
     case Goal::Loot: return deaths_.corpse;
     case Goal::Feed: return mind_.meal;
+    case Goal::Rescue: return rescue_.rescuee;
     default: return -1;
     }
 }

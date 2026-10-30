@@ -45,6 +45,7 @@ void Human::update(World& world, float dt) {
     speak(world, dt);
     chatUrges(world, dt);
     callForHelp(world, dt);
+    recallCries();
     timer -= dt;
     // A hit is answered at once, or as soon as the step under way is done.
     if (fight_.provoked && sleep_.stunned <= 0.0f && (!moving || timer <= 0.0f)) {
@@ -517,9 +518,11 @@ void Human::choose(World& world) {
     if (std::any_of(world.humans().begin(), world.humans().end(), [&](const auto& o) { return wouldRob(world, *o); }))
         want(Want::Rob, ROB_TEMPT + ROB_HUNGRY * drive);
     bool fetchCakes = cakes < carryMax() && !memory.cakes.empty();
+    // Minded to let someone out, it wants a key more.
     if (fetchCakes || !memory.keys.empty())
         want(Want::Fetch, LESSON_FETCH * std::max(fetchCakes ? lessons.hoard : 0.0f,
-                                                  memory.keys.empty() ? 0.0f : lessons.keysFirst));
+                                                  memory.keys.empty() ? 0.0f : lessons.keysFirst) +
+                              (memory.keys.empty() ? 0.0f : keyForCries()));
     // Settled, it has stopped looking for a way out, and follows nobody away.
     if (!escape_.settled) {
         if (social_.leader >= 0) want(Want::Follow, -GUILT_ALONE * mind_.guilt);
@@ -586,14 +589,24 @@ bool Human::pursue(World& world, Want w) {
     case Want::Rob:
         return startRob(world);
     case Want::Fetch: {
+        // For someone shut in, a key before any cake.
+        bool forCries = keyForCries() > 0.0f;
         bool wantCakes = cakes < carryMax() && !memory.cakes.empty();
-        auto p = search(world, [&](Vec2i c) {
-            return inReach(c, memory.keys) || (wantCakes && inReach(c, memory.cakes));
-        });
+        std::optional<std::vector<Vec2i>> p;
+        if (forCries) p = search(world, [&](Vec2i c) { return inReach(c, memory.keys).has_value(); });
+        if (!p)
+            p = search(world, [&](Vec2i c) {
+                return inReach(c, memory.keys) || (wantCakes && inReach(c, memory.cakes));
+            });
         if (!p) return false;
         if (!inReach(p->empty() ? cell : p->back(), memory.keys)) {
             startWalking(Goal::FetchCake, *p);
             return true;
+        }
+        if (forCries && !rescue_.keyNoted) {
+            rescue_.keyNoted = true;
+            note("GOING FOR A KEY TO LET SOMEONE OUT");
+            sayLater(talk::Moment::KeyForShutIn);
         }
         if (social_.leader >= 0) sayLater(talk::Moment::PartOwnKey, social_.leader);
         social_.leader = -1;

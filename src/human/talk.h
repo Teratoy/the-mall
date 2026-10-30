@@ -94,6 +94,11 @@ enum class Moment {
     // Putting someone seen bloody together with a fresh body: shouted to
     // anyone in earshot, about the one it blames.
     Blame,
+    // Someone shut in: telling of them at a greeting (to the listener, about
+    // them); calling back through the wall (to nobody, about them), and
+    // hearing it from inside (to nobody); off for a key to let them out (to
+    // nobody); giving up on finding them (to nobody, about them).
+    TellShutIn, CallBack, HeardBack, KeyForShutIn, LostShutIn,
     Count
 };
 
