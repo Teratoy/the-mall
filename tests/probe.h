@@ -61,6 +61,11 @@ struct SoakProbe {
                 w.takeKey(c);
             }
     }
+    /// Dead where it stands, ago seconds since: long enough ago, bare bones.
+    static void kill(World& w, Human& h, float ago = 0.0f) {
+        h.die(w);
+        h.deaths_.diedAt = h.clock_ - ago;
+    }
     /// Given up on a way out, at home on home.
     static void settle(Human& h, Vec2i home) {
         h.escape_.settled = true;
