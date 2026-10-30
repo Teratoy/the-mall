@@ -162,6 +162,25 @@ Checks guardedWater(Stage& s, bool strangerHasCake, Checks expect) {
     return expect;
 }
 
+/// The cells of the water body at c (4-connected, within the chunk's
+/// reach), and every other water cell of the chunk c is in.
+std::vector<Vec2i> waterBody(const World& w, Vec2i c) {
+    std::vector<Vec2i> body{c};
+    for (size_t i = 0; i < body.size(); i++)
+        for (Vec2i d : {Vec2i{1, 0}, Vec2i{-1, 0}, Vec2i{0, 1}, Vec2i{0, -1}}) {
+            Vec2i n = body[i] + d;
+            if (drinkable(w.tile(n)) && std::find(body.begin(), body.end(), n) == body.end()) body.push_back(n);
+        }
+    return body;
+}
+/// Fouls a water body with feces and piss, as the human remembers tasting it.
+void foulAll(World& w, Human& h, const std::vector<Vec2i>& body, float foul) {
+    for (Vec2i c : body) {
+        w.mess().foulWater(c, foul);
+        P::tastedFoul(h, c, foul);
+    }
+}
+
 /// A cunning liar who counts victim a foe, knowing a trap (in its memory
 /// only, unless real) next to it that victim doesn't know of.
 void setUpLie(Stage& s, Human& liar, Human& victim, TrapKind bait = TrapKind::Spikes, int gap = 1) {
@@ -878,6 +897,58 @@ const std::vector<Scenario> SCENARIOS = {
          P::setTrust(*sc.other, *sc.owner, -0.2f);
          s.run(60);
          return Checks{logged({"TOLD @ THE STASH ISN'T MINE"}), logged({"@ DENIED THEIR STASH. I SAW THEM MAKE IT"})};
+     }},
+    {"foul-memory", "a human who tasted foul water goes to clean water it knows instead, farther off", 99,
+     [](Stage& s) {
+         Human& h = s.first();
+         auto b = s.basin();
+         if (!b) return Checks{{"a basin near the spawn", [](const Stage&) { return false; }}};
+         // Out of sight of the basin, which it remembers foul; clean water
+         // farther off the other way, both known.
+         auto foul = waterBody(s.world, *b);
+         foulAll(s.world, h, foul, 0.5f);
+         P::place(s.world, h, s.farFrom(*b, Sight::RADIUS + 5));
+         P::knowChunk(s.world, h);
+         int near = cheb(h.cell, *b);
+         Vec2i slot = World::slotOf(h.cell);
+         std::optional<Vec2i> clean;
+         for (int y = 0; y < CHUNK; y++)
+             for (int x = 0; x < CHUNK; x++) {
+                 Vec2i c{slot.x * CHUNK + x, slot.y * CHUNK + y};
+                 int d = cheb(c, h.cell);
+                 if (s.world.tile(c) != Tile::Floor || s.world.table(c) || s.world.statue(c) || d <= near + 5 ||
+                     d > near + 20)
+                     continue;
+                 if (!clean || cheb(c, *b) > cheb(*clean, *b)) clean = c;
+             }
+         if (!clean) return Checks{{"floor for clean water", [](const Stage&) { return false; }}};
+         P::addWater(s.world, *clean);
+         h.memory.see(*clean, Tile::Basin);
+         // No bottle to drink from or fill: it has to kneel at the water.
+         h.bottles.clear();
+         h.thirst = 0.7f;
+         h.hunger = 0.1f;
+         int closest = near;
+         for (int t = 0; t < 120; t++) {
+             s.run(1);
+             for (Vec2i c : foul) closest = std::min(closest, cheb(h.cell, c));
+         }
+         return Checks{logged({"DRANK WATER"}),
+                       {"no foul water drunk",
+                        [](const Stage& st) { return !st.logged("DRANK FOUL WATER") && !st.logged("DRANK FOUL WATER AGAIN"); }},
+                       {"kept off the foul basin", [closest](const Stage&) { return closest > 2; }}};
+     }},
+    {"foul-parched", "a parched human with only foul water it knows drinks it, knowingly", 99,
+     [](Stage& s) {
+         Human& h = s.first();
+         auto b = s.basin();
+         if (!b) return Checks{{"a basin near the spawn", [](const Stage&) { return false; }}};
+         foulAll(s.world, h, waterBody(s.world, *b), 0.5f);
+         h.bottles.clear();
+         h.thirst = 0.9f;
+         h.hunger = 0.1f;
+         s.run(60);
+         return Checks{logged({"DRANK FOUL WATER AGAIN"})};
      }},
     {"chat", "two calm acquaintances together start chatting", 99,
      [](Stage& s) {

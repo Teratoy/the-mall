@@ -132,6 +132,8 @@ enum class Moment {
     // A lesson it still held, learnt again the hard way, and learnt for good
     // (to nobody); the first drink after thirst began to kill it (to nobody).
     LearnAgain, LearnMax, Quenched,
+    // Drinking water it knew was foul (to nobody).
+    FoulAgain,
     Count
 };
 

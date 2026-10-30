@@ -1368,6 +1368,17 @@ parched                 | DON'T CARE. I NEED IT.
 timid fear              | WHAT'S IN THIS WATER?
 erratic                 | TASTES LIKE THE REST OF THIS PLACE.
 
+# Drinking water it had tasted foul there before, knowing it, said to
+# nobody.
+[foul_again 0.6]
+                        | THIS WATER AGAIN...
+                        | STILL FOUL. STILL WATER.
+                        | I KNEW IT WOULD TASTE LIKE THIS.
+parched                 | THIS AGAIN... I NEED IT.
+parched                 | I KNOW. I KNOW. I NEED IT.
+craving                 | TASTES OF THEM. GOOD.
+erratic                 | SAME WATER. SAME TASTE. SAME PLACE.
+
 # Needing to go, said to nobody.
 [need_to_go 0.35]
                         | I NEED TO GO.

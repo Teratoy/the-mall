@@ -80,7 +80,7 @@ void Mess::update(float dt, const std::function<bool(Vec2i)>& water) {
     float step = seep_;
     seep_ = 0.0f;
     constexpr Vec2i SIDES[] = {{1, 0}, {0, 1}, {-1, 0}, {0, -1}};
-    std::unordered_map<Vec2i, float, Vec2iHash> flow;
+    std::unordered_map<Vec2i, float, Vec2iHash> flow, bloodFlow;
     for (const auto& [c, v] : foul_)
         for (Vec2i d : SIDES) {
             Vec2i n = c + d;
@@ -91,12 +91,20 @@ void Mess::update(float dt, const std::function<bool(Vec2i)>& water) {
             float moved = (v - there) * std::min(0.25f, FOUL_SEEP * step);
             flow[c] -= moved;
             flow[n] += moved;
+            // Blood goes with it in the share it has of this cell.
+            if (auto b = bloodFoul_.find(c); b != bloodFoul_.end()) {
+                float share = moved * std::min(1.0f, b->second / v);
+                bloodFlow[c] -= share;
+                bloodFlow[n] += share;
+            }
         }
     for (const auto& [c, f] : flow) foul_[c] += f;
+    for (const auto& [c, f] : bloodFlow) bloodFoul_[c] += f;
     // A cell still filling from the next is never gone yet.
     float keep = std::exp(-step / FOUL_LIFE);
     std::erase_if(foul_, [&](auto& kv) {
         auto in = flow.find(kv.first);
         return (kv.second *= keep) < FOUL_GONE && (in == flow.end() || in->second <= 0.0f);
     });
+    std::erase_if(bloodFoul_, [&](auto& kv) { return (kv.second *= keep) < FOUL_GONE || !foul_.count(kv.first); });
 }

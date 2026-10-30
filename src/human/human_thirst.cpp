@@ -11,9 +11,10 @@
 // drinks from its bottle instead.
 // Water fouled with feces, piss or blood hurts whoever drinks it, and very foul
 // water makes them sick; they go to cleaner water when they can see the
-// difference, unless parched. Red water, and water by a body, put them off
-// too, but for the parched, those with a taste for flesh (who drink blood
-// gladly) and, by a body, the brave. Whoever washes in the water someone
+// difference, or remember tasting it, unless parched. Those with a taste for
+// flesh mind only the feces and piss in it, the erratic nothing. Red water,
+// and water by a body, put them off too, but for the parched, those with a
+// taste for flesh (who drink blood gladly) and, by a body, the brave. Whoever washes in the water someone
 // drinks from, or lives by, is thought the worse of. With no water to be
 // had, the parched and the erratic drink from a toilet, as foul as it is
 // dirty, and anyone who sees it thinks less of them.
@@ -43,8 +44,10 @@ constexpr float FOUL_SICK_TIME = 60.0f;
 constexpr float FOUL_COST = 400.0f;
 /// Won't drink water it sees is this foul at all, unless parched.
 constexpr float FOUL_REFUSE = 0.3f;
-/// Foul enough to taste: noted in the log.
+/// Foul enough to taste: noted in the log, and remembered there and in the
+/// water it sees within FOUL_TASTE_REACH, until seen cleaner than that.
 constexpr float FOUL_NOTED = 0.1f;
+constexpr int FOUL_TASTE_REACH = 2;
 /// Water this red is refused, unless parched or craving flesh (from
 /// BLOOD_CRAVING); drunk anyway, it frightens this much.
 constexpr float RED_WATER = 0.15f;
@@ -132,17 +135,52 @@ std::optional<Vec2i> Human::waterBeside(Vec2i c) const {
     return std::nullopt;
 }
 
-// Those with a taste for flesh don't mind it either: much of what fouls
-// water is blood.
-float Human::seenFoul(const World& world, Vec2i water) const {
-    bool minds = !parched() && !isErratic() && mind_.appetite < BLOOD_CRAVING;
-    return sight.sees(water) && minds ? world.foul(water) : 0.0f;
+// Those with a taste for flesh don't mind the blood in it.
+float Human::knownFoul(const World& world, Vec2i water) const {
+    if (parched() || isErratic()) return 0.0f;
+    float filth, blood;
+    if (sight.sees(water)) {
+        filth = world.filthFoul(water);
+        blood = world.foul(water) - filth;
+    } else if (auto it = water_.foul.find(water); it != water_.foul.end()) {
+        filth = it->second.filth;
+        blood = it->second.blood;
+    } else {
+        return 0.0f;
+    }
+    return mind_.appetite >= BLOOD_CRAVING ? filth : filth + blood;
 }
 
-// Foul water it sees, red water it sees, and bodies it knows of by the
-// water put it off.
+void Human::tasteFoul(const World& world) {
+    for (int y = -FOUL_TASTE_REACH; y <= FOUL_TASTE_REACH; y++)
+        for (int x = -FOUL_TASTE_REACH; x <= FOUL_TASTE_REACH; x++) {
+            Vec2i c = water_.drinkAt + Vec2i{x, y};
+            if (c != water_.drinkAt && (!drinkable(memory.tile(c)) || !sight.sees(c))) continue;
+            if (world.foul(c) < FOUL_NOTED) {
+                water_.foul.erase(c);
+                continue;
+            }
+            float filth = world.filthFoul(c);
+            water_.foul[c] = {filth, world.foul(c) - filth};
+        }
+}
+
+// Cleared, it is forgotten.
+void Human::seeWater(const World& world, Vec2i water) {
+    auto it = water_.foul.find(water);
+    if (it == water_.foul.end()) return;
+    if (world.foul(water) < FOUL_NOTED) {
+        water_.foul.erase(it);
+        return;
+    }
+    float filth = world.filthFoul(water);
+    it->second = {filth, world.foul(water) - filth};
+}
+
+// Foul water it sees or remembers, red water it sees, and bodies it knows
+// of by the water put it off.
 bool Human::wouldDrink(const World& world, Vec2i from, Vec2i water) const {
-    if (seenFoul(world, water) >= FOUL_REFUSE) return false;
+    if (knownFoul(world, water) >= FOUL_REFUSE) return false;
     bool craving = mind_.appetite >= BLOOD_CRAVING || isErratic();
     if (sight.sees(water) && !parched() && !craving && world.blood().tint(water) >= RED_WATER) return false;
     if (parched()) return true;
@@ -175,7 +213,7 @@ float Human::filthAround(const World& world, Vec2i at, bool butBlood) const {
 bool Human::seekWater(World& world) {
     auto foulness = [&](Vec2i c) {
         auto w = waterBeside(c);
-        return w ? seenFoul(world, *w) : 0.0f;
+        return w ? knownFoul(world, *w) : 0.0f;
     };
     auto p = search(world, [&](Vec2i c) {
         auto w = waterBeside(c);
@@ -225,6 +263,8 @@ void Human::startDrinking(Vec2i water) {
         dread_ = std::max(0.0f, dread_ - DRINK_CALM);
         // Found water soon after getting thirsty: keeping near it paid off.
         if (lessons.nearWater > 0.0f && clock_ - water_.thirstyAt < WATER_SOON) learn(lessons.nearWater, false);
+        water_.knewFoul = water_.foul.count(water) > 0;
+        water_.tastedFoul = false;
     }
     water_.last = cell;
     water_.drankYet = true;
@@ -270,7 +310,7 @@ void Human::drink(World& world) {
 // The same for a gulp from a pool or from a bottle filled at one: red
 // water frightens all but those craving flesh, foul water hurts, and very
 // foul water sickens.
-void Human::swallow(World&, float foul, float red, std::optional<Vec2i> at, bool fromBottle) {
+void Human::swallow(World& world, float foul, float red, std::optional<Vec2i> at, bool fromBottle) {
     if (red >= RED_WATER) {
         bool glad = mind_.appetite >= BLOOD_CRAVING;
         if (fromBottle)
@@ -281,15 +321,21 @@ void Human::swallow(World&, float foul, float red, std::optional<Vec2i> at, bool
         sayLater(talk::Moment::BloodyWater);
     }
     if (foul <= 0.0f) return;
-    if (foul >= FOUL_NOTED) {
-        note(fromBottle ? "DRANK FOUL WATER FROM MY BOTTLE" : "DRANK FOUL WATER");
-        sayLater(talk::Moment::FoulWater);
+    // At the water, once a drink: knowing, if it had tasted it foul there
+    // before.
+    bool atWater = at && !fromBottle;
+    if (foul >= FOUL_NOTED && !(atWater && water_.tastedFoul)) {
+        bool again = atWater && water_.knewFoul;
+        if (atWater) water_.tastedFoul = true;
+        note(fromBottle ? "DRANK FOUL WATER FROM MY BOTTLE" : again ? "DRANK FOUL WATER AGAIN" : "DRANK FOUL WATER");
+        sayLater(again ? talk::Moment::FoulAgain : talk::Moment::FoulWater);
         // Strikes it more the fouler it is.
         if (at)
             rememberAt(*at, Episode::What::FoulWater, std::min(1.0f, foul));
         else
             remember(Episode::What::FoulWater, std::min(1.0f, foul));
     }
+    if (atWater && foul >= FOUL_NOTED) tasteFoul(world);
     if (health > FOUL_SURVIVE) health = std::max(FOUL_SURVIVE, health - FOUL_DAMAGE * foul);
     if (foul >= FOUL_SICK && mind_.sick <= 0.0f) {
         mind_.sick = FOUL_SICK_TIME;

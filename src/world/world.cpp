@@ -814,7 +814,7 @@ void World::update(float dt) {
     for (auto& c : chunks_) c->simulate(dt);
     updateTraps(dt);
     blood_.update(dt);
-    for (const auto& [c, f] : blood_.takeFoul()) mess_.foulWater(c, f);
+    for (const auto& [c, f] : blood_.takeFoul()) mess_.foulWater(c, f, true);
     mess_.update(dt, [&](Vec2i c) { return drinkable(tile(c)); });
     for (size_t i = 0; i < humans_.size(); i++) humans_[i]->update(*this, dt);
 }
