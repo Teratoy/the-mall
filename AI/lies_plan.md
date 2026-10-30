@@ -165,6 +165,49 @@ from robbery, a found-out lie, slander, or rivalry over cakes. Or needy
 liars would have to lie too, e.g. a hungry liar sending a hungry rival
 away from the cakes it wants (question 3).
 
+### Built (2026-10-30: lies for gain, beside spite)
+
+User: "add lies for gain but keep lies as spite". Spite lies are as above.
+Lies for gain (`gainLieFor`) come only from the greediest of the cunning
+(greedy ≥ GAIN_LIE_GREEDY 0.6), to anyone but a friend, a foe or one they
+walk with:
+- **Keeping a cake for itself:** to a hungry rival within RIVAL_NEAR (20)
+  of a cake the liar wants, a cake on a table far from that cake ("SENT @
+  AWAY FROM A CAKE I WANT"). The liar then fetches the cake as it would
+  anyway. Found out like any false tip.
+- **Selling a trap that isn't there:** to one with cakes to spare, when the
+  liar has no real trap news, spikes at a floor cell 4–15 cells off, for a
+  cake ("SOLD @ A TRAP THAT ISN'T THERE"). Never found out: the buyer just
+  keeps off that cell.
+- False tips now only need a table with no cake (or no key, for a key
+  tip) on it. Every table starts with one or the other, so truly bare
+  tables were rare.
+
+Fixes to greeting and telling that this needed, which affect all news,
+not only lies:
+- Tells are queued before names at a greeting, and a line with news (tip,
+  lie, sale, name) goes ahead of small talk still to be said, after the
+  hello (`sayLater`). Before, a greeting's 10 s often ran out first.
+- A greeter calls out to a partner walking away from it from HAIL_RADIUS
+  (4) cells: before, a walker could never be caught up with. A tip bought
+  is paid from as far.
+- Tried and dropped: holding greetings up to 18 s while news was pending.
+  It kept groups standing greeting (30 s+ still cases 2 → 8) and doubled
+  the give-ups.
+- One too busy to be greeted (going to food, water, ...) is let be for
+  BUSY_WAIT (8 s) instead of waited on.
+- Nobody shuns the one it is walking up to or greeting: a liar's route
+  search used to avoid its own mark.
+- Spotting a hidden trap on a route told as clear gives the lie away, as
+  stepping on it does (`trapWhereTold`).
+- Scenarios `gain-cake` and `gain-trap`; 17/17 pass.
+
+Wide crowded soak (20 worlds × 15 min, crowd 6), against the build before
+any lies work: stood still 30 s+ 2 → 2, long blocks 0 → 0, loops 0 → 0,
+give-ups 33 → 59, time blocked 0.04% → 0.07% (humans meet far more). News
+passed on went from almost none to 77 key, 18 trap and 12 cake tips. Lies
+are still rare: 0 to 2 per 20 worlds.
+
 ## Open questions
 
 1. **Who gets lied to?** Only foes (trust ≤ -0.4) whose hatred isn't

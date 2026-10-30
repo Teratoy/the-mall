@@ -158,6 +158,8 @@ public:
     void impale(World& world);
     /// Saw the trap at the cell, or saw it go off: mine when it set it off.
     void learnTrap(Vec2i cell, TrapKind kind, bool mine = false);
+    /// Found a trap at a cell it was told was clear: the teller lied.
+    void trapWhereTold(Vec2i cell);
     /// Set off a slam room whose gate is at gate (human_rescue.cpp).
     void shutIn(Vec2i gate);
     /// Heard caller, shut in behind gate, cry for help through the walls:
@@ -315,6 +317,9 @@ public:
         /// purpose, at a trap (cell) when it knows one; a cake on a rigged
         /// table; or, nothing, a cake or key where it knows there is none.
         bool lie = false, nothing = false;
+        /// A lie for the liar's own good, not out of spite: told to anyone
+        /// but friends, foes and those it walks with.
+        bool gain = false;
         /// Told for a cake, paid once the greeting ends.
         bool sold = false;
     };
@@ -406,6 +411,12 @@ public:
     static constexpr int FLESH_MEALS = 3;
     int flesh = 0;
     float deadFor() const { return dead() ? clock_ - deaths_.diedAt : 0.0f; }
+    /// Where the bodies it knows of lay when it last saw them.
+    std::vector<Vec2i> bodyCells() const {
+        std::vector<Vec2i> cells;
+        for (const auto& [id, b] : deaths_.bodies) cells.push_back(b.cell);
+        return cells;
+    }
     float decay() const;
     bool spoiled() const;
     bool bones() const { return decay() >= 1.0f; }
@@ -903,6 +914,8 @@ private:
         float partnerSince = 0.0f;
         /// When each human last wouldn't greet it back; not tried again for a while.
         std::unordered_map<int, float> snubbed;
+        /// When each human was last too busy to be greeted; let be a while.
+        std::unordered_map<int, float> busy;
     };
     Social social_;
     /// Walks toward social_.partner, or greets them once close. False if they're lost.
@@ -933,9 +946,16 @@ private:
     /// The nearest cake it knows of on a table it knows is rigged with
     /// darts, that o knows of neither: what it would send o, hungry, to.
     std::optional<Vec2i> riggedCakeFor(const Human& o) const;
-    /// The nearest table it knows bare (no cake, key or trap), at least
-    /// FALSE_TIP_FAR from o and never seen by o: where a false tip sends o.
-    std::optional<Vec2i> bareTableFor(const World& world, const Human& o) const;
+    /// The nearest table it knows has no cake on it (no key, forKey) and no
+    /// trap, at least FALSE_TIP_FAR from o and never seen by o: where a
+    /// false tip sends o.
+    std::optional<Vec2i> bareTableFor(const World& world, const Human& o, bool forKey) const;
+    /// Cunning and greedy past GAIN_LIE_GREEDY, to anyone but a friend, a
+    /// foe or one it walks with: a lie for its own good. To a hungry
+    /// rival near a cake it wants, a cake on a bare table far from it, so
+    /// it gets there first; to one with cakes to spare, spikes that aren't
+    /// there, for a cake (forPay), when it has no real trap to sell.
+    std::optional<Tell> gainLieFor(const World& world, const Human& o, bool& forPay) const;
     /// The route lie of lieFor, for a foe holding keys.
     std::optional<Tell> routeLie(const World& world, const Human& foe) const;
     /// A told cell seen for what it is: nothing there, and the teller is

@@ -254,6 +254,8 @@ const std::vector<Scenario> SCENARIOS = {
          setUpLie(s, liar, victim, TrapKind::Darts, 4);
          for (const auto& [c, kind] : liar.memory.traps) P::addTrap(s.world, c, kind);
          victim.keys = 1;
+         // Hungry with nothing to eat, a key holder makes for a door sooner.
+         victim.hunger = 0.7f;
          s.run(150);
          return Checks{logged({"TOLD @ A WAY OVER DARTS"}), logged({"@ LIED ABOUT THE WAY"})};
      }},
@@ -270,6 +272,9 @@ const std::vector<Scenario> SCENARIOS = {
                   (cheb(c, liar.cell) == cheb(*cake, liar.cell) && (c.x < cake->x || (c.x == cake->x && c.y < cake->y)))))
                  cake = c;
          if (!cake) return Checks{{"a cake on a table in the spawn chunk", [](const Stage&) { return false; }}};
+         // The only cake about, so neither goes for another (or fights over it).
+         P::clearChunk(s.world, liar.cell);
+         P::addCake(s.world, *cake);
          P::knowChunk(s.world, liar);
          P::addTrap(s.world, *cake, TrapKind::Darts);
          liar.memory.cakes.insert(*cake);
@@ -313,6 +318,40 @@ const std::vector<Scenario> SCENARIOS = {
          s.run(150);
          return Checks{logged({"TOLD @ OF A KEY THAT ISN'T THERE"}), logged({"@ TOLD ME WHERE A KEY IS"}),
                        logged({"NOTHING WAS WHERE @ SAID"})};
+     }},
+    {"gain-cake", "a cunning stranger sends a hungry rival away from a cake it wants, then takes it",
+     seedWhere([](const Traits& t) { return cunning(t) && t.greedy >= 0.7f; }),
+     [](Stage& s) {
+         Human& liar = s.first();
+         // It knows the chunk and its cakes, and stands a few cells from
+         // one; the rival is a stranger, neither friend nor foe.
+         P::knowChunk(s.world, liar, true);
+         std::optional<Vec2i> cake;
+         for (Vec2i c : s.world.cakes())
+             if (World::slotOf(c) == World::slotOf(liar.cell) && (!cake || c.x < cake->x || (c.x == cake->x && c.y < cake->y)))
+                 cake = c;
+         if (!cake) return Checks{{"a cake in the spawn chunk", [](const Stage&) { return false; }}};
+         P::place(s.world, liar, s.freeNear(*cake, 12));
+         Human& rival = s.add(seedWhere(plain, 9700));
+         liar.hunger = 0.4f;
+         liar.cakes = 0;
+         rival.hunger = 0.68f;
+         rival.cakes = 0;
+         liar.thirst = rival.thirst = 0.1f;
+         s.run(90);
+         return Checks{logged({"SENT @ AWAY FROM A CAKE I WANT"}), logged({"@ TOLD ME WHERE A CAKE IS"})};
+     }},
+    {"gain-trap", "a cunning stranger sells spikes that aren't there for a cake",
+     seedWhere([](const Traits& t) { return cunning(t) && t.greedy >= 0.7f; }),
+     [](Stage& s) {
+         Human& liar = s.first();
+         P::knowChunk(s.world, liar);
+         Human& buyer = s.add(seedWhere(plain, 9800));
+         buyer.cakes = 4;
+         liar.hunger = buyer.hunger = 0.1f;
+         liar.thirst = buyer.thirst = 0.1f;
+         s.run(60);
+         return Checks{logged({"SOLD @ A TRAP THAT ISN'T THERE"}), logged({"PAID @ A CAKE FOR NEWS"})};
      }},
     {"slander", "a cunning gossip makes someone it is only wary of out to be dangerous", seedWhere(cunning),
      [](Stage& s) {

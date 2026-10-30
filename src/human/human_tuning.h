@@ -119,6 +119,10 @@ constexpr int GIVE_UP_AFTER = 5;
 constexpr float GIVE_WAY_WAIT_MIN = 1.0f, GIVE_WAY_WAIT_MAX = 2.0f;
 /// Humans this close (in cells, diagonals counting as one) greet.
 constexpr int GREET_RADIUS = 2;
+/// One walking away can be called to from this close.
+constexpr int HAIL_RADIUS = 4;
+/// Seconds one too busy to be greeted is let be before trying again.
+constexpr float BUSY_WAIT = 8.0f;
 constexpr float GREET_TIME = 1.5f;
 /// Greeters still talking stay together until done, up to this long.
 constexpr float GREET_LONGEST = 10.0f;
@@ -370,6 +374,13 @@ constexpr int FALSE_TIP_FAR = 10;
 /// How much more a cunning human wants to go up to a foe worth lying to
 /// (the only foes it would greet) than to anyone else.
 constexpr float LIE_URGE = 0.5f;
+/// Lies for gain: a hungry rival this close to a cake the liar wants is
+/// sent away from it; spikes that aren't there are sold at a floor cell
+/// this far from the buyer.
+constexpr int RIVAL_NEAR = 20;
+constexpr int FAKE_TRAP_NEAR = 4, FAKE_TRAP_FAR = 15;
+/// Only the greediest of the cunning lie for gain.
+constexpr float GAIN_LIE_GREEDY = 0.6f;
 constexpr float GOSSIP_NEWS = 0.15f;
 constexpr float GOSSIP_WEIGHT = 0.6f;
 /// Talking: a line is heard this far off, in cells, by anyone who can see

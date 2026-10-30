@@ -49,6 +49,8 @@ struct SoakProbe {
                 if (items && w.hasKey(c)) h.memory.keys.insert(c);
             }
     }
+    /// A cake on the cell, as if the world had made it there.
+    static void addCake(World& w, Vec2i cell) { w.cakes_.insert(cell); }
     /// Takes every key and cake off the chunk the cell is in.
     static void clearChunk(World& w, Vec2i cell) {
         Vec2i slot = World::slotOf(cell);

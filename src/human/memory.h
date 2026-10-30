@@ -23,7 +23,19 @@ public:
         auto& slot = slots_[slotOf(cell)];
         if (slot.empty()) slot.assign(CHUNK * CHUNK, Tile::Void);
         slot[index(cell)] = t;
+        if (!hearsay.empty()) hearsay.erase(cell);
     }
+    /// Learns a cell's tile from someone else: it is planned on all the
+    /// same, but unless it saw the cell itself, it stays in hearsay until seen.
+    void hear(Vec2i cell, Tile t) {
+        bool unseen = tile(cell) == Tile::Void || hearsay.count(cell);
+        see(cell, t);
+        if (unseen) hearsay.insert(cell);
+    }
+
+    /// Cells whose tiles it only has on someone's word: the way they told
+    /// it, or the way they led it. Shown as hearsay on its map.
+    std::unordered_set<Vec2i, Vec2iHash> hearsay;
 
     /// The names of the humans that told it theirs, by id. A name is only
     /// known by being told: humans choose whether to give theirs, so one may
