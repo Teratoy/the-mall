@@ -323,7 +323,10 @@ bool Human::observe(const World& world) {
     sight.forEach([&](Vec2i c) {
         Tile t = world.tile(c);
         if (t == Tile::DoorLocked || t == Tile::DoorOpen) firstSight(talk::Moment::FirstDoor);
-        if (drinkable(t)) firstSight(talk::Moment::FirstWater);
+        if (drinkable(t)) {
+            firstSight(talk::Moment::FirstWater);
+            seeWater(world, c);
+        }
         if (t != Tile::Void) {
             if (memory.tile(c) == Tile::Void) {
                 escape_.lastFound = clock_;

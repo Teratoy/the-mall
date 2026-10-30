@@ -818,6 +818,16 @@ private:
         /// Homes whose settler turned it away from their water, and when.
         std::vector<std::pair<Vec2i, float>> refused;
         float askedAt = -1e9f;
+        /// Foul water it has tasted, by water cell: how foul it found it
+        /// with feces and piss, and with blood. Kept as it was until it sees
+        /// that water again.
+        struct Foul {
+            float filth, blood;
+        };
+        std::unordered_map<Vec2i, Foul, Vec2iHash> foul;
+        /// This drink: whether it knew the water foul when it knelt, and
+        /// whether it has tasted the foulness yet.
+        bool knewFoul = false, tastedFoul = false;
     };
     Water water_;
     /// Getting thirsty, and parched (with what that may teach it).
@@ -1150,9 +1160,15 @@ private:
     float tiredDrive() const;
     /// Another gulp, or done once quenched or something else comes first.
     void drink(World& world);
-    /// How foul it sees the water is, as far as it minds: nothing to the
-    /// parched, the erratic or those craving flesh, nor where it can't see.
-    float seenFoul(const World& world, Vec2i water) const;
+    /// How foul it knows the water is, as far as it minds: what it sees,
+    /// else what it last tasted there. Nothing to the parched or the
+    /// erratic; to those craving flesh, only the feces and piss in it.
+    float knownFoul(const World& world, Vec2i water) const;
+    /// Tasting foul water, it remembers how foul it and the water it sees
+    /// round it are.
+    void tasteFoul(const World& world);
+    /// Seeing water it remembers foul, it knows how foul it is now.
+    void seeWater(const World& world, Vec2i water);
     /// Would drink this water from that cell: not too foul or red, as far
     /// as it can see, no filth round the spot too much for its modesty, and
     /// no body close by, unless parched, craving flesh (the red, the body,

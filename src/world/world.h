@@ -105,6 +105,8 @@ public:
     const Mess& mess() const { return mess_; }
     /// How foul the water at a cell is, from feces, piss and blood in it.
     float foul(Vec2i cell) const { return mess_.foul(cell); }
+    /// How much of it is from feces and piss, not blood.
+    float filthFoul(Vec2i cell) const { return std::max(0.0f, mess_.foul(cell) - mess_.bloodFoul(cell)); }
 
     /// Simulates every chunk and every human, seen or not.
     void update(float dt);

@@ -61,6 +61,10 @@ struct SoakProbe {
                 w.takeKey(c);
             }
     }
+    /// Turns the cell into a basin's worth of water.
+    static void addWater(World& w, Vec2i cell) { w.setTile(cell, Tile::Basin); }
+    /// h tasted the water at the cell this foul (with feces and piss) before.
+    static void tastedFoul(Human& h, Vec2i water, float filth) { h.water_.foul[water] = {filth, 0.0f}; }
     /// Given up on a way out, at home on home.
     static void settle(Human& h, Vec2i home) {
         h.escape_.settled = true;
