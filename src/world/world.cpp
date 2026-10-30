@@ -97,8 +97,6 @@ struct SizePick {
 };
 constexpr SizePick SIZES[] = {{{1, 1}, 4.0f}, {{2, 1}, 2.0f}, {{1, 2}, 2.0f}, {{2, 2}, 1.0f}};
 
-int cheb(Vec2i a, Vec2i b) { return std::max(std::abs(a.x - b.x), std::abs(a.y - b.y)); }
-
 TableMaterial randomMaterial(Rng& rng) { return TableMaterial(rng.weighted(TABLE_MATERIAL_WEIGHTS)); }
 
 } // namespace

@@ -188,8 +188,6 @@ constexpr float SLEEP_DAZE = 0.25f;
 /// The eight cells round a spot, in order round it.
 constexpr Vec2i RING[8] = {{1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}, {0, -1}, {1, -1}};
 
-int cheb(Vec2i a, Vec2i b) { return std::max(std::abs(a.x - b.x), std::abs(a.y - b.y)); }
-
 } // namespace
 
 bool Human::tired() const { return tiredness >= TIRED; }

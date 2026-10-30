@@ -12,8 +12,6 @@
 // it goes over to catch up with them (wouldGreet). A chat starts the
 // silence between the two over.
 
-
-
 namespace {
 
 /// Together: in sight and this close. The urge grows toward anyone known
@@ -52,7 +50,6 @@ constexpr float CHAT_LONGER = 0.5f, CHAT_LONGEST = 0.6f;
 constexpr float CHAT_HOLD = 2.5f;
 constexpr float TAU = 6.28318531f;
 
-int cheb(Vec2i a, Vec2i b) { return std::max(std::abs(a.x - b.x), std::abs(a.y - b.y)); }
 float sway(float t) { return 0.5f + t; }
 
 } // namespace

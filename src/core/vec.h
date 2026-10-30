@@ -25,6 +25,12 @@ struct Vec2iHash {
     }
 };
 
+/// Steps between two cells when diagonals count as one (Chebyshev distance).
+constexpr int cheb(Vec2i a, Vec2i b) {
+    int dx = a.x > b.x ? a.x - b.x : b.x - a.x, dy = a.y > b.y ? a.y - b.y : b.y - a.y;
+    return dx > dy ? dx : dy;
+}
+
 /// Division rounding toward negative infinity, so cell -1 lies in slot -1.
 constexpr int floorDiv(int a, int b) { return (a >= 0 ? a : a - b + 1) / b; }
 

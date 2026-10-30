@@ -100,8 +100,6 @@ constexpr float BODY_HALF_PX = 8.0f;
 /// as FLEE_DIST in human.cpp.
 constexpr int FEARED_DIST = 10;
 
-int cheb(Vec2i a, Vec2i b) { return std::max(std::abs(a.x - b.x), std::abs(a.y - b.y)); }
-
 /// How much eating flesh, seeing it eaten, finding a gnawed body and the
 /// mind snapping strike it, as episodes to talk about.
 constexpr float EPISODE_ATE = 0.9f, EPISODE_SAW_EAT = 0.9f, EPISODE_GNAWED = 0.7f, EPISODE_SNAPPED = 0.8f;

@@ -1,0 +1,241 @@
+// Speaking: queuing lines, saying them in turn, hearing them, and the
+// pleas and threats that wait on an answer; and the life log.
+#include "human/human.h"
+#include "human/human_tuning.h"
+#include "world/world.h"
+#include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <iterator>
+#include <queue>
+
+void Human::note(std::string what, int who, int whom) { log.add(born + clock_, std::move(what), who, whom); }
+
+bool Human::sayLater(talk::Moment m, int to, int about) { return sayLater(Saying{m, to, about}); }
+
+bool Human::sayLater(Saying s) {
+    // Blows and cries only ever fill a silence, but for a trap's cry, which
+    // cuts in ahead of whatever was still to be said; word to pass on
+    // always waits its turn.
+    if (s.moment == talk::Moment::Darted || s.moment == talk::Moment::Spiked ||
+        s.moment == talk::Moment::Slammed) {
+        sayings_.insert(sayings_.begin(), std::move(s));
+        return true;
+    }
+    bool cry = talk::isCry(s.moment);
+    bool word = s.tell || s.intro;
+    if (!(cry ? sayings_.empty() : word || sayings_.size() <= SPEECH_QUEUE)) return false;
+    sayings_.push_back(std::move(s));
+    return true;
+}
+
+bool Human::hasWordFor(int to) const {
+    return std::any_of(sayings_.begin(), sayings_.end(),
+                       [&](const Saying& s) { return s.to == to && (s.tell || s.intro); });
+}
+
+void Human::awaitLine() {
+    sayings_.back().awaited = true;
+    awaiting_ = true;
+    answerWait_ = timer;
+}
+
+void Human::speak(World& world, float dt) {
+    using talk::Moment;
+    if (!speech_.empty() && (speech_.front().shown += dt) >= speech_.front().time) {
+        speech_.pop_front();
+        quietSince_ = world.time();
+    }
+    while (!sayings_.empty()) {
+        Saying& s = sayings_.front();
+        // Blows and cries only fill a silence, and go unsaid if they can't
+        // at once; a line to someone gone out of earshot goes unsaid.
+        bool cry = talk::isCry(s.moment);
+        const Human* to = s.to >= 0 ? &world.human(s.to) : nullptr;
+        bool gone = to && (to->dead() || cheb(cell, to->cell) > HEAR_RADIUS || !sight.sees(to->cell));
+        float patience = cry ? CRY_PATIENCE : s.tell || s.intro ? WORD_PATIENCE : SPEECH_PATIENCE;
+        if (gone || s.waited > patience) {
+            if (s.awaited) awaiting_ = false;
+            sayings_.erase(sayings_.begin());
+            continue;
+        }
+        if (!speech_.empty()) {
+            if (cry) s.waited += dt;
+            return;
+        }
+        if (!cry) {
+            float now = world.time();
+            if (now - quietSince_ < SPEECH_PAUSE) return;
+            // Its turn: not over the one it talks to, nor over anyone talking
+            // to it; and having just spoken, it lets them answer first.
+            for (const auto& h : world.humans()) {
+                if (h.get() == this || h->dead()) continue;
+                const Speech* sp = h->speaking();
+                bool party = h->id == s.to || (sp && sp->to == id);
+                bool answer = h->id == s.to && !h->sayings_.empty() && h->sayings_.front().to == id &&
+                              quietSince_ > h->quietSince_;
+                if (answer || (party && (sp || now - h->quietSince_ < SPEECH_PAUSE))) {
+                    s.waited += dt;
+                    return;
+                }
+            }
+        }
+        Saying due = std::move(s);
+        sayings_.erase(sayings_.begin());
+        return say(world, due);
+    }
+}
+
+void Human::say(World& world, const Saying& s) {
+    Human* to = s.to >= 0 ? &world.human(s.to) : nullptr;
+    if (s.awaited) {
+        awaiting_ = false;
+        // Said: now the answer is waited for.
+        if (state == State::Idle) timer = answerWait_;
+    }
+    if (to && to->dead()) return;
+    const Human* about = s.about >= 0 ? &world.human(s.about) : nullptr;
+    auto said = s.quiet ? std::nullopt
+                        : talk::pick(s.moment, *this, to, about, rng_, s.topic ? &*s.topic : nullptr, &chatLines_,
+                                     world.time());
+    // A topic is raised once it is said; unsaid, it can come up again.
+    if (said && to && s.topic) {
+        if (s.topic->turn == 1)
+            raised(*s.topic, to->id);
+        else if (s.topic->turn == 2)
+            answered(*s.topic, to->id);
+        chatOn(*to, s);
+    }
+    if (said) {
+        speech_.push_back(
+            {said->text, said->tone, 0.0f, SPEECH_TIME + SPEECH_PER_LETTER * float(said->text.size()), s.to, std::nullopt});
+        // Telling the way, it turns and points it out.
+        if (s.tell && s.tell->kind == Tell::Kind::Way && !s.tell->gloomy) {
+            speech_.back().points = s.tell->way;
+            if (std::abs(std::cos(s.tell->way)) > 0.01f) facingLeft = std::cos(s.tell->way) < 0.0f;
+        }
+        std::string quote = '"' + said->text + '"';
+        if (to)
+            note("SAID " + quote + " TO @", to->id);
+        else
+            note("SAID " + quote);
+        for (const auto& h : world.humans())
+            if (h.get() != this && !h->dead() && cheb(h->cell, cell) <= HEAR_RADIUS && h->sight.sees(cell))
+                h->hear(world, *this, *said, to, about);
+    }
+    // Turned away out loud, it may answer back.
+    if (said && to && s.moment == talk::Moment::Refuse) to->sayLater(talk::Moment::Snubbed, id);
+    // Joined out loud, the other answers.
+    if (said && to && s.moment == talk::Moment::Join) to->sayLater(talk::Moment::JoinReply, id);
+    // Asked the way out, the other answers.
+    if (said && to && s.moment == talk::Moment::AskWay) to->answerWay(*this);
+    // What it tells lands now, worded or not.
+    if (to && s.intro) giveName(*to);
+    if (to && s.tell) deliver(*to, *s.tell);
+}
+
+void Human::hear(World&, Human& s, const talk::Said& said, Human* to, const Human* about) {
+    using talk::Tone;
+    if (state == State::Sleeping) return;
+    bool mine = to == this;
+    std::string quote = '"' + said.text + '"';
+    if (mine)
+        note("@ SAID " + quote, s.id);
+    else if (to)
+        note("HEARD @ SAY " + quote + " TO #", s.id, to->id);
+    else
+        note("HEARD @ SAY " + quote, s.id);
+    // A name said aloud is learnt by whoever can see whose it is.
+    auto learn = [&](const Human& h) {
+        if (&h == this || knownName(h.id) || !sight.sees(h.cell)) return;
+        memory.names[h.id] = h.name;
+        note("HEARD @'S NAME", h.id);
+    };
+    if (said.namesMe) learn(s);
+    if (said.namesThem && to) learn(*to);
+    if (said.namesWho && about) learn(*about);
+
+    switch (said.tone) {
+    case Tone::Plain:
+        break;
+    case Tone::Warm:
+        if (mine) regard(s.id, TRUST_WARM);
+        break;
+    case Tone::Rude:
+        if (mine) regard(s.id, TRUST_RUDE);
+        break;
+    case Tone::Fear:
+        if (trust(s.id) >= 0.0f) scare(DREAD_TALK * (1.0f + trust(s.id)));
+        break;
+    case Tone::Plead:
+        // Moved or not, it decides once per plea.
+        if (mine && cakes > 0 && !movedBy(s.id) &&
+            rng_.chance(PLEA_MOVES * sway(traits.sociable) * sway(1.0f - traits.greedy) +
+                        (isFriend(s.id) ? PLEA_FRIEND : 0.0f))) {
+            moved_[s.id] = clock_ + MOVED_TIME;
+            rethink_ = true;
+        }
+        break;
+    case Tone::Threat: {
+        if (!mine) {
+            // Overheard, it reflects on the threatener, unless the threatened is a foe.
+            if (!to || !isFoe(to->id)) regard(s.id, TRUST_HEARD_THREAT);
+            break;
+        }
+        // Not while chasing or running, nor to whoever it is after.
+        bool rushing = state == State::Walking && (goal == Goal::Fight || goal == Goal::Flee);
+        bool free = state == State::Idle || state == State::Walking || state == State::Sitting ||
+                    state == State::Rising;
+        if (free && !rushing && foe_ != s.id && !provoked_ && cakes > 0 && !starving() && cheb(cell, s.cell) <= THREAT_RANGE &&
+            rng_.chance(YIELD_CHANCE * (1.0f - traits.brave) * (1.0f + fright()))) {
+            sayLater(talk::Moment::Yield, s.id);
+            give(s, Gift::Yield);
+        } else {
+            regard(s.id, TRUST_THREAT);
+            sayLater(talk::Moment::Defy, s.id);
+        }
+        break;
+    }
+    }
+}
+
+bool Human::movedBy(int id) const {
+    auto it = moved_.find(id);
+    return it != moved_.end() && it->second > clock_;
+}
+
+// Only when it knows of no cake lying about, unless starving; never a foe,
+// or whoever it is afraid of.
+bool Human::plead(World& world) {
+    if (!hungry() || cakes > 0 || (!memory.cakes.empty() && !starving())) return false;
+    Human* best = nullptr;
+    for (const auto& o : world.humans()) {
+        if (o.get() == this || o->dead() || o->cakes == 0 || !sight.sees(o->cell) || cheb(cell, o->cell) > HEAR_RADIUS)
+            continue;
+        if (isFoe(o->id) || (fear_ > 0.0f && o->id == feared_)) continue;
+        if (auto it = begged_.find(o->id); it != begged_.end() && clock_ - it->second < BEG_AGAIN) continue;
+        if (!best || cheb(cell, o->cell) < cheb(cell, best->cell)) best = o.get();
+    }
+    if (!best) return false;
+    begged_[best->id] = clock_;
+    float p = BEG_CHANCE * sway(1.0f - traits.brave) * sway(traits.sociable) * sway(1.0f - traits.greedy) +
+              (starving() ? BEG_STARVING : 0.0f);
+    if (!rng_.chance(p)) return false;
+    if (!sayLater(talk::Moment::Beg, best->id)) return false;
+    startIdle(BEG_WAIT_MIN, BEG_WAIT_MAX);
+    awaitLine();
+    if (best->cell.x != cell.x) facingLeft = best->cell.x < cell.x;
+    return true;
+}
+
+bool Human::threaten(Human& f) {
+    if (auto it = threatened_.find(f.id); it != threatened_.end() && clock_ - it->second < THREAT_AGAIN) return false;
+    threatened_[f.id] = clock_;
+    if (!rng_.chance(THREAT_BASE + THREAT_BOLD * (traits.brave + traits.greedy) / 2.0f)) return false;
+    if (!sayLater(talk::Moment::Threat, f.id)) return false;
+    startIdle(THREAT_WAIT_MIN, THREAT_WAIT_MAX);
+    awaitLine();
+    if (f.cell.x != cell.x) facingLeft = f.cell.x < cell.x;
+    return true;
+}

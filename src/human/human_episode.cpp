@@ -26,8 +26,6 @@ constexpr int SAME_DIST = 3;
 /// Most others it notes as having been there.
 constexpr size_t WITH_MAX = 8;
 
-int cheb(Vec2i a, Vec2i b) { return std::max(std::abs(a.x - b.x), std::abs(a.y - b.y)); }
-
 // Things that stay where they are, as against things that happen: two who
 // saw the same body or pool remember the same thing whenever they saw it.
 bool lasting(Episode::What w) {

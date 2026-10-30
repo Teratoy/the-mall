@@ -60,8 +60,6 @@ constexpr float BEFORE_DREAMT = 0.3f;
 /// human again only after this long.
 constexpr float HERE_AGAIN = 600.0f, FEEL_AGAIN = 180.0f, WAY_AGAIN = 300.0f, GROUP_AGAIN = 300.0f;
 
-int cheb(Vec2i a, Vec2i b) { return std::max(std::abs(a.x - b.x), std::abs(a.y - b.y)); }
-
 uint64_t keyOf(Topic::Kind k, int sub, int a, int b = 0) {
     return uint64_t(k) << 56 | uint64_t(uint8_t(sub)) << 48 | uint64_t(uint32_t(a) & 0xffffff) << 24 |
            uint64_t(uint32_t(b) & 0xffffff);

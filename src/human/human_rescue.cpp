@@ -34,7 +34,6 @@ constexpr float HOPE_FREED = 0.25f;
 constexpr float EPISODE_FREED = 0.6f, EPISODE_FREED_ME = 0.9f;
 
 float sway(float trait, float half) { return 1.0f + (trait - 0.5f) * 2.0f * half; }
-int cheb(Vec2i a, Vec2i b) { return std::max(std::abs(a.x - b.x), std::abs(a.y - b.y)); }
 
 } // namespace
 

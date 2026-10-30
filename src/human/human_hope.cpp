@@ -59,8 +59,6 @@ constexpr float GUARD_BAR = 0.3f;
 /// The timid lose hope half as fast again, the fearless half as fast.
 float sway(float t) { return 0.5f + t; }
 
-int cheb(Vec2i a, Vec2i b) { return std::max(std::abs(a.x - b.x), std::abs(a.y - b.y)); }
-
 } // namespace
 
 float Human::gloom() const { return std::max(0.0f, (HOPE_LOW - hope_) / HOPE_LOW); }

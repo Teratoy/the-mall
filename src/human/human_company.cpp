@@ -37,8 +37,6 @@ constexpr int COMPANY_LAG = 6;
 constexpr float COMPANY_PAUSE_MIN = 0.5f, COMPANY_PAUSE_MAX = 1.0f;
 constexpr float COMPANY_PATIENCE = 8.0f;
 
-int cheb(Vec2i a, Vec2i b) { return std::max(std::abs(a.x - b.x), std::abs(a.y - b.y)); }
-
 } // namespace
 
 float Human::companyTrust() const {

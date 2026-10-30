@@ -111,8 +111,6 @@ constexpr float TETHER_FROM = 0.3f;
 constexpr int WATER_TETHER = 30;
 constexpr float TETHER_EXPLORE = 0.6f;
 
-int cheb(Vec2i a, Vec2i b) { return std::max(std::abs(a.x - b.x), std::abs(a.y - b.y)); }
-
 } // namespace
 
 std::optional<Vec2i> Human::waterBeside(Vec2i c) const {

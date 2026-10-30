@@ -132,8 +132,6 @@ constexpr float PRIVACY_WAIT_MIN = 0.8f, PRIVACY_WAIT_MAX = 1.4f;
 /// Dead, it lets go of what is past this.
 constexpr float LET_GO = 0.2f;
 
-int cheb(Vec2i a, Vec2i b) { return std::max(std::abs(a.x - b.x), std::abs(a.y - b.y)); }
-
 } // namespace
 
 float Human::modesty() const { return (traits.sociable + (1.0f - traits.brave)) / 2.0f; }

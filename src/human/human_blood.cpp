@@ -127,8 +127,6 @@ constexpr int RICH_CAKES = 2;
 constexpr float TRACK_FORGET = 60.0f;
 constexpr int TRAIL_STEPS = 3;
 
-int cheb(Vec2i a, Vec2i b) { return std::max(std::abs(a.x - b.x), std::abs(a.y - b.y)); }
-
 } // namespace
 
 bool BodyBlood::any() const {
