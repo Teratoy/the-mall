@@ -1,4 +1,5 @@
 #include "human/talk.h"
+#include "core/files.h"
 #include "human/human.h"
 #include "world/statue.h"
 #include <algorithm>
@@ -27,7 +28,7 @@ constexpr const char* MOMENTS[] = {
     "learn_cakes", "learn_keys",
     "snap", "hunt", "feed", "sick", "saw_eat", "gnawed", "haunted", "craving",
     "wake",
-    "first_key", "first_cake", "first_door", "first_water", "first_human", "first_prints",
+    "first_key", "first_cake", "first_door", "first_water", "first_human", "first_prints", "first_toilet",
     "despair", "hope", "settle", "guard",
     "ask_way", "tell_way", "no_way_out", "lie_way", "no_idea",
     "join", "join_reply", "follow",
@@ -39,6 +40,11 @@ constexpr const char* MOMENTS[] = {
     "tell_water", "sell_water", "lie_water", "ask_water", "lead_drink", "led_drink", "thirsty", "drink", "learn_water", "toilet_drink", "toilet_mock",
     "tired", "exhausted", "sleep", "woke", "dream", "robbed_sleep", "cake_gone", "watch_me", "watch_yes", "watch_cake",
     "watch_no", "wake_up", "your_watch", "failed_watch", "wake_them",
+    "spilled", "blame",
+    "tell_shut_in", "call_back", "heard_back", "key_for_shut_in", "lost_shut_in",
+    "sip", "bottle_dry", "fill_bottle", "pour_out", "ask_drink", "give_drink", "sell_drink", "bottle_lie",
+    "caught_bottle_lie", "refuse_drink", "bottle_taken", "put_down", "pick_up", "stash", "from_stash", "saw_stash", "stash_robbed", "steal_stash", "caught_stealing", "resent",
+    "tell_stash", "sell_stash", "lie_stash", "stash_told", "ask_stash", "own_stash", "deny_stash", "caught_denying",
 };
 static_assert(std::size(MOMENTS) == size_t(Moment::Count));
 
@@ -401,6 +407,10 @@ void fill(std::string& text, const char* slot, const std::string& name, bool& sa
 } // namespace
 
 bool reload() {
+    if (auto in = files::asset("data/lines.txt")) {
+        book() = read(*in, "data/lines.txt");
+        return true;
+    }
     for (const auto& path : places()) {
         std::ifstream in(path);
         if (!in) continue;

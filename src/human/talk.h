@@ -39,8 +39,8 @@ enum class Moment {
     // Coming to somewhere it doesn't know, said to nobody.
     Wake,
     // The first key, cake, door, water, other human and someone else's
-    // shitty footprints it ever sees, said to nobody, once each.
-    FirstKey, FirstCake, FirstDoor, FirstWater, FirstHuman, FirstPrints,
+    // shitty footprints and toilet it ever sees, said to nobody, once each.
+    FirstKey, FirstCake, FirstDoor, FirstWater, FirstHuman, FirstPrints, FirstToilet,
     // Hope: losing it, getting it back, giving up and making a home (all
     // said to nobody), and warning someone off that home.
     Despair, Hope, Settle, Guard,
@@ -89,6 +89,41 @@ enum class Moment {
     // (to nobody, about them).
     Tired, Exhausted, SleepNow, Woke, Dream, RobbedSleep, CakeGone, WatchMe, WatchYes, WatchCake, WatchNo, WakeUp,
     YourWatch, FailedWatch, WakeThem,
+    // Looking at a fresh pool of the blood it spilled itself (to nobody, about whose).
+    Spilled,
+    // Putting someone seen bloody together with a fresh body: shouted to
+    // anyone in earshot, about the one it blames.
+    Blame,
+    // Someone shut in: telling of them at a greeting (to the listener, about
+    // them); calling back through the wall (to nobody, about them), and
+    // hearing it from inside (to nobody); off for a key to let them out (to
+    // nobody); giving up on finding them (to nobody, about them).
+    TellShutIn, CallBack, HeardBack, KeyForShutIn, LostShutIn,
+    // Bottles: drinking from it, running it dry, filling it, pouring it out
+    // (all to nobody); asking someone for a drink (to them), and their
+    // answer: pouring some, for a cake, lying that it's empty, refusing;
+    // the asker seeing through the lie (to them); a bottle snatched in a
+    // fight (to whoever took it).
+    Sip, BottleDry, FillBottle, PourOut, AskDrink, GiveDrink, SellDrink, BottleLie, CaughtBottleLie, RefuseDrink,
+    BottleTaken,
+    // Putting things down on the floor, and picking up what lies there
+    // (both to nobody).
+    PutDown, PickUp,
+    // Stashing things in a stash of its own, and taking from it (both to
+    // nobody).
+    StashIt, FromStash,
+    // Seeing someone stash things (to nobody, about them); finding its own
+    // stash short (to nobody, about whom it blames).
+    SawStash, StashRobbed,
+    // Stealing from someone's stash (to nobody, about them); catching a
+    // thief at its stash (to them); resenting a hoarder (to nobody, about
+    // them).
+    StealStash, CaughtStealing, Resent,
+    // A stash at a greeting: told, sold, lied about (all to the one told);
+    // its owner overhearing (to the teller); asking someone if a stash is
+    // theirs (to them), and their answer: owning up, denying it; a denial
+    // seen through (to the denier).
+    TellStash, SellStash, LieStash, StashTold, AskStash, OwnStash, DenyStash, CaughtDenying,
     Count
 };
 

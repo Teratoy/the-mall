@@ -67,6 +67,9 @@ struct SoakProbe {
                 if (items && w.hasKey(c)) h.memory.keys.insert(c);
             }
     }
+    /// A basin with its top left corner at the cell, as the world sets
+    /// them. False if it doesn't fit there.
+    static bool placeBasin(World& w, Vec2i cell) { return w.placeBasin(*w.chunkAt(World::slotOf(cell)), cell); }
     /// A cake on the cell, as if the world had made it there.
     static void addCake(World& w, Vec2i cell) { w.cakes_.insert(cell); }
     /// Takes every key and cake off the chunk the cell is in.
@@ -78,6 +81,64 @@ struct SoakProbe {
                 w.takeCake(c);
                 w.takeKey(c);
             }
+    }
+    /// Fresh blood on h's face and hands, as if from someone else.
+    static void bloody(Human& h) { h.stain({BodyPart::Head, BodyPart::FrontArm, BodyPart::BackArm}, 40, 200); }
+    /// Washed clean all at once.
+    static void clean(Human& h) {
+        h.stains.amount.fill(0);
+        h.stains.wet.fill(0.0f);
+        h.stains.version++;
+    }
+    /// Drops h dead where it stands, killed by nobody anyone saw, ago seconds
+    /// since: long enough ago, bare bones.
+    static void kill(World& w, Human& h, float ago = 0.0f) {
+        h.health = 0.0f;
+        h.die(w);
+        h.deaths_.diedAt = h.clock_ - ago;
+    }
+    /// A slam room shut on h: a box of floor round it, walled, with its gate
+    /// locked two cells off in dir, as if h had set it off. Returns the gate.
+    static Vec2i shutInBox(World& w, Human& h, Vec2i dir) {
+        for (int y = -2; y <= 2; y++)
+            for (int x = -2; x <= 2; x++)
+                w.setTile(h.cell + Vec2i{x, y}, std::max(std::abs(x), std::abs(y)) == 2 ? Tile::Wall : Tile::Floor);
+        Vec2i gate = h.cell + dir * 2;
+        w.setTile(gate, Tile::DoorLocked);
+        w.gates_.insert(gate);
+        h.shutIn(gate);
+        return gate;
+    }
+    /// Shut in, h cries for help on its next update.
+    static void cryNow(Human& h) { h.rescue_.helpTimer = 0.0f; }
+    /// Kneels and puts down n cakes and these bottles where it stands.
+    static void putDown(Human& h, int cakes, std::vector<size_t> bottles) { h.startPutting(cakes, std::move(bottles)); }
+    /// The pile on the cell is a stash of h's, as if h had made it and seen
+    /// it last as it is now.
+    static void ownStash(const World& w, Human& h, Vec2i cell) {
+        h.stash_.mine.push_back(cell);
+        if (const Pile* p = w.pile(cell)) h.stash_.left[cell] = *p, h.memory.piles[cell] = *p;
+    }
+    /// h knows the pile on the cell is owner's stash, as if it had seen it made.
+    static void knowStash(const World& w, Human& h, Vec2i cell, const Human& owner) {
+        h.memory.stashes[cell] = owner.id;
+        if (const Pile* p = w.pile(cell)) h.memory.piles[cell] = *p;
+    }
+    /// The same, having watched it being made.
+    static void sawStashMade(const World& w, Human& h, Vec2i cell, const Human& owner) {
+        knowStash(w, h, cell, owner);
+        h.memory.stashSeenMade.insert(cell);
+    }
+    /// teller tells to where owner's stash at cell is, as at a greeting.
+    static void tellStash(Human& teller, Human& to, Vec2i cell, const Human& owner) {
+        Human::Tell t{Human::Tell::Kind::Stash, cell};
+        t.owner = owner.id;
+        teller.tell(to, t);
+    }
+    /// Stashes what it carries where it stands, as if that were its spot.
+    static void stashHere(Human& h) {
+        h.stash_.spot = h.cell;
+        h.stashHere();
     }
     /// Given up on a way out, at home on home.
     static void settle(Human& h, Vec2i home) {

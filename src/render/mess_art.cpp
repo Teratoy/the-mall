@@ -1,4 +1,5 @@
 #include "render/mess_art.h"
+#include "render/water_art.h"
 #include "world/mess.h"
 #include <algorithm>
 #include <cmath>
@@ -14,6 +15,10 @@ constexpr Color PISS_GLINT = {250, 244, 186, 210};
 constexpr Color PISS_DRY = {150, 132, 72, 60};
 /// Spreads to its full size over this long; half axes in pixels.
 constexpr float PISS_SPREAD_TIME = 2.5f;
+/// Poured water: as thick as this while wet, fading to nothing as it dries,
+/// spreading wider than piss by this much for as much water.
+constexpr float PUDDLE_ALPHA = 200.0f;
+constexpr float PUDDLE_WIDER = 1.3f;
 constexpr float PISS_RADIUS_MIN = 2.5f, PISS_RADIUS_PER_SIZE = 2.5f, PISS_FLAT = 0.55f;
 /// Feces, fresh: the dark edge, the body, the lighter coils, the wet shine
 /// and the damp round it; dry, all darker and greyer, with no shine.
@@ -55,12 +60,22 @@ void dot(int x, int y, Color c) {
 }
 
 void drawPiss(const Dropping& d, float fresh, float age, int ox, int oy, float brightness) {
+    bool water = d.kind == MessKind::Water;
     float grow = 0.3f + 0.7f * std::clamp(age / PISS_SPREAD_TIME, 0.0f, 1.0f);
-    float rx = (PISS_RADIUS_MIN + PISS_RADIUS_PER_SIZE * d.size) * grow, ry = rx * PISS_FLAT;
+    float rx = (PISS_RADIUS_MIN + PISS_RADIUS_PER_SIZE * d.size) * grow * (water ? PUDDLE_WIDER : 1.0f), ry = rx * PISS_FLAT;
     int x0 = int(std::floor(d.x - rx)), x1 = int(std::ceil(d.x + rx));
     int y0 = int(std::floor(d.y - ry)), y1 = int(std::ceil(d.y + ry));
     Color body = mix(PISS_DRY, PISS_WET, fresh, brightness);
     Color rim = mix(PISS_DRY, PISS_RIM, fresh, brightness);
+    // Poured water is the water it was, and dries away to nothing.
+    if (water) {
+        if (fresh <= 0.0f) return;
+        Color w = waterColor(d.red, d.foul);
+        body = {(unsigned char)(w.r * brightness), (unsigned char)(w.g * brightness), (unsigned char)(w.b * brightness),
+                (unsigned char)(PUDDLE_ALPHA * fresh)};
+        rim = body;
+        rim.a = (unsigned char)(body.a * 0.7f);
+    }
     for (int py = y0; py <= y1; py++)
         for (int px = x0; px <= x1; px++) {
             float dx = (px + 0.5f - d.x) / rx, dy = (py + 0.5f - d.y) / ry;
@@ -71,7 +86,8 @@ void drawPiss(const Dropping& d, float fresh, float age, int ox, int oy, float b
         }
     if (fresh > 0.5f) {
         int gx = int(std::floor(d.x - rx * 0.3f)), gy = int(std::floor(d.y - ry * 0.3f));
-        Color g = mix(PISS_DRY, PISS_GLINT, fresh, brightness);
+        Color g = water ? mix(Color{WATER_INK.r, WATER_INK.g, WATER_INK.b, 0}, WATER_INK, fresh, brightness)
+                        : mix(PISS_DRY, PISS_GLINT, fresh, brightness);
         dot(gx + ox, gy + oy, g);
         if (d.size > 0.6f) dot(gx + 1 + ox, gy + oy, g);
     }
@@ -140,18 +156,20 @@ Color fecesColor(float fresh) { return mix(FECES_DRY_BODY, FECES_BODY, fresh, 1.
 
 Color pissColor(float fresh) { return mix(PISS_DRY, PISS_RIM, fresh, 1.0f); }
 
-void drawWaterFoul(int x, int y, float foul) {
+Color waterFoulCloud(float foul) {
     Color c = WATER_FOUL;
     c.a = (unsigned char)(std::min(1.0f, foul) * WATER_FOUL.a);
-    DrawRectangle(x, y, 6, 6, c);
+    return c;
 }
+
+void drawWaterFoul(int x, int y, float foul) { DrawRectangle(x, y, 6, 6, waterFoulCloud(foul)); }
 
 void drawDropping(const Dropping& d, float fresh, float age, int left, int top, float brightness,
                   const std::function<bool(int, int)>& onFloor) {
     shows = &onFloor;
     shiftX = -left;
     shiftY = -top;
-    if (d.kind == MessKind::Piss)
+    if (d.kind == MessKind::Piss || d.kind == MessKind::Water)
         drawPiss(d, fresh, age, -left, -top, brightness);
     else if (d.kind == MessKind::Print)
         drawPrint(d, fresh, -left, -top, brightness);

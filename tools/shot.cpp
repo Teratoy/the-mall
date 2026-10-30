@@ -10,6 +10,8 @@
 //   --log          open the followed human's log
 //   --reveal       show the whole world, not just what the human knows
 //   --wide         a wide window, so the world takes the PC layout
+//   --pile         put a heap of cakes and bottles down near the human at
+//                  the start, to see how piles look
 //
 // The world is never put in the obituary: data/obituary.txt is left alone.
 // The image is read back before EndDrawing (after the swap it is black).
@@ -25,6 +27,7 @@
 #include <cstring>
 #include <memory>
 #include <raylib.h>
+#include "human/human.h"
 #include <rlgl.h>
 #include <string>
 
@@ -37,12 +40,26 @@ struct ShotProbe {
         s.logOpen_ = log && !stats;
         s.reveal_ = reveal;
     }
+    /// Cakes and bottles, clean, foul and bloody, on the free floor nearest
+    /// a few cells right of the followed human.
+    static void pile(WorldScene& s) {
+        World& w = s.world_;
+        Vec2i from = w.human(s.follow_).cell + Vec2i{3, 0};
+        for (int r = 0; r < 10; r++)
+            for (int y = -r; y <= r; y++)
+                for (int x = -r; x <= r; x++) {
+                    Vec2i c = from + Vec2i{x, y};
+                    if (w.tile(c) != Tile::Floor || w.occupant(c) || w.hasCake(c) || w.hasKey(c)) continue;
+                    w.putDown(c, 4, {Bottle{1.0f}, Bottle{0.5f, 0.7f, 0.0f}, Bottle{0.3f, 0.0f, 0.8f}});
+                    return;
+                }
+    }
 };
 
 int main(int argc, char** argv) {
     if (argc < 2 || argv[1][0] == '-') {
         std::fprintf(stderr, "usage: %s out.png [--scene world|menu|create|obituary] [--seconds S] [--seed N] "
-                             "[--zoom 0-3] [--stats] [--log] [--reveal] [--wide]\n", argv[0]);
+                             "[--zoom 0-3] [--stats] [--log] [--reveal] [--wide] [--pile]\n", argv[0]);
         return 1;
     }
     const char* out = argv[1];
@@ -50,7 +67,7 @@ int main(int argc, char** argv) {
     float seconds = 8.0f;
     uint64_t seed = 7;
     int zoom = 2;
-    bool stats = false, log = false, reveal = false, wide = false;
+    bool stats = false, log = false, reveal = false, wide = false, pile = false;
     for (int i = 2; i < argc; i++) {
         auto value = [&]() -> const char* {
             if (i + 1 >= argc) {
@@ -67,6 +84,7 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(argv[i], "--log")) log = true;
         else if (!std::strcmp(argv[i], "--reveal")) reveal = true;
         else if (!std::strcmp(argv[i], "--wide")) wide = true;
+        else if (!std::strcmp(argv[i], "--pile")) pile = true;
         else {
             std::fprintf(stderr, "unknown option %s\n", argv[i]);
             return 1;
@@ -85,6 +103,7 @@ int main(int argc, char** argv) {
         if (scene == "world") {
             auto w = std::make_unique<WorldScene>(HumanLook::random(rng), 99, seed);
             ShotProbe::neverRecord(*w);
+            if (pile) ShotProbe::pile(*w);
             world = w.get();
             s = std::move(w);
         } else if (scene == "menu") {

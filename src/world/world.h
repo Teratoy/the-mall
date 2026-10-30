@@ -5,6 +5,7 @@
 #include "world/door.h"
 #include "world/gen.h"
 #include "world/mess.h"
+#include "world/pile.h"
 #include "world/statue.h"
 #include "world/table.h"
 #include "world/toilet.h"
@@ -26,8 +27,7 @@ struct HumanLook;
 /// for a key in a chunk with no room for one.
 /// Here and there giant household objects stand as statues, in rooms roomy
 /// enough for them, and maybe one in the spawn room.
-/// The spawn room has a basin to drink from, and so has a plaza without a
-/// fountain. Here and there, rarely, stands a toilet.
+/// A plaza without a fountain has a basin to drink from. Here and there, rarely, stands a toilet.
 /// Hidden traps lie about every chunk but the spawn: spikes in the open,
 /// darts rigged under some cakes, and in room networks slam rooms baited
 /// with a cake, each with one more key to open it again.
@@ -87,6 +87,21 @@ public:
     bool hasCake(Vec2i cell) const { return cakes_.count(cell) > 0; }
     bool takeCake(Vec2i cell) { return cakes_.erase(cell) > 0; }
     const std::unordered_set<Vec2i, Vec2iHash>& cakes() const { return cakes_; }
+
+    /// What lies put down on a floor cell, if anything.
+    const Pile* pile(Vec2i cell) const {
+        auto it = piles_.find(cell);
+        return it == piles_.end() ? nullptr : &it->second;
+    }
+    const std::unordered_map<Vec2i, Pile, Vec2iHash>& piles() const { return piles_; }
+    /// Puts cakes and bottles down on a cell, onto whatever lies there.
+    void putDown(Vec2i cell, int cakes, const std::vector<Bottle>& bottles);
+    /// Takes up to n cakes off the pile on a cell; how many it got.
+    int takePileCakes(Vec2i cell, int n);
+    /// Takes the pile's i-th bottle off it.
+    Bottle takePileBottle(Vec2i cell, size_t i);
+    /// Pours up to amount from the pile's i-th bottle into into; how much.
+    float pourFromPile(Vec2i cell, size_t i, Bottle& into, float amount);
 
     /// The trap set off from a cell, if any, hidden or not.
     const Trap* trap(Vec2i cell) const;
@@ -151,6 +166,7 @@ private:
     std::unordered_map<Vec2i, Toilet, Vec2iHash> toilets_;
     std::unordered_set<Vec2i, Vec2iHash> keys_;
     std::unordered_set<Vec2i, Vec2iHash> cakes_;
+    std::unordered_map<Vec2i, Pile, Vec2iHash> piles_;
     std::unordered_map<Vec2i, Trap, Vec2iHash> traps_;
     std::vector<Dart> darts_;
     /// Slam room gates, which keys open as they do exit doors.

@@ -4,6 +4,7 @@
 #include <cmath>
 #include <optional>
 #include <cstdlib>
+#include <limits>
 
 namespace {
 
@@ -126,6 +127,30 @@ constexpr int RICH_CAKES = 2;
 /// Blood walked up to on a trail isn't walked up to again for this long.
 constexpr float TRACK_FORGET = 60.0f;
 constexpr int TRAIL_STEPS = 3;
+/// Blood and a fresh body are put together when seen this many seconds
+/// apart or less; seen after the body, the bloody one must be this near it
+/// (AI/blame_plan.md).
+constexpr float BLAME_WINDOW = 60.0f;
+constexpr int BLAME_NEAR = 10;
+/// This curious, it puts them together either way round; else the less
+/// brave than this think back to the bloody one on finding the body, the
+/// rest look out for whoever did it once they found it.
+constexpr float BLAME_CURIOUS = 0.6f;
+constexpr float BLAME_WARY = 0.5f;
+/// A stranger's killing is blamed this long; someone it knew, for good.
+constexpr float BLAME_TIME = 300.0f;
+/// What it thinks of whoever it blames: worse than a foe.
+constexpr float TRUST_BLAMED = -0.5f;
+/// Below this bravery it runs from them; from this, a friend of the dead
+/// goes for them.
+constexpr float BLAME_TIMID = 0.3f;
+constexpr float BLAME_AVENGE = 0.6f;
+/// How much the killing and the shout of it strike, as dread and episodes.
+constexpr float DREAD_BLAME = 0.3f;
+constexpr float DREAD_HEARD_BLAME = 0.15f;
+/// Hearing someone it trusts blame another, it thinks this much worse of
+/// them at full trust, half as much trusting them not at all.
+constexpr float TRUST_HEARD_BLAME = -0.3f;
 
 } // namespace
 
@@ -368,8 +393,30 @@ void Human::wash(World& world) {
     timer = WASH_STEP;
 }
 
+// It knows whose blood it spilled: anyone it remembers hitting, killing or
+// eating from, and the one it is fighting now.
+bool Human::spilled(int whom) const {
+    if (whom < 0 || whom == id) return false;
+    if (fight_.foe == whom) return true;
+    for (const Episode& e : episodes_)
+        if (e.who == id && e.whom == whom &&
+            (e.what == Episode::What::Fight || e.what == Episode::What::Kill || e.what == Episode::What::Flesh))
+            return true;
+    return false;
+}
+
+// How much of the stain is blood it knows the source of: its own and what
+// it spilled. A fight leaves both mixed.
+float Human::knownBlood(const Stain& s) const {
+    float known = 0.0f;
+    for (const Stain::Bleeder& b : s.whose)
+        if (b.id >= 0 && (b.id == id || spilled(b.id))) known += s.share(b.id);
+    return known;
+}
+
 // A trap that drew blood has it all round it. Pools are kept off for good;
-// a fresh one is frightening besides, unless it is its own.
+// a fresh one is frightening besides, unless it is its own, or blood it
+// spilled itself and knows it: that one it only looks at.
 bool Human::noticeBlood(const World& world, Vec2i c) {
     const Stain& s = memory.blood[c];
     float total = s.total();
@@ -387,6 +434,12 @@ bool Human::noticeBlood(const World& world, Vec2i c) {
                 note("SAW A POOL OF MY OWN BLOOD");
                 rememberAt(c, Episode::What::Pool, EPISODE_OWN_POOL, id);
                 sayLater(talk::Moment::OwnPool);
+            }
+        } else if (knownBlood(s) >= OWN_BLOOD) {
+            int whose = s.mostly();
+            if (s.wet > 0.0f && cheb(cell, c) < POOL_FEAR_DIST && spilled(whose)) {
+                note("SAW THE BLOOD I SPILLED FROM @", whose);
+                sayLater(talk::Moment::Spilled, -1, whose);
             }
         } else if (s.wet > 0.0f && cheb(cell, c) < POOL_FEAR_DIST) {
             gore_.scare = c;
@@ -416,7 +469,9 @@ bool Human::judge(const Human& o) {
     bool news = !known || weight >= it->second.weight + HEAVIER;
     float until = clock_ + SUSPECT_TIME * weight;
     if (known) until = std::max(until, it->second.until);
-    gore_.suspects[o.id] = {until, weight};
+    // Whoever it blames for a killing stays as bad as that.
+    if (known && gore_.blamed.count(o.id)) weight = std::max(weight, it->second.weight);
+    gore_.suspects[o.id] = {until, weight, clock_};
     if (news) {
         note(fresh >= ACCUSE_WEIGHT     ? "@ WAS BLOODY WITHOUT A WOUND"
              : weight >= ACCUSE_WEIGHT ? "@ WAS CAKED IN DRIED BLOOD"
@@ -427,7 +482,80 @@ bool Human::judge(const Human& o) {
         regard(o.id, TRUST_SUSPECT * weight);
         scare(DREAD_SUSPECT * weight);
     }
+    // Seen near a body it found just now, the blood is likely that body's.
+    if (tiesBodyToBlood() && !gore_.blamed.count(o.id)) {
+        int victim = -1;
+        for (const auto& [who, b] : gore_.fresh)
+            if (who != o.id && clock_ - b.at <= BLAME_WINDOW && cheb(o.cell, b.cell) <= BLAME_NEAR &&
+                (victim < 0 || b.at > gore_.fresh.at(victim).at || (b.at == gore_.fresh.at(victim).at && who < victim)))
+                victim = who;
+        if (victim >= 0) {
+            blame(o.id, victim);
+            news = true;
+        }
+    }
     return news;
+}
+
+bool Human::tiesBloodToBody() const { return traits.curious >= BLAME_CURIOUS || traits.brave < BLAME_WARY; }
+bool Human::tiesBodyToBlood() const { return traits.curious >= BLAME_CURIOUS || traits.brave >= BLAME_WARY; }
+
+void Human::foundFresh(const Human& body) {
+    for (auto it = gore_.fresh.begin(); it != gore_.fresh.end();)
+        it = clock_ - it->second.at > BLAME_WINDOW ? gore_.fresh.erase(it) : std::next(it);
+    gore_.fresh[body.id] = {body.cell, clock_};
+    if (!tiesBloodToBody()) return;
+    // The one it saw bloody last, if lately enough, and not already blamed.
+    int who = -1;
+    float seen = 0.0f;
+    for (const auto& [id, s] : gore_.suspects)
+        if (id != body.id && clock_ - s.seen <= BLAME_WINDOW && s.seen > 0.0f && !gore_.blamed.count(id) &&
+            (who < 0 || s.seen > seen || (s.seen == seen && id < who))) {
+            who = id;
+            seen = s.seen;
+        }
+    if (who >= 0) blame(who, body.id);
+}
+
+void Human::blame(int who, int victim) {
+    gore_.blamed[who] = victim;
+    bool knew = met.count(victim) || knownName(victim);
+    float until = knew ? std::numeric_limits<float>::infinity() : clock_ + BLAME_TIME;
+    Suspect& s = gore_.suspects[who];
+    s.until = std::max(s.until, until);
+    s.weight = 1.0f;
+    note("@ MUST HAVE KILLED #", who, victim);
+    if (float t = trust(who); t > TRUST_BLAMED) regard(who, TRUST_BLAMED - t);
+    scare(DREAD_BLAME);
+    sayLater(talk::Moment::Blame, -1, who);
+    rethink_ = true;
+    if (isErratic()) return;
+    bool there = std::find(inSight_.begin(), inSight_.end(), who) != inSight_.end();
+    if (traits.brave < BLAME_TIMID) {
+        fight_.feared = who;
+        fight_.fear = fearTime();
+        gore_.ranFrom = -1;
+    } else if (there && isFriend(victim) && traits.brave >= BLAME_AVENGE && fight_.foe < 0) {
+        fight_.foe = who;
+        fight_.grudge = grudgeFor(who);
+        note("WENT FOR @ FOR WHAT THEY DID", who);
+    }
+}
+
+// Believed as far as it trusts the shouter, and not at all by a friend of
+// the one named who trusts them more.
+void Human::heardBlame(const Human& from, int who) {
+    float t = trust(from.id);
+    if (who == id || t < 0.0f || trust(who) > t || gore_.blamed.count(who) || !gore_.toldKiller.insert(who).second)
+        return;
+    float weight = 0.5f + 0.5f * t;
+    Suspect& s = gore_.suspects[who];
+    s.until = std::max(s.until, clock_ + BLAME_TIME * weight);
+    s.weight = std::max(s.weight, weight);
+    note("# SAYS @ IS A KILLER", who, from.id);
+    regard(who, TRUST_HEARD_BLAME * weight);
+    scare(DREAD_HEARD_BLAME * weight);
+    rethink_ = true;
 }
 
 bool Human::suspicious(int id) const {
@@ -466,6 +594,15 @@ std::function<bool(Vec2i)> Human::shunZone(const World& world, Vec2i start) cons
 }
 
 bool Human::keepAway(World& world) {
+    // The timid run from whoever they blame for a killing, as from a fight.
+    if (fight_.fear > 0.0f && gore_.blamed.count(fight_.feared) && !isErratic()) {
+        const Human& k = world.human(fight_.feared);
+        if (!k.dead() && sight.sees(k.cell) && cheb(cell, k.cell) < BLAME_NEAR && startFlee(world)) {
+            if (gore_.ranFrom != k.id) note("RAN FROM @, A KILLER", k.id);
+            gore_.ranFrom = k.id;
+            return true;
+        }
+    }
     Vec2i from;
     int dist = 0;
     // Neither the starving nor the erratic mind blood.

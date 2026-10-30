@@ -2,6 +2,7 @@
 #include "human/human.h"
 #include "human/obituary.h"
 #include "human/talk.h"
+#include "render/bottle_art.h"
 #include "render/canvas.h"
 #include "render/map_view.h"
 #include "render/speech_view.h"
@@ -152,9 +153,13 @@ std::string doing(const Human& h) {
     case Human::State::Greeting: return (h.gossiping ? "GOSSIPING WITH " : "GREETING ") + who;
     case Human::State::Eating: return "EATING";
     case Human::State::Drinking: return "DRINKING";
+    case Human::State::Sipping: return "DRINKING FROM THE BOTTLE";
+    case Human::State::Filling: return "FILLING THE BOTTLE";
+    case Human::State::Pouring: return "POURING THE BOTTLE OUT";
+    case Human::State::Stashing: return h.putting() ? "STASHING THINGS" : "PICKING THINGS UP";
     case Human::State::Relieving: return h.shitting() ? "SHITTING" : "PISSING";
     case Human::State::Punching: return (h.hunting() ? "ATTACKING " : "FIGHTING ") + who;
-    case Human::State::Giving: return "SHARING A CAKE WITH " + who;
+    case Human::State::Giving: return (h.givingWater() ? "SHARING WATER WITH " : "SHARING A CAKE WITH ") + who;
     case Human::State::Washing: return "WASHING";
     case Human::State::Looting: return h.robbing() ? "ROBBING " + who : "GOING THROUGH " + who + "'S BODY";
     case Human::State::Feeding: return "EATING " + who;
@@ -186,6 +191,7 @@ std::string doing(const Human& h) {
     case Human::Goal::Company: return "WITH " + who;
     case Human::Goal::FetchCake: return "GETTING A CAKE";
     case Human::Goal::Drink: return "GOING TO DRINK";
+    case Human::Goal::Fill: return "GOING TO FILL THE BOTTLE";
     case Human::Goal::Relieve: return "FINDING SOMEWHERE TO GO";
     case Human::Goal::Sleep: return "LOOKING FOR A PLACE TO SLEEP";
     case Human::Goal::Share: return "SHARING A CAKE WITH " + who;
@@ -198,9 +204,13 @@ std::string doing(const Human& h) {
     case Human::Goal::Track: return "FOLLOWING BLOOD";
     case Human::Goal::GiveWay: return "MAKING WAY";
     case Human::Goal::Loot: return "GOING TO " + who + "'S BODY";
+    case Human::Goal::Ask: return "GOING TO ASK " + who + " FOR WATER";
+    case Human::Goal::Pick: return "GOING TO PICK THINGS UP";
+    case Human::Goal::Stash: return "TAKING THINGS TO A STASH";
     case Human::Goal::Feed: return "GOING TO " + who + "'S BODY";
     case Human::Goal::Rob: return "SNEAKING UP ON " + who;
     case Human::Goal::Watch: return "GOING TO KEEP WATCH OVER " + who;
+    case Human::Goal::Rescue: return "GOING TO HELP " + who;
     }
     return "";
 }
@@ -243,6 +253,18 @@ int item(int right, int y, int count, void (*icon)(int, int)) {
     x -= ICON_GAP + ICON_PX;
     icon(x, y + 1);
     return x;
+}
+
+/// The bottles carried, right to left from right, each drawn as full and
+/// as dirty as it is; returns the left edge of the last, or right if none.
+int bottleItems(const Human& h, int right, int y) {
+    int x = right;
+    for (auto it = h.bottles.rbegin(); it != h.bottles.rend(); ++it) {
+        x -= BOTTLE_ACROSS;
+        drawBottleIcon(x, y + 1, *it);
+        x -= ICON_GAP;
+    }
+    return x + (h.bottles.empty() ? 0 : ICON_GAP);
 }
 
 } // namespace
@@ -295,7 +317,7 @@ const Human* WorldScene::nearestLiving() const {
 }
 
 void WorldScene::update(float dt, const Canvas& canvas) {
-    if (IsKeyPressed(KEY_ESCAPE)) pauseToggle_ = true;
+    if (ui::backPressed()) pauseToggle_ = true;
     if (pauseToggle_) {
         pauseToggle_ = false;
         paused_ = !paused_;
@@ -556,7 +578,8 @@ void WorldScene::drawPhone(const Human& viewer, Vector2 mouse) {
     Rectangle mapButton{logButton.x + BUTTON_W + BUTTON_GAP, float(NAME_ROW_Y), float(BUTTON_W), float(NAME_ROW_H)};
     mapToggle_ |= ui::button(mapButton, "MAP", mouse);
     int x = item(RIGHT, y, viewer.cakes, drawCakeIcon);
-    item(x - ITEM_GAP, y, viewer.keys, drawKeyIcon);
+    x = item(x - ITEM_GAP, y, viewer.keys, drawKeyIcon);
+    bottleItems(viewer, x - ITEM_GAP, y);
 
     // Bottom strip: health across it, hunger, thirst and tiredness side by
     // side under it, then what they are doing, broken onto a second row
@@ -605,6 +628,7 @@ void WorldScene::drawWide(const Human& viewer, Vector2 mouse, const std::vector<
     // Over the stats, who is followed and what they carry.
     int x = item(STATS_RIGHT, WIDE_NAME_Y, viewer.cakes, drawCakeIcon);
     x = item(x - ITEM_GAP, WIDE_NAME_Y, viewer.keys, drawKeyIcon);
+    x = bottleItems(viewer, x - ITEM_GAP, WIDE_NAME_Y);
     // A long name is broken off before the items rather than run under them.
     std::vector<std::string> nameRows = ui::wrap(caps(viewer.name), x - ITEM_GAP - STATS_LEFT);
     if (!nameRows.empty()) ui::text(nameRows.front().c_str(), STATS_LEFT, WIDE_NAME_Y, ui::BRIGHT);

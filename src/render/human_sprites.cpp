@@ -1,5 +1,6 @@
 #include "render/human_sprites.h"
 #include "render/blood_art.h"
+#include "render/bottle_art.h"
 #include "render/mess_art.h"
 #include "render/remains_art.h"
 #include <algorithm>
@@ -84,6 +85,10 @@ HumanSprites::HumanSprites(const HumanLook& look) : skin_(look.skin) {
     }
     add(woken_, look.curl(CURL_FRAMES));
     add(wokenCarry_, look.curl(CURL_FRAMES, true));
+    add(sip_, look.sip());
+    add(fill_, look.fill());
+    add(pour_, look.pour());
+    add(offerBottle_, look.offerBottle());
     // Where the head is and how far the body reaches ahead, curled up and
     // breathing in, cake and all.
     const SpriteFrame curled = look.curl(1, true);
@@ -107,6 +112,7 @@ HumanSprites::~HumanSprites() {
 
 void HumanSprites::add(Texture2D& t, SpriteFrame f) {
     t = toTexture(f);
+    spots_[&t] = {f.pocket, f.hand};
     frames_.emplace_back(&t, std::move(f));
 }
 
@@ -173,7 +179,7 @@ void HumanSprites::paint(Texture2D& t, const SpriteFrame& f) {
 }
 
 void HumanSprites::draw(Vector2 feet, Pose pose, float animTime, bool flip, int scale, Color tint,
-                        bool carrying) const {
+                        bool carrying, const Bottle* bottle, bool inHand) const {
     // Mirroring keeps the base pixel in place: it is the middle column.
     Rectangle src{0, 0, flip ? -float(SPRITE_W) : float(SPRITE_W), float(SPRITE_H)};
     bool lying = (pose == Pose::Fall && animTime >= FALL_DOWN) || pose == Pose::Wake;
@@ -214,6 +220,10 @@ void HumanSprites::draw(Vector2 feet, Pose pose, float animTime, bool flip, int 
                            : pose == Pose::Point ? point_
                            : pose == Pose::PointUp ? pointUp_
                            : pose == Pose::PointDown ? pointDown_
+                           : pose == Pose::Sip   ? sip_
+                           : pose == Pose::Fill  ? fill_
+                           : pose == Pose::Pour  ? pour_
+                           : pose == Pose::OfferBottle ? offerBottle_
                            : pose == Pose::Fall  ? (animTime < FALL_KNEEL ? idle_ : kneel_)
                            : pose == Pose::Sit   ? (animTime < SIT_DOWN_TIME ? crouch : seated)
                            : pose == Pose::Rise && animTime < STAND_UP_TIME ? crouch
@@ -231,6 +241,15 @@ void HumanSprites::draw(Vector2 feet, Pose pose, float animTime, bool flip, int 
     if (pose == Pose::Feed) y += float(int(animTime * FEED_FPS) % 2 * scale);
     DrawTexturePro(tex, src, {std::round(x), y, float(SPRITE_W * scale), float(SPRITE_H * scale)},
                    {0, 0}, 0.0f, tint);
+    if (!bottle) return;
+    auto it = spots_.find(&tex);
+    if (it == spots_.end()) return;
+    auto [pocket, hand] = it->second;
+    BottleSpot at = inHand && hand.valid() ? hand : pocket;
+    if (!at.valid()) return;
+    Vector2 origin{std::round(x), y};
+    drawBottle(origin, at.x, at.y, at.turn, flip, *bottle, scale, tint);
+    if (pose == Pose::Pour) drawPourStream(origin, at.x, at.y, SPRITE_H - 1, flip, *bottle, scale, tint, animTime);
 }
 
 void HumanSprites::drawCurled(Vector2 feet, const Texture2D& tex, bool flip, int scale, Color tint,

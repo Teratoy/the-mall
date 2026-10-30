@@ -1,12 +1,14 @@
 #include "render/world_view.h"
 #include "human/human.h"
 #include "render/blood_art.h"
+#include "render/bottle_art.h"
 #include "render/floor_tiles.h"
 #include "render/human_sprites.h"
 #include "render/mess_art.h"
 #include "render/statue_art.h"
 #include "render/table_art.h"
 #include "render/toilet_art.h"
+#include "render/water_art.h"
 #include "world/world.h"
 #include <algorithm>
 #include <cmath>
@@ -24,11 +26,6 @@ constexpr int WALL_FACE_PX = 2;
 constexpr Color DOOR = {128, 80, 38, 255};
 constexpr Color DOOR_EDGE = {84, 50, 22, 255};
 constexpr Color DOOR_OPEN = {54, 54, 54, 255};
-constexpr Color WATER = {38, 66, 104, 255};
-/// Glints, kept close to the water so it reads as still.
-constexpr Color WATER_INK = {72, 106, 144, 255};
-/// The bank's shadow along the top of water.
-constexpr Color WATER_EDGE = {28, 48, 78, 255};
 /// A basin's stone rim, lit along its top and left, shaded along the rest.
 constexpr Color BASIN_RIM = {164, 160, 150, 255};
 constexpr Color BASIN_RIM_SHADE = {104, 100, 94, 255};
@@ -183,6 +180,44 @@ void drawCake(int x, int y, bool lit) {
         }
 }
 
+/// A cake put down, smaller than one on a table so a few heap up on a cell:
+/// c the cherry, f frosting, s sponge.
+constexpr int HEAP_CAKE_W = 4, HEAP_CAKE_H = 3;
+constexpr const char* HEAP_CAKE_GLYPH[HEAP_CAKE_H] = {
+    ".c..",
+    "ffff",
+    "ssss",
+};
+/// Where each cake put down goes, its top-left from the cell's: two on the
+/// floor a pixel apart, two on those, one on top; the rest are under.
+constexpr Vec2i HEAP[] = {{-2, 2}, {3, 2}, {0, -1}, {5, -1}, {2, -4}};
+/// Bottles put down lie on their side in front of the cakes, end to end,
+/// this many at most, the first's base here from the cell's top-left.
+constexpr int HEAP_BOTTLES = 2;
+constexpr int HEAP_BOTTLE_X = -3, HEAP_BOTTLE_Y = 7;
+
+void drawHeapCake(int x, int y, bool lit) {
+    for (int gy = 0; gy < HEAP_CAKE_H; gy++)
+        for (int gx = 0; gx < HEAP_CAKE_W; gx++) {
+            char g = HEAP_CAKE_GLYPH[gy][gx];
+            if (g == '.') continue;
+            Color c = g == 'c' ? CAKE_CHERRY : g == 'f' ? CAKE_FROSTING : CAKE_SPONGE;
+            DrawPixel(x + gx, y + gy, dim(c, lit));
+        }
+}
+
+/// What lies put down on a cell with its top-left at (x, y): the cakes
+/// heaped, and the bottles on their side in front, each as full and as
+/// dirty as it is.
+void drawPile(int x, int y, const Pile& p, bool lit) {
+    int shown = std::min(p.cakes, int(std::size(HEAP)));
+    for (int i = 0; i < shown; i++) drawHeapCake(x + HEAP[i].x, y + HEAP[i].y, lit);
+    int bottles = std::min(int(p.bottles.size()), HEAP_BOTTLES);
+    for (int i = 0; i < bottles; i++)
+        drawBottle({float(x), float(y)}, HEAP_BOTTLE_X + i * (BOTTLE_LONG + 1), HEAP_BOTTLE_Y, BottleTurn::Ahead, false,
+                   p.bottles[size_t(i)], 1, dim(WHITE, lit));
+}
+
 // Spikes up and plates down show a trap that just went off, or a spent one.
 void drawTrap(int x, int y, TrapKind kind, bool sprung, bool lit) {
     const char* const* glyph = kind == TrapKind::Spikes ? (sprung ? SPIKES_UP_GLYPH : SPIKES_GLYPH)
@@ -212,7 +247,10 @@ Pose poseOf(const Human& h) {
     case Human::State::Greeting: return Pose::Wave;
     case Human::State::Eating: return Pose::Eat;
     case Human::State::Punching: return h.punchLanded ? Pose::Punch : Pose::Guard;
-    case Human::State::Giving: return Pose::Offer;
+    case Human::State::Giving: return h.givingWater() ? Pose::OfferBottle : Pose::Offer;
+    case Human::State::Sipping: return Pose::Sip;
+    case Human::State::Filling: return Pose::Fill;
+    case Human::State::Pouring: return Pose::Pour;
     case Human::State::Dead: return h.diedAsleep() ? Pose::DiedAsleep : Pose::Fall;
     case Human::State::Waking: return Pose::Wake;
     case Human::State::Sitting: return Pose::Sit;
@@ -221,7 +259,8 @@ Pose poseOf(const Human& h) {
     case Human::State::Washing:
     case Human::State::Drinking: return Pose::Wash;
     case Human::State::Relieving: return h.shitting() ? Pose::Squat : Pose::Piss;
-    case Human::State::Looting: return Pose::Search;
+    case Human::State::Looting:
+    case Human::State::Stashing: return Pose::Search;
     case Human::State::Feeding: return Pose::Feed;
     case Human::State::Idle:
     case Human::State::Walking: break;
@@ -337,13 +376,13 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
         }
 
     // Piss and feces in sight, and those the viewer saw before, dimmed.
-    // Piss first, so a pile sits on its puddle.
+    // Poured water and piss first, so a pile sits on its puddle.
     const auto& drops = world.mess().all();
     auto onFloor = [&](int px, int py) {
         Tile t = known({floorDiv(px, CELL_PX), floorDiv(py, CELL_PX)});
         return t == Tile::Floor || t == Tile::DoorOpen;
     };
-    for (MessKind kind : {MessKind::Piss, MessKind::Print, MessKind::Feces})
+    for (MessKind kind : {MessKind::Water, MessKind::Piss, MessKind::Print, MessKind::Feces})
         for (size_t i = 0; i < drops.size(); i++) {
             const Dropping& d = drops[i];
             if (d.kind != kind || d.cell.x < x0 - 1 || d.cell.x > x1 + 1 || d.cell.y < y0 - 1 || d.cell.y > y1 + 1)
@@ -390,7 +429,10 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
     if (reveal) {
         for (Vec2i k : world.keys()) drawKey(k.x * CELL_PX - left, k.y * CELL_PX - top - rise(k), true);
         for (Vec2i k : world.cakes()) drawCake(k.x * CELL_PX - left, k.y * CELL_PX - top - rise(k), true);
+        for (const auto& [c, p] : world.piles()) drawPile(c.x * CELL_PX - left, c.y * CELL_PX - top, p, true);
     } else {
+        for (const auto& [c, p] : viewer.memory.piles)
+            drawPile(c.x * CELL_PX - left, c.y * CELL_PX - top, p, viewer.sight.sees(c));
         for (Vec2i k : viewer.memory.keys)
             drawKey(k.x * CELL_PX - left, k.y * CELL_PX - top - rise(k), viewer.sight.sees(k));
         for (Vec2i k : viewer.memory.cakes)
@@ -429,10 +471,16 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
     auto drawHuman = [&](const Human& h, Color tint) {
         Vector2 feet = feetOf(h);
         sprites(h).draw({feet.x - left, feet.y - top}, poseOf(h), h.animTime, h.facingLeft, 1,
-                        h.hurtTime > 0.0f ? HURT_TINT : tint, h.cakes > 0);
-        // The cakes a body still holds lie in plain sight on it.
-        if (h.dead() && h.cakes > 0)
-            drawCake(h.cell.x * CELL_PX - left, h.cell.y * CELL_PX - top, reveal || viewer.sight.sees(h.cell));
+                        h.hurtTime > 0.0f ? HURT_TINT : tint, h.cakes > 0, h.shownBottle(), h.bottleInHand());
+        // The cakes a body still holds lie in plain sight on it, and its
+        // bottles on their side at its feet.
+        bool lit = reveal || viewer.sight.sees(h.cell);
+        if (h.dead() && h.cakes > 0) drawCake(h.cell.x * CELL_PX - left, h.cell.y * CELL_PX - top, lit);
+        for (size_t i = 0; h.dead() && i < h.bottles.size(); i++) {
+            Vector2 origin{float(h.cell.x * CELL_PX - left), float(h.cell.y * CELL_PX - top)};
+            drawBottle(origin, int(i) * (BOTTLE_LONG + 1) - 2, CELL_PX - 1 - int(i), BottleTurn::Ahead, false,
+                       h.bottles[i], 1, dim(WHITE, lit));
+        }
     };
     for (const Drawn& d : drawn) {
         if (!d.human) {

@@ -1,6 +1,7 @@
 #pragma once
 #include "core/rng.h"
 #include "human/body_blood.h"
+#include "human/bottle.h"
 #include "human/episode.h"
 #include "human/human_look.h"
 #include "human/life_log.h"
@@ -14,6 +15,7 @@
 #include <deque>
 #include <functional>
 #include <initializer_list>
+#include <map>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -86,17 +88,17 @@ class Human {
 public:
     /// Waking is the first thing every human does: lying where it came to,
     /// knowing nothing, until it sits up (Sitting) and looks round.
-    enum class State { Waking, Idle, Sitting, Rising, Walking, Greeting, Eating, Drinking, Relieving, Punching, Giving, Washing, Looting, Feeding, Sleeping, Dead };
+    enum class State { Waking, Idle, Sitting, Rising, Walking, Greeting, Eating, Drinking, Relieving, Punching, Giving, Washing, Looting, Feeding, Sleeping, Sipping, Filling, Pouring, Stashing, Dead };
     /// Why the human is walking: what it does on arrival.
-    enum class Goal { Explore, FetchKey, OpenDoor, PassDoor, Wander, Meet, Follow, Company, FetchCake, Drink, Relieve, Fight, Flee, Share, CheckDoor, Wash, Avoid, Escort, Escorted, Track, GiveWay, Loot, Feed, Sleep, Rob, Watch };
+    enum class Goal { Explore, FetchKey, OpenDoor, PassDoor, Wander, Meet, Follow, Company, FetchCake, Drink, Relieve, Fight, Flee, Share, CheckDoor, Wash, Avoid, Escort, Escorted, Track, GiveWay, Loot, Feed, Sleep, Rob, Watch, Rescue, Fill, Ask, Pick, Stash };
     /// What the human is doing, as far as hunger, thirst and tiredness go:
     /// each costs its own of all three.
-    enum class Action { Rest, Sit, Walk, Run, Greet, Eat, Drink, Relieve, Punch, Give, Wash, Loot, Feed, Sleep, Watch, Count };
+    enum class Action { Rest, Sit, Walk, Run, Greet, Eat, Drink, Relieve, Punch, Give, Wash, Loot, Feed, Sleep, Watch, Fill, Pour, Stash, Count };
     /// What a human may set out to do once nothing presses. How much it
     /// wants each, by its traits and hunger, is weighed in choose(), which
     /// tries them from the most wanted down; the table of wants is in
     /// human_tuning.h. In the order they tie in.
-    enum class Want { Food, Drink, Relieve, Sleep, Flesh, Hunt, Track, Escort, Wash, Meet, Rescue, UrgedDoor, Loot, Rob, Fetch, Follow, Company, Explore, OpenDoor, CheckDoor, Wander, Count };
+    enum class Want { Food, Drink, Relieve, Sleep, Flesh, Hunt, Track, Escort, Wash, Fill, Meet, Rescue, UrgedDoor, Loot, Rob, Fetch, Stash, Follow, Company, Explore, OpenDoor, CheckDoor, Wander, Count };
 
     /// An empty name gives the one grown from seed.
     Human(int id, const HumanLook& look, Vec2i cell, uint64_t seed, std::string chosenName = {});
@@ -163,7 +165,8 @@ public:
     /// Set off a slam room whose gate is at gate (human_rescue.cpp).
     void shutIn(Vec2i gate);
     /// Heard caller, shut in behind gate, cry for help through the walls:
-    /// with a key to spare, it may go and let them out.
+    /// with a key to spare, it may go and let them out; without one, it
+    /// remembers them, and may go and call back.
     void hearHelp(const Human& caller, Vec2i gate);
 
     const int id;
@@ -204,8 +207,8 @@ public:
     float animTime = 0.0f;
     /// 0 is full, 1 is starving.
     float hunger = 0.0f;
-    /// 0 is quenched, 1 is parched to death. Only water quenches it, and
-    /// water is never carried: the thirsty go to it.
+    /// 0 is quenched, 1 is parched to death. Only water quenches it: the
+    /// water where it lies, or what it carries in a bottle.
     float thirst = 0.0f;
     /// 0 rested, 1 drops asleep where it stands. Everything it does tires
     /// it, and only sleep rests it.
@@ -237,6 +240,22 @@ public:
     int keys = 0;
     /// Cakes carried, the one being eaten included.
     int cakes = 0;
+    /// The water bottles it carries, in a back pocket, in plain sight: one
+    /// to wake with, full; no more than BOTTLE_MAX, taking another as it
+    /// takes a cake, while there is room (human_bottle.cpp).
+    static constexpr int BOTTLE_MAX = 2;
+    std::vector<Bottle> bottles;
+    /// All the water in them, 0 to the number of bottles.
+    float bottleWater() const;
+    /// The bottle it shows: the one in its hand while drinking, filling,
+    /// pouring or handing water over, else the fullest; null if it has none.
+    const Bottle* shownBottle() const;
+    /// Whether that bottle is in its hand, and, Giving, whether it hands
+    /// water over rather than a cake.
+    bool bottleInHand() const;
+    bool givingWater() const { return state == State::Giving && water_.givingWater; }
+    /// Kneeling to put things down, not to pick them up.
+    bool putting() const { return state == State::Stashing && stash_.putting; }
     Memory memory;
     Sight sight;
     /// World seconds when it was made, and what it has been through since.
@@ -291,7 +310,7 @@ public:
     /// and what the teller thinks of them, a warning off a foe or a pointer
     /// to an ally, which the listener believes as far as it trusts them.
     struct Tell {
-        enum class Kind { Cake, Key, Trap, Route, People, Way, Water };
+        enum class Kind { Cake, Key, Trap, Route, People, Way, Water, ShutIn, Stash };
         Tell(Kind kind, Vec2i cell, TrapKind trap = TrapKind::Spikes) : kind(kind), cell(cell), trap(trap) {}
         Kind kind;
         Vec2i cell;
@@ -322,6 +341,14 @@ public:
         bool gain = false;
         /// Told for a cake, paid once the greeting ends.
         bool sold = false;
+        /// For ShutIn: who is shut in, at cell, which is their gate or else
+        /// where their voice came from.
+        int who = -1;
+        bool gate = false;
+        /// For Stash: whose it is (-1: someone's, it doesn't say whose). A
+        /// lie that isn't nothing is a real stash told to set a foe on its
+        /// owner.
+        int owner = -1;
     };
     /// Says the tell to other, in turn; it lands in their memory as it is
     /// said (see deliver), and is lost if it never gets said.
@@ -518,8 +545,46 @@ private:
         int rescuee = -1;
         Vec2i gate{};
         std::unordered_set<int> heardHelp;
+        /// Someone it heard calling for help, or was told of: where (the gate,
+        /// if it knows that tile, else where the voice came from), when it last
+        /// heard of them, who told it (-1 if it heard them itself), and whether
+        /// it has been and called back.
+        struct Cry {
+            Vec2i at{};
+            bool gate = false;
+            float when = 0.0f;
+            int teller = -1;
+            bool calledBack = false;
+        };
+        std::map<int, Cry> cries;
+        /// Those it knows got out: it let them out, saw their gate open or
+        /// met them since. Nobody tells it of them again.
+        std::unordered_set<int> out;
+        /// Keys held when it last weighed the cries it remembers; whether it
+        /// has said it is off for a key to let someone out.
+        int keysWeighed = 0;
+        bool keyNoted = false;
     };
     Rescue rescue_;
+    /// Neither the erratic nor the greedy care who is shut in: they won't go
+    /// and won't pass it on.
+    bool caresForShutIn() const;
+    /// Keeps a cry for help it heard or was told of, or freshens it.
+    void hearOf(int caller, Vec2i at, bool gate, int teller);
+    /// Weighs going to the one it remembers calling: to let them out with a
+    /// key, else to call back through the wall.
+    void weighRescue(int caller);
+    /// Forgets the cries that are over or stale, and weighs the rest again
+    /// when it has come by a key.
+    void recallCries();
+    /// A locked door it knows near where a voice came from, taken for the gate.
+    std::optional<Vec2i> gateNear(Vec2i voice) const;
+    /// How much more it wants to fetch a key, to let out someone it remembers.
+    float keyForCries() const;
+    /// Someone outside called back through the wall.
+    void heardBack(int from);
+    /// The way it knows toward someone shut in, to tell along with them.
+    std::vector<Vec2i> wayToShutIn(const World& world, const Tell& t) const;
     /// Shut in a slam room with no key, it cries for help now and then,
     /// loud enough to carry through walls (human_rescue.cpp).
     void callForHelp(World& world, float dt);
@@ -594,6 +659,9 @@ private:
         bool searched = false;
         int meals = 0;
         bool spoiled = false;
+        /// The bottles last seen on it, and the water in them.
+        int bottles = 0;
+        float water = 0.0f;
     };
     /// The dead: those it saw, the bodies it knows, and its own death.
     struct Deaths {
@@ -729,10 +797,16 @@ private:
     };
     /// Those seen with blood on them but no wound to show for it: until when
     /// it keeps away from them, and how much their blood, by freshness and
-    /// amount, weighed last time (0 to 1).
+    /// amount, weighed last time (0 to 1), and when it last saw them so.
     struct Suspect {
-        float until;
-        float weight;
+        float until = 0.0f;
+        float weight = 0.0f;
+        float seen = 0.0f;
+    };
+    /// A fresh body it found: where, and when (AI/blame_plan.md).
+    struct FreshBody {
+        Vec2i cell;
+        float at;
     };
     /// Blood: its own spilling, on the floor and on others (human_blood.cpp).
     struct Gore {
@@ -756,14 +830,38 @@ private:
         /// The blood each trail step led to, and when, so it doesn't pace back
         /// and forth at a trail's end.
         std::unordered_map<Vec2i, float, Vec2iHash> tracked;
+        /// Fresh bodies found lately, by whose, and whom it blames for
+        /// whose death.
+        std::unordered_map<int, FreshBody> fresh;
+        std::unordered_map<int, int> blamed;
+        /// Those it was told were killers, by someone it believed.
+        std::unordered_set<int> toldKiller;
+        /// Whom it last ran from for a killing; said once per fright.
+        int ranFrom = -1;
     };
     Gore gore_;
     /// What the blood on a cell in sight tells it: a trap beside it, or a
     /// pool. True if that is news.
     bool noticeBlood(const World& world, Vec2i c);
+    /// Whether it knows it spilled whom's blood: it hit, killed or ate from them.
+    bool spilled(int whom) const;
+    /// How much of a stain, 0 to 1, is its own blood or blood it spilled.
+    float knownBlood(const Stain& s) const;
     /// Whether someone in sight looks suspicious. True if newly so.
     bool judge(const Human& o);
     bool suspicious(int id) const;
+    /// Which way round it puts blood and a body together, by what it is
+    /// like: someone seen bloody, then a body found; a body found, then
+    /// someone bloody seen near it; the curious both.
+    bool tiesBloodToBody() const;
+    bool tiesBodyToBlood() const;
+    /// Finding body fresh, it may blame the one it saw bloody just before.
+    void foundFresh(const Human& body);
+    /// Takes who for whoever killed victim: a foe from now on, run from by the
+    /// timid, gone for by a brave friend of the dead, and shouted to all.
+    void blame(int who, int victim);
+    /// Heard from someone blaming who for a killing.
+    void heardBlame(const Human& from, int who);
     /// Extra cost of walking over a cell, for the blood it remembers there.
     int bloodCost(Vec2i c) const;
     /// Walks off from a fresh pool that scared it, or from a suspect too
@@ -818,6 +916,15 @@ private:
         /// Homes whose settler turned it away from their water, and when.
         std::vector<std::pair<Vec2i, float>> refused;
         float askedAt = -1e9f;
+        /// The bottle in hand (an index into bottles) while drinking from
+        /// it, filling or pouring it out; -1 none.
+        int inHand = -1;
+        /// Handing water over, not a cake.
+        bool givingWater = false;
+        /// When it last asked each human for a drink; and whom it has made up
+        /// its mind to ask, and is walking up to (-1 nobody).
+        std::unordered_map<int, float> askedDrink;
+        int askee = -1;
     };
     Water water_;
     /// Getting thirsty, and parched (with what that may teach it).
@@ -901,6 +1008,9 @@ private:
         std::unordered_map<int, float> trust;
         /// How many cakes each human carried when last in sight; none are left out.
         std::unordered_map<int, int> seenCakes;
+        /// How much water each human carried in bottles when last in sight;
+        /// none are left out.
+        std::unordered_map<int, float> seenWater;
         /// Who this human is walking up to give a cake.
         int sharee = -1;
         /// Whoever it owes a cake for a tip, paid as the greeting ends.
@@ -1045,6 +1155,148 @@ private:
     /// Water it can drink from beside the cell, as it remembers it.
     std::optional<Vec2i> waterBeside(Vec2i c) const;
     void startDrinking(Vec2i water);
+    /// Bottles (human_bottle.cpp). Whether it would drink what is in b, which
+    /// it sees through the glass: as for water, not too foul or red, unless
+    /// parched, erratic or craving.
+    bool wouldSip(const Bottle& b) const;
+    /// The bottle it would drink from, the fullest of those; -1 none.
+    int sippable() const;
+    /// Drinks from that bottle where it stands. False if there is none.
+    bool startSipping();
+    /// Another gulp from the bottle, or done.
+    void sip(World& world);
+    /// What a gulp of water this foul and red does to it, wherever it came
+    /// from; at is the water cell drunk from, if any, to remember it by.
+    void swallow(World& world, float foul, float red, std::optional<Vec2i> at, bool fromBottle);
+    /// Beside water it would drink (or a toilet, parched or erratic), with a
+    /// bottle to fill or to pour out first: kneels and does it. False if
+    /// there is nothing to do there.
+    bool startFilling(World& world, Vec2i water);
+    /// Fills a share more, or pours, or done.
+    void fill(World& world);
+    void pourOut(World& world);
+    /// A bottle it would pour out at this water rather than keep: one it
+    /// wouldn't drink, or clearly dirtier than this water looks. -1 none.
+    int toPour(const World& world, Vec2i water) const;
+    /// How foul and red the water at a cell truly is (a toilet's as foul as
+    /// it is dirty), for what goes into a bottle.
+    void waterHere(const World& world, Vec2i water, float& foul, float& red) const;
+    /// How much more than WANTING's base it wants to go and fill up: below
+    /// 0 when it doesn't.
+    float fillDrive() const;
+    /// Some bottle wants filling, or pouring out and filling, at this water.
+    bool wantsFill(const World& world, Vec2i water) const;
+    /// Low on water and not thirsty: walks to water to fill up.
+    bool seekFill(World& world);
+    /// Seen a human carrying water, and how much, as it last saw it.
+    const Human* nearestWaterHolder(const World& world) const;
+    /// Thirsty with nothing to drink: asks someone it sees with water, close
+    /// by, walking up to them first. False if it doesn't.
+    bool askForDrink(World& world);
+    /// Asked for a drink by asker, out loud: pours them some, sells it for
+    /// a cake, lies that it has none, or refuses.
+    void answerDrink(World& world, Human& asker);
+    /// Pours amount of its water into o's bottle, or hands o a spare
+    /// bottle when o has none; for a cake when sold. False if it can't.
+    bool giveWater(World& world, Human& o, bool sold);
+    /// Putting things down on the floor and picking them up (human_stash.cpp).
+    struct Stash {
+        /// The cell it kneels at, and whether it puts things down there
+        /// (else picks them up); what it puts down: cakes, and which of its
+        /// bottles.
+        Vec2i at;
+        bool putting = false;
+        int cakes = 0;
+        std::vector<size_t> bottles;
+        /// Putting them in a stash of its own, not just down.
+        bool stashing = false;
+        /// Its stashes, by cell, and the one it is walking to (or the spot
+        /// for a new one).
+        std::vector<Vec2i> mine;
+        Vec2i spot;
+        /// Each of its stashes as it last left it, and who it last saw
+        /// beside it; and those found out (robbed), to be moved.
+        std::unordered_map<Vec2i, Pile, Vec2iHash> left;
+        std::unordered_map<Vec2i, int, Vec2iHash> nearBy;
+        std::vector<Vec2i> exposed;
+        /// When it last resented each hoarder, and last asked each owner
+        /// about a stash of theirs.
+        std::unordered_map<int, float> resented, askedAbout;
+    };
+    Stash stash_;
+    /// How much it hoards, from greed, going hungry, being unsociable,
+    /// settling and gloom: from HOARD_FROM on, it keeps stashes.
+    float hoardDrive() const;
+    /// How many cakes it wants in a stash, by its drive; 0 for none.
+    int stashTarget() const;
+    bool isMine(Vec2i c) const;
+    /// Its stash nearest to it within STASH_RANGE, as it remembers it.
+    std::optional<Vec2i> nearStash() const;
+    /// Pockets full, knowing of more it can't carry (or holding a spare
+    /// bottle), with a stash not yet as big as it wants: a load to stash.
+    bool wantsToStash() const;
+    /// Takes the load to its stash, or picks a spot for a new one there;
+    /// with a stash found out and room in its pockets, goes to empty it.
+    bool seekStash(World& world);
+    /// Back at its stash, seen as it is now (null: gone): less on it than it
+    /// left, it blames whoever it last saw beside it, and means to move it.
+    void checkStash(Vec2i c, const Pile* now);
+    /// Someone else's stash, as far as it knows.
+    bool othersStash(Vec2i c) const {
+        auto it = memory.stashes.find(c);
+        return it != memory.stashes.end() && it->second != id;
+    }
+    bool exposed(Vec2i c) const;
+    /// Would take from someone else's stash at c, as it sees it: needing
+    /// what is in it, or greedy and bold enough, against guilt and how much
+    /// it likes the owner; a friend's or its group's only when starving or
+    /// parched, and not under the owner's eyes unless desperate.
+    bool wouldSteal(const World& world, Vec2i c, const Pile& p) const;
+    /// Took from owner's stash at c: what it, the owner and anyone else who
+    /// saw it make of that.
+    void stoleFrom(World& world, Vec2i c, int owner, const std::string& what);
+    /// Hungry or thirsty with nothing, seeing someone's big stash: thinks
+    /// less of them, the more the bigger it is and the needier it is.
+    void resent(Vec2i c, const Pile& p, int owner);
+    /// A stash it knows of to tell o: not its own, not a friend's, one o
+    /// doesn't know of; free to friends and its group, sold by the grasping
+    /// to those with a cake to spare, told to the hungry with nothing by the
+    /// rest. Nothing if none.
+    std::optional<Tell> stashNewsFor(const Human& o, bool& forPay) const;
+    /// To a hungry foe: the stash of someone else it dislikes, to set them
+    /// on each other; else a stash that isn't there, far off.
+    std::optional<Tell> stashLieFor(const World& world, const Human& foe) const;
+    /// Seen at its own stash, putting things in (stashing) or taking them
+    /// out: whoever sees it knows the stash for its.
+    void seenAtStash(World& world, Vec2i c, bool stashing);
+    /// Overheard telling of owner's stash: the owner thinks less of it and
+    /// means to move it.
+    void stashToldOf(World& world, const Tell& t, Human& to);
+    /// At a greeting, knowing a stash of o's and wanting it: asks o whether
+    /// it is theirs. o owns up, or denies it: believed, unless the asker saw
+    /// them make it.
+    void askAboutStash(Human& o);
+    /// At the stash or the spot: puts the load down.
+    bool stashHere();
+    /// What it would take from the pile on a cell, as it sees it: cakes
+    /// while it has room, a bottle with water it would drink (any bottle
+    /// when it has none) while it has room, or water poured into its own.
+    /// From its own stash only what it needs now: a cake when hungry with
+    /// none, water when thirsty with nothing to drink.
+    /// From someone else's stash, as far as it knows, only what it would
+    /// steal; from a stash of its own that was found out, all it can carry,
+    /// to move it.
+    bool wantsFromPile(const World& world, Vec2i c, const Pile& p) const;
+    /// A pile it wants something from, on its cell or beside it: kneels and
+    /// takes it. False if there is none.
+    bool takeFromPiles(World& world);
+    /// Kneels and puts down cakes and bottles (by index) where it stands.
+    void startPutting(int cakes, std::vector<size_t> bottles);
+    /// Done kneeling: puts down or picks up.
+    void finishStash(World& world);
+    /// The way to the nearest pile it remembers with what it wants: cakes
+    /// (food), water (water); its own stashes only as wantsFromPile allows.
+    std::optional<std::vector<Vec2i>> pilePath(const World& world, bool food, bool water) const;
     /// Sleep, robbing sleepers and keeping watch (human_sleep.cpp).
     struct Sleep {
         /// The sleeper it is robbing, or going to; -1 none.

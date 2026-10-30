@@ -79,11 +79,8 @@ constexpr int STATUES_PER_SLOT_MAX = 3;
 /// The spawn room gets a statue this often, at least this far from its middle.
 constexpr float SPAWN_STATUE_CHANCE = 0.6f;
 constexpr int SPAWN_STATUE_GAP = 14;
-/// Cells per side of a basin. The spawn room's stands this far from the
-/// human waking in its middle, near enough to be seen through the daze of
-/// waking. A plaza with no fountain gets this many.
+/// Cells per side of a basin. A plaza with no fountain gets this many.
 constexpr int BASIN_SIZE = 2;
-constexpr int SPAWN_BASIN_GAP_MIN = 4, SPAWN_BASIN_GAP_MAX = 6;
 constexpr int PLAZA_BASINS_MIN = 1, PLAZA_BASINS_MAX = 2;
 /// A statue keeps at least this many cells from any door, and from the
 /// cell it is told to keep clear.
@@ -170,12 +167,6 @@ Human& World::makeSpawn(const HumanLook& look, uint64_t seed, const std::string&
                      rng_.range(SPAWN_STATUE_GAP, c.h - SPAWN_STATUE_GAP)};
             if (cheb(at, centre) >= SPAWN_STATUE_GAP && placeStatue(c, at, centre)) break;
         }
-    // Something to drink before the first door, a few steps from where it wakes.
-    for (int t = 0; t < 40; t++) {
-        Vec2i at{rng_.range(-SPAWN_BASIN_GAP_MAX, SPAWN_BASIN_GAP_MAX),
-                 rng_.range(-SPAWN_BASIN_GAP_MAX, SPAWN_BASIN_GAP_MAX)};
-        if (cheb(at, {}) >= SPAWN_BASIN_GAP_MIN && placeBasin(c, c.origin() + centre + at)) break;
-    }
     std::vector<Vec2i> spots = deepSpots(c, centre);
     TableMaterial house = randomMaterial(rng_);
     size_t next = 0;
@@ -694,6 +685,37 @@ std::vector<Vec2i> World::deepSpots(const Chunk& c, Vec2i from) {
         }
     rng_.shuffle(spots);
     return spots;
+}
+
+void World::putDown(Vec2i cell, int cakes, const std::vector<Bottle>& bottles) {
+    if (cakes <= 0 && bottles.empty()) return;
+    Pile& p = piles_[cell];
+    p.cakes += std::max(0, cakes);
+    p.bottles.insert(p.bottles.end(), bottles.begin(), bottles.end());
+}
+
+int World::takePileCakes(Vec2i cell, int n) {
+    auto it = piles_.find(cell);
+    if (it == piles_.end()) return 0;
+    int got = std::clamp(n, 0, it->second.cakes);
+    it->second.cakes -= got;
+    if (it->second.empty()) piles_.erase(it);
+    return got;
+}
+
+Bottle World::takePileBottle(Vec2i cell, size_t i) {
+    auto it = piles_.find(cell);
+    if (it == piles_.end() || i >= it->second.bottles.size()) return {};
+    Bottle b = it->second.bottles[i];
+    it->second.bottles.erase(it->second.bottles.begin() + long(i));
+    if (it->second.empty()) piles_.erase(it);
+    return b;
+}
+
+float World::pourFromPile(Vec2i cell, size_t i, Bottle& into, float amount) {
+    auto it = piles_.find(cell);
+    if (it == piles_.end() || i >= it->second.bottles.size()) return 0.0f;
+    return it->second.bottles[i].pourInto(into, amount);
 }
 
 bool World::unlock(Vec2i cell) {

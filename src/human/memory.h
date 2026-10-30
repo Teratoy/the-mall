@@ -1,6 +1,7 @@
 #pragma once
 #include "world/blood.h"
 #include "world/chunk.h"
+#include "world/pile.h"
 #include "world/trap.h"
 #include <string>
 #include <unordered_map>
@@ -50,6 +51,15 @@ public:
     std::unordered_set<int> mess;
     std::unordered_set<Vec2i, Vec2iHash> keys;
     std::unordered_set<Vec2i, Vec2iHash> cakes;
+    /// What it saw lying put down on the floor, as it was then; and, of
+    /// those, the ones it knows are someone's stash, and whose: seen being
+    /// stashed, or told of.
+    std::unordered_map<Vec2i, Pile, Vec2iHash> piles;
+    std::unordered_map<Vec2i, int, Vec2iHash> stashes;
+    /// Stashes it was told of and hasn't seen yet, and who told it; and
+    /// those it saw being made, which nobody can talk it out of.
+    std::unordered_map<Vec2i, int, Vec2iHash> stashTips;
+    std::unordered_set<Vec2i, Vec2iHash> stashSeenMade;
     /// Traps by the cell that sets them off, learnt by seeing one go off,
     /// spotting it nearby, or being told of it at a greeting (Human::tell):
     /// what a human knows of traps is worth something to others, and the

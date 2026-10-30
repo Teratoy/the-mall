@@ -4,9 +4,11 @@
 #include <cstdlib>
 
 // Thirst: grows with everything a human does, like hunger, but only water
-// quenches it, and water stays where it is. A thirsty human goes to the
-// nearest water it knows, pool, canal or basin, kneels at its edge and
-// drinks a gulp at a time until quenched or something else comes first.
+// quenches it, and water stays where it is, but for what a bottle holds
+// (human_bottle.cpp). A thirsty human goes to the nearest water it knows,
+// pool, canal or basin, kneels at its edge and drinks a gulp at a time
+// until quenched or something else comes first; with water far off, it
+// drinks from its bottle instead.
 // Water fouled with feces, piss or blood hurts whoever drinks it, and very foul
 // water makes them sick; they go to cleaner water when they can see the
 // difference, unless parched. Red water, and water by a body, put them off
@@ -23,6 +25,12 @@ namespace {
 constexpr float DRINK_GULP_TIME = 2.0f;
 constexpr float DRINK_GULP = 0.35f;
 constexpr float QUENCHED = 0.05f;
+/// Water it would drink this many steps off or nearer is walked to, the
+/// bottle saved; farther, it drinks from the bottle where it stands.
+constexpr size_t BOTTLE_WALK = 12;
+/// A bottle this much fouler or redder than the water it kneels at is
+/// poured out, to fill it with the cleaner water.
+constexpr float POUR_WORSE = 0.1f;
 /// Each gulp of foul water costs this much health per foulness, never
 /// leaving less than FOUL_SURVIVE; from FOUL_SICK on it makes it sick for
 /// FOUL_SICK_TIME (no healing).
@@ -169,12 +177,36 @@ bool Human::seekWater(World& world) {
         return w && wouldDrink(world, c, *w);
     }, true,
                     [&](Vec2i c) { return 1 + int(foulness(c) * FOUL_COST); });
-    if (!p) return seekToilet(world);
-    if (p->empty()) {
+    if (p && p->empty()) {
         startDrinking(*waterBeside(cell));
         return true;
     }
-    startWalking(Goal::Drink, *p);
+    if (p && p->size() <= BOTTLE_WALK) {
+        startWalking(Goal::Drink, *p);
+        return true;
+    }
+    if (startSipping()) return true;
+    // Water in a bottle lying put down, nearer than any to kneel at.
+    if (auto q = pilePath(world, false, true); q && (!p || q->size() < p->size())) {
+        if (q->empty()) return takeFromPiles(world);
+        startWalking(Goal::Pick, *q);
+        return true;
+    }
+    if (p) {
+        startWalking(Goal::Drink, *p);
+        return true;
+    }
+    if (seekToilet(world)) return true;
+    // Nothing to drink anywhere: the nearest it saw carrying water, as the
+    // hungry go for cakes (human_bottle.cpp).
+    if (askForDrink(world)) return true;
+    if (bottles.size() >= size_t(BOTTLE_MAX)) return false;
+    const Human* h = nearestWaterHolder(world);
+    if (!h) return false;
+    fight_.foe = h->id;
+    fight_.grudge = 0.0f;
+    if (!startFight(world)) return false;
+    note("WENT FOR @'S WATER", h->id);
     return true;
 }
 
@@ -218,31 +250,75 @@ void Human::drink(World& world) {
         timer = DRINK_GULP_TIME;
         return;
     }
-    if (world.blood().tint(water_.drinkAt) >= RED_WATER) {
-        bool glad = mind_.appetite >= BLOOD_CRAVING;
-        note(glad ? "DRANK BLOODY WATER, GLADLY" : "DRANK BLOODY WATER");
-        if (!glad) scare(RED_DREAD);
-        sayLater(talk::Moment::BloodyWater);
-    }
-    if (float foul = world.foul(water_.drinkAt); foul > 0.0f) {
-        if (foul >= FOUL_NOTED) {
-            note("DRANK FOUL WATER");
-            sayLater(talk::Moment::FoulWater);
-            // Strikes it more the fouler it is.
-            rememberAt(water_.drinkAt, Episode::What::FoulWater, std::min(1.0f, foul));
-        }
-        if (health > FOUL_SURVIVE) health = std::max(FOUL_SURVIVE, health - FOUL_DAMAGE * foul);
-        if (foul >= FOUL_SICK && mind_.sick <= 0.0f) {
-            mind_.sick = FOUL_SICK_TIME;
-            note("THE FOUL WATER MADE ME SICK");
-        }
-    }
+    swallow(world, world.foul(water_.drinkAt), world.blood().tint(water_.drinkAt), water_.drinkAt, false);
     if (observe(world)) rethink_ = true;
     if (rethink_ || thirst <= QUENCHED || fight_.fear > 0.0f || fight_.foe >= 0) {
         if (thirst <= QUENCHED || !thirsty()) payForWater(world);
         return choose(world);
     }
     timer = DRINK_GULP_TIME;
+}
+
+// The same for a gulp from a pool or from a bottle filled at one: red
+// water frightens all but those craving flesh, foul water hurts, and very
+// foul water sickens.
+void Human::swallow(World&, float foul, float red, std::optional<Vec2i> at, bool fromBottle) {
+    if (red >= RED_WATER) {
+        bool glad = mind_.appetite >= BLOOD_CRAVING;
+        if (fromBottle)
+            note(glad ? "DRANK BLOODY WATER FROM MY BOTTLE, GLADLY" : "DRANK BLOODY WATER FROM MY BOTTLE");
+        else
+            note(glad ? "DRANK BLOODY WATER, GLADLY" : "DRANK BLOODY WATER");
+        if (!glad) scare(RED_DREAD);
+        sayLater(talk::Moment::BloodyWater);
+    }
+    if (foul <= 0.0f) return;
+    if (foul >= FOUL_NOTED) {
+        note(fromBottle ? "DRANK FOUL WATER FROM MY BOTTLE" : "DRANK FOUL WATER");
+        sayLater(talk::Moment::FoulWater);
+        // Strikes it more the fouler it is.
+        if (at)
+            rememberAt(*at, Episode::What::FoulWater, std::min(1.0f, foul));
+        else
+            remember(Episode::What::FoulWater, std::min(1.0f, foul));
+    }
+    if (health > FOUL_SURVIVE) health = std::max(FOUL_SURVIVE, health - FOUL_DAMAGE * foul);
+    if (foul >= FOUL_SICK && mind_.sick <= 0.0f) {
+        mind_.sick = FOUL_SICK_TIME;
+        note("THE FOUL WATER MADE ME SICK");
+    }
+}
+
+// What it sees through the glass, it minds as it would at the water.
+bool Human::wouldSip(const Bottle& b) const {
+    if (b.empty()) return false;
+    if (parched() || isErratic() || mind_.appetite >= BLOOD_CRAVING) return true;
+    return b.foul < FOUL_REFUSE && b.red < RED_WATER;
+}
+
+void Human::waterHere(const World& world, Vec2i water, float& foul, float& red) const {
+    const Toilet* t = world.toilet(water);
+    foul = t ? t->dirt * TOILET_FOUL : world.foul(water);
+    red = t ? 0.0f : world.blood().tint(water);
+}
+
+// Only what it minds: the parched, the erratic and those craving flesh
+// keep whatever they have. What it would fill with is the water as it truly
+// is there, which it will see in the glass; only what is clearly worse than
+// that is poured.
+int Human::toPour(const World& world, Vec2i water) const {
+    if (parched() || isErratic() || mind_.appetite >= BLOOD_CRAVING) return -1;
+    float foul, red;
+    waterHere(world, water, foul, red);
+    int worst = -1;
+    float most = 0.0f;
+    for (size_t i = 0; i < bottles.size(); i++) {
+        const Bottle& b = bottles[i];
+        if (b.empty()) continue;
+        float worse = std::max(b.foul - foul, b.red - red);
+        if (worse >= POUR_WORSE && worse > most) worst = int(i), most = worse;
+    }
+    return worst;
 }
 
 // Only those who see it, and not the erratic: the thirsty, and anyone who
@@ -408,8 +484,9 @@ bool Human::wouldLeadToDrink(const Human& o) const {
     if (!isFriend(o.id) && !inGroupWith(o)) return false;
     if (auto it = escorting_.ledToDrink.find(o.id); it != escorting_.ledToDrink.end() && clock_ - it->second < LEAD_AGAIN) return false;
     if (isFoe(o.id) || o.isFoe(id) || o.escorting_.by >= 0 || o.escorting_.escortee >= 0 || o.fight_.foe >= 0 || o.fight_.fear > 0.0f) return false;
-    // Parched, or thirsty and not already on the way to water.
-    bool needs = o.parched() || (o.thirsty() && o.goal != Goal::Drink);
+    // Parched, or thirsty and not already on the way to water, with nothing
+    // to drink in a bottle.
+    bool needs = (o.parched() || (o.thirsty() && o.goal != Goal::Drink)) && o.sippable() < 0;
     if (!needs || o.state == State::Drinking) return false;
     return sight.sees(o.cell) && cheb(cell, o.cell) <= LEAD_REACH;
 }

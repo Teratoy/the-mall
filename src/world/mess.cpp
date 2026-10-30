@@ -23,6 +23,10 @@ constexpr float FOUL_SEEP = 0.003f;
 constexpr float FOUL_SEEP_STEP = 1.0f;
 /// A footprint, as feces go, a little of it.
 constexpr float PRINT_DISGUST = 0.15f;
+/// Poured water dries right through this fast, and at its foulest
+/// disgusts this much while wet.
+constexpr float WATER_DRY_TIME = 120.0f;
+constexpr float WATER_DISGUST = 0.3f;
 
 } // namespace
 
@@ -31,13 +35,19 @@ void Mess::drop(MessKind kind, Vec2i cell, float x, float y, float size, float b
     all_.push_back({kind, cell, x, y, size, born, who, seed});
 }
 
+void Mess::pour(Vec2i cell, float x, float y, float size, float born, int who, uint32_t seed, float foul, float red) {
+    cells_[cell].push_back(int(all_.size()));
+    all_.push_back({MessKind::Water, cell, x, y, size, born, who, seed, foul, red});
+}
+
 float Mess::freshness(const Dropping& d, float now) {
-    float dry = d.kind == MessKind::Piss ? PISS_DRY_TIME : FECES_DRY_TIME;
+    float dry = d.kind == MessKind::Piss ? PISS_DRY_TIME : d.kind == MessKind::Water ? WATER_DRY_TIME : FECES_DRY_TIME;
     return std::clamp(1.0f - (now - d.born) / dry, 0.0f, 1.0f);
 }
 
 float Mess::disgust(const Dropping& d, float now) {
     float f = freshness(d, now);
+    if (d.kind == MessKind::Water) return d.size * WATER_DISGUST * std::min(1.0f, d.foul) * f;
     bool piss = d.kind == MessKind::Piss;
     float dry = piss ? PISS_DRY_DISGUST : FECES_DRY_DISGUST;
     float most = piss ? PISS_DISGUST : d.kind == MessKind::Feces ? FECES_DISGUST : PRINT_DISGUST;

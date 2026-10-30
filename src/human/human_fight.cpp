@@ -22,13 +22,20 @@ bool Human::seekFood(World& world) {
     });
     // A body with cakes on it does as well as cakes lying about.
     auto q = lootPath(world, true);
-    size_t nearest = std::min(p ? p->size() : SIZE_MAX, q ? q->size() : SIZE_MAX);
+    // And cakes put down on the floor.
+    auto r = cakes < carryMax() ? pilePath(world, true, false) : std::nullopt;
+    size_t nearest = std::min({p ? p->size() : SIZE_MAX, q ? q->size() : SIZE_MAX, r ? r->size() : SIZE_MAX});
     const Human* h = nearestHolder(world);
     if (h && (nearest == SIZE_MAX || cheb(cell, social_.lastSeen[h->id]) < int(nearest))) {
         // Not angry at them, only after their cakes.
         fight_.foe = h->id;
         fight_.grudge = 0.0f;
         if (startFight(world)) return true;
+    }
+    if (r && r->size() == nearest) {
+        if (r->empty()) return takeFromPiles(world);
+        startWalking(Goal::Pick, *r);
+        return true;
     }
     if (q && (!p || q->size() < p->size())) return startLoot(world, true);
     if (!p) return false;
@@ -129,6 +136,7 @@ bool Human::startShare(World& world) {
 // Handed over under threat, it ends their fight for it, and earns no thanks.
 void Human::give(Human& other, Gift why) {
     state = State::Giving;
+    water_.givingWater = false;
     moving = false;
     path_.clear();
     if (other.cell.x != cell.x) facingLeft = other.cell.x < cell.x;
@@ -176,7 +184,11 @@ bool Human::startFight(World& world) {
     Human& f = world.human(fight_.foe);
     bool seen = sight.sees(f.cell);
     bool running = seen && f.state == State::Walking && f.goal == Goal::Flee;
-    bool forCakes = hungry() && social_.seenCakes.count(fight_.foe) > 0;
+    bool forFood = hungry() && social_.seenCakes.count(fight_.foe) > 0;
+    // Thirsty with nothing to drink, their water is worth a fight too.
+    bool forWater = thirsty() && sippable() < 0 && bottles.size() < size_t(BOTTLE_MAX) &&
+                    social_.seenWater.count(fight_.foe) > 0;
+    bool forCakes = forFood || forWater;
     // Hunted, they are chased however they run, as long as they are in
     // sight or were lately.
     bool hunt = hunting() && social_.lastSeen.count(fight_.foe);
@@ -186,7 +198,7 @@ bool Human::startFight(World& world) {
     }
     Vec2i at = seen ? f.cell : social_.lastSeen[fight_.foe];
     // Only after their cakes: a word first may be enough.
-    if (!hunt && seen && fight_.grudge <= 0.0f && cheb(cell, at) <= THREAT_RANGE && threaten(f)) return true;
+    if (!hunt && forFood && seen && fight_.grudge <= 0.0f && cheb(cell, at) <= THREAT_RANGE && threaten(f)) return true;
     if (cheb(cell, at) <= 1) {
         if (seen) {
             startPunch(f);
@@ -194,6 +206,7 @@ bool Human::startFight(World& world) {
         }
         // Got where they were; they're gone.
         social_.seenCakes.erase(fight_.foe);
+        social_.seenWater.erase(fight_.foe);
         if (hunting()) mind_.prey = -1;
         fight_.foe = -1;
         return false;
@@ -217,7 +230,8 @@ void Human::startPunch(Human& foe) {
 }
 
 // Lands only if the foe is still within reach, and snatches one of their
-// cakes when there is room for it.
+// cakes when there is room for it; thirsty with nothing to drink, their
+// fullest bottle instead, when it has room for one.
 void Human::landPunch(World& world) {
     punchLanded = true;
     timer = PUNCH_FOLLOW;
@@ -227,13 +241,23 @@ void Human::landPunch(World& world) {
     Vec2i at = f.stepProgress() < 0.5f ? f.prev : f.cell;
     if (at.x != cell.x) facingLeft = at.x < cell.x;
     if (f.dead() || cheb(cell, at) > PUNCH_REACH) return;
-    bool took = f.cakes > 0 && cakes < carryMax();
+    bool forWater = thirsty() && sippable() < 0 && bottles.size() < size_t(BOTTLE_MAX) && f.bottleWater() > 0.0f;
+    bool took = f.cakes > 0 && cakes < carryMax() && (!forWater || hungry());
     if (took) {
         f.cakes--;
         cakes++;
     }
-    note(took ? "HIT @ AND TOOK A CAKE" : "HIT @", f.id);
-    f.note(took ? "@ HIT ME AND TOOK A CAKE" : "@ HIT ME", id);
+    bool tookBottle = !took && forWater;
+    if (tookBottle) {
+        auto it = std::max_element(f.bottles.begin(), f.bottles.end(),
+                                   [](const Bottle& a, const Bottle& b) { return a.water < b.water; });
+        bottles.push_back(*it);
+        f.bottles.erase(it);
+        rethink_ = true;
+        f.sayLater(talk::Moment::BottleTaken, id);
+    }
+    note(took ? "HIT @ AND TOOK A CAKE" : tookBottle ? "HIT @ AND TOOK THEIR BOTTLE" : "HIT @", f.id);
+    f.note(took ? "@ HIT ME AND TOOK A CAKE" : tookBottle ? "@ HIT ME AND TOOK MY BOTTLE" : "@ HIT ME", id);
     remember(Episode::What::Fight, EPISODE_HIT, id, f.id);
     f.remember(Episode::What::Fight, took ? EPISODE_ROBBED : EPISODE_GOT_HIT, id, f.id);
     sayLater(talk::Moment::Hit, f.id);
@@ -422,7 +446,10 @@ bool Human::worthLooting(int id, bool cakesOnly) const {
     auto it = deaths_.bodies.find(id);
     if (it == deaths_.bodies.end()) return false;
     bool forCakes = it->second.cakes > 0 && cakes < carryMax();
-    return forCakes || (!cakesOnly && !it->second.searched);
+    // A bottle with water in it, or any bottle at all to one with none.
+    const Body& b = it->second;
+    bool forBottle = b.bottles > 0 && bottles.size() < size_t(BOTTLE_MAX) && (b.water > 0.0f || bottles.empty());
+    return forCakes || (!cakesOnly && (!b.searched || forBottle));
 }
 
 // Bodies near someone this human ran from are left alone while it is
@@ -468,7 +495,8 @@ bool Human::startLoot(World& world, bool cakesOnly) {
     return true;
 }
 
-// Everything it holds of keys, and the cakes there is room for.
+// Everything it holds of keys, and the cakes and bottles there is room for,
+// the fullest bottles first.
 void Human::loot(World& world) {
     if (sleep_.robbee >= 0) return rob(world);
     Human& b = world.human(deaths_.corpse);
@@ -478,6 +506,13 @@ void Human::loot(World& world) {
     b.cakes -= c;
     keys += k;
     cakes += c;
+    std::stable_sort(b.bottles.begin(), b.bottles.end(), [](const Bottle& x, const Bottle& y) { return x.water > y.water; });
+    int n = 0;
+    while (!b.bottles.empty() && bottles.size() < size_t(BOTTLE_MAX)) {
+        bottles.push_back(b.bottles.front());
+        b.bottles.erase(b.bottles.begin());
+        n++;
+    }
     if (k > 0 && social_.leader >= 0) {
         sayLater(talk::Moment::PartOwnKey, social_.leader);
         social_.leader = -1;
@@ -485,14 +520,19 @@ void Human::loot(World& world) {
     auto count = [](int n, const char* one, const char* many) {
         return n == 1 ? std::string(one) : std::to_string(n) + many;
     };
-    std::string took = k > 0 && c > 0 ? count(k, "A KEY", " KEYS") + " AND " + count(c, "A CAKE", " CAKES")
-                       : k > 0        ? count(k, "A KEY", " KEYS")
-                                      : count(c, "A CAKE", " CAKES");
-    note(k + c > 0 ? "TOOK " + took + " OFF @'S BODY" : "WENT THROUGH @'S BODY, FOUND NOTHING", b.id);
+    std::vector<std::string> parts;
+    if (k > 0) parts.push_back(count(k, "A KEY", " KEYS"));
+    if (c > 0) parts.push_back(count(c, "A CAKE", " CAKES"));
+    if (n > 0) parts.push_back(count(n, "A BOTTLE", " BOTTLES"));
+    std::string took;
+    for (size_t i = 0; i < parts.size(); i++)
+        took += (i == 0 ? "" : i + 1 == parts.size() ? " AND " : ", ") + parts[i];
+    note(k + c + n > 0 ? "TOOK " + took + " OFF @'S BODY" : "WENT THROUGH @'S BODY, FOUND NOTHING", b.id);
     remember(Episode::What::Loot, EPISODE_LOOTED, id, b.id);
     // Gone through in plain sight: picked over, and a poor thing to do.
     for (const auto& o : world.humans())
-        if (!o->dead() && (o.get() == this || o->sight.sees(b.cell))) o->deaths_.bodies[b.id] = {b.cell, b.cakes, true, b.meals(), b.spoiled()};
+        if (!o->dead() && (o.get() == this || o->sight.sees(b.cell)))
+            o->deaths_.bodies[b.id] = {b.cell, b.cakes, true, b.meals(), b.spoiled(), int(b.bottles.size()), b.bottleWater()};
     witness(world, *this, b, TRUST_SAW_LOOT, 0.0f, Episode::What::Loot, EPISODE_SAW_LOOT);
     // Said aloud, and the nearest who saw it may say what they think of it.
     sayLater(talk::Moment::Loot, -1, b.id);
@@ -503,5 +543,5 @@ void Human::loot(World& world) {
             critic = o.get();
     if (critic) critic->sayLater(talk::Moment::Shame, id, b.id);
     startIdle(LOOK_TIME_MIN, LOOK_TIME_MAX);
-    if (c > 0 && hungry()) timer = 0.0f;
+    if ((c > 0 && hungry()) || (n > 0 && thirsty())) timer = 0.0f;
 }

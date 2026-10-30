@@ -12,5 +12,7 @@ unsigned char bloodAlpha(int amount);
 /// darker as it dries, thin smears lighter than pools. brightness scales
 /// it, for remembered cells.
 void drawStain(int x, int y, const Stain& stain, float brightness);
-/// Clouds a water cell with its top-left at (x, y) red, tint from 0 to 1.
+/// Clouds a water cell with its top-left at (x, y) red, tint from 0 to 1;
+/// and the red laid over water that tinted, alpha and all.
 void drawWaterTint(int x, int y, float tint);
+Color waterBloodCloud(float tint);

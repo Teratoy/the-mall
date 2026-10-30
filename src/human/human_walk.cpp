@@ -135,11 +135,16 @@ void Human::move(World& world, Vec2i next) {
     if (goal == Goal::CheckDoor && !lockedDoorBeside(target_)) rethink_ = true;
     if (goal == Goal::Explore && !isFrontier(target_) && !openDoorBeside(target_)) rethink_ = true;
     if (goal == Goal::FetchCake && !inReach(target_, memory.cakes)) rethink_ = true;
+    // Making for a voice with a key, a gate seen near it is worth going to.
+    if (goal == Goal::Rescue && keys > 0 && rescue_.rescuee >= 0) {
+        auto it = rescue_.cries.find(rescue_.rescuee);
+        if (it != rescue_.cries.end() && !it->second.gate && gateNear(it->second.at)) rethink_ = true;
+    }
     if (goal == Goal::Loot && !worthLooting(deaths_.corpse, traits.brave < TIMID)) rethink_ = true;
     if (goal == Goal::Feed && !wouldEat(mind_.meal)) rethink_ = true;
     // They move too; keep the plan fresh.
     if (goal == Goal::Meet || goal == Goal::Follow || goal == Goal::Company || goal == Goal::Fight ||
-        goal == Goal::Share)
+        goal == Goal::Share || goal == Goal::Ask)
         rethink_ = true;
 }
 
@@ -183,6 +188,15 @@ void Human::arrive(World& world) {
     case Goal::Drink:
         if (seekWater(world)) return;
         return choose(world);
+    case Goal::Fill:
+        if (auto w = waterBeside(cell); w && startFilling(world, *w)) return;
+        return choose(world);
+    case Goal::Ask:
+    case Goal::Pick:
+        return choose(world);
+    case Goal::Stash:
+        if (stashHere()) return;
+        return choose(world);
     case Goal::Relieve:
         if (seekRelief(world)) return;
         return choose(world);
@@ -218,6 +232,9 @@ void Human::arrive(World& world) {
         return choose(world);
     case Goal::Feed:
         if (startFeed(world, mind_.meal)) return;
+        return choose(world);
+    case Goal::Rescue:
+        if (rescue_.rescuee >= 0 && startRescue(world)) return;
         return choose(world);
     default:
         break;

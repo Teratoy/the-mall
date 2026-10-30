@@ -15,12 +15,12 @@ void Human::note(std::string what, int who, int whom) { log.add(born + clock_, s
 bool Human::sayLater(talk::Moment m, int to, int about) { return sayLater(Saying{m, to, about}); }
 
 bool Human::sayLater(Saying s) {
-    // Blows and cries only ever fill a silence, but for a trap's cry, which
-    // cuts in ahead of whatever was still to be said. Word to pass on (a
+    // Blows and cries only ever fill a silence, but for a trap's cry and the
+    // shout of who killed, which cut in ahead of whatever was still to be said. Word to pass on (a
     // tip, a lie, a name) goes ahead of small talk still to be said, after
     // the hello, so it is said while the greeting lasts.
     if (s.moment == talk::Moment::Darted || s.moment == talk::Moment::Spiked ||
-        s.moment == talk::Moment::Slammed) {
+        s.moment == talk::Moment::Slammed || s.moment == talk::Moment::Blame) {
         voice_.sayings.insert(voice_.sayings.begin(), std::move(s));
         return true;
     }
@@ -60,7 +60,9 @@ void Human::speak(World& world, float dt) {
         bool cry = talk::isCry(s.moment);
         const Human* to = s.to >= 0 ? &world.human(s.to) : nullptr;
         bool gone = to && (to->dead() || cheb(cell, to->cell) > HEAR_RADIUS || !sight.sees(to->cell));
-        float patience = cry ? CRY_PATIENCE : s.tell || s.intro ? WORD_PATIENCE : SPEECH_PATIENCE;
+        // Asking for a drink waits as long as word does: it is waited on.
+        bool word = s.tell || s.intro || s.moment == talk::Moment::AskDrink;
+        float patience = cry ? CRY_PATIENCE : word ? WORD_PATIENCE : SPEECH_PATIENCE;
         if (gone || s.waited > patience) {
             if (s.awaited) awaiting_ = false;
             voice_.sayings.erase(voice_.sayings.begin());
@@ -129,6 +131,12 @@ void Human::say(World& world, const Saying& s) {
         for (const auto& h : world.humans())
             if (h.get() != this && !h->dead() && cheb(h->cell, cell) <= HEAR_RADIUS && h->sight.sees(cell))
                 h->hear(world, *this, *said, to, about);
+    // Told who killed, those in earshot may believe it.
+    if (said && about && s.moment == talk::Moment::Blame)
+        for (const auto& h : world.humans())
+            if (h.get() != this && !h->dead() && h->state != State::Sleeping && cheb(h->cell, cell) <= HEAR_RADIUS &&
+                h->sight.sees(cell))
+                h->heardBlame(*this, about->id);
     }
     // Turned away out loud, it may answer back.
     if (said && to && s.moment == talk::Moment::Refuse) to->sayLater(talk::Moment::Snubbed, id);
@@ -136,9 +144,13 @@ void Human::say(World& world, const Saying& s) {
     if (said && to && s.moment == talk::Moment::Join) to->sayLater(talk::Moment::JoinReply, id);
     // Asked the way out, the other answers.
     if (said && to && s.moment == talk::Moment::AskWay) to->answerWay(*this);
+    // Asked for a drink, worded or not, the other answers (human_bottle.cpp).
+    if (to && s.moment == talk::Moment::AskDrink) to->answerDrink(world, *this);
     // What it tells lands now, worded or not.
     if (to && s.intro) giveName(*to);
     if (to && s.tell) deliver(*to, *s.tell);
+    // Its owner, hearing a stash told of, means to move it (human_stash.cpp).
+    if (to && s.tell && s.tell->kind == Tell::Kind::Stash && s.tell->owner >= 0) stashToldOf(world, *s.tell, *to);
 }
 
 void Human::hear(World&, Human& s, const talk::Said& said, Human* to, const Human* about) {

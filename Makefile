@@ -4,8 +4,9 @@
 
 CXX      := g++
 CXXFLAGS := -std=c++20 -O2 -g -Wall -Wextra -MMD -MP
-CPPFLAGS := -Isrc $(shell pkg-config --cflags raylib)
-LDLIBS   := $(shell pkg-config --libs raylib) -lm
+# Quiet when missing: make apk runs on the host, which has no raylib-devel.
+CPPFLAGS := -Isrc $(shell pkg-config --cflags raylib 2>/dev/null)
+LDLIBS   := $(shell pkg-config --libs raylib 2>/dev/null) -lm
 
 SRC := $(shell find src -name '*.cpp')
 OBJ := $(SRC:src/%.cpp=build/%.o)
@@ -23,8 +24,12 @@ SCENARIOS := build/scenarios
 SHOT := build/shot
 # Grows chunk interiors on every footprint and checks they keep to it.
 GENPROBE := build/genprobe
+# A human drawn at twice the detail, beside the one the game draws now.
+HIDEF := build/hidef
+# Human frames with bottles, scaled up, to check the bottle art by eye.
+BOTTLESHEET := build/bottle_sheet
 
-.PHONY: all run clean stuck check golden coverage shot scenarios genprobe
+.PHONY: all run clean stuck check golden coverage shot scenarios genprobe hidef bottlesheet apk install-apk logcat
 
 all: $(BIN)
 
@@ -79,6 +84,18 @@ $(GENPROBE): tools/genprobe.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
 genprobe: $(GENPROBE)
 	./$(GENPROBE) $(GENPROBE_ARGS)
 
+$(HIDEF): tools/hidef.cpp $(filter-out build/main.o,$(OBJ))
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@ $(LDLIBS)
+
+hidef: $(HIDEF)
+	./$(HIDEF) build/hidef.png $(HIDEF_ARGS)
+
+$(BOTTLESHEET): tools/bottle_sheet.cpp $(filter-out build/main.o,$(OBJ))
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@ $(LDLIBS)
+
+bottlesheet: $(BOTTLESHEET)
+	./$(BOTTLESHEET) build/bottle-sheet.png
+
 # Life logs of one soak world: build/lifelog seed [minutes] [crowd] [name] [every].
 LIFELOG := build/lifelog
 $(LIFELOG): tools/lifelog.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
@@ -88,3 +105,7 @@ clean:
 	rm -rf build
 
 -include $(OBJ:.o=.d)
+
+# The phone build: see android/apk.mk. Run these on the host, not in the toolbox.
+apk install-apk logcat:
+	$(MAKE) -f android/apk.mk $@

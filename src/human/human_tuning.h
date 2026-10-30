@@ -154,6 +154,9 @@ constexpr float HUNGER_PER_SECOND[] = {
     1.0f / 562.5f, // Feed
     1.0f / 2250.0f, // Sleep
     1.0f / 1875.0f, // Watch
+    1.0f / 750.0f, // Fill
+    1.0f / 750.0f, // Pour
+    1.0f / 750.0f, // Stash
 };
 static_assert(std::size(HUNGER_PER_SECOND) == size_t(Human::Action::Count));
 /// Thirst gained per second by each action, the same rule: a new action
@@ -175,6 +178,9 @@ constexpr float THIRST_PER_SECOND[] = {
     1.0f / 450.0f, // Feed
     1.0f / 1800.0f, // Sleep
     1.0f / 1500.0f, // Watch
+    1.0f / 600.0f, // Fill
+    1.0f / 600.0f, // Pour
+    1.0f / 600.0f, // Stash
 };
 static_assert(std::size(THIRST_PER_SECOND) == size_t(Human::Action::Count));
 /// Hungry from here on: food comes first. Starving from STARVING, and
@@ -370,8 +376,10 @@ constexpr float GOSSIP_WORTH = 0.2f;
 /// lie when it is this much worse than they really think.
 constexpr float SLANDER = -0.8f;
 constexpr float SLANDER_LIE = 0.3f;
-/// A false tip sends a foe at least this far, to a table it has never seen.
+/// A false tip sends a foe at least this far, to a table it has never seen,
+/// or to a stash that isn't there, said to hold this many cakes.
 constexpr int FALSE_TIP_FAR = 10;
+constexpr int FALSE_STASH_CAKES = 4;
 /// How much more a cunning human wants to go up to a foe worth lying to
 /// (the only foes it would greet) than to anyone else.
 constexpr float LIE_URGE = 0.5f;
@@ -452,12 +460,14 @@ constexpr Wanting WANTING[] = {
     {1.90f, 0.3f, 0.0f, 0.0f, 0.0f}, // Track
     {0.50f, 0.0f, 0.0f, 0.0f, 0.5f}, // Escort
     {0.85f, -0.3f, 0.0f, 0.0f, 0.0f}, // Wash
+    {0.60f, 0.0f, 0.0f, -0.2f, 0.0f}, // Fill
     {0.30f, 0.0f, 0.0f, 0.0f, 0.6f}, // Meet
     {1.50f, 0.2f, 0.0f, 0.0f, 0.0f}, // Rescue
     {0.70f, 0.3f, 0.0f, 0.0f, 0.0f}, // UrgedDoor
     {0.40f, 0.2f, 0.45f, 0.0f, -0.15f}, // Loot
     {0.30f, 0.2f, 0.6f, 0.0f, -0.2f}, // Rob
     {0.45f, 0.0f, 0.25f, 0.25f, 0.0f}, // Fetch
+    {0.30f, 0.0f, 0.30f, 0.0f, -0.2f}, // Stash
     {0.35f, 0.0f, 0.0f, 0.0f, 0.45f}, // Follow
     {0.15f, 0.0f, 0.0f, 0.0f, 0.70f}, // Company
     {0.25f, 0.0f, 0.0f, 0.35f, 0.0f}, // Explore
