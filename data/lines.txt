@@ -1565,7 +1565,7 @@ erratic                 | HEAVY. EVERYTHING'S HEAVY.
                         | JUST FOR A LITTLE WHILE.
                         | GOODNIGHT, WHOEVER YOU ARE.
 timid                   | PLEASE LET NOBODY FIND ME.
-sociable                | WAKE ME IF ANYTHING HAPPENS.
+sociable                | I WISH SOMEONE WAS HERE TO KEEP WATCH.
 settled                 | HOME. SUCH AS IT IS.
 dreamt                  | MAYBE I'LL DREAM OF IT AGAIN.
 erratic                 | SHH. SHH. SHH.
