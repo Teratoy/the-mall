@@ -976,16 +976,20 @@ private:
         std::unordered_map<int, float> knewNone;
         /// Sitting, lying down instead: parched and lost, waiting by a door.
         bool lying = false;
-        /// Foul water it has tasted, by water cell: how foul it found it
-        /// with feces and piss, and with blood. Kept as it was until it sees
-        /// that water again.
+        /// Foul water it has tasted, or been warned of, by water cell: how
+        /// foul it found it (or was told) with feces and piss, and with blood,
+        /// and who warned it (-1 if it tasted it). Kept as it was until it
+        /// sees that water again.
         struct Foul {
             float filth, blood;
+            int toldBy = -1;
         };
         std::unordered_map<Vec2i, Foul, Vec2iHash> foul;
-        /// This drink: whether it knew the water foul when it knelt, and
-        /// whether it has tasted the foulness yet.
+        /// This drink: whether it knew the water foul when it knelt (and
+        /// who warned it, -1 if it tasted it before), and whether it has
+        /// tasted the foulness yet.
         bool knewFoul = false, tastedFoul = false;
+        int warnedBy = -1;
     };
     Water water_;
     /// Getting thirsty, and parched (with what that may teach it).
@@ -1490,6 +1494,9 @@ private:
     void tasteFoul(const World& world);
     /// Seeing water it remembers foul, it knows how foul it is now.
     void seeWater(const World& world, Vec2i water);
+    /// Setting off for water it can't see, someone it walks with who knows
+    /// it foul and sees it go warns it, and it believes them. True if so.
+    bool warnedOfFoul(World& world, Vec2i water);
     /// Would drink this water from that cell: not too foul or red, as far
     /// as it can see, no filth round the spot too much for its modesty, and
     /// no body close by, unless parched, craving flesh (the red, the body,

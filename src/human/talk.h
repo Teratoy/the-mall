@@ -142,6 +142,9 @@ enum class Moment {
     WaryCake, WarySlam,
     // Taking a fuller bottle for its own, poured into it (to nobody).
     SwapBottle,
+    // Warning someone it walks with off foul water (to them); drinking foul
+    // water it was warned of (to nobody, about whoever warned it).
+    WarnFoul, FoulWarned,
     Count
 };
 
