@@ -510,11 +510,11 @@ bool Human::offerEscort(World& world) {
     auto theirs = o->search(world, beside);
     if (!mine && !theirs) return false;
     if (!mine || (theirs && theirs->size() < mine->size())) {
-        for (Vec2i c : *theirs) memory.see(c, o->memory.tile(c));
+        for (Vec2i c : *theirs) memory.hear(c, o->memory.tile(c));
         Vec2i end = theirs->empty() ? o->cell : theirs->back();
-        memory.see(end, o->memory.tile(end));
+        memory.hear(end, o->memory.tile(end));
         for (Vec2i d : DIRS4)
-            if (drinkable(o->memory.tile(end + d))) memory.see(end + d, o->memory.tile(end + d));
+            if (drinkable(o->memory.tile(end + d))) memory.hear(end + d, o->memory.tile(end + d));
         escorting_.to = end;
     } else {
         escorting_.to = mine->empty() ? cell : mine->back();
@@ -559,7 +559,7 @@ bool Human::leadEscort(World& world) {
         escorting_.arrived = true;
         o.regard(id, TRUST_LED_TO_WATER);
         for (Vec2i d : DIRS4)
-            if (drinkable(memory.tile(cell + d))) o.memory.see(cell + d, memory.tile(cell + d));
+            if (drinkable(memory.tile(cell + d))) o.memory.hear(cell + d, memory.tile(cell + d));
         o.escorting_.by = -1;
         o.rethink_ = true;
         startIdle(ESCORT_WAIT_MIN, ESCORT_WAIT_MAX);

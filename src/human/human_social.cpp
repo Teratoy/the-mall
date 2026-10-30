@@ -448,7 +448,7 @@ void Human::deliver(Human& o, const Tell& t) {
             for (Vec2i d : DIRS8)
                 for (Vec2i m : {c, c + d})
                     if (Tile tile = memory.tile(m); tile != Tile::Void && o.memory.tile(m) == Tile::Void) {
-                        o.memory.see(m, tile);
+                        o.memory.hear(m, tile);
                         news = true;
                     }
         }

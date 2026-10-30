@@ -18,7 +18,9 @@ class Human;
 /// between X1 and X16, and LOG (or L) opens the followed human's log over
 /// the world, newest first, scrolled with the wheel or a drag. Tapping
 /// the followed human's name at the top (or S) opens their stats in the
-/// same place instead: traits, people, mind and lessons. The camera
+/// same place instead: traits, people, mind and lessons. MAP beside LOG
+/// (or M) opens their map there: all they remember, with symbols for what
+/// they know of, dragged to look round and zoomed with + and -. The camera
 /// stays with the followed human while they live; once they die, NEXT
 /// moves it to the nearest living human, or starts over if nobody is
 /// left. Over the world, what the humans in view are saying shows in
@@ -73,6 +75,18 @@ private:
     /// The stats are open in the log's place; the two never show at once.
     bool statsOpen_ = false;
     bool statsToggle_ = false;
+    /// The map is open in the log's place, mapZoom_ into MAP_ZOOMS. It keeps
+    /// the followed human in the middle until dragged, then stays at
+    /// mapCentre_ (in cells) until opened again; a drag started at
+    /// mapDragFrom_ with the map at mapDragCentre_.
+    bool mapOpen_ = false;
+    bool mapToggle_ = false;
+    int mapZoom_ = 1;
+    bool mapFollow_ = true;
+    Vector2 mapCentre_{};
+    bool mapDragging_ = false;
+    Vector2 mapDragFrom_{}, mapDragCentre_{};
+    float mapTime_ = 0.0f;
     /// The world is stopped under the pause menu; its buttons report while
     /// drawing.
     bool paused_ = false;

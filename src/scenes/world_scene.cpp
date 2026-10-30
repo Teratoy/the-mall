@@ -3,14 +3,17 @@
 #include "human/obituary.h"
 #include "human/talk.h"
 #include "render/canvas.h"
+#include "render/map_view.h"
 #include "render/speech_view.h"
 #include "render/world_view.h"
 #include "scenes/menu_scene.h"
 #include "ui/pixel_ui.h"
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <cstdio>
 #include <ctime>
+#include <iterator>
 #include <string>
 #include <vector>
 
@@ -91,6 +94,9 @@ constexpr const char* STAT_WIDEST = "NEAR WATER";
 constexpr int NAME_UNDERLINE = 9;
 /// The LOG button, this far right of the name.
 constexpr int LOG_GAP = 6;
+/// The map's canvas pixels per cell, stepped with + and - while it is open.
+constexpr int MAP_ZOOMS[] = {1, 2, 3, 4};
+constexpr int MAP_ZOOM_COUNT = int(std::size(MAP_ZOOMS));
 /// Shown once the followed human is dead, just above the bottom strip.
 constexpr Rectangle NEXT_BUTTON{Canvas::W / 2 - 24, BOTTOM_Y - MARGIN - 16, 48, 16};
 
@@ -278,16 +284,32 @@ void WorldScene::update(float dt, const Canvas& canvas) {
     float wheel = GetMouseWheelMove();
     if (IsKeyPressed(KEY_L)) logToggle_ = true;
     if (IsKeyPressed(KEY_S)) statsToggle_ = true;
+    if (IsKeyPressed(KEY_M)) mapToggle_ = true;
+    // The log, stats and map share one place, so opening one shuts the others.
     if (logToggle_) {
         logToggle_ = false;
         logOpen_ = !logOpen_;
         logScroll_ = 0;
-        if (logOpen_) statsOpen_ = false;
+        if (logOpen_) statsOpen_ = mapOpen_ = false;
     }
     if (statsToggle_) {
         statsToggle_ = false;
         statsOpen_ = !statsOpen_;
-        if (statsOpen_) logOpen_ = false;
+        if (statsOpen_) logOpen_ = mapOpen_ = false;
+    }
+    if (mapToggle_) {
+        mapToggle_ = false;
+        mapOpen_ = !mapOpen_;
+        mapFollow_ = true;
+        if (mapOpen_) logOpen_ = statsOpen_ = false;
+    }
+    // While the map is open, + and - and the wheel zoom it instead.
+    if (mapOpen_) {
+        if (wheel > 0.0f) step++;
+        if (wheel < 0.0f) step--;
+        mapZoom_ = std::clamp(mapZoom_ + step, 0, MAP_ZOOM_COUNT - 1);
+        step = 0;
+        wheel = 0.0f;
     }
     if (logOpen_) {
         if (wheel < 0.0f) logScroll_++;
@@ -301,6 +323,7 @@ void WorldScene::update(float dt, const Canvas& canvas) {
         nextHuman_ = false;
         if (const Human* h = nearestLiving()) {
             follow_ = h->id;
+            mapFollow_ = true;
         } else {
             next = std::make_unique<MenuScene>();
             return;
@@ -315,6 +338,23 @@ void WorldScene::update(float dt, const Canvas& canvas) {
     }
     if (!logOpen_ || !IsMouseButtonDown(MOUSE_BUTTON_LEFT)) dragging_ = false;
     if (dragging_) logScroll_ = dragScroll_ + int((dragFrom_ - m.y) / ui::ROW);
+    // Dragging the map moves it under the finger, and it stops following.
+    if (mapOpen_ && IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(m, LOG_AREA)) {
+        mapDragging_ = true;
+        mapDragFrom_ = m;
+        Vec2i at = world_.human(follow_).cell;
+        mapDragCentre_ = mapFollow_ ? Vector2{at.x + 0.5f, at.y + 0.5f} : mapCentre_;
+    }
+    if (!mapOpen_ || !IsMouseButtonDown(MOUSE_BUTTON_LEFT)) mapDragging_ = false;
+    if (mapDragging_) {
+        float px = float(MAP_ZOOMS[mapZoom_]);
+        Vector2 moved{(m.x - mapDragFrom_.x) / px, (m.y - mapDragFrom_.y) / px};
+        if (!mapFollow_ || std::fabs(moved.x) + std::fabs(moved.y) > 0.0f) {
+            mapFollow_ = false;
+            mapCentre_ = {mapDragCentre_.x - moved.x, mapDragCentre_.y - moved.y};
+        }
+    }
+    mapTime_ += dt;
     for (float left = dt * SPEEDS[speed_]; left > 0.0f; left -= MAX_TICK) world_.update(std::min(left, MAX_TICK));
     if (world_.human(0).dead()) record();
 }
@@ -427,7 +467,7 @@ void WorldScene::draw(const Canvas& canvas) {
     const Human& viewer = world_.human(follow_);
     drawWorld(world_, viewer, [this](const Human& h) -> const HumanSprites& { return spritesFor(h); },
               floorTiles_, statueArt_, reveal_, ZOOMS[zoom_]);
-    if (!logOpen_ && !statsOpen_) drawSpeech(world_, viewer, reveal_, ZOOMS[zoom_], TOP_H, BOTTOM_Y);
+    if (!logOpen_ && !statsOpen_ && !mapOpen_) drawSpeech(world_, viewer, reveal_, ZOOMS[zoom_], TOP_H, BOTTOM_Y);
     // Under the pause menu nothing else takes a tap.
     Vector2 mouse = paused_ ? Vector2{-1.0f, -1.0f} : canvas.mouse();
     char line[64];
@@ -450,7 +490,9 @@ void WorldScene::draw(const Canvas& canvas) {
     DrawRectangle(MARGIN, y + NAME_UNDERLINE, nameW, 1, statsOpen_ ? WHITE : ui::DIM);
     if (overName && IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) statsToggle_ = true;
     Rectangle logButton{float(MARGIN + nameW + LOG_GAP), float(NAME_ROW_Y), float(BUTTON_W), float(NAME_ROW_H)};
-    logToggle_ |= ui::button(logButton, logOpen_ ? "MAP" : "LOG", mouse);
+    logToggle_ |= ui::button(logButton, "LOG", mouse);
+    Rectangle mapButton{logButton.x + BUTTON_W + BUTTON_GAP, float(NAME_ROW_Y), float(BUTTON_W), float(NAME_ROW_H)};
+    mapToggle_ |= ui::button(mapButton, "MAP", mouse);
     int x = item(RIGHT, y, viewer.cakes, drawCakeIcon);
     item(x - ITEM_GAP, y, viewer.keys, drawKeyIcon);
 
@@ -482,6 +524,10 @@ void WorldScene::draw(const Canvas& canvas) {
 
     if (logOpen_) drawLog(viewer);
     if (statsOpen_) drawStats(viewer);
+    if (mapOpen_) {
+        Vector2 centre = mapFollow_ ? Vector2{viewer.cell.x + 0.5f, viewer.cell.y + 0.5f} : mapCentre_;
+        drawMap(world_, viewer, LOG_AREA, MAP_ZOOMS[mapZoom_], centre, mapTime_);
+    }
 
     if (ui::button(ZOOM_IN_BUTTON, "+", mouse)) zoomStep_++;
     if (ui::button(ZOOM_OUT_BUTTON, "-", mouse)) zoomStep_--;

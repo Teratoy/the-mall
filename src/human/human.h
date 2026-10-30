@@ -411,6 +411,12 @@ public:
     static constexpr int FLESH_MEALS = 3;
     int flesh = 0;
     float deadFor() const { return dead() ? clock_ - deaths_.diedAt : 0.0f; }
+    /// Where the bodies it knows of lay when it last saw them.
+    std::vector<Vec2i> bodyCells() const {
+        std::vector<Vec2i> cells;
+        for (const auto& [id, b] : deaths_.bodies) cells.push_back(b.cell);
+        return cells;
+    }
     float decay() const;
     bool spoiled() const;
     bool bones() const { return decay() >= 1.0f; }
