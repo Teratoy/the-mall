@@ -712,12 +712,6 @@ Bottle World::takePileBottle(Vec2i cell, size_t i) {
     return b;
 }
 
-float World::pourFromPile(Vec2i cell, size_t i, Bottle& into, float amount) {
-    auto it = piles_.find(cell);
-    if (it == piles_.end() || i >= it->second.bottles.size()) return 0.0f;
-    return it->second.bottles[i].pourInto(into, amount);
-}
-
 bool World::unlock(Vec2i cell) {
     if (gates_.erase(cell) > 0) {
         setTile(cell, Tile::DoorOpen);

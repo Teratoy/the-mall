@@ -471,7 +471,7 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
     auto drawHuman = [&](const Human& h, Color tint) {
         Vector2 feet = feetOf(h);
         sprites(h).draw({feet.x - left, feet.y - top}, poseOf(h), h.animTime, h.facingLeft, 1,
-                        h.hurtTime > 0.0f ? HURT_TINT : tint, h.cakes > 0, h.shownBottle(), h.bottleInHand());
+                        h.hurtTime > 0.0f ? HURT_TINT : tint, h.cakes, h.shownBottle(), h.bottleInHand());
         // The cakes a body still holds lie in plain sight on it, and its
         // bottles on their side at its feet.
         bool lit = reveal || viewer.sight.sees(h.cell);

@@ -33,10 +33,6 @@ namespace {
 
 /// Kneeling to put things down, or to pick them up.
 constexpr float STASH_TIME = 1.0f;
-/// Its own bottles under this are worth topping up from one lying there.
-constexpr float PILE_TOPUP = 0.9f;
-/// Poured from a bottle lying there, up to this much at a time.
-constexpr float PILE_POUR = 1.0f;
 /// The hoard drive, 0 to about 1: what greed, the hoard lesson, being
 /// sociable (taken off), being settled and gloom each add at their fullest.
 /// From HOARD_FROM on it keeps stashes, wanting up to STASH_CAKES cakes in
@@ -52,10 +48,11 @@ constexpr int STASH_RANGE = 30;
 /// open cells round a spot, the more each costs, in tenths of a cell.
 constexpr int STASH_SPOT_REACH = 10;
 constexpr int STASH_SHY = 40;
-/// Stashing, it keeps this many cakes on it; a spare bottle at least this
-/// full is stashed too.
+/// Stashing, it keeps this many cakes on it, and its bottle.
 constexpr int STASH_KEEP = 1;
-constexpr float STASH_BOTTLE = 0.5f;
+/// A pile looks as big as it can get with this much water in it, or
+/// STASH_CAKES cakes.
+constexpr float STASH_WATER = 2.0f;
 /// Robbed, it thinks this much less of whoever it blames; it moves the
 /// stash at least this far from where it was.
 constexpr float TRUST_STASH_BLAMED = -0.3f;
@@ -81,14 +78,6 @@ constexpr float ASK_STASH_AGAIN = 120.0f;
 /// in RESENT_AGAIN per owner.
 constexpr int RESENT_SIZE = 3;
 constexpr float RESENT_TRUST = -0.2f, RESENT_AGAIN = 60.0f;
-
-/// The emptiest of its bottles under PILE_TOPUP, -1 if none.
-int emptiestBelow(const std::vector<Bottle>& bottles) {
-    int best = -1;
-    for (size_t i = 0; i < bottles.size(); i++)
-        if (bottles[i].water < PILE_TOPUP && (best < 0 || bottles[i].water < bottles[size_t(best)].water)) best = int(i);
-    return best;
-}
 
 std::string count(int n, const char* one, const char* many) { return n == 1 ? std::string(one) : std::to_string(n) + many; }
 
@@ -160,8 +149,6 @@ bool Human::wantsToStash() const {
     int held = 0;
     if (near)
         if (auto it = memory.piles.find(*near); it != memory.piles.end()) held = it->second.cakes;
-    bool spare = bottles.size() >= 2 && std::min(bottles[0].water, bottles[1].water) >= STASH_BOTTLE;
-    if (spare) return true;
     // A stash found out, still holding something, to be moved.
     for (Vec2i c : stash_.exposed)
         if (auto it = memory.piles.find(c); it != memory.piles.end() && !it->second.empty()) return true;
@@ -223,17 +210,12 @@ bool Human::seekStash(World& world) {
 bool Human::stashHere() {
     if (cell != stash_.spot) return false;
     int n = std::max(0, cakes - STASH_KEEP);
-    std::vector<size_t> which;
-    if (bottles.size() >= 2) {
-        size_t spare = bottles[0].water < bottles[1].water ? 0 : 1;
-        if (bottles[spare].water >= STASH_BOTTLE) which.push_back(spare);
-    }
-    if (n == 0 && which.empty()) return false;
+    if (n == 0) return false;
     if (!isMine(cell)) {
         stash_.mine.push_back(cell);
         note("MADE A STASH");
     }
-    startPutting(n, std::move(which));
+    startPutting(n, {});
     stash_.stashing = true;
     return true;
 }
@@ -244,7 +226,7 @@ bool Human::wouldSteal(const World& world, Vec2i c, const Pile& p) const {
     bool needFood = forFood && hungry() && cakes == 0;
     bool needWater = false, forWater = false;
     for (const Bottle& b : p.bottles)
-        if (wouldSip(b) && bottles.size() < size_t(BOTTLE_MAX)) {
+        if (wouldSip(b) && wouldTakeBottle(b)) {
             forWater = true;
             needWater |= thirsty() && sippable() < 0;
         }
@@ -298,7 +280,7 @@ void Human::resent(Vec2i, const Pile& p, int owner) {
     if (auto it = stash_.resented.find(owner); it != stash_.resented.end() && clock_ - it->second < RESENT_AGAIN) return;
     stash_.resented[owner] = clock_;
     float need = std::max(food ? hunger : 0.0f, water ? thirst : 0.0f);
-    float size = std::min(1.0f, float(p.cakes) / float(STASH_CAKES) + p.water() / float(BOTTLE_MAX));
+    float size = std::min(1.0f, float(p.cakes) / float(STASH_CAKES) + p.water() / STASH_WATER);
     regard(owner, RESENT_TRUST * need * (0.5f + 0.5f * size));
     note("@ HOARDS WHILE I GO WITHOUT", owner);
     sayLater(talk::Moment::Resent, -1, owner);
@@ -317,12 +299,8 @@ bool Human::wantsFromPile(const World& world, Vec2i c, const Pile& p) const {
         return false;
     }
     if (p.cakes > 0 && cakes < carryMax()) return true;
-    for (const Bottle& b : p.bottles) {
-        if (bottles.empty()) return true;
-        if (!wouldSip(b)) continue;
-        if (bottles.size() < size_t(BOTTLE_MAX)) return true;
-        if (emptiestBelow(bottles) >= 0) return true;
-    }
+    for (const Bottle& b : p.bottles)
+        if (wouldTakeBottle(b) && (bottles.empty() || wouldSip(b))) return true;
     return false;
 }
 
@@ -406,25 +384,22 @@ void Human::finishStash(World& world) {
         gotCakes = world.takePileCakes(c, own && !moving ? (hungry() && cakes == 0 ? 1 : 0) : carryMax() - cakes);
         cakes += gotCakes;
         bool forWater = !own || (thirsty() && sippable() < 0);
-        // Bottles while there is room, the fullest it would drink first; one
-        // with none takes any.
-        while (forWater && (p = world.pile(c)) && bottles.size() < size_t(BOTTLE_MAX)) {
-            int best = -1;
-            for (size_t i = 0; i < p->bottles.size(); i++) {
-                const Bottle& b = p->bottles[i];
-                if ((wouldSip(b) || (bottles.empty() && !own)) && (best < 0 || b.water > p->bottles[size_t(best)].water))
-                    best = int(i);
-            }
-            if (best < 0) break;
-            bottles.push_back(world.takePileBottle(c, size_t(best)));
-            gotBottles++;
-            if (own) break;
+        // The fullest bottle it would drink, one with none taking any; holding
+        // one, the two poured together into the fuller, which it keeps.
+        int best = -1;
+        for (size_t i = 0; forWater && (p = world.pile(c)) && i < p->bottles.size(); i++) {
+            const Bottle& b = p->bottles[i];
+            bool fits = wouldTakeBottle(b) && (wouldSip(b) || (bottles.empty() && !own));
+            if (fits && (best < 0 || b.water > p->bottles[size_t(best)].water)) best = int(i);
         }
-        // Then its own topped up from what is left.
-        for (size_t i = 0; forWater && gotBottles == 0 && (p = world.pile(c)) && i < p->bottles.size(); i++) {
-            int mine = emptiestBelow(bottles);
-            if (mine < 0) break;
-            if (wouldSip(p->bottles[i])) poured += world.pourFromPile(c, i, bottles[size_t(mine)], PILE_POUR);
+        if (best >= 0) {
+            bool keptOwn = false;
+            float was = bottleWater();
+            if (auto left = takeBottle(world.takePileBottle(c, size_t(best)), &keptOwn)) world.putDown(c, 0, {*left});
+            if (keptOwn)
+                poured = bottleWater() - was;
+            else
+                gotBottles = 1;
         }
     }
     p = world.pile(c);
@@ -465,7 +440,7 @@ std::optional<std::vector<Vec2i>> Human::pilePath(const World& world, bool food,
         if ((own || othersStash(c)) && !wantsFromPile(world, c, p)) continue;
         bool cakesThere = food && p.cakes > 0 && (own || cakes < carryMax());
         bool waterThere = false;
-        for (const Bottle& b : p.bottles) waterThere |= water && wouldSip(b);
+        for (const Bottle& b : p.bottles) waterThere |= water && wouldSip(b) && wouldTakeBottle(b);
         if ((cakesThere || waterThere) && !avoids(c)) worth.push_back(c);
     }
     if (worth.empty()) return std::nullopt;

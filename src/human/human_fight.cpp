@@ -186,8 +186,7 @@ bool Human::startFight(World& world) {
     bool running = seen && f.state == State::Walking && f.goal == Goal::Flee;
     bool forFood = hungry() && social_.seenCakes.count(fight_.foe) > 0;
     // Thirsty with nothing to drink, their water is worth a fight too.
-    bool forWater = thirsty() && sippable() < 0 && bottles.size() < size_t(BOTTLE_MAX) &&
-                    social_.seenWater.count(fight_.foe) > 0;
+    bool forWater = thirsty() && sippable() < 0 && roomForBottle() && social_.seenWater.count(fight_.foe) > 0;
     bool forCakes = forFood || forWater;
     // Hunted, they are chased however they run, as long as they are in
     // sight or were lately.
@@ -241,7 +240,10 @@ void Human::landPunch(World& world) {
     Vec2i at = f.stepProgress() < 0.5f ? f.prev : f.cell;
     if (at.x != cell.x) facingLeft = at.x < cell.x;
     if (f.dead() || cheb(cell, at) > PUNCH_REACH) return;
-    bool forWater = thirsty() && sippable() < 0 && bottles.size() < size_t(BOTTLE_MAX) && f.bottleWater() > 0.0f;
+    auto theirs = std::max_element(f.bottles.begin(), f.bottles.end(),
+                                   [](const Bottle& a, const Bottle& b) { return a.water < b.water; });
+    bool forWater = thirsty() && sippable() < 0 && theirs != f.bottles.end() && !theirs->empty() &&
+                    wouldTakeBottle(*theirs);
     bool took = f.cakes > 0 && cakes < carryMax() && (!forWater || hungry());
     if (took) {
         f.cakes--;
@@ -249,10 +251,10 @@ void Human::landPunch(World& world) {
     }
     bool tookBottle = !took && forWater;
     if (tookBottle) {
-        auto it = std::max_element(f.bottles.begin(), f.bottles.end(),
-                                   [](const Bottle& a, const Bottle& b) { return a.water < b.water; });
-        bottles.push_back(*it);
-        f.bottles.erase(it);
+        Bottle got = *theirs;
+        f.bottles.erase(theirs);
+        // Its own, emptier, falls to the floor.
+        if (auto left = takeBottle(got)) world.putDown(cell, 0, {*left});
         rethink_ = true;
         f.sayLater(talk::Moment::BottleTaken, id);
     }
@@ -448,7 +450,7 @@ bool Human::worthLooting(int id, bool cakesOnly) const {
     bool forCakes = it->second.cakes > 0 && cakes < carryMax();
     // A bottle with water in it, or any bottle at all to one with none.
     const Body& b = it->second;
-    bool forBottle = b.bottles > 0 && bottles.size() < size_t(BOTTLE_MAX) && (b.water > 0.0f || bottles.empty());
+    bool forBottle = b.bottles > 0 && roomForBottle() && (b.water > 0.0f || bottles.empty());
     return forCakes || (!cakesOnly && (!b.searched || forBottle));
 }
 
@@ -495,8 +497,8 @@ bool Human::startLoot(World& world, bool cakesOnly) {
     return true;
 }
 
-// Everything it holds of keys, and the cakes and bottles there is room for,
-// the fullest bottles first.
+// Everything it holds of keys, the cakes there is room for, and its fullest
+// bottle, taken or poured into its own.
 void Human::loot(World& world) {
     if (sleep_.robbee >= 0) return rob(world);
     Human& b = world.human(deaths_.corpse);
@@ -506,12 +508,15 @@ void Human::loot(World& world) {
     b.cakes -= c;
     keys += k;
     cakes += c;
+    // Its fullest bottle, or the water in it poured into its own.
     std::stable_sort(b.bottles.begin(), b.bottles.end(), [](const Bottle& x, const Bottle& y) { return x.water > y.water; });
     int n = 0;
-    while (!b.bottles.empty() && bottles.size() < size_t(BOTTLE_MAX)) {
-        bottles.push_back(b.bottles.front());
+    bool poured = false;
+    if (!b.bottles.empty() && wouldTakeBottle(b.bottles.front())) {
+        Bottle got = b.bottles.front();
         b.bottles.erase(b.bottles.begin());
-        n++;
+        if (auto left = takeBottle(got, &poured)) b.bottles.push_back(*left);
+        n = poured ? 0 : 1;
     }
     if (k > 0 && social_.leader >= 0) {
         sayLater(talk::Moment::PartOwnKey, social_.leader);
@@ -524,10 +529,11 @@ void Human::loot(World& world) {
     if (k > 0) parts.push_back(count(k, "A KEY", " KEYS"));
     if (c > 0) parts.push_back(count(c, "A CAKE", " CAKES"));
     if (n > 0) parts.push_back(count(n, "A BOTTLE", " BOTTLES"));
+    if (poured) parts.push_back("SOME WATER");
     std::string took;
     for (size_t i = 0; i < parts.size(); i++)
         took += (i == 0 ? "" : i + 1 == parts.size() ? " AND " : ", ") + parts[i];
-    note(k + c + n > 0 ? "TOOK " + took + " OFF @'S BODY" : "WENT THROUGH @'S BODY, FOUND NOTHING", b.id);
+    note(k + c + n + int(poured) > 0 ? "TOOK " + took + " OFF @'S BODY" : "WENT THROUGH @'S BODY, FOUND NOTHING", b.id);
     remember(Episode::What::Loot, EPISODE_LOOTED, id, b.id);
     // Gone through in plain sight: picked over, and a poor thing to do.
     for (const auto& o : world.humans())
@@ -543,5 +549,5 @@ void Human::loot(World& world) {
             critic = o.get();
     if (critic) critic->sayLater(talk::Moment::Shame, id, b.id);
     startIdle(LOOK_TIME_MIN, LOOK_TIME_MAX);
-    if ((c > 0 && hungry()) || (n > 0 && thirsty())) timer = 0.0f;
+    if ((c > 0 && hungry()) || ((n > 0 || poured) && thirsty())) timer = 0.0f;
 }

@@ -17,7 +17,7 @@ Human::Human(int id, const HumanLook& look, Vec2i cell, uint64_t seed, std::stri
     tiredness = rng_.range(0.0f, START_TIRED_MAX);
     timer = rng_.range(WAKE_LIE_MIN, WAKE_LIE_MAX);
     escape_.hunch = rng_.range(0.0f, TAU);
-    // Everyone wakes with a full bottle in a back pocket.
+    // Everyone wakes with a full bottle in the back hand.
     bottles.push_back({1.0f});
 }
 

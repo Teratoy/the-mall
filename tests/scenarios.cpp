@@ -606,13 +606,11 @@ const std::vector<Scenario> SCENARIOS = {
                                 P::setTrust(asker, holder, 0.6f);
                             });
      }},
-    {"bottle-spare", "a friend hands its spare bottle to a thirsty friend with none", seedWhere(kindly, 12500),
+    {"bottle-only", "a friend hands its only bottle to a thirsty friend with none", seedWhere(kindly, 12500),
      [](Stage& s) {
          return askForWater(s, {logged({"GAVE @ A BOTTLE"}), logged({"@ GAVE ME A BOTTLE"})}, [](Human& holder, Human& asker) {
              P::setTrust(holder, asker, 0.6f);
              P::setTrust(asker, holder, 0.6f);
-             // The spare under half full: not worth stashing.
-             holder.bottles = {Bottle{1.0f}, Bottle{0.45f}};
              asker.bottles.clear();
          });
      }},
@@ -671,16 +669,50 @@ const std::vector<Scenario> SCENARIOS = {
          h.hunger = 0.1f;
          h.thirst = 0.7f;
          s.run(40);
-         return Checks{logged({"PICKED UP A BOTTLE LYING THERE"}), logged({"DRANK FROM MY BOTTLE"})};
+         return Checks{logged({"PICKED UP A BOTTLE LYING THERE"}), logged({"LEFT MY EMPTY BOTTLE FOR A FULLER ONE"}),
+                       logged({"DRANK FROM MY BOTTLE"})};
+     }},
+    {"pile-pour-over", "a thirsty human pours its clean, low bottle into a fuller one lying there and takes that", 99,
+     [](Stage& s) {
+         Human& h = s.first();
+         auto b = s.basin();
+         if (!b) return Checks{{"a basin near the spawn", [](const Stage&) { return false; }}};
+         P::place(s.world, h, s.farFrom(*b, 25));
+         s.world.putDown(s.freeNear(h.cell, 1), 0, {Bottle{0.7f}});
+         h.bottles = {Bottle{0.1f}};
+         h.hunger = 0.1f;
+         h.thirst = 0.7f;
+         s.run(40);
+         return Checks{logged({"POURED MY BOTTLE INTO A FULLER ONE"})};
+     }},
+    {"pile-top-up", "a human pours a clean bottle lying there into its own fuller one", 99,
+     [](Stage& s) {
+         Human& h = s.first();
+         s.world.putDown(s.freeNear(h.cell, 1), 0, {Bottle{0.3f}});
+         h.bottles = {Bottle{0.5f}};
+         h.hunger = h.thirst = 0.1f;
+         s.run(40);
+         return Checks{logged({"FILLED MY BOTTLE FROM ONE LYING THERE"})};
+     }},
+    {"pile-dirty", "holding a bottle, a human leaves a dirty one lying there alone", 99,
+     [](Stage& s) {
+         Human& h = s.first();
+         s.world.putDown(s.freeNear(h.cell, 1), 0, {Bottle{0.9f, 0.4f, 0.0f}});
+         h.bottles = {Bottle{0.2f}};
+         h.hunger = 0.1f;
+         h.thirst = 0.7f;
+         s.run(40);
+         return Checks{unlogged("FILLED MY BOTTLE FROM ONE LYING THERE"), unlogged("POURED MY BOTTLE INTO A FULLER ONE"),
+                       unlogged("PICKED UP A BOTTLE LYING THERE")};
      }},
     {"put-down", "a human kneels and puts cakes and a bottle down", 99,
      [](Stage& s) {
          Human& h = s.first();
          h.cakes = 2;
-         h.bottles = {Bottle{1.0f}, Bottle{0.5f}};
+         h.bottles = {Bottle{1.0f}};
          h.hunger = h.thirst = 0.1f;
          s.run(8);
-         P::putDown(h, 2, {1});
+         P::putDown(h, 2, {0});
          s.run(5);
          return Checks{logged({"PUT DOWN 2 CAKES AND A BOTTLE"})};
      }},

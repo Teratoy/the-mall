@@ -28,13 +28,19 @@ inline constexpr float LIE_DOWN_TIME = 2.6f;
 inline constexpr float ROUSE_TIME = 1.2f;
 
 inline constexpr int SPRITE_PX = SPRITE_W * SPRITE_H;
+/// A cake held in the hand: frosting over sponge, HELD_CAKE_W across and
+/// HELD_CAKE_H high, so the cakes carried pile up that many rows apart.
+inline constexpr Rgba CAKE_TOP = hex(0xecb4c4);
+inline constexpr Rgba CAKE_BASE = hex(0xb07c50);
+inline constexpr int HELD_CAKE_W = 2, HELD_CAKE_H = 2;
+
 /// Not part of the body: a cake held, or nothing.
 inline constexpr uint8_t NO_PART = 0xff;
 
 /// Which way a bottle points, from its base to its cap, facing right.
 enum class BottleTurn : uint8_t { Up, Down, Ahead, Back };
-/// Where a frame has a bottle: the pixel its base is on, and which way it
-/// points. None when x is below 0.
+/// Where a frame has a bottle, or what it carries: the pixel its base is
+/// on, and which way it points. None when x is below 0.
 struct BottleSpot {
     int8_t x = -1, y = -1;
     BottleTurn turn = BottleTurn::Up;
@@ -50,10 +56,12 @@ struct SpriteFrame {
     std::array<int16_t, SPRITE_PX> rest;
     /// A BodyPart, or NO_PART.
     std::array<uint8_t, SPRITE_PX> part;
-    /// Where a bottle shows: in the back pocket, and held in the front hand
-    /// (sipping, filling, pouring, handing it over). The bottle itself is
-    /// drawn over the frame, as full and as dirty as it is.
-    BottleSpot pocket, hand;
+    /// Where what it carries shows: held is the back hand, the bottom-left
+    /// pixel of the bottom cake, the cakes piled up from it and the bottle
+    /// upright on top; hand is the front hand holding the bottle (sipping,
+    /// filling, pouring, handing it over). Cakes and bottle are drawn over
+    /// the frame, the bottle as full and as dirty as it is.
+    BottleSpot held, hand;
 
     SpriteFrame() {
         rest.fill(-1);
@@ -78,10 +86,9 @@ struct HumanLook {
 
     static HumanLook random(Rng& rng);
 
-    /// carrying holds a cake in the back hand.
-    SpriteFrame idle(bool carrying = false) const;
+    SpriteFrame idle() const;
     /// One frame of the walk cycle: 0 and 2 stand, 1 and 3 stride.
-    SpriteFrame walk(int frame, bool carrying = false) const;
+    SpriteFrame walk(int frame) const;
     /// One frame of a wave with the front arm.
     SpriteFrame wave(int frame) const;
     /// Fist up in front, about to punch.
@@ -100,12 +107,12 @@ struct HumanLook {
     /// Standing straight with eyes shut; drawn turned on its back.
     SpriteFrame dead() const;
     /// Knees bent, eyes open: halfway between standing and sitting.
-    SpriteFrame crouch(bool carrying = false) const;
+    SpriteFrame crouch() const;
     /// Sitting on the floor, legs out ahead, leaning on the back hand:
-    /// 0 looks ahead, 1 blinks. A carried cake rests on the floor behind.
-    SpriteFrame sit(int frame, bool carrying = false) const;
+    /// 0 looks ahead, 1 blinks. What it carries rests on the floor behind.
+    SpriteFrame sit(int frame) const;
     /// Seated nodding off, eyes shut: 0 head up, 1 head dropped.
-    SpriteFrame doze(int frame, bool carrying = false) const;
+    SpriteFrame doze(int frame) const;
     /// Curled up asleep, knees drawn up, the front hand under the chin;
     /// drawn turned onto its side. 0 breathes out, 1 in (the back swells),
     /// 2 has the eyes open, just woken. A carried cake is hugged to the chest.
@@ -138,7 +145,7 @@ private:
         bool breathe = false;
         /// Pixels the head hangs down, nodding off.
         int nod = 0;
-        /// A cake in the back hand.
+        /// Curled, a cake hugged to the chest.
         bool carry = false;
         bool eyesShut = false;
     };

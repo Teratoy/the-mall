@@ -1974,3 +1974,12 @@ generous                | IT'S MINE. ASK IF YOU NEED SOME.
 rude                    | I SAW YOU PUT IT THERE.
 rude                    | LIAR. I WATCHED YOU.
 timid                   | BUT... I SAW YOU.
+
+# Taking a fuller bottle for its own, its own water poured into it, or its
+# empty one left behind, said to nobody.
+[swap_bottle 0.4]
+                        | BETTER.
+                        | THAT'S MORE LIKE IT.
+                        | ONE IS ENOUGH TO CARRY.
+thirsty                 | AT LAST.
+greedy                  | MINE NOW.
