@@ -1,0 +1,197 @@
+// Draws a sheet of one human beside itself gone feral, in every pose and
+// with everything that rides on the body: a cake carried, a bottle in the
+// pocket and in the hand, pointing, blood, feces and piss, and the remains
+// eaten and rotten. It all goes through HumanSprites::draw, as in the game,
+// so the sheet shows whether the feral frames still line up with all of it.
+// Usage: build/feral_sheet [out.png] [seed] [scale]   (make feralsheet)
+// Each cell is the normal human on the left and the feral one on the right,
+// with what it shows written above.
+#include "core/rng.h"
+#include "human/body_blood.h"
+#include "human/bottle.h"
+#include "human/human_look.h"
+#include "render/human_sprites.h"
+#include <cstdio>
+#include <cstdlib>
+#include <memory>
+#include <raylib.h>
+#include <vector>
+
+namespace {
+
+/// Sprite pixels each human gets, and the gap between the pair, in a cell.
+constexpr int SLOT = 22, PAIR_GAP = 2;
+/// Cells across a row, and the pixels of the label above each cell.
+constexpr int COLUMNS = 8, LABEL = 12;
+constexpr Color BACKDROP{58, 56, 62, 255};
+constexpr Color FLOOR{92, 88, 80, 255};
+constexpr Color INK{226, 224, 218, 255};
+
+/// Which of the human's sprites a cell draws with: clean, or with
+/// something on the body.
+enum class Coat { Clean, Bloody, Dirty, Eaten, Rotten, Bones, CurledEaten };
+
+struct Cell {
+    const char* label;
+    Pose pose;
+    float time = 0.0f;
+    bool carrying = false;
+    /// The bottle shows, in the hand when inHand.
+    bool bottle = false, inHand = false;
+    Coat coat = Coat::Clean;
+};
+
+/// A human's sprites with one coat on them, and the blood that coats them.
+struct Coated {
+    std::unique_ptr<BodyBlood> blood, dirt, soaked;
+    std::unique_ptr<HumanSprites> sprites;
+};
+
+/// Splashes blood (or dirt) over every pixel of the standing pose that is
+/// one of these parts, every few pixels, thick and part dry.
+void splash(BodyBlood& b, std::initializer_list<BodyPart> parts, int every, uint8_t amount) {
+    int n = 0;
+    for (size_t i = 0; i < b.parts.size(); i++) {
+        if (b.parts[i] == NO_PART) continue;
+        bool on = false;
+        for (BodyPart p : parts) on = on || b.parts[i] == uint8_t(p);
+        if (!on || n++ % every) continue;
+        b.amount[i] = amount;
+        b.wet[i] = (n % 3) ? 0.8f : 0.1f;
+    }
+    b.version++;
+}
+
+Coated coat(const HumanLook& look, Coat c) {
+    Coated k;
+    k.sprites = std::make_unique<HumanSprites>(look);
+    switch (c) {
+    case Coat::Clean:
+        break;
+    case Coat::Bloody:
+        k.blood = std::make_unique<BodyBlood>(look);
+        splash(*k.blood, {BodyPart::Head, BodyPart::FrontArm}, 2, 220);
+        splash(*k.blood, {BodyPart::Torso, BodyPart::Feet}, 3, 180);
+        k.sprites->bloody(*k.blood);
+        break;
+    case Coat::Dirty:
+        k.dirt = std::make_unique<BodyBlood>(look);
+        k.soaked = std::make_unique<BodyBlood>(look);
+        splash(*k.dirt, {BodyPart::Legs}, 3, 200);
+        splash(*k.soaked, {BodyPart::Legs, BodyPart::Feet}, 1, 200);
+        k.sprites->dirty(*k.dirt, *k.soaked);
+        break;
+    case Coat::Eaten:
+        k.sprites->remains(0.55f, 0.15f, 7);
+        break;
+    case Coat::Rotten:
+        k.sprites->remains(0.3f, 0.6f, 7);
+        break;
+    case Coat::Bones:
+        k.sprites->remains(1.0f, 1.0f, 7);
+        break;
+    case Coat::CurledEaten:
+        k.sprites->remains(0.5f, 0.3f, 7, true);
+        break;
+    }
+    return k;
+}
+
+} // namespace
+
+int main(int argc, char** argv) {
+    const char* out = argc > 1 ? argv[1] : "build/feral-sheet.png";
+    uint64_t seed = argc > 2 ? std::strtoull(argv[2], nullptr, 10) : 42;
+    int scale = argc > 3 ? std::atoi(argv[3]) : 4;
+    const std::vector<Cell> cells = {
+        {"Idle", Pose::Idle},
+        {"Walk 1", Pose::Walk, 0.13f},
+        {"Walk 3", Pose::Walk, 0.38f},
+        {"Wave", Pose::Wave, 0.0f},
+        {"Wave out", Pose::Wave, 0.11f},
+        {"Eat bite", Pose::Eat, 0.0f},
+        {"Eat chew", Pose::Eat, 0.45f},
+        {"Guard", Pose::Guard},
+        {"Punch", Pose::Punch},
+        {"Offer cake", Pose::Offer},
+        {"Point", Pose::Point},
+        {"PointUp", Pose::PointUp},
+        {"PointDown", Pose::PointDown},
+        {"Fall kneel", Pose::Fall, 0.2f},
+        {"Fall down", Pose::Fall, 1.0f},
+        {"Wake open", Pose::Wake, 2.0f},
+        {"Sit", Pose::Sit, 1.0f},
+        {"Rise", Pose::Rise, 0.1f},
+        {"Wash", Pose::Wash},
+        {"Search", Pose::Search},
+        {"Feed", Pose::Feed, 0.4f},
+        {"Squat", Pose::Squat},
+        {"Piss", Pose::Piss},
+        {"Doze", Pose::Sleep, 2.2f},
+        {"Sleep curl", Pose::Sleep, 3.0f},
+        {"WakeUp", Pose::WakeUp, 0.1f},
+        {"DiedAsleep", Pose::DiedAsleep},
+        {"Sip", Pose::Sip, 0.0f, false, true, true},
+        {"Fill", Pose::Fill, 0.0f, false, true, true},
+        {"Pour", Pose::Pour, 0.3f, false, true, true},
+        {"OfferBottle", Pose::OfferBottle, 0.0f, false, true, true},
+        {"Carry cake", Pose::Idle, 0.0f, true},
+        {"Walk cake", Pose::Walk, 0.13f, true},
+        {"Sit cake", Pose::Sit, 1.0f, true},
+        {"Curl cake", Pose::Sleep, 3.0f, true},
+        {"Pocket", Pose::Idle, 0.0f, false, true},
+        {"Walk pocket", Pose::Walk, 0.13f, false, true},
+        {"Sit pocket", Pose::Sit, 1.0f, false, true},
+        {"Bloody", Pose::Idle, 0.0f, false, false, false, Coat::Bloody},
+        {"Bloody point", Pose::Point, 0.0f, false, false, false, Coat::Bloody},
+        {"Bloody curl", Pose::Sleep, 3.0f, false, false, false, Coat::Bloody},
+        {"Fecal, piss", Pose::Walk, 0.13f, false, false, false, Coat::Dirty},
+        {"Eaten", Pose::Fall, 1.0f, false, false, false, Coat::Eaten},
+        {"Rotten", Pose::Fall, 1.0f, false, false, false, Coat::Rotten},
+        {"Bones", Pose::Fall, 1.0f, false, false, false, Coat::Bones},
+        {"Eaten curled", Pose::DiedAsleep, 0.0f, false, false, false, Coat::CurledEaten},
+    };
+
+    SetTraceLogLevel(LOG_WARNING);
+    SetConfigFlags(FLAG_WINDOW_HIDDEN);
+    InitWindow(64, 64, "feral sheet");
+    const int cellW = (2 * SLOT + PAIR_GAP) * scale, cellH = SLOT * scale + LABEL;
+    const int rows = (int(cells.size()) + COLUMNS - 1) / COLUMNS;
+    RenderTexture2D rt = LoadRenderTexture(COLUMNS * cellW, rows * cellH);
+    bool ok = false;
+    {
+        Rng rng(seed);
+        HumanLook normal = HumanLook::random(rng);
+        HumanLook feral = normal;
+        feral.feral = true;
+        const Bottle bottle{0.7f};
+        Coated coats[2][7];
+        for (int f = 0; f < 2; f++)
+            for (int c = 0; c < 7; c++) coats[f][c] = coat(f ? feral : normal, Coat(c));
+
+        BeginTextureMode(rt);
+        ClearBackground(BACKDROP);
+        for (size_t i = 0; i < cells.size(); i++) {
+            const Cell& c = cells[i];
+            int ox = int(i % COLUMNS) * cellW, oy = int(i / COLUMNS) * cellH;
+            DrawText(c.label, ox + 4, oy + 1, 10, INK);
+            // The floor under the feet, a sprite pixel from the bottom.
+            float floorY = float(oy + cellH - 2 * scale);
+            DrawRectangle(ox, int(floorY), cellW - scale, 2 * scale, FLOOR);
+            for (int f = 0; f < 2; f++) {
+                Vector2 feet{float(ox + (f * (SLOT + PAIR_GAP) + SLOT / 2) * scale), floorY};
+                coats[f][int(c.coat)].sprites->draw(feet, c.pose, c.time, false, scale, WHITE, c.carrying,
+                                                     c.bottle ? &bottle : nullptr, c.inHand);
+            }
+        }
+        EndTextureMode();
+        Image img = LoadImageFromTexture(rt.texture);
+        ImageFlipVertical(&img);
+        ok = ExportImage(img, out);
+        UnloadImage(img);
+    }
+    UnloadRenderTexture(rt);
+    CloseWindow();
+    std::printf("%s %s\n", ok ? "wrote" : "could not write", out);
+    return ok ? 0 : 1;
+}

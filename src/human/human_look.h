@@ -61,7 +61,8 @@ struct SpriteFrame {
     }
 };
 
-enum class Hair { Bald, Short, Long, Spiky, Bun, Mohawk, Ponytail, Cap };
+/// Matted is never rolled: it is the hair grown wild on a feral human.
+enum class Hair { Bald, Short, Long, Spiky, Bun, Mohawk, Ponytail, Cap, Matted };
 enum class Top { Tee, LongSleeve, Tank };
 enum class Bottom { Pants, Shorts, Skirt };
 
@@ -75,8 +76,15 @@ struct HumanLook {
     /// Body proportions in sprite pixels.
     int torsoW = 5, torsoH = 5, legH = 4;
     bool beard = false;
+    /// Gone feral from eating its own kind: every frame is repainted with
+    /// matted hair, sallow skin, red eyes, a bloodied mouth, filthy hands,
+    /// bare feet and torn, grimy clothes. The body keeps the same pixels in
+    /// every pose, so cakes, bottles, pointing and blood all land as before.
+    bool feral = false;
 
     static HumanLook random(Rng& rng);
+    /// The skin as the frames draw it: sallow when feral.
+    Rgba bodySkin() const;
 
     /// carrying holds a cake in the back hand.
     SpriteFrame idle(bool carrying = false) const;
@@ -142,5 +150,12 @@ private:
         bool carry = false;
         bool eyesShut = false;
     };
+    /// The frame for this stance, feral or not.
     SpriteFrame draw(const Stance& s) const;
+    /// The frame for this stance in this look's own colours and hair.
+    SpriteFrame drawBody(const Stance& s) const;
+    /// Tears, grime and blood on a frame drawn by drawBody from the feral
+    /// colours, each at a pixel of the standing pose, so it moves with the
+    /// body; stand is that standing pose, for where the hems are.
+    void wear(SpriteFrame& f, const SpriteFrame& stand) const;
 };
