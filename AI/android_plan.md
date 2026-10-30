@@ -15,6 +15,8 @@ files, so the sim stays byte-identical.
 - No typing on the phone for now: the player keeps the rolled name, and
   REFRESH gives another.
 - Tab (reveal) and F5 (reload lines) are left out on the phone.
+- The phone is a Samsung Galaxy S25 Ultra: arm64-v8a only, on Android 15
+  or later. minSdk 26 still, targetSdk 35.
 - raylib 5.5's source is fetched into `build/` by the make target on the
   first build, not kept in the repo.
 
@@ -74,6 +76,15 @@ rules), a small `src/core/files.{h,cpp}`.
 - `InitWindow`'s size is ignored on Android: the window is the screen.
   `Canvas` already scales to the largest size that fits and centres it,
   so phones of another shape than 9:19.5 get bars at the edges.
+- The S25 Ultra's screen is 9:19.5, the canvas's own shape. At its FHD+
+  setting (1080x2340, Samsung's default) the canvas fits exactly 5 times
+  with no bars. At WQHD+ (1440x3120) the scale is 6.67, which `Canvas`
+  floors to 6, leaving bars of 72 px at the sides and 156 px top and
+  bottom. Either is fine.
+- The canvas only fits that well if the game gets the whole screen: hide
+  the status and navigation bars (immersive mode) and draw under the
+  camera cut-out (`layoutInDisplayCutoutMode="shortEdges"`). If the bars
+  stay, the canvas drops to scale 4 with wide bars.
 - When the app goes to the background raylib stops the loop; the world
   just waits. If Android kills the app, the run is lost (the obituary only
   holds the dead). Fine for a debug build.
@@ -114,9 +125,8 @@ the frame rate with a big crowd at top speed.
 
 ## Open questions
 
-Answered above: 1 (plain make), 2 (no typing), 4 (left out), 5 (fetched
+All answered: 1 (plain make), 2 (no typing), 4 (left out), 5 (fetched
 into `build/`).
 
-3. Which phone (to pick ABI and minimum Android version), and is it on
-   USB or wireless debugging? Until then: arm64-v8a, minimum Android 8
-   (API 26).
+3. Answered: Samsung Galaxy S25 Ultra (arm64-v8a, Android 15+). Installed
+   over USB debugging unless the user says otherwise.
