@@ -495,7 +495,8 @@ void Human::rob(World& world) {
         if (w.get() != this && w.get() != &o && !w->dead() && w->sight.sees(cell) && !w->isFoe(o.id))
             w->regard(id, TRUST_SAW_ROB);
     // Robbed by the one meant to watch over it, it is done with them.
-    if (rng_.chance(ROB_WAKE * (0.5f + o.lightSleep()))) {
+    bool woke = rng_.chance(ROB_WAKE * (0.5f + o.lightSleep()));
+    if (woke) {
         note("@ WOKE UP AS I ROBBED THEM", o.id);
         o.sleep_.cakesAsleep = o.cakes;
         o.wakeUp(world, true, id, "WOKE UP TO @ ROBBING ME");
@@ -514,6 +515,7 @@ void Human::rob(World& world) {
     } else {
         note(betrayed ? "ROBBED @ ON MY WATCH" : "ROBBED @ IN THEIR SLEEP", o.id);
     }
+    wrong(o, woke);
     startIdle(ROB_LOOK_MIN, ROB_LOOK_MAX);
 }
 

@@ -134,6 +134,9 @@ enum class Moment {
     LearnAgain, LearnMax, Quenched,
     // Drinking water it knew was foul (to nobody).
     FoulAgain,
+    // Leaving the one it kept with or followed after hitting or robbing
+    // them (to nobody, about them).
+    PartWronged,
     Count
 };
 

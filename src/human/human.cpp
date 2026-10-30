@@ -230,6 +230,7 @@ void Human::live(World& world, float dt) {
     dread_ = std::max(0.0f, dread_ - DREAD_FADE * sway(traits.brave) * (state == State::Sitting ? DREAD_SIT_FADE : 1.0f) * dt);
     float fade = TRUST_FADE * sway(traits.sociable) * dt;
     for (auto& [who, t] : social_.trust) t = t > 0.0f ? std::max(0.0f, t - fade) : std::min(0.0f, t + fade);
+    std::erase_if(social_.wronged, [&](auto& w) { return (w.second.guilt -= fade * WRONGED_FADE) <= 0.0f; });
     urgeWait_ -= dt;
     // Without hope, what going without taught it sticks.
     lessons.hoard = std::max(0.0f, lessons.hoard - LESSON_FADE * (1.0f - LESSON_GLOOM * gloom()) * dt);

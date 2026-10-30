@@ -303,6 +303,12 @@ public:
     /// Thinks of someone this much better (or worse, below 0) for what it
     /// just saw them do.
     void regard(int id, float delta);
+    /// Has hit, robbed or threatened a cake off victim: thinks worse of them,
+    /// and leaves them if it kept with or followed them, unless it is cunning
+    /// and they never knew. known: whether they know it was this human.
+    void wrong(const Human& victim, bool known);
+    /// Whether it keeps away from id for what it did to them.
+    bool shuns(int id) const;
     /// A piece of what one human knows, passed to another at a greeting:
     /// where a cake or key lies, a trap, or a route (the cells of a walk
     /// ending at a locked door, told with the tiles round them). What is
@@ -1052,6 +1058,13 @@ private:
         std::unordered_map<int, float> snubbed;
         /// When each human was last too busy to be greeted; let be a while.
         std::unordered_map<int, float> busy;
+        /// Whom it hit or robbed: the trust held down for it, which comes back
+        /// slower than trust fades, and whether it keeps away from them meanwhile.
+        struct Wrong {
+            float guilt = 0.0f;
+            bool shuns = false;
+        };
+        std::unordered_map<int, Wrong> wronged;
     };
     Social social_;
     /// Walks toward social_.partner, or greets them once close. False if they're lost.

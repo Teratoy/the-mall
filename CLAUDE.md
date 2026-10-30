@@ -105,6 +105,10 @@ lost, and several useful probes already have been.
 - Every new behaviour adds a `note()` line to the life log and a
   `sayLater()` moment. New moments go at the end of `talk::Moment`, with
   lines in `data/lines.txt`.
+- Voice lines never state the obvious: no literal account of what just
+  happened ("PARTED FROM HUT, THEY WON'T TRUST ME NOW"). The player saw it;
+  the line gives the feeling ("THEY WON'T TRUST ME NOW"). The life log may
+  say it plainly.
 - HUD: everything stays inside the two shaded strips, laid out from
   measured text (`ui::textRight`, `ui::textCentred`, `ui::wrap`). Never
   let text float free or get cut off. New per-human stats go in the stats

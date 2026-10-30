@@ -53,6 +53,9 @@
 #           (the dead, the looted, the one gossiped about)
 #
 # Keep lines short: the bubble is small. Everything shows in capitals.
+# Never state the obvious: the player just saw what happened, so a line
+# gives the feeling, not an account. "THEY WON'T TRUST ME NOW", not
+# "I ROBBED THEM, THEY WON'T TRUST ME NOW".
 # Each moment says who is speaking to whom.
 
 
@@ -2049,3 +2052,17 @@ friend                  | I'M SORRY. I HAVE TO LOOK.
 threat                  | HAND IT OVER.
 erratic                 | WATER. MINE. MINE!
 erratic                 | I'LL WRING IT OUT OF YOU.
+
+
+# Leaving the one it kept with or followed, after hitting or robbing them,
+# said to nobody, about them. Never put what happened into words: it was
+# just seen.
+[part_wronged 0.7]
+                        | THEY WON'T TRUST ME NOW.
+                        | BETTER IF I GO.
+                        | NO GOING BACK FROM THAT.
+greedy                  | A CAKE'S A CAKE.
+timid                   | I DIDN'T MEAN... NEVER MIND.
+loner                   | NEVER NEEDED THEM ANYWAY.
+generous                | SORRY.
+starving                | I HAD TO.

@@ -301,6 +301,11 @@ constexpr float CUNNING_BRAVE = 0.4f;
 constexpr float TRUST_FRIEND = 0.4f;
 constexpr float TRUST_FOE = -0.4f;
 constexpr float TRUST_FADE = 1.0f / 900.0f;
+/// Having hit or robbed someone, it thinks this much worse of them (it
+/// knows they will of it), and that comes back WRONGED_FADE times as fast
+/// as trust fades.
+constexpr float TRUST_WRONGED = -0.3f;
+constexpr float WRONGED_FADE = 0.33f;
 constexpr int TRUST_STEPS = 10;
 /// Below this health a human runs from a fight, unless starving: the
 /// timid at one and a half times this, the fearless at half.

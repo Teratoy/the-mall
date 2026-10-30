@@ -13,9 +13,9 @@ struct SoakProbe {
     static bool rethink(const Human& h) { return h.rethink_; }
     static int partner(const Human& h) { return h.social_.partner; }
     static int leader(const Human& h) { return h.social_.leader; }
+    static int companion(const Human& h) { return h.social_.companion; }
     static int foe(const Human& h) { return h.fight_.foe; }
     static bool ateFlesh(const Human& h) { return !h.mind_.ateFrom.empty(); }
-    static int companion(const Human& h) { return h.social_.companion; }
     static float thirstOf(const Human& h) { return h.thirst; }
     static int keysOf(const Human& h) { return h.keys; }
     // What it could still go for (tools/lifelog.cpp): somewhere left to
@@ -53,6 +53,8 @@ struct SoakProbe {
         h.met.insert(o.id);
         h.social_.greetedAt[o.id] = at;
     }
+    /// Keeps with o, as if it had taken up with them.
+    static void setCompanion(Human& h, const Human& o) { h.social_.companion = o.id; }
     /// A real trap at the cell, armed and hidden.
     static void addTrap(World& w, Vec2i cell, TrapKind kind) { w.traps_[cell] = Trap{kind, cell, {0, 0}}; }
     /// Moves h to a free cell, as if it had come to there.
