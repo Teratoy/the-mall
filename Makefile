@@ -23,8 +23,10 @@ SCENARIOS := build/scenarios
 SHOT := build/shot
 # Grows chunk interiors on every footprint and checks they keep to it.
 GENPROBE := build/genprobe
+# Human frames with bottles, scaled up, to check the bottle art by eye.
+BOTTLESHEET := build/bottle_sheet
 
-.PHONY: all run clean stuck check golden coverage shot scenarios genprobe
+.PHONY: all run clean stuck check golden coverage shot scenarios genprobe bottlesheet
 
 all: $(BIN)
 
@@ -78,6 +80,12 @@ $(GENPROBE): tools/genprobe.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
 
 genprobe: $(GENPROBE)
 	./$(GENPROBE) $(GENPROBE_ARGS)
+
+$(BOTTLESHEET): tools/bottle_sheet.cpp $(filter-out build/main.o,$(OBJ))
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@ $(LDLIBS)
+
+bottlesheet: $(BOTTLESHEET)
+	./$(BOTTLESHEET) build/bottle-sheet.png
 
 clean:
 	rm -rf build

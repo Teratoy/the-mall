@@ -1674,3 +1674,89 @@ friend                  | I COUNTED ON YOU.
                         | HEY. YOU ALL RIGHT?
 friend                  | {WHO}, COME ON, WAKE UP.
 
+
+
+# ---- Bottles ---------------------------------------------------------------
+
+# Drinking from its bottle, said to nobody.
+[sip 0.25]
+                        | GOOD THING I KEPT THIS.
+                        | JUST A SIP.
+                        | AHH.
+parched                 | FINALLY.
+timid                   | MAKE IT LAST...
+erratic                 | GLUG GLUG GLUG.
+
+# The bottle ran dry, said to nobody.
+[bottle_dry 0.6]
+                        | EMPTY.
+                        | THAT WAS THE LAST OF IT.
+                        | NOT A DROP LEFT.
+thirsty                 | STILL THIRSTY. AND NO WATER.
+timid                   | WHAT DO I DO NOW?
+
+# Kneeling to fill its bottle, said to nobody.
+[fill_bottle 0.25]
+                        | FILL HER UP.
+                        | BETTER TAKE SOME WITH ME.
+                        | FOR LATER.
+timid                   | IN CASE THERE'S NO MORE.
+greedy                  | ALL MINE.
+
+# Pouring out water too dirty to keep, said to nobody.
+[pour_out 0.6]
+                        | UGH. NOT DRINKING THAT.
+                        | OUT IT GOES.
+                        | THAT'S GONE BAD.
+craving                 | WHAT A WASTE.
+
+# Thirsty with nothing to drink, asking someone it sees with water, said to
+# them.
+[ask_drink]
+                        | COULD I HAVE SOME WATER?
+                        | JUST A SIP? PLEASE?
+                        | I'M SO THIRSTY.
+parched                 | PLEASE. WATER. ANYTHING.
+friend                  | {NAME}, SHARE YOUR WATER?
+greedy                  | GIVE ME SOME OF THAT WATER.
+
+# Pouring some of its water for someone who asked, said to them.
+[give_drink]
+warm                    | HERE. DON'T DRINK IT ALL AT ONCE.
+warm                    | TAKE SOME.
+warm                    | OF COURSE.
+friend warm             | ANYTHING FOR YOU, {NAME}.
+
+# Pouring some for a cake, said to them.
+[sell_drink]
+                        | A CAKE AND IT'S YOURS.
+                        | WATER'S NOT FREE.
+                        | IT'LL COST YOU A CAKE.
+
+# Lying to whoever asked that its bottle is empty, said to them.
+[bottle_lie]
+                        | SORRY. IT'S EMPTY.
+                        | I'VE GOT NOTHING LEFT.
+                        | ALL GONE, I'M AFRAID.
+
+# Seeing the water through the glass of a bottle it was told is empty, said
+# to the liar.
+[caught_bottle_lie]
+rude                    | I CAN SEE IT, YOU KNOW.
+rude                    | EMPTY? I CAN SEE THE WATER.
+rude                    | LIAR. IT'S RIGHT THERE.
+timid                   | BUT... IT'S NOT EMPTY.
+
+# Not giving any of its water to whoever asked, said to them.
+[refuse_drink]
+                        | FIND YOUR OWN.
+                        | NO. I NEED IT.
+rude                    | GET AWAY FROM MY WATER.
+thirsty                 | I'M THIRSTY TOO.
+timid                   | SORRY. I CAN'T.
+
+# Its bottle snatched in a fight, said to whoever took it.
+[bottle_taken]
+rude                    | MY WATER!
+rude                    | GIVE IT BACK!
+                        | THAT'S MINE!

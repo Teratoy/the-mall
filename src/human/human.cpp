@@ -17,6 +17,8 @@ Human::Human(int id, const HumanLook& look, Vec2i cell, uint64_t seed, std::stri
     tiredness = rng_.range(0.0f, START_TIRED_MAX);
     timer = rng_.range(WAKE_LIE_MIN, WAKE_LIE_MAX);
     escape_.hunch = rng_.range(0.0f, TAU);
+    // Everyone wakes with a full bottle in a back pocket.
+    bottles.push_back({1.0f});
 }
 
 void Human::update(World& world, float dt) {
@@ -82,6 +84,12 @@ void Human::update(World& world, float dt) {
         return;
     case State::Drinking:
         return drink(world);
+    case State::Sipping:
+        return sip(world);
+    case State::Filling:
+        return fill(world);
+    case State::Pouring:
+        return pourOut(world);
     case State::Relieving:
         endRelieving();
         return choose(world);
@@ -137,7 +145,12 @@ Human::Action Human::action() const {
     case State::Eating:
         return Action::Eat;
     case State::Drinking:
+    case State::Sipping:
         return Action::Drink;
+    case State::Filling:
+        return Action::Fill;
+    case State::Pouring:
+        return Action::Pour;
     case State::Relieving:
         return Action::Relieve;
     case State::Punching:
@@ -373,9 +386,12 @@ bool Human::observe(const World& world) {
         if (o->dead() && o->sleep_.diedAsleep && !deaths_.seenDead.count(o->id) && cheb(cell, o->cell) > STILL_SEEN) continue;
         if (o->dead()) {
             social_.seenCakes.erase(o->id);
+            social_.seenWater.erase(o->id);
             Body& b = deaths_.bodies[o->id];
             b.cell = o->cell;
             b.cakes = o->cakes;
+            b.bottles = int(o->bottles.size());
+            b.water = o->bottleWater();
             b.meals = o->meals();
             b.spoiled = o->spoiled();
             seeRemains(*o);
@@ -412,6 +428,13 @@ bool Human::observe(const World& world) {
             social_.seenCakes.erase(o->id);
         news |= !met.count(o->id);
         news |= hungry() && cakes == 0 && o->cakes > 0 && !knewCakes;
+        // Bottles are see-through: the water in them is in plain sight.
+        bool knewWater = social_.seenWater.count(o->id) > 0;
+        if (o->bottleWater() > 0.0f)
+            social_.seenWater[o->id] = o->bottleWater();
+        else
+            social_.seenWater.erase(o->id);
+        news |= thirsty() && sippable() < 0 && o->bottleWater() > 0.0f && !knewWater;
         news |= o->starving() && cakes > 1 && !starving();
         news |= judge(*o);
     }
@@ -449,7 +472,11 @@ void Human::choose(World& world) {
     if (hungry() && cakes > 0) return startEating();
     if (thirsty())
         if (auto w = waterBeside(cell); w && wouldDrink(world, cell, *w)) return startDrinking(*w);
+    // Beside water it would drink with a bottle to fill, it fills it.
+    if (!thirsty() && !bottles.empty())
+        if (auto w = waterBeside(cell); w && wantsFill(world, *w) && startFilling(world, *w)) return;
     if (thirsty()) askGroupForWater(world);
+    if (askForDrink(world)) return;
     if (helpStarving(world)) return;
     if (fight_.foe >= 0 && startFight(world)) return;
     if (keepAway(world)) return;
@@ -500,6 +527,7 @@ void Human::choose(World& world) {
         // Guilt keeps it to itself.
         want(Want::Escort, -GUILT_ALONE * mind_.guilt + parchedToLead(world));
         want(Want::Wash, wantsWashing() ? FILTH_WASH * (0.5f + modesty()) : 0.0f);
+        if (float fill = fillDrive(); fill >= 0.0f) want(Want::Fill, fill);
         // The cunning go out of their way to lie to a foe.
         if (social_.partner >= 0)
             want(Want::Meet, OUT_ASK * outDrive() - GUILT_ALONE * mind_.guilt + (isFoe(social_.partner) ? LIE_URGE : 0.0f));
@@ -558,6 +586,8 @@ bool Human::pursue(World& world, Want w) {
         return offerEscort(world) || offerDrinkEscort(world);
     case Want::Wash:
         return startWash(world);
+    case Want::Fill:
+        return seekFill(world);
     case Want::Meet:
         return social_.partner >= 0 && startMeet(world);
     case Want::Rescue:

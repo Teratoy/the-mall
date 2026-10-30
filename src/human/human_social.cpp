@@ -578,6 +578,7 @@ int Human::counterpart() const {
     case Goal::Escorted: return escorting_.by;
     case Goal::Loot: return deaths_.corpse;
     case Goal::Feed: return mind_.meal;
+    case Goal::Ask: return water_.askee;
     default: return -1;
     }
 }

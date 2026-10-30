@@ -1,6 +1,7 @@
 #pragma once
 #include "core/rng.h"
 #include "human/body_blood.h"
+#include "human/bottle.h"
 #include "human/episode.h"
 #include "human/human_look.h"
 #include "human/life_log.h"
@@ -86,17 +87,17 @@ class Human {
 public:
     /// Waking is the first thing every human does: lying where it came to,
     /// knowing nothing, until it sits up (Sitting) and looks round.
-    enum class State { Waking, Idle, Sitting, Rising, Walking, Greeting, Eating, Drinking, Relieving, Punching, Giving, Washing, Looting, Feeding, Sleeping, Dead };
+    enum class State { Waking, Idle, Sitting, Rising, Walking, Greeting, Eating, Drinking, Relieving, Punching, Giving, Washing, Looting, Feeding, Sleeping, Sipping, Filling, Pouring, Dead };
     /// Why the human is walking: what it does on arrival.
-    enum class Goal { Explore, FetchKey, OpenDoor, PassDoor, Wander, Meet, Follow, Company, FetchCake, Drink, Relieve, Fight, Flee, Share, CheckDoor, Wash, Avoid, Escort, Escorted, Track, GiveWay, Loot, Feed, Sleep, Rob, Watch };
+    enum class Goal { Explore, FetchKey, OpenDoor, PassDoor, Wander, Meet, Follow, Company, FetchCake, Drink, Relieve, Fight, Flee, Share, CheckDoor, Wash, Avoid, Escort, Escorted, Track, GiveWay, Loot, Feed, Sleep, Rob, Watch, Fill, Ask };
     /// What the human is doing, as far as hunger, thirst and tiredness go:
     /// each costs its own of all three.
-    enum class Action { Rest, Sit, Walk, Run, Greet, Eat, Drink, Relieve, Punch, Give, Wash, Loot, Feed, Sleep, Watch, Count };
+    enum class Action { Rest, Sit, Walk, Run, Greet, Eat, Drink, Relieve, Punch, Give, Wash, Loot, Feed, Sleep, Watch, Fill, Pour, Count };
     /// What a human may set out to do once nothing presses. How much it
     /// wants each, by its traits and hunger, is weighed in choose(), which
     /// tries them from the most wanted down; the table of wants is in
     /// human_tuning.h. In the order they tie in.
-    enum class Want { Food, Drink, Relieve, Sleep, Flesh, Hunt, Track, Escort, Wash, Meet, Rescue, UrgedDoor, Loot, Rob, Fetch, Follow, Company, Explore, OpenDoor, CheckDoor, Wander, Count };
+    enum class Want { Food, Drink, Relieve, Sleep, Flesh, Hunt, Track, Escort, Wash, Fill, Meet, Rescue, UrgedDoor, Loot, Rob, Fetch, Follow, Company, Explore, OpenDoor, CheckDoor, Wander, Count };
 
     /// An empty name gives the one grown from seed.
     Human(int id, const HumanLook& look, Vec2i cell, uint64_t seed, std::string chosenName = {});
@@ -204,8 +205,8 @@ public:
     float animTime = 0.0f;
     /// 0 is full, 1 is starving.
     float hunger = 0.0f;
-    /// 0 is quenched, 1 is parched to death. Only water quenches it, and
-    /// water is never carried: the thirsty go to it.
+    /// 0 is quenched, 1 is parched to death. Only water quenches it: the
+    /// water where it lies, or what it carries in a bottle.
     float thirst = 0.0f;
     /// 0 rested, 1 drops asleep where it stands. Everything it does tires
     /// it, and only sleep rests it.
@@ -237,6 +238,20 @@ public:
     int keys = 0;
     /// Cakes carried, the one being eaten included.
     int cakes = 0;
+    /// The water bottles it carries, in a back pocket, in plain sight: one
+    /// to wake with, full; no more than BOTTLE_MAX, taking another as it
+    /// takes a cake, while there is room (human_bottle.cpp).
+    static constexpr int BOTTLE_MAX = 2;
+    std::vector<Bottle> bottles;
+    /// All the water in them, 0 to the number of bottles.
+    float bottleWater() const;
+    /// The bottle it shows: the one in its hand while drinking, filling,
+    /// pouring or handing water over, else the fullest; null if it has none.
+    const Bottle* shownBottle() const;
+    /// Whether that bottle is in its hand, and, Giving, whether it hands
+    /// water over rather than a cake.
+    bool bottleInHand() const;
+    bool givingWater() const { return state == State::Giving && water_.givingWater; }
     Memory memory;
     Sight sight;
     /// World seconds when it was made, and what it has been through since.
@@ -594,6 +609,9 @@ private:
         bool searched = false;
         int meals = 0;
         bool spoiled = false;
+        /// The bottles last seen on it, and the water in them.
+        int bottles = 0;
+        float water = 0.0f;
     };
     /// The dead: those it saw, the bodies it knows, and its own death.
     struct Deaths {
@@ -818,6 +836,15 @@ private:
         /// Homes whose settler turned it away from their water, and when.
         std::vector<std::pair<Vec2i, float>> refused;
         float askedAt = -1e9f;
+        /// The bottle in hand (an index into bottles) while drinking from
+        /// it, filling or pouring it out; -1 none.
+        int inHand = -1;
+        /// Handing water over, not a cake.
+        bool givingWater = false;
+        /// When it last asked each human for a drink; and whom it has made up
+        /// its mind to ask, and is walking up to (-1 nobody).
+        std::unordered_map<int, float> askedDrink;
+        int askee = -1;
     };
     Water water_;
     /// Getting thirsty, and parched (with what that may teach it).
@@ -901,6 +928,9 @@ private:
         std::unordered_map<int, float> trust;
         /// How many cakes each human carried when last in sight; none are left out.
         std::unordered_map<int, int> seenCakes;
+        /// How much water each human carried in bottles when last in sight;
+        /// none are left out.
+        std::unordered_map<int, float> seenWater;
         /// Who this human is walking up to give a cake.
         int sharee = -1;
         /// Whoever it owes a cake for a tip, paid as the greeting ends.
@@ -1045,6 +1075,50 @@ private:
     /// Water it can drink from beside the cell, as it remembers it.
     std::optional<Vec2i> waterBeside(Vec2i c) const;
     void startDrinking(Vec2i water);
+    /// Bottles (human_bottle.cpp). Whether it would drink what is in b, which
+    /// it sees through the glass: as for water, not too foul or red, unless
+    /// parched, erratic or craving.
+    bool wouldSip(const Bottle& b) const;
+    /// The bottle it would drink from, the fullest of those; -1 none.
+    int sippable() const;
+    /// Drinks from that bottle where it stands. False if there is none.
+    bool startSipping();
+    /// Another gulp from the bottle, or done.
+    void sip(World& world);
+    /// What a gulp of water this foul and red does to it, wherever it came
+    /// from; at is the water cell drunk from, if any, to remember it by.
+    void swallow(World& world, float foul, float red, std::optional<Vec2i> at, bool fromBottle);
+    /// Beside water it would drink (or a toilet, parched or erratic), with a
+    /// bottle to fill or to pour out first: kneels and does it. False if
+    /// there is nothing to do there.
+    bool startFilling(World& world, Vec2i water);
+    /// Fills a share more, or pours, or done.
+    void fill(World& world);
+    void pourOut(World& world);
+    /// A bottle it would pour out at this water rather than keep: one it
+    /// wouldn't drink, or clearly dirtier than this water looks. -1 none.
+    int toPour(const World& world, Vec2i water) const;
+    /// How foul and red the water at a cell truly is (a toilet's as foul as
+    /// it is dirty), for what goes into a bottle.
+    void waterHere(const World& world, Vec2i water, float& foul, float& red) const;
+    /// How much more than WANTING's base it wants to go and fill up: below
+    /// 0 when it doesn't.
+    float fillDrive() const;
+    /// Some bottle wants filling, or pouring out and filling, at this water.
+    bool wantsFill(const World& world, Vec2i water) const;
+    /// Low on water and not thirsty: walks to water to fill up.
+    bool seekFill(World& world);
+    /// Seen a human carrying water, and how much, as it last saw it.
+    const Human* nearestWaterHolder(const World& world) const;
+    /// Thirsty with nothing to drink: asks someone it sees with water, close
+    /// by, walking up to them first. False if it doesn't.
+    bool askForDrink(World& world);
+    /// Asked for a drink by asker, out loud: pours them some, sells it for
+    /// a cake, lies that it has none, or refuses.
+    void answerDrink(World& world, Human& asker);
+    /// Pours amount of its water into o's bottle, or hands o a spare
+    /// bottle when o has none; for a cake when sold. False if it can't.
+    bool giveWater(World& world, Human& o, bool sold);
     /// Sleep, robbing sleepers and keeping watch (human_sleep.cpp).
     struct Sleep {
         /// The sleeper it is robbing, or going to; -1 none.

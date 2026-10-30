@@ -25,10 +25,10 @@
 using P = SoakProbe;
 
 static const char* GOAL[] = {"Explore", "FetchKey", "OpenDoor", "PassDoor", "Wander", "Meet", "Follow", "Company", "FetchCake", "Drink", "Relieve", "Fight",
-                             "Flee", "Share", "CheckDoor", "Wash", "Avoid", "Escort", "Escorted", "Track", "GiveWay", "Loot", "Feed", "Sleep", "Rob", "Watch"};
-static const char* STATE[] = {"Waking", "Idle", "Sitting", "Rising", "Walking", "Greeting", "Eating", "Drinking", "Relieving", "Punching", "Giving", "Washing", "Looting", "Feeding", "Sleeping", "Dead"};
+                             "Flee", "Share", "CheckDoor", "Wash", "Avoid", "Escort", "Escorted", "Track", "GiveWay", "Loot", "Feed", "Sleep", "Rob", "Watch", "Fill", "Ask"};
+static const char* STATE[] = {"Waking", "Idle", "Sitting", "Rising", "Walking", "Greeting", "Eating", "Drinking", "Relieving", "Punching", "Giving", "Washing", "Looting", "Feeding", "Sleeping", "Sipping", "Filling", "Pouring", "Dead"};
 // A goal or state added to Human needs its name here too.
-static_assert(std::size(GOAL) == size_t(Human::Goal::Watch) + 1);
+static_assert(std::size(GOAL) == size_t(Human::Goal::Ask) + 1);
 static_assert(std::size(STATE) == size_t(Human::State::Dead) + 1);
 
 struct Track {
@@ -126,7 +126,8 @@ int main(int argc, char** argv) {
                 } else if (h.state != Human::State::Waking && h.state != Human::State::Sitting &&
                            h.state != Human::State::Rising &&
                            h.state != Human::State::Washing && h.state != Human::State::Drinking && h.state != Human::State::Relieving &&
-                           h.state != Human::State::Looting &&
+                           h.state != Human::State::Looting && h.state != Human::State::Sipping &&
+                           h.state != Human::State::Filling && h.state != Human::State::Pouring &&
                            h.state != Human::State::Feeding && h.state != Human::State::Sleeping) {
                     k.stillFor += dt;
                 } else {

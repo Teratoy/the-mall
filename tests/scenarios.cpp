@@ -141,6 +141,8 @@ Checks guardedWater(Stage& s, bool strangerHasCake, Checks expect) {
     P::settle(settler, s.freeNear(*b, 1));
     Human& stranger = s.add(seedWhere(plain, 4000), 3);
     stranger.thirst = 0.7f;
+    // An empty bottle, so it needs the settler's water.
+    stranger.bottles = {Bottle{}};
     stranger.cakes = strangerHasCake ? 1 : 0;
     settler.hunger = stranger.hunger = 0.1f;
     settler.thirst = 0.1f;
@@ -163,6 +165,27 @@ Check straightFace(const Human& liar) {
                     if (e.what == "SAID \"YOU AGAIN.\" TO @") return false;
                 return true;
             }};
+}
+
+/// A thirsty asker with an empty bottle (or none) close to a holder with
+/// water, both far from the spawn basin, so the asker knows of no water.
+/// The asker is timid, so it asks rather than fights; the holder has made
+/// its home where it stands, so it stays about.
+Checks askForWater(Stage& s, Checks expect, const std::function<void(Human& holder, Human& asker)>& setUp) {
+    Human& holder = s.first();
+    auto b = s.basin();
+    if (!b) return {{"a basin near the spawn", [](const Stage&) { return false; }}};
+    P::place(s.world, holder, s.farFrom(*b, 25));
+    P::settle(holder, holder.cell);
+    Human& asker = s.add(seedWhere([](const Traits& t) { return t.sociable >= 0.55f && t.brave < 0.3f; }, 11000), 1);
+    holder.hunger = asker.hunger = 0.1f;
+    holder.thirst = 0.1f;
+    asker.thirst = 0.7f;
+    asker.bottles = {Bottle{}};
+    asker.cakes = 0;
+    setUp(holder, asker);
+    s.run(100);
+    return expect;
 }
 
 const std::vector<Scenario> SCENARIOS = {
@@ -228,6 +251,9 @@ const std::vector<Scenario> SCENARIOS = {
          Human& victim = s.add(seedWhere(plain, 5000));
          setUpLie(s, liar, victim);
          victim.thirst = 0.7f;
+         // Nothing to drink on either, nor to fight over.
+         victim.bottles = {Bottle{}};
+         liar.bottles.clear();
          s.run(60);
          return Checks{logged({"TOLD @ A WAY TO WATER OVER SPIKES"}), straightFace(liar)};
      }},
@@ -382,6 +408,66 @@ const std::vector<Scenario> SCENARIOS = {
          teller.thirst = friendOf.thirst = third.thirst = 0.1f;
          s.run(60);
          return Checks{logged({"HEARD @'S NAME FROM #"}), logged({"# WARNED ME ABOUT @"})};
+     }},
+    {"bottle-pour", "a bottle of foul water is poured out at the basin and filled with clean", 99,
+     [](Stage& s) {
+         Human& h = s.first();
+         auto b = s.basin();
+         if (!b) return Checks{{"a basin near the spawn", [](const Stage&) { return false; }}};
+         h.bottles = {Bottle{0.4f, 0.6f, 0.0f}};
+         h.hunger = h.thirst = h.tiredness = 0.1f;
+         s.run(90);
+         return Checks{logged({"POURED OUT MY BOTTLE. IT WAS FOUL"}), logged({"FILLED MY BOTTLE"})};
+     }},
+    {"bottle-give", "a friend asked for water pours some into the asker's bottle", seedWhere(kindly, 12000),
+     [](Stage& s) {
+         return askForWater(s, {logged({"ASKED @ FOR WATER"}), logged({"GAVE @ SOME WATER"}), logged({"@ GAVE ME SOME WATER"})},
+                            [](Human& holder, Human& asker) {
+                                P::setTrust(holder, asker, 0.6f);
+                                P::setTrust(asker, holder, 0.6f);
+                            });
+     }},
+    {"bottle-spare", "a friend hands its spare bottle to a thirsty friend with none", seedWhere(kindly, 12500),
+     [](Stage& s) {
+         return askForWater(s, {logged({"GAVE @ A BOTTLE"}), logged({"@ GAVE ME A BOTTLE"})}, [](Human& holder, Human& asker) {
+             P::setTrust(holder, asker, 0.6f);
+             P::setTrust(asker, holder, 0.6f);
+             holder.bottles = {Bottle{1.0f}, Bottle{0.6f}};
+             asker.bottles.clear();
+         });
+     }},
+    {"bottle-sell", "a grasping stranger asked for water sells it for a cake",
+     seedWhere([](const Traits& t) { return t.greedy >= 0.55f && t.sociable < 0.4f && t.brave < 0.4f; }, 13000),
+     [](Stage& s) {
+         return askForWater(s, {logged({"SOLD @ SOME WATER FOR A CAKE"}), logged({"BOUGHT SOME WATER FROM @ FOR A CAKE"})},
+                            [](Human&, Human& asker) { asker.cakes = 1; });
+     }},
+    {"bottle-lie", "a cunning stranger says its bottle is empty, and is seen through",
+     seedWhere([](const Traits& t) { return cunning(t) && t.sociable < 0.4f; }, 14000),
+     [](Stage& s) {
+         return askForWater(s, {logged({"TOLD @ MY BOTTLE WAS EMPTY"}), logged({"@ SAID THEIR BOTTLE WAS EMPTY. IT WASN'T"})},
+                            [](Human&, Human&) {});
+     }},
+    {"bottle-refuse", "a stingy stranger won't give any of its water",
+     seedWhere([](const Traits& t) { return t.greedy < 0.35f && t.sociable < 0.4f && t.brave < 0.3f; }, 15000),
+     [](Stage& s) {
+         return askForWater(s, {logged({"WOULDN'T GIVE @ WATER"}), logged({"@ WOULDN'T GIVE ME WATER"})},
+                            [](Human&, Human&) {});
+     }},
+    {"bottle-snatch", "a bold, thirsty human with nothing to drink takes a foe's bottle in a fight", 99,
+     [](Stage& s) {
+         Human& holder = s.first();
+         auto b = s.basin();
+         if (!b) return Checks{{"a basin near the spawn", [](const Stage&) { return false; }}};
+         P::place(s.world, holder, s.farFrom(*b, 25));
+         Human& thief = s.add(seedWhere([](const Traits& t) { return t.brave >= 0.7f; }, 16000), 2);
+         P::setTrust(thief, holder, -0.6f);
+         holder.hunger = thief.hunger = 0.1f;
+         holder.thirst = 0.1f;
+         thief.thirst = 0.75f;
+         thief.bottles = {Bottle{}};
+         s.run(60);
+         return Checks{logged({"HIT @ AND TOOK THEIR BOTTLE"}), logged({"@ HIT ME AND TOOK MY BOTTLE"})};
      }},
     {"chat", "two calm acquaintances together start chatting", 99,
      [](Stage& s) {

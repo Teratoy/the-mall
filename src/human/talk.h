@@ -89,6 +89,13 @@ enum class Moment {
     // (to nobody, about them).
     Tired, Exhausted, SleepNow, Woke, Dream, RobbedSleep, CakeGone, WatchMe, WatchYes, WatchCake, WatchNo, WakeUp,
     YourWatch, FailedWatch, WakeThem,
+    // Bottles: drinking from it, running it dry, filling it, pouring it out
+    // (all to nobody); asking someone for a drink (to them), and their
+    // answer: pouring some, for a cake, lying that it's empty, refusing;
+    // the asker seeing through the lie (to them); a bottle snatched in a
+    // fight (to whoever took it).
+    Sip, BottleDry, FillBottle, PourOut, AskDrink, GiveDrink, SellDrink, BottleLie, CaughtBottleLie, RefuseDrink,
+    BottleTaken,
     Count
 };
 

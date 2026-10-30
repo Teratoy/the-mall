@@ -8,8 +8,10 @@ struct Dropping;
 /// Feces' colour, from dry (0) to fresh (1), as on a body; and piss's.
 Color fecesColor(float fresh);
 Color pissColor(float fresh);
-/// Clouds a water cell with its top-left at (x, y) brown, foul from 0 to 1.
+/// Clouds a water cell with its top-left at (x, y) brown, foul from 0 to 1;
+/// and the brown laid over water that foul, alpha and all.
 void drawWaterFoul(int x, int y, float foul);
+Color waterFoulCloud(float foul);
 
 /// Draws a puddle of piss or a pile of feces where it lies, shifted by
 /// (-left, -top) world pixels: fresh is wet and bright, and it dries as
