@@ -29,6 +29,13 @@ class Human;
 /// obituary when they die, or as left behind if the world is left with
 /// them alive. Debug keys: 1-5 set the speed, TAB reveals everything, F5
 /// reads data/lines.txt again.
+///
+/// In a window wider than tall it takes the PC layout instead: the world in
+/// a square, with the stats and log side by side left of it, the name,
+/// items and bars over the stats, and right of it the rest of what the
+/// strips show over the map. All three are always open there;
+/// the wheel scrolls the log or zooms the map when over them, and zooms the
+/// world anywhere else.
 class WorldScene : public Scene {
 public:
     /// humanSeed names and shapes the human you made; seed grows the world.
@@ -38,6 +45,7 @@ public:
 
     void update(float dt, const Canvas& canvas) override;
     void draw(const Canvas& canvas) override;
+    bool canBeWide() const override { return true; }
 
 private:
     /// tools/shot.cpp opens menus and keeps its worlds out of the obituary.
@@ -98,12 +106,27 @@ private:
     const HumanSprites& spritesFor(const Human& h);
     /// Puts the human you made into the obituary, dead or left behind.
     void record();
-    void drawPause(Vector2 mouse);
+    /// The six buttons that zoom, set the speed and pause, wherever the
+    /// layout puts them; speed is the slot showing it, between its arrows.
+    struct Controls {
+        Rectangle zoomIn, zoomOut, speedUp, speed, speedDown, pause;
+    };
+
+    /// The pause menu over the whole canvas, width wide.
+    void drawPause(Vector2 mouse, int width);
     /// The living human nearest the followed one, if anyone is left.
     const Human* nearestLiving() const;
-    /// The followed human's log, newest first, in the space between the
-    /// strips left of the buttons.
-    void drawLog(const Human& viewer);
-    /// The followed human's stats, in the same space as the log.
-    void drawStats(const Human& viewer);
+    /// The phone's strips and buttons over the world, and whichever of the
+    /// log, stats or map is open.
+    void drawPhone(const Human& viewer, Vector2 mouse);
+    /// The PC's columns beside the square of world.
+    void drawWide(const Human& viewer, Vector2 mouse);
+    void drawControls(const Controls& c, Vector2 mouse);
+    /// The followed human's log, newest first, in area: on the phone the
+    /// space between the strips left of the buttons.
+    void drawLog(const Human& viewer, Rectangle area);
+    /// The followed human's stats, in area: on the phone the log's place.
+    void drawStats(const Human& viewer, Rectangle area);
+    /// Their map in area, following them or where it was dragged to.
+    void drawMapIn(const Human& viewer, Rectangle area);
 };

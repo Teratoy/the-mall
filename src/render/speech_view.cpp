@@ -1,6 +1,5 @@
 #include "render/speech_view.h"
 #include "human/human.h"
-#include "render/canvas.h"
 #include "render/world_view.h"
 #include "ui/pixel_ui.h"
 #include "world/world.h"
@@ -37,21 +36,23 @@ bool overlap(const Rectangle& a, const Rectangle& b) {
 
 } // namespace
 
-void drawSpeech(const World& world, const Human& viewer, bool reveal, float zoom, int top, int bottom) {
-    Vector2 cam = cameraFor(viewer, zoom);
+void drawSpeech(const World& world, const Human& viewer, bool reveal, float zoom, Rectangle view, int top,
+                int bottom) {
+    Vector2 cam = cameraFor(viewer, zoom, {view.width, view.height});
+    float viewRight = view.x + view.width;
     std::vector<Bubble> bubbles;
     for (const auto& h : world.humans()) {
         const Human::Speech* s = h->speaking();
         if (!s || h->dead() || !shown(viewer, *h, reveal)) continue;
         Vector2 feet = feetOf(*h);
-        Vector2 head{(feet.x - cam.x) * zoom, (feet.y - SPRITE_H - cam.y) * zoom};
-        if (head.x < 0 || head.x >= Canvas::W || head.y < top || head.y >= bottom) continue;
+        Vector2 head{view.x + (feet.x - cam.x) * zoom, view.y + (feet.y - SPRITE_H - cam.y) * zoom};
+        if (head.x < view.x || head.x >= viewRight || head.y < top || head.y >= bottom) continue;
         Bubble b;
         b.rows = ui::wrap(s->text, TEXT_W);
         int w = 0;
         for (const std::string& r : b.rows) w = std::max(w, ui::textWidth(r.c_str()));
         float bw = float(w + 2 * PAD_X), bh = float(int(b.rows.size()) * ui::ROW + 2 * PAD_Y - 1);
-        float x = std::clamp(std::round(head.x - bw / 2), float(EDGE), float(Canvas::W - EDGE) - bw);
+        float x = std::clamp(std::round(head.x - bw / 2), view.x + EDGE, viewRight - EDGE - bw);
         b.box = {x, std::round(head.y) - LIFT - bh, bw, bh};
         b.head = head;
         b.edge = EDGES[size_t(s->tone)];

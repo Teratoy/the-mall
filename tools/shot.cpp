@@ -9,6 +9,7 @@
 //   --stats        open the followed human's stats
 //   --log          open the followed human's log
 //   --reveal       show the whole world, not just what the human knows
+//   --wide         a wide window, so the world takes the PC layout
 //
 // The world is never put in the obituary: data/obituary.txt is left alone.
 // The image is read back before EndDrawing (after the swap it is black).
@@ -41,7 +42,7 @@ struct ShotProbe {
 int main(int argc, char** argv) {
     if (argc < 2 || argv[1][0] == '-') {
         std::fprintf(stderr, "usage: %s out.png [--scene world|menu|create|obituary] [--seconds S] [--seed N] "
-                             "[--zoom 0-3] [--stats] [--log] [--reveal]\n", argv[0]);
+                             "[--zoom 0-3] [--stats] [--log] [--reveal] [--wide]\n", argv[0]);
         return 1;
     }
     const char* out = argv[1];
@@ -49,7 +50,7 @@ int main(int argc, char** argv) {
     float seconds = 8.0f;
     uint64_t seed = 7;
     int zoom = 2;
-    bool stats = false, log = false, reveal = false;
+    bool stats = false, log = false, reveal = false, wide = false;
     for (int i = 2; i < argc; i++) {
         auto value = [&]() -> const char* {
             if (i + 1 >= argc) {
@@ -65,6 +66,7 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(argv[i], "--stats")) stats = true;
         else if (!std::strcmp(argv[i], "--log")) log = true;
         else if (!std::strcmp(argv[i], "--reveal")) reveal = true;
+        else if (!std::strcmp(argv[i], "--wide")) wide = true;
         else {
             std::fprintf(stderr, "unknown option %s\n", argv[i]);
             return 1;
@@ -73,7 +75,7 @@ int main(int argc, char** argv) {
 
     SetTraceLogLevel(LOG_WARNING);
     SetConfigFlags(FLAG_WINDOW_HIDDEN);
-    InitWindow(Canvas::W * 2, Canvas::H * 2, "shot");
+    InitWindow((wide ? Canvas::WIDE_W : Canvas::W) * 2, Canvas::H * 2, "shot");
     bool ok = false;
     {
         Canvas canvas;
@@ -95,6 +97,7 @@ int main(int argc, char** argv) {
             std::fprintf(stderr, "unknown scene %s\n", scene.c_str());
         }
         if (s) {
+            canvas.fit(s->canBeWide());
             for (int f = 0; f < int(seconds * 60.0f); f++) s->update(1.0f / 60.0f, canvas);
             if (world) ShotProbe::set(*world, zoom, stats, log, reveal);
             canvas.begin();

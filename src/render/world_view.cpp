@@ -1,7 +1,6 @@
 #include "render/world_view.h"
 #include "human/human.h"
 #include "render/blood_art.h"
-#include "render/canvas.h"
 #include "render/floor_tiles.h"
 #include "render/human_sprites.h"
 #include "render/mess_art.h"
@@ -244,11 +243,11 @@ Vector2 feetOf(const Human& h) {
 
 // On the middle of the sprite, snapped to whole canvas pixels: zoomed out,
 // a canvas pixel spans several world ones.
-Vector2 cameraFor(const Human& viewer, float zoom) {
+Vector2 cameraFor(const Human& viewer, float zoom, Vector2 size) {
     Vector2 feet = feetOf(viewer);
     float snap = std::max(1.0f, 1.0f / zoom);
     auto snapped = [snap](float v) { return std::round(v / snap) * snap; };
-    return {snapped(feet.x - Canvas::W / zoom / 2), snapped(feet.y - SPRITE_H / 2.0f - Canvas::H / zoom / 2)};
+    return {snapped(feet.x - size.x / zoom / 2), snapped(feet.y - SPRITE_H / 2.0f - size.y / zoom / 2)};
 }
 
 bool shown(const Human& viewer, const Human& h, bool reveal) {
@@ -256,14 +255,15 @@ bool shown(const Human& viewer, const Human& h, bool reveal) {
 }
 
 void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprites,
-               const FloorTiles& floorTiles, const StatueArt& statueArt, bool reveal, float zoom) {
-    Vector2 cam = cameraFor(viewer, zoom);
+               const FloorTiles& floorTiles, const StatueArt& statueArt, bool reveal, float zoom, Rectangle area) {
+    Vector2 cam = cameraFor(viewer, zoom, {area.width, area.height});
     int left = int(cam.x), top = int(cam.y);
-    BeginMode2D(Camera2D{{0, 0}, {0, 0}, 0.0f, zoom});
+    BeginScissorMode(int(area.x), int(area.y), int(area.width), int(area.height));
+    BeginMode2D(Camera2D{{area.x, area.y}, {0, 0}, 0.0f, zoom});
 
     auto known = [&](Vec2i c) { return reveal ? world.tile(c) : viewer.memory.tile(c); };
-    int x0 = floorDiv(left, CELL_PX), x1 = floorDiv(left + int(std::ceil(Canvas::W / zoom)), CELL_PX);
-    int y0 = floorDiv(top, CELL_PX), y1 = floorDiv(top + int(std::ceil(Canvas::H / zoom)), CELL_PX);
+    int x0 = floorDiv(left, CELL_PX), x1 = floorDiv(left + int(std::ceil(area.width / zoom)), CELL_PX);
+    int y0 = floorDiv(top, CELL_PX), y1 = floorDiv(top + int(std::ceil(area.height / zoom)), CELL_PX);
     // Floors never change, so a remembered one looks as it really is.
     for (int y = y0; y <= y1; y++)
         for (int x = x0; x <= x1; x++) {
@@ -463,4 +463,5 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
         for (int i = 0; i < 3; i++) DrawPixel(int(px) - d.dir.x * i, int(py) - d.dir.y * i, DART);
     }
     EndMode2D();
+    EndScissorMode();
 }

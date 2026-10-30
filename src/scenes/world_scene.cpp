@@ -99,6 +99,43 @@ constexpr int MAP_ZOOMS[] = {1, 2, 3, 4};
 constexpr int MAP_ZOOM_COUNT = int(std::size(MAP_ZOOMS));
 /// Shown once the followed human is dead, just above the bottom strip.
 constexpr Rectangle NEXT_BUTTON{Canvas::W / 2 - 24, BOTTOM_Y - MARGIN - 16, 48, 16};
+/// The phone's world fills the canvas, under the strips.
+constexpr Rectangle PHONE_VIEW{0, 0, Canvas::W, Canvas::H};
+
+// The PC layout, on the wide canvas: stats and log side by side on the
+// left, the world in a square, then the rest of the HUD over the map on the
+// right. Who is followed, what they carry and their bars head the stats.
+// Every column is as wide as the phone's log, so stats and log read the
+// same in both. Nothing is opened with a button; all of it is always there.
+constexpr int COLUMN_W = int(LOG_AREA.width);
+static_assert(3 * COLUMN_W + Canvas::H == Canvas::WIDE_W, "the PC columns and square fill the wide canvas");
+/// The stats column, top down: the name and items, the four bars a row
+/// each, then the stats.
+constexpr int WIDE_NAME_Y = MARGIN;
+constexpr int WIDE_BARS_Y = WIDE_NAME_Y + ui::ROW + MARGIN;
+constexpr int WIDE_BARS = 4;
+constexpr int WIDE_STATS_Y = WIDE_BARS_Y + WIDE_BARS * ui::ROW + MARGIN;
+constexpr Rectangle WIDE_STATS{0, float(WIDE_STATS_Y), float(COLUMN_W), float(Canvas::H - WIDE_STATS_Y)};
+constexpr int STATS_LEFT = MARGIN, STATS_RIGHT = COLUMN_W - MARGIN;
+constexpr Rectangle WIDE_LOG{float(COLUMN_W), 0, float(COLUMN_W), Canvas::H};
+constexpr Rectangle WIDE_VIEW{float(2 * COLUMN_W), 0, Canvas::H, Canvas::H};
+constexpr int HUD_X = 2 * COLUMN_W + Canvas::H;
+constexpr int HUD_LEFT = HUD_X + MARGIN, HUD_RIGHT = Canvas::WIDE_W - MARGIN;
+/// The HUD column, top down: the world's size, what they are doing in up to
+/// WIDE_DOING_ROWS rows, then the buttons in a row; the map takes the rest.
+constexpr int WIDE_DOING_ROWS = 3;
+constexpr int WIDE_DOING_Y = MARGIN + ui::ROW + MARGIN;
+constexpr int WIDE_BUTTONS_Y = WIDE_DOING_Y + WIDE_DOING_ROWS * ui::ROW + MARGIN;
+constexpr Rectangle wideButtonAt(int i) {
+    return {float(HUD_LEFT + i * (BUTTON_W + BUTTON_GAP)), float(WIDE_BUTTONS_Y), float(BUTTON_W), float(BUTTON_H)};
+}
+static_assert(HUD_LEFT + 6 * BUTTON_W + 5 * BUTTON_GAP <= HUD_RIGHT, "the PC buttons fit their row");
+constexpr int WIDE_MAP_Y = WIDE_BUTTONS_Y + BUTTON_H + MARGIN;
+constexpr Rectangle WIDE_MAP{float(HUD_X), float(WIDE_MAP_Y), float(COLUMN_W), float(Canvas::H - WIDE_MAP_Y)};
+/// Over the bottom of the square once the followed human is dead.
+constexpr Rectangle WIDE_NEXT_BUTTON{WIDE_VIEW.x + Canvas::H / 2.0f - 24, Canvas::H - MARGIN - 16, 48, 16};
+/// The lines between the columns.
+constexpr Color COLUMN_EDGE = ui::GROUND;
 
 std::string caps(std::string s) {
     for (char& c : s) c = char(std::toupper(uint8_t(c)));
@@ -187,10 +224,11 @@ std::string logLine(const Human& h, const LifeLog::Entry& e) {
     return s;
 }
 
-/// A labelled bar from x to right at y, filled by amount from 0 to 1.
-void bar(const char* label, int x, int right, int y, float amount, Color fill) {
+/// A labelled bar from x to right at y, filled by amount from 0 to 1. The bar
+/// starts at barX, or just past the label if none is given.
+void bar(const char* label, int x, int right, int y, float amount, Color fill, int barX = -1) {
     ui::text(label, x, y - 2);
-    int bx = x + ui::textWidth(label) + 3, bw = right - bx;
+    int bx = barX >= 0 ? barX : x + ui::textWidth(label) + 3, bw = right - bx;
     DrawRectangle(bx, y, bw, BAR_H, ui::INK);
     DrawRectangle(bx + 1, y + 1, bw - 2, BAR_H - 2, ui::PAPER);
     DrawRectangle(bx + 1, y + 1, int((bw - 2) * std::clamp(amount, 0.0f, 1.0f)), BAR_H - 2, fill);
@@ -285,6 +323,15 @@ void WorldScene::update(float dt, const Canvas& canvas) {
     if (IsKeyPressed(KEY_L)) logToggle_ = true;
     if (IsKeyPressed(KEY_S)) statsToggle_ = true;
     if (IsKeyPressed(KEY_M)) mapToggle_ = true;
+    // On the PC all three are always open, so nothing toggles them, and
+    // the wheel goes to whichever the mouse is over.
+    bool wide = canvas.wide();
+    Vector2 m = canvas.mouse();
+    if (wide) logToggle_ = statsToggle_ = mapToggle_ = false;
+    Rectangle logArea = wide ? WIDE_LOG : LOG_AREA, mapArea = wide ? WIDE_MAP : LOG_AREA;
+    bool logShown = wide || logOpen_, mapShown = wide || mapOpen_;
+    bool wheelOnMap = wide ? CheckCollisionPointRec(m, WIDE_MAP) : mapOpen_;
+    bool wheelOnLog = wide ? CheckCollisionPointRec(m, WIDE_LOG) : logOpen_;
     // The log, stats and map share one place, so opening one shuts the others.
     if (logToggle_) {
         logToggle_ = false;
@@ -303,15 +350,17 @@ void WorldScene::update(float dt, const Canvas& canvas) {
         mapFollow_ = true;
         if (mapOpen_) logOpen_ = statsOpen_ = false;
     }
-    // While the map is open, + and - and the wheel zoom it instead.
-    if (mapOpen_) {
-        if (wheel > 0.0f) step++;
-        if (wheel < 0.0f) step--;
-        mapZoom_ = std::clamp(mapZoom_ + step, 0, MAP_ZOOM_COUNT - 1);
-        step = 0;
+    // While the map is open on the phone, + and - and the wheel zoom it
+    // instead; on the PC only the wheel over it does.
+    if (wheelOnMap) {
+        int mapStep = wide ? 0 : step;
+        if (wheel > 0.0f) mapStep++;
+        if (wheel < 0.0f) mapStep--;
+        mapZoom_ = std::clamp(mapZoom_ + mapStep, 0, MAP_ZOOM_COUNT - 1);
+        if (!wide) step = 0;
         wheel = 0.0f;
     }
-    if (logOpen_) {
+    if (wheelOnLog) {
         if (wheel < 0.0f) logScroll_++;
         if (wheel > 0.0f) logScroll_--;
         wheel = 0.0f;
@@ -330,22 +379,21 @@ void WorldScene::update(float dt, const Canvas& canvas) {
         }
     }
     // Dragging the log up shows older entries, one per row dragged.
-    Vector2 m = canvas.mouse();
-    if (logOpen_ && IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(m, LOG_AREA)) {
+    if (logShown && IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(m, logArea)) {
         dragging_ = true;
         dragFrom_ = m.y;
         dragScroll_ = logScroll_;
     }
-    if (!logOpen_ || !IsMouseButtonDown(MOUSE_BUTTON_LEFT)) dragging_ = false;
+    if (!logShown || !IsMouseButtonDown(MOUSE_BUTTON_LEFT)) dragging_ = false;
     if (dragging_) logScroll_ = dragScroll_ + int((dragFrom_ - m.y) / ui::ROW);
     // Dragging the map moves it under the finger, and it stops following.
-    if (mapOpen_ && IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(m, LOG_AREA)) {
+    if (mapShown && IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(m, mapArea)) {
         mapDragging_ = true;
         mapDragFrom_ = m;
         Vec2i at = world_.human(follow_).cell;
         mapDragCentre_ = mapFollow_ ? Vector2{at.x + 0.5f, at.y + 0.5f} : mapCentre_;
     }
-    if (!mapOpen_ || !IsMouseButtonDown(MOUSE_BUTTON_LEFT)) mapDragging_ = false;
+    if (!mapShown || !IsMouseButtonDown(MOUSE_BUTTON_LEFT)) mapDragging_ = false;
     if (mapDragging_) {
         float px = float(MAP_ZOOMS[mapZoom_]);
         Vector2 moved{(m.x - mapDragFrom_.x) / px, (m.y - mapDragFrom_.y) / px};
@@ -361,12 +409,12 @@ void WorldScene::update(float dt, const Canvas& canvas) {
 
 // Each entry is its time, dimmed, then what happened, wrapped under itself.
 // Whatever doesn't fit at the bottom is scrolled to.
-void WorldScene::drawLog(const Human& viewer) {
+void WorldScene::drawLog(const Human& viewer, Rectangle area) {
     if (logFor_ != viewer.id) logFor_ = viewer.id, logScroll_ = 0, dragging_ = false;
-    DrawRectangleRec(LOG_AREA, LOG_SHADE);
+    DrawRectangleRec(area, LOG_SHADE);
     const auto& entries = viewer.log.entries();
-    int left = MARGIN, right = int(LOG_AREA.x + LOG_AREA.width) - MARGIN;
-    int y = int(LOG_AREA.y) + MARGIN, bottom = int(LOG_AREA.y + LOG_AREA.height) - MARGIN;
+    int left = int(area.x) + MARGIN, right = int(area.x + area.width) - MARGIN;
+    int y = int(area.y) + MARGIN, bottom = int(area.y + area.height) - MARGIN;
     if (entries.empty()) {
         ui::textCentred("NOTHING YET", (left + right) / 2, y, ui::DIM);
         return;
@@ -423,10 +471,10 @@ int pipRow(const char* label, float amount, int x, int right, int y, Color fill 
 
 // What they are like, whom they know, how their mind stands and what going
 // without has taught them.
-void WorldScene::drawStats(const Human& viewer) {
-    DrawRectangleRec(LOG_AREA, LOG_SHADE);
-    int x = MARGIN, right = int(LOG_AREA.x + LOG_AREA.width) - MARGIN;
-    int y = int(LOG_AREA.y) + MARGIN;
+void WorldScene::drawStats(const Human& viewer, Rectangle area) {
+    DrawRectangleRec(area, LOG_SHADE);
+    int x = int(area.x) + MARGIN, right = int(area.x + area.width) - MARGIN;
+    int y = int(area.y) + MARGIN;
     const Traits& t = viewer.traits;
     y = section("TRAITS", x, y);
     y = pipRow("BRAVE", t.brave, x, right, y);
@@ -465,11 +513,23 @@ void WorldScene::drawStats(const Human& viewer) {
 void WorldScene::draw(const Canvas& canvas) {
     ClearBackground(BLACK);
     const Human& viewer = world_.human(follow_);
+    bool wide = canvas.wide();
+    Rectangle view = wide ? WIDE_VIEW : PHONE_VIEW;
     drawWorld(world_, viewer, [this](const Human& h) -> const HumanSprites& { return spritesFor(h); },
-              floorTiles_, statueArt_, reveal_, ZOOMS[zoom_]);
-    if (!logOpen_ && !statsOpen_ && !mapOpen_) drawSpeech(world_, viewer, reveal_, ZOOMS[zoom_], TOP_H, BOTTOM_Y);
+              floorTiles_, statueArt_, reveal_, ZOOMS[zoom_], view);
     // Under the pause menu nothing else takes a tap.
     Vector2 mouse = paused_ ? Vector2{-1.0f, -1.0f} : canvas.mouse();
+    if (wide) {
+        drawSpeech(world_, viewer, reveal_, ZOOMS[zoom_], view, 0, Canvas::H);
+        drawWide(viewer, mouse);
+    } else {
+        if (!logOpen_ && !statsOpen_ && !mapOpen_) drawSpeech(world_, viewer, reveal_, ZOOMS[zoom_], view, TOP_H, BOTTOM_Y);
+        drawPhone(viewer, mouse);
+    }
+    if (paused_) drawPause(canvas.mouse(), canvas.width());
+}
+
+void WorldScene::drawPhone(const Human& viewer, Vector2 mouse) {
     char line[64];
 
     // Top strip. Who is followed and what they carry: the one name it is
@@ -522,36 +582,95 @@ void WorldScene::draw(const Canvas& canvas) {
         y += ui::ROW;
     }
 
-    if (logOpen_) drawLog(viewer);
-    if (statsOpen_) drawStats(viewer);
-    if (mapOpen_) {
-        Vector2 centre = mapFollow_ ? Vector2{viewer.cell.x + 0.5f, viewer.cell.y + 0.5f} : mapCentre_;
-        drawMap(world_, viewer, LOG_AREA, MAP_ZOOMS[mapZoom_], centre, mapTime_);
+    if (logOpen_) drawLog(viewer, LOG_AREA);
+    if (statsOpen_) drawStats(viewer, LOG_AREA);
+    if (mapOpen_) drawMapIn(viewer, LOG_AREA);
+
+    drawControls({ZOOM_IN_BUTTON, ZOOM_OUT_BUTTON, SPEED_UP_BUTTON, SPEED_SLOT, SPEED_DOWN_BUTTON, PAUSE_BUTTON},
+                 mouse);
+    if (viewer.dead()) nextHuman_ |= ui::button(NEXT_BUTTON, "NEXT", mouse);
+}
+
+// The same as the phone shows, laid out down one column: no strips over the
+// world, and stats, log and map always open.
+void WorldScene::drawWide(const Human& viewer, Vector2 mouse) {
+    char line[64];
+    drawStats(viewer, WIDE_STATS);
+    drawLog(viewer, WIDE_LOG);
+    for (int x : {COLUMN_W, 2 * COLUMN_W - 1, HUD_X}) DrawRectangle(x, 0, 1, Canvas::H, COLUMN_EDGE);
+
+    // Over the stats, who is followed and what they carry.
+    int x = item(STATS_RIGHT, WIDE_NAME_Y, viewer.cakes, drawCakeIcon);
+    x = item(x - ITEM_GAP, WIDE_NAME_Y, viewer.keys, drawKeyIcon);
+    // A long name is broken off before the items rather than run under them.
+    std::vector<std::string> nameRows = ui::wrap(caps(viewer.name), x - ITEM_GAP - STATS_LEFT);
+    if (!nameRows.empty()) ui::text(nameRows.front().c_str(), STATS_LEFT, WIDE_NAME_Y, ui::BRIGHT);
+
+    // Health and the needs a row each, their bars lined up past the widest
+    // label.
+    const char* labels[] = {"HP", "HUNGER", "THIRST", "TIRED"};
+    const float amounts[] = {viewer.health, viewer.hunger, viewer.thirst, viewer.tiredness};
+    const Color fills[] = {HEALTH_BAR, HUNGER_BAR, THIRST_BAR, TIRED_BAR};
+    static_assert(int(std::size(labels)) == WIDE_BARS);
+    int barX = 0;
+    for (const char* l : labels) barX = std::max(barX, ui::textWidth(l));
+    barX += STATS_LEFT + 3;
+    for (int i = 0; i < WIDE_BARS; i++)
+        bar(labels[i], STATS_LEFT, STATS_RIGHT, WIDE_BARS_Y + 2 + i * ui::ROW, amounts[i], fills[i], barX);
+
+    // Right of the world, its size and whether it is all revealed.
+    std::snprintf(line, sizeof line, "HUMANS %zu  CHUNKS %zu", world_.livingCount(), world_.chunkCount());
+    ui::text(line, HUD_LEFT, MARGIN, ui::DIM);
+    if (reveal_) ui::textRight("REVEAL", HUD_RIGHT, MARGIN, REVEAL_INK);
+
+    // What they are doing, centred in the rows kept for it.
+    std::vector<std::string> rows = ui::wrap(doing(viewer), HUD_RIGHT - HUD_LEFT);
+    if (int(rows.size()) > WIDE_DOING_ROWS) rows.resize(WIDE_DOING_ROWS);
+    int y = WIDE_DOING_Y + (WIDE_DOING_ROWS - int(rows.size())) * ui::ROW / 2;
+    for (const std::string& row : rows) {
+        ui::textCentred(row.c_str(), (HUD_LEFT + HUD_RIGHT) / 2, y);
+        y += ui::ROW;
     }
 
-    if (ui::button(ZOOM_IN_BUTTON, "+", mouse)) zoomStep_++;
-    if (ui::button(ZOOM_OUT_BUTTON, "-", mouse)) zoomStep_--;
-    if (ui::arrowButton(SPEED_UP_BUTTON, true, mouse)) speedStep_++;
-    ui::panel(SPEED_SLOT);
+    drawControls({wideButtonAt(0), wideButtonAt(1), wideButtonAt(2), wideButtonAt(3), wideButtonAt(4),
+                  wideButtonAt(5)},
+                 mouse);
+    drawMapIn(viewer, WIDE_MAP);
+    if (viewer.dead()) nextHuman_ |= ui::button(WIDE_NEXT_BUTTON, "NEXT", mouse);
+}
+
+void WorldScene::drawMapIn(const Human& viewer, Rectangle area) {
+    Vector2 centre = mapFollow_ ? Vector2{viewer.cell.x + 0.5f, viewer.cell.y + 0.5f} : mapCentre_;
+    drawMap(world_, viewer, area, MAP_ZOOMS[mapZoom_], centre, mapTime_);
+}
+
+void WorldScene::drawControls(const Controls& c, Vector2 mouse) {
+    char line[16];
+    if (ui::button(c.zoomIn, "+", mouse)) zoomStep_++;
+    if (ui::button(c.zoomOut, "-", mouse)) zoomStep_--;
+    if (ui::arrowButton(c.speedUp, true, mouse)) speedStep_++;
+    ui::panel(c.speed);
     std::snprintf(line, sizeof line, "X%d", SPEEDS[speed_]);
-    ui::textCentred(line, int(SPEED_SLOT.x + SPEED_SLOT.width / 2), int(SPEED_SLOT.y) + 3, ui::BRIGHT);
-    if (ui::arrowButton(SPEED_DOWN_BUTTON, false, mouse)) speedStep_--;
-    if (viewer.dead()) nextHuman_ |= ui::button(NEXT_BUTTON, "NEXT", mouse);
-    pauseToggle_ |= ui::button(PAUSE_BUTTON, "II", mouse);
-    if (paused_) drawPause(canvas.mouse());
+    ui::textCentred(line, int(c.speed.x + c.speed.width / 2), int(c.speed.y) + 3, ui::BRIGHT);
+    if (ui::arrowButton(c.speedDown, false, mouse)) speedStep_--;
+    pauseToggle_ |= ui::button(c.pause, "II", mouse);
 }
 
 // Leaving with the human you made alive leaves them behind, so it says so.
-void WorldScene::drawPause(Vector2 mouse) {
-    DrawRectangle(0, 0, Canvas::W, Canvas::H, PAUSE_SHADE);
-    ui::textCentred("PAUSED", Canvas::W / 2, PAUSE_TITLE_Y, ui::BRIGHT);
-    pauseToggle_ |= ui::button(RESUME_BUTTON, "RESUME", mouse);
-    toMenu_ |= ui::button(MENU_BUTTON, "MAIN MENU", mouse);
+// It sits in the middle of whichever canvas is up, width wide.
+void WorldScene::drawPause(Vector2 mouse, int width) {
+    float shift = (width - Canvas::W) / 2.0f;
+    auto shifted = [shift](Rectangle r) { return Rectangle{r.x + shift, r.y, r.width, r.height}; };
+    Rectangle menu = shifted(MENU_BUTTON);
+    DrawRectangle(0, 0, width, Canvas::H, PAUSE_SHADE);
+    ui::textCentred("PAUSED", width / 2, PAUSE_TITLE_Y, ui::BRIGHT);
+    pauseToggle_ |= ui::button(shifted(RESUME_BUTTON), "RESUME", mouse);
+    toMenu_ |= ui::button(menu, "MAIN MENU", mouse);
     if (!recorded_) {
         std::string warning = caps(world_.human(0).name) + " WILL BE LEFT BEHIND";
-        int y = int(MENU_BUTTON.y + MENU_BUTTON.height) + PAUSE_GAP;
+        int y = int(menu.y + menu.height) + PAUSE_GAP;
         for (const std::string& row : ui::wrap(warning, Canvas::W - 2 * MARGIN * 4)) {
-            ui::textCentred(row.c_str(), Canvas::W / 2, y, ui::DIM);
+            ui::textCentred(row.c_str(), width / 2, y, ui::DIM);
             y += ui::ROW;
         }
     }
