@@ -399,7 +399,8 @@ void Human::react(World& world) {
             mind_.prey = -1;
             if (startFlee(world)) {
                 note("RAN FROM @", a.id);
-                sayLater(talk::Moment::Flee, a.id);
+                // Shouted to anyone who can hear, not to the one it runs from.
+                sayLater(talk::Moment::Flee);
                 return;
             }
         }

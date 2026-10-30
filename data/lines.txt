@@ -401,7 +401,7 @@ brave warm              | I OWE YOU ONE.
 loner                   | ...THANKS.
 friend warm             | {NAME}! I KNEW YOU'D COME!
 
-# Running from whoever hit it.
+# Running from whoever hit it, shouted to anyone who can hear.
 [flee 0.8]
 fear                    | RUN!
 fear                    | GET AWAY FROM ME!
