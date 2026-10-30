@@ -129,6 +129,9 @@ enum class Moment {
     // it); leaving a companion as lost as itself (to them); erratic, going
     // for someone's bottle (to them).
     NoWater, CallDoor, PartDry, BottleRage,
+    // A lesson it still held, learnt again the hard way, and learnt for good
+    // (to nobody); the first drink after thirst began to kill it (to nobody).
+    LearnAgain, LearnMax, Quenched,
     Count
 };
 

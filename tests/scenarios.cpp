@@ -109,6 +109,14 @@ Check unlogged(std::string line) {
     return {"no " + line, [line](const Stage& s) { return !s.logged(line); }};
 }
 using Checks = std::vector<Check>;
+/// This line in h's log, or (said false) not in it.
+Check loggedBy(const Human& h, const std::string& line, bool said = true) {
+    return {(said ? "#" : "no #") + std::to_string(h.id) + " " + line, [&h, line, said](const Stage&) {
+                for (const auto& e : h.log.entries())
+                    if (e.what == line) return said;
+                return !said;
+            }};
+}
 
 struct Scenario {
     const char* name;
@@ -1012,6 +1020,43 @@ const std::vector<Scenario> SCENARIOS = {
          s.run(90);
          return Checks{logged({"HEARD @ CALLING FOR HELP"}), notLogged({"GOING TO LET @ OUT", "GOING TO CALL BACK TO @"}),
                        notLogged({"TOLD @ SOMEONE IS SHUT IN"}), logged({"MET @", "CAUGHT UP WITH @"})};
+      }},
+    {"lesson-again", "going parched with no water: learnt anew, again, or for good, as the lesson was held", 1,
+     [](Stage& s) {
+         // Far from the spawn basin, knowing no water, all about to go
+         // parched: one never taught, one half taught, one fully.
+         auto b = s.basin();
+         if (!b) return Checks{{"a basin near the spawn", [](const Stage&) { return false; }}};
+         Human& fresh = s.first();
+         P::place(s.world, fresh, s.farFrom(*b, 25));
+         Human& half = s.add(seedWhere(plain, 11000));
+         Human& full = s.add(seedWhere(plain, 12000));
+         half.lessons.nearWater = 0.6f;
+         full.lessons.nearWater = 1.0f;
+         for (Human* h : {&fresh, &half, &full}) {
+             h->thirst = 0.799f; // just short of PARCHED
+             h->hunger = h->tiredness = 0.1f;
+         }
+         s.run(5);
+         return Checks{loggedBy(fresh, "LEARNT TO KEEP NEAR WATER"),
+                       loggedBy(half, "LEARNT FOR GOOD TO KEEP NEAR WATER"),
+                       loggedBy(half, "LEARNT TO KEEP NEAR WATER", false),
+                       loggedBy(full, "LEARNT AGAIN TO KEEP NEAR WATER"),
+                       loggedBy(full, "LEARNT TO KEEP NEAR WATER", false)};
+     }},
+    {"quenched", "the first drink after thirst hurt it is a narrow escape; a plain thirsty drink is not", 1,
+     [](Stage& s) {
+         auto b = s.basin();
+         if (!b) return Checks{{"a basin near the spawn", [](const Stage&) { return false; }}};
+         Human& dying = s.first();
+         Human& dry = s.add(seedWhere(plain, 13000));
+         dying.thirst = 1.0f;
+         dying.health = 0.8f;
+         dry.thirst = 0.7f;
+         for (Human* h : {&dying, &dry}) h->hunger = h->tiredness = 0.1f;
+         s.run(60);
+         return Checks{loggedBy(dying, "DRANK, AFTER NEARLY DYING OF THIRST"), loggedBy(dry, "DRANK WATER"),
+                       loggedBy(dry, "DRANK, AFTER NEARLY DYING OF THIRST", false)};
      }},
 };
 

@@ -218,7 +218,10 @@ bool Human::seekWater(World& world) {
 void Human::startDrinking(Vec2i water) {
     if (state != State::Drinking) {
         note("DRANK WATER");
-        sayLater(talk::Moment::Drink);
+        // The first drink after thirst began to kill it: it lived.
+        if (water_.thirstHurt) note("DRANK, AFTER NEARLY DYING OF THIRST");
+        sayLater(water_.thirstHurt ? talk::Moment::Quenched : talk::Moment::Drink);
+        water_.thirstHurt = false;
         dread_ = std::max(0.0f, dread_ - DRINK_CALM);
         // Found water soon after getting thirsty: keeping near it paid off.
         if (lessons.nearWater > 0.0f && clock_ - water_.thirstyAt < WATER_SOON) learn(lessons.nearWater, false);

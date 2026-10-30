@@ -210,7 +210,10 @@ void Human::live(World& world, float dt) {
     tire(dt);
     press(dt);
     if (hunger >= 1.0f) health -= STARVE_RATE * dt;
-    if (thirst >= 1.0f) health -= PARCH_RATE * dt;
+    if (thirst >= 1.0f) {
+        health -= PARCH_RATE * dt;
+        water_.thirstHurt = true;
+    }
     if (!hungry() && !thirsty() && wounds.empty() && mind_.sick <= 0.0f)
         health = std::min(1.0f, health + HEAL_RATE * (state == State::Sleeping ? SLEEP_HEAL : 1.0f) * dt);
     // Darts' bleeding stops short of killing, as darts do.
@@ -264,21 +267,27 @@ void Human::live(World& world, float dt) {
     }
 }
 
+// A hard lesson it still holds is learnt again, or for good when this
+// fills it (from short of all but full); only one all but forgotten is
+// learnt anew, with its own line.
 void Human::learn(float& lesson, bool hard) {
+    float was = lesson;
     lesson = std::min(1.0f, lesson + (hard ? LESSON_HARD : LESSON_PAID));
     if (!hard) return;
-    if (&lesson == &lessons.safeSleep) {
-        note("LEARNT TO FIND A SAFE PLACE TO SLEEP IN TIME");
+    const char* what = &lesson == &lessons.safeSleep ? "FIND A SAFE PLACE TO SLEEP IN TIME"
+                       : &lesson == &lessons.nearWater ? "KEEP NEAR WATER"
+                       : &lesson == &lessons.hoard     ? "KEEP MORE CAKES"
+                                                       : "TAKE KEYS FIRST";
+    if (was >= LESSON_HELD) {
+        bool full = lesson >= 1.0f && was < 1.0f - LESSON_HELD;
+        note(std::string(full ? "LEARNT FOR GOOD TO " : "LEARNT AGAIN TO ") + what);
+        sayLater(full ? talk::Moment::LearnMax : talk::Moment::LearnAgain);
         return;
     }
-    if (&lesson == &lessons.nearWater) {
-        note("LEARNT TO KEEP NEAR WATER");
-        sayLater(talk::Moment::LearnWater);
-        return;
-    }
-    bool cakes = &lesson == &lessons.hoard;
-    note(cakes ? "LEARNT TO KEEP MORE CAKES" : "LEARNT TO TAKE KEYS FIRST");
-    sayLater(cakes ? talk::Moment::LearnCakes : talk::Moment::LearnKeys);
+    note(std::string("LEARNT TO ") + what);
+    if (&lesson == &lessons.nearWater) sayLater(talk::Moment::LearnWater);
+    else if (&lesson == &lessons.hoard) sayLater(talk::Moment::LearnCakes);
+    else if (&lesson == &lessons.keysFirst) sayLater(talk::Moment::LearnKeys);
 }
 
 float Human::bleeding() const {

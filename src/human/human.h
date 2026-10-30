@@ -914,6 +914,8 @@ private:
         Vec2i last;
         bool drankYet = false;
         float thirstyAt = 0.0f, hopeAt = -1e9f;
+        /// Thirst has taken health since it last drank.
+        bool thirstHurt = false;
         /// When it last gave offence washing.
         float offendedAt = -1e9f;
         /// Guarding water by its home: whom it lets drink there, until when.

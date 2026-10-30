@@ -248,12 +248,14 @@ constexpr float GIVE_TIME = 0.8f;
 /// Lessons, 0 to 1: what one starving spell with no cake, or one dead end
 /// with no key, teaches; what a lesson paying off adds (eating from a
 /// stock, unlocking a door); how fast they are forgotten, all of one in
-/// half an hour; and what a full one does: extra cakes carried, and how
-/// much more fetching is wanted, enough to come before exploring for all
-/// but the most curious.
+/// an hour; below what a hard one is learnt anew rather than again (and
+/// within what of full it already counts as learnt for good); and
+/// what a full one does: extra cakes carried, and how much more fetching
+/// is wanted, enough to come before exploring for all but the most curious.
 constexpr float LESSON_HARD = 0.5f;
 constexpr float LESSON_PAID = 0.1f;
-constexpr float LESSON_FADE = 1.0f / 1800.0f;
+constexpr float LESSON_FADE = 1.0f / 3600.0f;
+constexpr float LESSON_HELD = 0.1f;
 constexpr float LESSON_CARRY = 2.0f;
 constexpr float LESSON_FETCH = 0.6f;
 /// Kneeling by a body, going through it.
