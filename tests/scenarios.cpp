@@ -131,6 +131,9 @@ bool guardsFree(const Traits& t) { return territorial(t) && t.sociable >= 0.5f; 
 bool guardsForCake(const Traits& t) { return territorial(t) && t.sociable < 0.4f && t.greedy >= 0.55f; }
 bool guardsAll(const Traits& t) { return territorial(t) && t.sociable < 0.4f && t.greedy < 0.45f; }
 bool plain(const Traits&) { return true; }
+// Which way round blood and a body are put together (AI/blame_plan.md).
+bool blamesBefore(const Traits& t) { return t.brave < 0.3f && t.curious < 0.6f; }
+bool blamesAfter(const Traits& t) { return t.brave >= 0.6f && t.curious < 0.6f; }
 
 /// A stranger, thirsty and not yet parched, near a settler at home by
 /// the basin, with a cake or not.
@@ -382,6 +385,43 @@ const std::vector<Scenario> SCENARIOS = {
          teller.thirst = friendOf.thirst = third.thirst = 0.1f;
          s.run(60);
          return Checks{logged({"HEARD @'S NAME FROM #"}), logged({"# WARNED ME ABOUT @"})};
+     }},
+    {"blame-before", "a timid human sees a bloodied stranger, then a fresh body: blames, runs, shouts it",
+     seedWhere(blamesBefore),
+     [](Stage& s) {
+         Human& witness = s.first();
+         Human& killer = s.add(seedWhere(plain, 9500), 4);
+         Human& victim = s.add(seedWhere(plain, 9600), 3);
+         for (Human* h : s.humans) h->hunger = h->thirst = h->tiredness = 0.05f;
+         s.run(3);
+         P::bloody(killer);
+         s.run(2);
+         P::kill(s.world, victim);
+         s.run(0.2f);
+         // One who comes along after the blood is gone has only the shout to go by.
+         P::clean(killer);
+         Human& hearer = s.add(seedWhere(kindly, 9700), 2);
+         hearer.hunger = hearer.thirst = hearer.tiredness = 0.05f;
+         P::setTrust(hearer, witness, 0.5f);
+         s.run(30);
+         return Checks{logged({"@ MUST HAVE KILLED #"}), logged({"RAN FROM @, A KILLER"}),
+                       logged({"# SAYS @ IS A KILLER"})};
+     }},
+    {"blame-after", "a brave friend finds a fresh body, then a bloodied stranger near it, and goes for them",
+     seedWhere(blamesAfter),
+     [](Stage& s) {
+         Human& witness = s.first();
+         Human& victim = s.add(seedWhere(plain, 9800), 2);
+         Human& killer = s.add(seedWhere(plain, 9900), 5);
+         P::setTrust(witness, victim, 0.6f);
+         P::setMet(witness, victim, 0.0f);
+         for (Human* h : s.humans) h->hunger = h->thirst = h->tiredness = 0.05f;
+         s.run(3);
+         P::kill(s.world, victim);
+         s.run(3);
+         P::bloody(killer);
+         s.run(30);
+         return Checks{logged({"@ MUST HAVE KILLED #"}), logged({"WENT FOR @ FOR WHAT THEY DID"})};
      }},
     {"chat", "two calm acquaintances together start chatting", 99,
      [](Stage& s) {

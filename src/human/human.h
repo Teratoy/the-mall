@@ -729,10 +729,16 @@ private:
     };
     /// Those seen with blood on them but no wound to show for it: until when
     /// it keeps away from them, and how much their blood, by freshness and
-    /// amount, weighed last time (0 to 1).
+    /// amount, weighed last time (0 to 1), and when it last saw them so.
     struct Suspect {
-        float until;
-        float weight;
+        float until = 0.0f;
+        float weight = 0.0f;
+        float seen = 0.0f;
+    };
+    /// A fresh body it found: where, and when (AI/blame_plan.md).
+    struct FreshBody {
+        Vec2i cell;
+        float at;
     };
     /// Blood: its own spilling, on the floor and on others (human_blood.cpp).
     struct Gore {
@@ -756,6 +762,14 @@ private:
         /// The blood each trail step led to, and when, so it doesn't pace back
         /// and forth at a trail's end.
         std::unordered_map<Vec2i, float, Vec2iHash> tracked;
+        /// Fresh bodies found lately, by whose, and whom it blames for
+        /// whose death.
+        std::unordered_map<int, FreshBody> fresh;
+        std::unordered_map<int, int> blamed;
+        /// Those it was told were killers, by someone it believed.
+        std::unordered_set<int> toldKiller;
+        /// Whom it last ran from for a killing; said once per fright.
+        int ranFrom = -1;
     };
     Gore gore_;
     /// What the blood on a cell in sight tells it: a trap beside it, or a
@@ -764,6 +778,18 @@ private:
     /// Whether someone in sight looks suspicious. True if newly so.
     bool judge(const Human& o);
     bool suspicious(int id) const;
+    /// Which way round it puts blood and a body together, by what it is
+    /// like: someone seen bloody, then a body found; a body found, then
+    /// someone bloody seen near it; the curious both.
+    bool tiesBloodToBody() const;
+    bool tiesBodyToBlood() const;
+    /// Finding body fresh, it may blame the one it saw bloody just before.
+    void foundFresh(const Human& body);
+    /// Takes who for whoever killed victim: a foe from now on, run from by the
+    /// timid, gone for by a brave friend of the dead, and shouted to all.
+    void blame(int who, int victim);
+    /// Heard from someone blaming who for a killing.
+    void heardBlame(const Human& from, int who);
     /// Extra cost of walking over a cell, for the blood it remembers there.
     int bloodCost(Vec2i c) const;
     /// Walks off from a fresh pool that scared it, or from a suspect too

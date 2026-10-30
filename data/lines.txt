@@ -517,6 +517,18 @@ timid fear              | DON'T HURT ME!
 brave rude              | WHAT DID YOU DO?
 friend                  | {NAME}... WHAT HAPPENED?
 
+# Putting someone seen bloody together with a fresh body: shouted to anyone
+# in earshot, about the one it blames ({WHO}).
+[blame]
+fear                    | {WHO} DID THIS!
+fear                    | IT WAS {WHO}! {WHO} KILLED THEM!
+fear                    | WATCH OUT FOR {WHO}!
+timid fear              | {WHO} KILLED THEM! RUN!
+brave fear              | {WHO}! I SAW THE BLOOD ON YOU!
+fear                    | THE BLOODY ONE DID THIS!
+fear                    | IT WAS THAT ONE! COVERED IN BLOOD!
+timid fear              | A KILLER! THERE'S A KILLER HERE!
+
 # ---- Lessons learnt --------------------------------------------------------
 
 # Starving with no cake: from now on it keeps more and fetches them sooner.

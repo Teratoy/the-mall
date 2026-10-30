@@ -89,6 +89,9 @@ enum class Moment {
     // (to nobody, about them).
     Tired, Exhausted, SleepNow, Woke, Dream, RobbedSleep, CakeGone, WatchMe, WatchYes, WatchCake, WatchNo, WakeUp,
     YourWatch, FailedWatch, WakeThem,
+    // Putting someone seen bloody together with a fresh body: shouted to
+    // anyone in earshot, about the one it blames.
+    Blame,
     Count
 };
 

@@ -61,6 +61,19 @@ struct SoakProbe {
                 w.takeKey(c);
             }
     }
+    /// Fresh blood on h's face and hands, as if from someone else.
+    static void bloody(Human& h) { h.stain({BodyPart::Head, BodyPart::FrontArm, BodyPart::BackArm}, 40, 200); }
+    /// Washed clean all at once.
+    static void clean(Human& h) {
+        h.stains.amount.fill(0);
+        h.stains.wet.fill(0.0f);
+        h.stains.version++;
+    }
+    /// Drops h dead where it stands, killed by nobody anyone saw.
+    static void kill(World& w, Human& h) {
+        h.health = 0.0f;
+        h.die(w);
+    }
     /// Given up on a way out, at home on home.
     static void settle(Human& h, Vec2i home) {
         h.escape_.settled = true;
