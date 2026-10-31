@@ -39,50 +39,63 @@ Answered (2026-10-31):
   pools when the walk is close; same gulps, standing at the tap. Bottles
   fill there too, draining it.
 
-## Proposed, for the user to answer (see Open questions)
+## Built (2026-10-31)
 
-1. **The dispenser in the world**
-   - `src/world/dispenser.h`: `struct Dispenser { Vec2i at; Vec2i facing; float water; float foul, red; uint32_t seed; }`,
-     kept by `World` with a cell map like toilets and machines;
-     `World::dispenser(cell)`, `dispensers()`.
-   - `Tile::Dispenser`, one cell, blocks walking. Sight: see the question.
-   - Used from the floor cell in front of it.
-2. **Where** (`gen_server.cpp`, inside `furnish`, targeted): against a
-   side or north wall of the room, never in front of the airlock's inner
-   door, never on a cable, floor round it so it blocks nothing. Placed
-   with the room's own dice after the racks and desk, so a mall without
-   server rooms comes out as before.
-3. **Drawn** (`data/sprites.txt`, sprite `water dispenser`, one cell wide,
-   about 6x17 px, standing up like a terminal): a translucent blue jug on
-   a white stand, two taps. The jug's water letters are drawn up to its
-   level, so how full it is shows from across the room, as a bottle does.
-   Dimmed and held at the remembered level when only remembered. A map
-   symbol `map dispenser`.
-4. **Seen and remembered**: `Memory::dispensers`, cell → the level and
-   dirt it saw. First sight: a note and a `FirstDispenser` moment.
-5. **Drinking from it**: `State::Drinking` as at a basin, standing at the
-   tap in place of kneeling; each gulp takes the same DRINK_GULP out of
-   the dispenser. It counts as water for `seekWater` while it remembers it
-   holding some; drunk dry: a note and a moment. **Filling a bottle** at it
-   works as at water and takes from it.
-6. **Refilling it** (`State::Pouring` at the dispenser, or a new
-   `Action::Refill` with rows in all three need tables): the bottle's water
-   goes in (as much as fits), foul and red mixing in as in a bottle.
-   Who does it and why: see the question.
-7. **Telling**: see the question.
-8. **Scenarios**: drink-dispenser, dispenser-dry, refill-dispenser,
-   whatever telling or guarding we decide.
+World:
+- `src/world/dispenser.h` (`Dispenser`, `DISPENSER_HOLDS` = 3), `Tile::Dispenser`
+  (blocks walking, not sight). `drinkable()` now takes in dispensers; the new
+  `pooled()` is open water only (pools, canals, basins), used wherever blood,
+  filth, washing and relieving go into water, so a dispenser's water stays
+  clean. `World::dispenser(cell)`, `dispensers()`, `drawWater`, `pourIn`.
+- `src/world/gen_dispenser.cpp`: one per server room, closets too, called at
+  the end of `furnishServerRoom` (one line in `gen_server.cpp`): a cell
+  against the north, west or east wall, not on a cable, more than 2 cells
+  from the inner door, every room cell round it floor, so it never walls
+  anything off. Its own dice (from the world seed and the room), 1 to 3 bars.
+- Drawn y-sorted with the rest (`src/render/dispenser_art.*`, sprites
+  `water dispenser`, `water dispenser side`, mirrored against an east wall):
+  the jug's water rows show the level, 2 rows a bar; remembered ones dimmed
+  at the level last seen. Map symbol `map dispenser`, legend COOLER.
+  `make spritesheet` draws every level.
 
-## Open questions
+Humans (`src/human/human_dispenser.cpp`, state in `dispense_`):
+- Seen: `Memory::dispensers` keeps the level seen; the first one ever:
+  "FOUND A WATER DISPENSER", `[first_dispenser]`. Remembered dry, it is not
+  water to it (`waterBeside`). Found or drunk dry when it came for it or
+  keeps it: "FOUND THE WATER DISPENSER DRY", `[dispenser_dry]`.
+- Drinking: standing at the tap (the pointing pose), the same gulps as at
+  a basin, each taken out of the jug. "DRANK FROM A WATER DISPENSER",
+  `[dispenser_drink]`. Knowing one with water in it, other water counts as
+  6 cells farther (`COOLER_PREFER`). Bottles fill there too ("FILLED MY
+  BOTTLE AT A WATER DISPENSER"), a share at a time out of the jug.
+- Keeping one: settled, the nearest it knows within 6 cells of home (and
+  settling now counts a dispenser as water to make a home by); or, having
+  learnt water is scarce, the one in the server room it falls asleep in
+  ("MEANS TO KEEP WATER HERE, BEHIND THE LOCKED DOORS"). Not thirsty, with
+  a clean bottle at least half full and room for half a bar in its
+  dispenser, it walks there (Want::Fill) and pours the bottle in (the
+  pouring pose, `Action::Pour`): "POURED MY BOTTLE INTO THE WATER
+  DISPENSER", `[refill_dispenser]`. It never fills its bottle at the
+  dispenser it keeps.
+- Told: a water tip to a dispenser carries the level the teller saw.
+  Guarded: a settler's home water within 2 cells counts a dispenser.
+- HUD status: DRINKING AT THE COOLER, FILLING UP AT THE COOLER, POURING
+  INTO THE COOLER.
 
-1. How many per server room, and do closets get one?
-2. Where in the room: against a wall near the door, or anywhere?
-3. Does it block sight? (It is about waist-to-chest high, like a terminal.)
-4. Does it start full, or anywhere from empty to full?
-5. How much does one bottle refill: the bottle's whole contents (up to a
-   bar), dirt and all?
-6. Why would a human pour a bottle in, rather than keep it?
-7. Do humans remember its level and tell others of it?
-8. How does drinking from it compare with other water (clean, preferred
-   over toilets, standing at the tap)?
-9. Can it be settled by, guarded and fought over like other water?
+Tests: scenarios cooler-drink, cooler-dry, cooler-fill, cooler-keep,
+cooler-home; hum-out now empties its room's dispenser so the human still
+has to push out to drink. The soak prints a `dispensers:` line per seed.
+Soak: 30 dispensers in 2 of 6 worlds, 1 drink, 1 bottle filled; seed 2
+(beside a data centre) now has nobody die of thirst (was 1) and lives
+longer; no new stuck humans, loops or blocks (target flips 6 → 4).
+
+Calls made while building (for the user to check):
+- **Clean means clean**: "only water it would drink itself" is read as no
+  fouler or redder than 0.05, and the dispenser keeps no dirt at all.
+- **A bottle at least half full**, with **room for half a bar** in the
+  dispenser, is worth the walk to pour in.
+- **Never fills its bottle from the one it keeps**, or it would pour in and
+  draw out in a loop.
+- **"Better than a basin"** is 6 cells of walking.
+- Keeping water behind locked doors costs keys to get back in, so the
+  scarce sleeper pours in when it next sleeps there or wakes there.

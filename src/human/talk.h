@@ -186,6 +186,10 @@ enum class Moment {
     FirstServerRoom, SeekHum, SleepHum,
     // Running out of breath, bent over winded (to nobody).
     Winded,
+    // Water dispensers: the first one it ever sees; drinking at one's tap;
+    // finding one dry it came for or keeps; pouring its bottle into the one
+    // it keeps (all to nobody).
+    FirstDispenser, DispenserDrink, DispenserDry, RefillDispenser,
     Count
 };
 

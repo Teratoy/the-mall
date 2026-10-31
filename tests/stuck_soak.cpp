@@ -338,6 +338,7 @@ int main(int argc, char** argv) {
         int stank = 0, smeltDeath = 0, followedStench = 0, putOff = 0;
         int pisses = 0, shits = 0, stepped = 0, filthy = 0, washedShit = 0, foulSick = 0, foulGulps = 0, toiletUses = 0, toiletMisses = 0, toiletWaits = 0;
         int vendFound = 0, vendCakes = 0, vendBottles = 0, vendEmpty = 0, vendTold = 0;
+        int coolFound = 0, coolDrinks = 0, coolFills = 0, coolDry = 0, coolKept = 0, coolRefills = 0;
         // Accidents (bursting, fright), going seen, going in water seen, and mocking.
         // Guarded water: let drink free, for a cake, turned away, paid, cheated.
         // Water tips: told, over spikes, asked of the group.
@@ -423,6 +424,12 @@ int main(int argc, char** argv) {
                 vendCakes += e.what == "PAID 3 KEYS FOR A CAKE FROM A MACHINE" ? e.times : 0;
                 vendBottles += e.what == "PAID 3 KEYS FOR A BOTTLE FROM A MACHINE" ? e.times : 0;
                 vendEmpty += e.what == "THE MACHINE WAS EMPTY" ? e.times : 0;
+                coolFound += e.what == "FOUND A WATER DISPENSER" ? e.times : 0;
+                coolDrinks += e.what == "DRANK FROM A WATER DISPENSER" ? e.times : 0;
+                coolFills += e.what == "FILLED MY BOTTLE AT A WATER DISPENSER" ? e.times : 0;
+                coolDry += e.what == "FOUND THE WATER DISPENSER DRY" ? e.times : 0;
+                coolKept += e.what == "MEANS TO KEEP WATER HERE, BEHIND THE LOCKED DOORS" ? e.times : 0;
+                coolRefills += e.what == "POURED MY BOTTLE INTO THE WATER DISPENSER" ? e.times : 0;
                 vendTold += e.what == "TOLD @ WHERE A MACHINE IS" ? e.times : 0;
                 wet += e.what == "WET MYSELF" ? e.times : 0;
                 waterFree += e.what == "LET @ DRINK MY WATER" ? e.times : 0;
@@ -513,6 +520,11 @@ int main(int argc, char** argv) {
             std::printf("   machines: %zu, %d items left, %d found, %d cakes and %d bottles bought, %d found empty, "
                         "%d told of\n",
                         w.machines().size(), stocked, vendFound, vendCakes, vendBottles, vendEmpty, vendTold);
+            float cooled = 0.0f;
+            for (const Dispenser& d : w.dispensers()) cooled += d.water;
+            std::printf("   dispensers: %zu, %.1f bars left, %d found, %d drinks, %d bottles filled, %d found dry, "
+                        "%d kept, %d poured in\n",
+                        w.dispensers().size(), cooled, coolFound, coolDrinks, coolFills, coolDry, coolKept, coolRefills);
         }
         pool.finish(T);
     }

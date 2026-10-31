@@ -127,7 +127,7 @@ void Human::brood(const World& world) {
     // By water if it knows any near enough, else where it has slept safely
     // again and again (human_sleep.cpp), else by a table.
     bool byWater = false, bySleep = false;
-    if (auto p = search(world, [&](Vec2i c) { return by(c, Tile::Water) || by(c, Tile::Basin); });
+    if (auto p = search(world, [&](Vec2i c) { return by(c, Tile::Water) || by(c, Tile::Basin) || by(c, Tile::Dispenser); });
         p && p->size() <= HOME_FARTHEST && !p->empty()) {
         escape_.home = p->back();
         byWater = true;

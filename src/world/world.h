@@ -2,6 +2,7 @@
 #include "core/rng.h"
 #include "world/blood.h"
 #include "world/chunk.h"
+#include "world/dispenser.h"
 #include "world/door.h"
 #include "world/gen.h"
 #include "world/mess.h"
@@ -95,6 +96,25 @@ public:
     /// Takes one item out of the machine on the cell, from the bottom of
     /// what it holds; false if there is none or nothing left in it.
     bool vend(Vec2i cell);
+
+    /// The water dispenser on a cell, if any. Dispensers never move.
+    const Dispenser* dispenser(Vec2i cell) const {
+        auto it = dispenserCells_.find(cell);
+        return it == dispenserCells_.end() ? nullptr : &dispensers_[size_t(it->second)];
+    }
+    const std::vector<Dispenser>& dispensers() const { return dispensers_; }
+    /// Takes up to this much water out of the dispenser on the cell.
+    /// Returns how much came out.
+    float drawWater(Vec2i cell, float amount) {
+        auto it = dispenserCells_.find(cell);
+        return it == dispenserCells_.end() ? 0.0f : dispensers_[size_t(it->second)].take(amount);
+    }
+    /// Pours up to this much water into the dispenser on the cell, as far
+    /// as it holds. Returns how much went in.
+    float pourIn(Vec2i cell, float amount) {
+        auto it = dispenserCells_.find(cell);
+        return it == dispenserCells_.end() ? 0.0f : dispensers_[size_t(it->second)].add(amount);
+    }
 
     /// The server room machine on a cell, if any. They never move.
     const ServerPiece* piece(Vec2i cell) const {
@@ -225,6 +245,9 @@ private:
     /// Which piece blocks each cell.
     std::unordered_map<Vec2i, int, Vec2iHash> pieceCells_;
     std::vector<ServerRoom> serverRooms_;
+    std::vector<Dispenser> dispensers_;
+    /// Which dispenser stands on each cell.
+    std::unordered_map<Vec2i, int, Vec2iHash> dispenserCells_;
     std::unordered_map<Vec2i, AirlockDoor, Vec2iHash> airlocks_;
     std::unordered_map<Vec2i, uint8_t, Vec2iHash> cables_;
     std::unordered_set<Vec2i, Vec2iHash> keys_;
@@ -299,6 +322,9 @@ private:
     /// Fills a server room's floor with rows of racks, a desk on the back
     /// wall when it is big enough, terminals and cables. In gen_server.cpp.
     void furnishServerRoom(Chunk& c, Rng& dice, const ServerRoom& r, Vec2i door);
+    /// Stands a water dispenser against a wall of a furnished server room,
+    /// clear of its door and cables, with floor all round. In gen_dispenser.cpp.
+    void placeDispenser(Chunk& c, const ServerRoom& r, Vec2i door, const std::unordered_set<Vec2i, Vec2iHash>& cables);
     /// Stands a machine of a server room at the world cell.
     void standPiece(Chunk& c, Rig kind, Vec2i at, uint32_t seed);
     /// Airlock doors left open shut and lock once nobody stands in them.

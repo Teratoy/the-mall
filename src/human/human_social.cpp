@@ -517,8 +517,11 @@ void Human::deliver(Human& o, const Tell& t) {
         break;
     case Tell::Kind::Route:
     case Tell::Kind::Water:
-        // A way to water ends beside it, so the water comes with it.
+        // A way to water ends beside it, so the water comes with it, and how
+        // full a dispenser was when the teller saw it.
         learnRoute();
+        if (auto it = memory.dispensers.find(t.cell); it != memory.dispensers.end())
+            o.memory.dispensers.emplace(t.cell, it->second);
         break;
     case Tell::Kind::People:
         // Taken on as far as the listener trusts the teller, and only the

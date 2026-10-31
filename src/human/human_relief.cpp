@@ -193,7 +193,7 @@ bool Human::seekRelief(World& world) {
         if (Human* o = world.occupant(c); o && o != this) return false;
         if (!isErratic() && !toilet)
             for (Vec2i d : DIRS8)
-                if (drinkable(memory.tile(c + d))) return false;
+                if (pooled(memory.tile(c + d))) return false;
         if (escape_.settled && cheb(c, escape_.home) <= RELIEF_HOME_GAP) return false;
         return !watchedAt(world, c);
     };
@@ -204,7 +204,7 @@ bool Human::seekRelief(World& world) {
         int open = 0;
         for (Vec2i d : DIRS8) {
             Tile t = memory.tile(c + d);
-            open += t == Tile::Void || passable(t) || drinkable(t);
+            open += t == Tile::Void || passable(t) || pooled(t);
         }
         return 1 + elsewhere + int(open * shy) + int(world.mess().disgust(c, now, id) * RELIEF_MESS_COST);
     };
@@ -273,7 +273,7 @@ void Human::startRelieving(World& world) {
     // there), else the wall beside it, if there is one.
     auto blocked = [&](Vec2i d, bool water) {
         Tile t = world.tile(cell + d);
-        return water ? drinkable(t) : !passable(t);
+        return water ? pooled(t) : !passable(t);
     };
     if (toilet && toilet->x != cell.x) facingLeft = toilet->x < cell.x;
     for (bool water : {true, false}) {
@@ -301,13 +301,13 @@ void Human::startRelieving(World& world) {
             return world.soilToilet(*toilet, size * (kind == MessKind::Feces ? TOILET_FECES : TOILET_PISS));
         Vec2i at{floorDiv(int(std::floor(x)), CELL_PX), floorDiv(int(std::floor(y)), CELL_PX)};
         if (!passable(world.tile(at))) at = cell, x = fx, y = fy;
-        if (drinkable(world.tile(at))) {
+        if (pooled(world.tile(at))) {
             intoWater = true;
             return foulWater(world, at, size * (kind == MessKind::Feces ? FECES_FOUL : PISS_FOUL));
         }
         world.mess().drop(kind, at, x, y, size, world.time(), id, uint32_t(rng_.next()));
     };
-    bool byWater = !toilet && drinkable(world.tile(cell + Vec2i{facingLeft ? -1 : 1, 0}));
+    bool byWater = !toilet && pooled(world.tile(cell + Vec2i{facingLeft ? -1 : 1, 0}));
     if (relief_.shitting) {
         // Squatting with its back to the water, the erratic let it fall in.
         drop(MessKind::Feces, fx + (byWater && isErratic() ? ahead * 4.0f : -ahead), fy,

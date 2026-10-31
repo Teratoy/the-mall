@@ -12,6 +12,7 @@
 #include "human/topic.h"
 #include "human/traits.h"
 #include "human/wound.h"
+#include "world/dispenser.h"
 #include "world/vending.h"
 #include <deque>
 #include <functional>
@@ -275,6 +276,12 @@ public:
     /// water over rather than a cake.
     bool bottleInHand() const;
     bool givingWater() const { return state == State::Giving && water_.givingWater; }
+    /// Drinking or filling its bottle at a water dispenser's tap, standing.
+    bool atTap() const {
+        return (state == State::Drinking || state == State::Filling) && memory.tile(water_.drinkAt) == Tile::Dispenser;
+    }
+    /// Pouring its bottle into a water dispenser, not out on the floor.
+    bool refilling() const { return state == State::Pouring && dispense_.refilling; }
     /// Lying down awake: parched and lost, by a locked door.
     bool lyingDown() const { return state == State::Sitting && water_.lying; }
     /// Kneeling to put things down, not to pick them up.
@@ -1539,6 +1546,46 @@ private:
         bool seeking = false;
     };
     ServerRooms server_;
+    /// Water dispensers in server rooms (human_dispenser.cpp).
+    struct Dispensers {
+        /// Has seen one before: the first is remarked on.
+        bool seen = false;
+        /// The dispenser it keeps its water in, behind the locked doors it
+        /// sleeps behind, having learnt that water is scarce (user).
+        std::optional<Vec2i> kept;
+        /// Pouring its bottle into a dispenser, not out on the floor.
+        bool refilling = false;
+    };
+    Dispensers dispense_;
+    /// A dispenser in sight: remembers how full it is, and remarks on the
+    /// first. True if it is news to the thirsty: water where it knew none.
+    bool seeDispenser(const Dispenser& d);
+    /// Remembers how much water is in the dispenser at the cell, and notes
+    /// it gone dry when that matters to it.
+    void rememberLevel(Vec2i at, float water);
+    /// Remembered dry: no water to be had at its tap.
+    bool knownDry(Vec2i water) const;
+    /// Draws up to this much water from the dispenser at the cell, and
+    /// remembers what is left. Returns how much came out.
+    float drawFrom(World& world, Vec2i at, float amount);
+    /// Whether it knows a dispenser with water in it.
+    bool knowsCooler() const;
+    /// The dispenser it keeps filled: its home water once settled (user),
+    /// else the one where it sleeps behind locked doors.
+    std::optional<Vec2i> keptDispenser() const;
+    /// Asleep among the humming machines, having learnt water is scarce: the
+    /// dispenser in that room becomes where it keeps its water (user).
+    void keepWaterHere();
+    /// Its bottle it would pour into its dispenser: clean, and with enough in
+    /// it to be worth the walk; -1 none.
+    int pourable() const;
+    /// How much it wants to carry water to its dispenser; below 0 not at all.
+    float refillDrive() const;
+    /// Walks to its dispenser with its bottle, or pours it in there.
+    bool seekRefill(World& world);
+    bool startRefill(Vec2i at);
+    /// Poured: the water goes in as far as it holds.
+    void endRefill(World& world);
     /// A rack in sight: remembers its room, and remarks on the first.
     void seeServerRoom(const World& world, Vec2i c);
     /// Tired, it makes for a server room it knows and opens its way in with

@@ -2487,3 +2487,47 @@ timid                   | NOBODY GETS IN HERE.
 sociable                | AT LEAST SOMETHING'S AWAKE.
 erratic                 | THEY'RE SINGING TO ME.
 settled                 | HOME HUMS.
+
+# ---- Water dispensers ------------------------------------------------------
+
+# The first water dispenser it ever sees, in a server room, said to nobody.
+[first_dispenser]
+                        | CLEAN WATER. IN HERE.
+                        | IT'S STILL COLD.
+                        | LIKE AN OFFICE. LIKE BEFORE.
+thirsty                 | OH. OH, THANK YOU.
+curious                 | WHO BRINGS THE WATER?
+timid                   | IS IT FOR US?
+hopeless                | SOMEONE USED TO WORK HERE.
+erratic                 | IT GLUGS WHEN NOBODY'S LOOKING.
+
+# Drinking at a water dispenser's tap, said to nobody.
+[dispenser_drink 0.5]
+                        | COLD.
+                        | SO CLEAN.
+                        | AH. LIKE BEFORE.
+parched                 | MORE. MORE.
+dreamt                  | I'VE STOOD HERE BEFORE.
+greedy                  | ALL MINE.
+settled                 | HOME HAS WATER.
+
+# Finding a water dispenser dry, one it came to drink or fill up at, or
+# the one it keeps its water in; said to nobody.
+[dispenser_dry 0.8]
+                        | NOT A DROP.
+                        | THAT WAS THE LAST OF IT.
+thirsty                 | NO. NO NO NO.
+timid                   | SOMEONE WILL BE ANGRY.
+hopeless                | OF COURSE.
+settled                 | I SHOULD HAVE BROUGHT MORE.
+
+# Pouring its bottle into the water dispenser it keeps, by its home or
+# behind the locked doors it sleeps behind; said to nobody.
+[refill_dispenser 0.6]
+                        | FOR LATER.
+                        | SAFE BEHIND THE DOORS.
+                        | ONE MORE.
+settled                 | HOME KEEPS.
+greedy                  | MINE. ALL OF IT.
+timid                   | WHEN THEY COME, I'LL HAVE WATER.
+generous                | SOMEONE WILL NEED IT.

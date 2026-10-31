@@ -75,7 +75,7 @@ std::optional<std::pair<Vec2i, Vec2i>> dartShooter(const Chunk& c, Rng& rng, Vec
                 if (i >= DART_RANGE_MIN) found.push_back({p, -d});
                 break;
             }
-            if (t != Tile::Floor && !drinkable(t) && t != Tile::Table) break;
+            if (t != Tile::Floor && !pooled(t) && t != Tile::Table) break;
         }
     if (found.empty()) return std::nullopt;
     return rng.pick(found);

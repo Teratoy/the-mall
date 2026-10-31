@@ -3,6 +3,7 @@
 #include "render/blood_art.h"
 #include "render/cable_art.h"
 #include "render/computer_art.h"
+#include "render/dispenser_art.h"
 #include "render/bottle_art.h"
 #include "render/floor_tiles.h"
 #include "render/human_sprites.h"
@@ -82,6 +83,7 @@ void drawCell(int x, int y, Tile t, Tile above, Tile below, Floor floor, WallSty
     case Tile::Vending:
     case Tile::Rack:
     case Tile::Console:
+    case Tile::Dispenser:
         DrawRectangle(x, y, CELL_PX, CELL_PX, dim(toColor(FLOOR_PALETTES[floor.palette].base), lit));
         break;
     case Tile::Wall:
@@ -157,15 +159,16 @@ Pose poseOf(const Human& h) {
     case Human::State::Punching: return h.punchLanded ? Pose::Punch : Pose::Guard;
     case Human::State::Giving: return h.givingWater() ? Pose::OfferBottle : Pose::Offer;
     case Human::State::Sipping: return Pose::Sip;
-    case Human::State::Filling: return Pose::Fill;
+    // An arm out to the tap, standing at a dispenser.
+    case Human::State::Filling: return h.atTap() ? Pose::Point : Pose::Fill;
     case Human::State::Pouring: return Pose::Pour;
     case Human::State::Dead: return h.diedAsleep() ? Pose::DiedAsleep : Pose::Fall;
     case Human::State::Waking: return Pose::Wake;
     case Human::State::Sitting: return h.lyingDown() ? Pose::Lie : Pose::Sit;
     case Human::State::Rising: return h.rousing() ? Pose::WakeUp : Pose::Rise;
     case Human::State::Sleeping: return Pose::Sleep;
-    case Human::State::Washing:
-    case Human::State::Drinking: return Pose::Wash;
+    case Human::State::Drinking: return h.atTap() ? Pose::Point : Pose::Wash;
+    case Human::State::Washing: return Pose::Wash;
     case Human::State::Relieving: return h.shitting() ? Pose::Squat : Pose::Piss;
     case Human::State::Looting:
     case Human::State::Stashing: return Pose::Search;
@@ -264,7 +267,7 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
                 continue;
             }
             if (tile != Tile::Floor && tile != Tile::Table && tile != Tile::Statue && tile != Tile::Vending &&
-                tile != Tile::Rack && tile != Tile::Console)
+                tile != Tile::Rack && tile != Tile::Console && tile != Tile::Dispenser)
                 continue;
             Floor f = world.floor(c);
             floorTiles.draw(x * CELL_PX - left, y * CELL_PX - top, c, f.pattern,
@@ -293,7 +296,7 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
         for (int x = x0; x <= x1; x++) {
             Tile tile = known({x, y});
             if (tile != Tile::Void && tile != Tile::Table && tile != Tile::Statue && tile != Tile::Basin &&
-                tile != Tile::Vending && tile != Tile::Rack && tile != Tile::Console)
+                tile != Tile::Vending && tile != Tile::Rack && tile != Tile::Console && tile != Tile::Dispenser)
                 drawBlood({x, y}, 0);
         }
 
@@ -377,6 +380,7 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
         int statue;
         const Machine* machine = nullptr;
         const ServerPiece* piece = nullptr;
+        const Dispenser* dispenser = nullptr;
     };
     std::vector<Drawn> drawn;
     for (const auto& h : world.humans())
@@ -410,6 +414,12 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
         for (Vec2i c : pieceCells(p)) knownAny |= known(c) == Tile::Rack || known(c) == Tile::Console;
         if (knownAny) drawn.push_back({float((p.footRow() + 1) * CELL_PX), nullptr, -1, nullptr, &p});
     }
+    // Water dispensers the viewer knows of, standing on the bottom edge of their cell.
+    for (const Dispenser& d : world.dispensers()) {
+        if (d.at.x < x0 - 1 || d.at.x > x1 + 1 || d.at.y < y0 || d.at.y > y1 + DISPENSER_H / CELL_PX + 1) continue;
+        if (known(d.at) == Tile::Dispenser)
+            drawn.push_back({float((d.at.y + 1) * CELL_PX), nullptr, -1, nullptr, nullptr, &d});
+    }
     std::sort(drawn.begin(), drawn.end(), [](const Drawn& a, const Drawn& b) {
         bool deadA = a.human && a.human->dead(), deadB = b.human && b.human->dead();
         if (deadA != deadB) return deadA;
@@ -442,6 +452,16 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
             if (p.kind == Rig::Rack) drawServerRack(x, int(d.y) - top, lit, seconds);
             else if (p.kind == Rig::Terminal) drawTerminal(x, int(d.y) - top, lit, seconds);
             else drawConsoleDesk(x, p.at.y * CELL_PX - top, lit, seconds);
+            continue;
+        }
+        if (d.dispenser) {
+            // In sight it shows how full it is now; remembered, as full as the viewer last saw it, dimmed.
+            const Dispenser& w = *d.dispenser;
+            bool lit = reveal || viewer.sight.sees(w.at);
+            auto it = viewer.memory.dispensers.find(w.at);
+            float water = lit ? w.water : it == viewer.memory.dispensers.end() ? 0.0f : it->second;
+            drawDispenser(w.at.x * CELL_PX - left, int(d.y) - top, water / DISPENSER_HOLDS, w.side(), w.facing.x < 0,
+                          lit);
             continue;
         }
         if (d.machine) {

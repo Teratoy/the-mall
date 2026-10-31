@@ -129,12 +129,15 @@ constexpr float WATER_SOON = 60.0f;
 constexpr float TETHER_FROM = 0.3f;
 constexpr int WATER_TETHER = 30;
 constexpr float TETHER_EXPLORE = 0.6f;
+/// Knowing a dispenser with water in it, other water is as far off as this
+/// many tenths of a cell more walking (user: better than a basin).
+constexpr int COOLER_PREFER = 60;
 
 } // namespace
 
 std::optional<Vec2i> Human::waterBeside(Vec2i c) const {
     for (Vec2i d : DIRS4)
-        if (drinkable(memory.tile(c + d))) return c + d;
+        if (drinkable(memory.tile(c + d)) && !knownDry(c + d)) return c + d;
     return std::nullopt;
 }
 
@@ -230,18 +233,24 @@ bool Human::warnedOfFoul(World& world, Vec2i water) {
     return false;
 }
 
-// Not where someone else stands: that one may be drinking there.
+// Not where someone else stands: that one may be drinking there. A
+// dispenser's cool clean water is worth a few steps more than other water.
 bool Human::seekWater(World& world) {
     auto foulness = [&](Vec2i c) {
         auto w = waterBeside(c);
         return w ? knownFoul(world, *w) : 0.0f;
     };
+    const bool cooler = knowsCooler();
+    auto plain = [&](Vec2i c) {
+        auto w = waterBeside(c);
+        return cooler && w && memory.tile(*w) != Tile::Dispenser ? COOLER_PREFER : 0;
+    };
     auto find = [&]() -> std::optional<std::vector<Vec2i>> {
-        if (!memory.known(Tile::Water) && !memory.known(Tile::Basin)) return searchedNothing();
+        if (!memory.known(Tile::Water) && !memory.known(Tile::Basin) && !cooler) return searchedNothing();
         return search(world, [&](Vec2i c) {
             auto w = waterBeside(c);
             return w && wouldDrink(world, c, *w);
-        }, true, [&](Vec2i c) { return 1 + int(foulness(c) * FOUL_COST); });
+        }, true, [&](Vec2i c) { return 1 + int(foulness(c) * FOUL_COST) + plain(c); });
     };
     auto p = find();
     // Warned off as it sets out, it thinks again.
@@ -281,10 +290,11 @@ bool Human::seekWater(World& world) {
 
 void Human::startDrinking(Vec2i water) {
     if (state != State::Drinking) {
-        note("DRANK WATER");
+        const bool tap = memory.tile(water) == Tile::Dispenser;
+        note(tap ? "DRANK FROM A WATER DISPENSER" : "DRANK WATER");
         // The first drink after thirst began to kill it: it lived.
         if (water_.thirstHurt) note("DRANK, AFTER NEARLY DYING OF THIRST");
-        sayLater(water_.thirstHurt ? talk::Moment::Quenched : talk::Moment::Drink);
+        sayLater(water_.thirstHurt ? talk::Moment::Quenched : tap ? talk::Moment::DispenserDrink : talk::Moment::Drink);
         water_.thirstHurt = false;
         dread_ = std::max(0.0f, dread_ - DRINK_CALM);
         // Found water soon after getting thirsty: keeping near it paid off.
@@ -312,7 +322,11 @@ void Human::drink(World& world) {
     // Turned away, or the water went bad, since it knelt; at a toilet, no
     // longer desperate.
     if (toilet ? !parched() && !isErratic() : !wouldDrink(world, cell, water_.drinkAt)) return choose(world);
-    thirst = std::max(0.0f, thirst - DRINK_GULP);
+    // At a dispenser, a gulp is what the tap still gives.
+    float gulp = DRINK_GULP;
+    if (world.dispenser(water_.drinkAt) && (gulp = drawFrom(world, water_.drinkAt, DRINK_GULP)) <= 0.0f)
+        return choose(world);
+    thirst = std::max(0.0f, thirst - gulp);
     takeIn(1.0f, 0.0f);
     if (toilet) {
         float foul = toilet->dirt * TOILET_FOUL;

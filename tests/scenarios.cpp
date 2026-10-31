@@ -1952,6 +1952,7 @@ const std::vector<Scenario> SCENARIOS = {
          P::place(s.world, h, r.inner + Vec2i{0, -1});
          P::addWater(s.world, outside);
          h.memory.see(outside, Tile::Basin);
+         P::fillDispenser(s.world, r, 0.0f);
          h.bottles.clear();
          h.keys = 0;
          h.thirst = 0.6f;
@@ -1981,6 +1982,100 @@ const std::vector<Scenario> SCENARIOS = {
          return Checks{{"the outer door opened", [opened](const Stage&) { return opened; }},
                        {"never inside the room", [&h, &r](const Stage&) { return !r.contains(h.cell); }},
                        {"not stuck in the lobby", [&h, &r](const Stage&) { return !r.encloses(h.cell); }}};
+     }},
+    {"cooler-drink", "thirsty in a server room, it drinks from the water dispenser there before a basin just outside",
+     seedWhere(plain, 23000), [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         const Vec2i outside = h.cell;
+         const ServerRoom& r = P::buildServerRoom(s.world, h.cell + Vec2i{-5, -17}, 10, 8);
+         calm(h);
+         s.run(8);
+         P::place(s.world, h, r.inner + Vec2i{0, -1});
+         P::addWater(s.world, outside);
+         h.memory.see(outside, Tile::Basin);
+         const Dispenser& d = P::fillDispenser(s.world, r, DISPENSER_HOLDS);
+         h.bottles.clear();
+         h.thirst = 0.6f;
+         h.hunger = h.tiredness = 0.1f;
+         s.run(30);
+         return Checks{loggedBy(h, "FOUND A WATER DISPENSER"), loggedBy(h, "DRANK FROM A WATER DISPENSER"),
+                       loggedBy(h, "DRANK WATER", false),
+                       {"the dispenser drunk from", [&d](const Stage&) { return d.water < DISPENSER_HOLDS; }}};
+     }},
+    {"cooler-dry", "parched at a dispenser with little left, it drinks it dry, finds it so, and goes out to a basin",
+     seedWhere(plain, 24000), [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         const Vec2i outside = h.cell;
+         const ServerRoom& r = P::buildServerRoom(s.world, h.cell + Vec2i{-5, -17}, 10, 8);
+         calm(h);
+         s.run(8);
+         P::place(s.world, h, r.inner + Vec2i{0, -1});
+         P::addWater(s.world, outside);
+         h.memory.see(outside, Tile::Basin);
+         const Dispenser& d = P::fillDispenser(s.world, r, 0.4f);
+         h.bottles.clear();
+         h.thirst = 0.85f;
+         h.hunger = h.tiredness = 0.1f;
+         s.run(60);
+         return Checks{loggedBy(h, "DRANK FROM A WATER DISPENSER"), loggedBy(h, "FOUND THE WATER DISPENSER DRY"),
+                       loggedBy(h, "DRANK WATER"),
+                       {"the dispenser dry", [&d](const Stage&) { return d.water <= 0.0f; }}};
+     }},
+    {"cooler-fill", "not thirsty with an empty bottle in a server room, it fills it at the dispenser, draining it",
+     seedWhere(plain, 25000), [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         const ServerRoom& r = P::buildServerRoom(s.world, h.cell + Vec2i{-5, -17}, 10, 8);
+         calm(h);
+         s.run(8);
+         P::place(s.world, h, r.inner + Vec2i{0, -1});
+         const Dispenser& d = P::fillDispenser(s.world, r, 2.0f);
+         h.bottles.assign(1, Bottle{});
+         s.run(40);
+         return Checks{loggedBy(h, "FILLED MY BOTTLE AT A WATER DISPENSER"),
+                       {"the bottle full", [&h](const Stage&) { return !h.bottles.empty() && h.bottles[0].full(); }},
+                       {"a bar gone from the dispenser", [&d](const Stage&) { return d.water <= 1.05f; }}};
+     }},
+    {"cooler-keep", "having learnt water is scarce, it sleeps among the machines, then pours its bottle into the "
+                    "dispenser there",
+     seedWhere(plain, 26000), [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         const ServerRoom& r = P::buildServerRoom(s.world, h.cell + Vec2i{-5, -17}, 10, 8);
+         calm(h);
+         s.run(8);
+         P::place(s.world, h, r.inner + Vec2i{0, -2});
+         P::knowServerRoom(h, r);
+         const Dispenser& d = P::fillDispenser(s.world, r, 1.0f);
+         P::knowDispenser(h, d);
+         P::sawScarce(h);
+         h.bottles.assign(1, Bottle{1.0f});
+         h.tiredness = 0.75f;
+         h.hunger = h.thirst = 0.05f;
+         s.run(400);
+         return Checks{loggedBy(h, "THE MACHINES HUMMED IT TO SLEEP"),
+                       loggedBy(h, "MEANS TO KEEP WATER HERE, BEHIND THE LOCKED DOORS"),
+                       loggedBy(h, "POURED MY BOTTLE INTO THE WATER DISPENSER"),
+                       {"the dispenser fuller", [&d](const Stage&) { return d.water > 1.5f; }}};
+     }},
+    {"cooler-home", "settled by a dispenser, it pours its bottle in to keep its home water",
+     seedWhere(plain, 27000), [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         const ServerRoom& r = P::buildServerRoom(s.world, h.cell + Vec2i{-5, -17}, 10, 8);
+         calm(h);
+         s.run(8);
+         P::place(s.world, h, r.inner + Vec2i{0, -2});
+         P::knowServerRoom(h, r);
+         const Dispenser& d = P::fillDispenser(s.world, r, 0.5f);
+         P::knowDispenser(h, d);
+         P::settle(h, d.at + d.facing);
+         h.bottles.assign(1, Bottle{0.8f});
+         s.run(40);
+         return Checks{loggedBy(h, "POURED MY BOTTLE INTO THE WATER DISPENSER"),
+                       {"the bottle poured in", [&d](const Stage&) { return d.water > 1.2f; }}};
      }},
 };
 
