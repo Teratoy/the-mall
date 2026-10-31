@@ -61,8 +61,7 @@ struct SpriteFrame {
     }
 };
 
-/// Matted is never rolled: it is the hair grown wild on a feral human.
-enum class Hair { Bald, Short, Long, Spiky, Bun, Mohawk, Ponytail, Cap, Matted };
+enum class Hair { Bald, Short, Long, Spiky, Bun, Mohawk, Ponytail, Cap };
 enum class Top { Tee, LongSleeve, Tank };
 enum class Bottom { Pants, Shorts, Skirt };
 
@@ -77,7 +76,7 @@ struct HumanLook {
     int torsoW = 5, torsoH = 5, legH = 4;
     bool beard = false;
     /// Gone feral from eating its own kind: every frame is repainted ragged,
-    /// the hair matted and tangled, the skin smudged and the hands black with
+    /// its own hair grown messy (a cap stays on, the bald stay bald), the skin smudged and the hands black with
     /// dirt, the clothes dull, frayed and torn. The body keeps the same
     /// pixels in every pose, so cakes, bottles, pointing and blood all land
     /// as before.

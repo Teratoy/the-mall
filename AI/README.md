@@ -27,7 +27,7 @@ Status as of 2026-10-30.
 | [android_plan.md](android_plan.md) | A debug APK: `make apk` with the NDK, data files as assets, obituary in app storage, touch and the back button | `make apk` and steps 1–3 built | Step 4: try it on the S25 Ultra; the navigation bar still shows |
 | [pc_layout_plan.md](pc_layout_plan.md) | A wide 1014x468 canvas for PC windows: stats, log, square world, HUD over map, all always open | Built | Q1: scale on 1080p (smooth below 2x for now) |
 | [shut_in_plan.md](shut_in_plan.md) | Remembering a cry from a slam room: going later with a key, fetching one, calling back, telling others | Built | — |
-| [feral_plan.md](feral_plan.md) | The feral human's look: a flag that repaints every frame ragged (dirty, torn clothes, messed-up hair) on the same skeleton | Art built; never set in play | When it turns feral and what changes (not asked yet); questions 1–3 on the look |
+| [feral_plan.md](feral_plan.md) | The feral human's look: a flag that repaints every frame ragged (dirty, torn clothes, its own hair messed up) on the same skeleton | Art built; never set in play | When it turns feral and what changes (not asked yet); questions 1–2 on the look |
 | [human_split_plan.md](human_split_plan.md) | Splitting Human into per-system classes | Not started | Advised against for now; if done, only system by system, when that system is being reworked anyway |
 
 ## Known gaps found by the tests

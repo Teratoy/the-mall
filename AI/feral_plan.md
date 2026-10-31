@@ -18,6 +18,9 @@ hand, pointing, the skeleton, and where wounds show.
   messed up. (A first version had red eyes, a bloodied chin, grey-green
   skin and bare feet; dropped.) Real blood still comes from the blood
   system, as on anyone.
+- **Each keeps its own hair, messed up** (2026-10-31): not all ferals get
+  the same hair. The cap stays on, with hair sticking out under it; the
+  bald stay bald; a beard grows ragged under the chin.
 
 ## How it is drawn
 
@@ -27,10 +30,11 @@ same pixels, and nothing that rides on the body needs to know:
 
 - **Dulled before drawing**: hair, clothes and shoes a little darker with
   dirt. The skin keeps its own colour.
-- **Hair messed up**: `Hair::Matted`, whatever the human's own style was.
-  Tufts sticking up, a clump over the brow, hanks down the back of the
-  head to the neck with strays off them. It is never rolled, and comes
-  after the rolled styles so `HumanLook::random` draws the same dice.
+- **Hair messed up**: each style keeps its shape, with strays and tufts
+  off it (drawBody, when `feral`): short hair sticks up and out, long hair
+  tangles into a mop down the neck, spikes go uneven, a bun comes undone,
+  a mohawk flops over, a ponytail frays, hair sticks out from under a cap.
+  Bald stays bald. A beard grows a pixel ragged under the chin.
 - **A wear pass** (`HumanLook::wear`) over the finished frame, keyed by
   each pixel's place on the standing pose (the same `rest` map blood
   uses), so it moves with the body from pose to pose:
@@ -53,19 +57,19 @@ one human beside itself feral in every `Pose`, carrying a cake, with the
 bottle in the pocket and in the hand, pointing three ways, bloodied, with
 feces and piss, and as remains eaten, rotten, bones and curled. It draws
 through `HumanSprites::draw` as the game does. `FERALSHEET_ARGS="seed
-scale"` picks another human.
+scale"` picks another human; `FERALSHEET_ARGS="seed scale styles"` draws one
+row per hair style instead, every other one bearded.
 
 ## Open questions for the user
 
 1. **All at once or by degrees**: a flag (feral or not), or a gradual
    change with every human eaten (first the hair, then dirt, then rags)?
-2. **Own hair**: should it keep something of its own style (a bald human
-   stays bald, a cap stays on), or always grow the same matted mop?
-3. **Hunched / claws**: a hunched head or clawed hands would move pixels
+2. **Hunched / claws**: a hunched head or clawed hands would move pixels
    the skeleton uses (the head's place, the hands'), and so need care with
    sipping, the cake and blood. Wanted?
 
 ## Built (2026-10-30)
 
 The flag, the colours, the matted hair, the wear pass and the preview tool.
-Then toned down to the ragged look the user asked for.
+Then toned down to the ragged look the user asked for, and each hair
+style kept, messed up, instead of one matted mop for all.
