@@ -237,6 +237,7 @@ SpriteFrame HumanLook::offerBottle() const { return draw({.front = Arm::OfferBot
 SpriteFrame HumanLook::shoot(int aim, bool fire) const {
     return draw({.front = Arm::Aim, .aim = std::clamp(aim, -2, 2), .fire = fire});
 }
+SpriteFrame HumanLook::type(int frame) const { return draw({.front = frame == 0 ? Arm::TypeUp : Arm::TypeDown}); }
 
 // Built from the feet up, so short legs and torsos leave empty rows on top.
 SpriteFrame HumanLook::drawBody(const Stance& s) const {
@@ -500,6 +501,14 @@ SpriteFrame HumanLook::drawBody(const Stance& s) const {
                 p.f.gun = {int8_t(x + d.x * reach), int8_t(shoulder + d.y * reach), int8_t(s.aim), s.fire};
                 break;
             }
+            case Arm::TypeUp:
+            case Arm::TypeDown:
+                // Upper arm down, forearm out ahead to the keys.
+                armPx(side, x, shoulder, 0, false);
+                armPx(side, x, shoulder + 1, 1, false);
+                armPx(side, x + 1, shoulder + 2, 2, false);
+                armPx(side, x + 2, shoulder + (s.front == Arm::TypeDown ? 3 : 2), 3, true);
+                break;
             case Arm::Swing:
                 break;
             }

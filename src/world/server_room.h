@@ -35,6 +35,16 @@ struct ServerPiece {
         }
         return false;
     }
+    /// Whether a human at c can use the piece: a terminal from either side,
+    /// the desk from its chair, the walkable middle of its third row.
+    bool usedFrom(Vec2i c) const {
+        switch (kind) {
+        case Rig::Rack: return false;
+        case Rig::Terminal: return c.y == at.y && (c.x == at.x - 1 || c.x == at.x + 1);
+        case Rig::Desk: return c.y == at.y + 2 && (c.x == at.x + 2 || c.x == at.x + 3);
+        }
+        return false;
+    }
     /// The row the piece is drawn standing on, for drawing back to front.
     int footRow() const { return kind == Rig::Desk ? at.y + DESK_D - 2 : at.y; }
 };

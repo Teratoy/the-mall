@@ -2629,3 +2629,50 @@ timid                   | I'M NOT GOING NEAR THAT.
 curious                 | HOW DOES IT WORK?
 brave                   | NICE TRY.
 erratic                 | IT'S WAITING FOR ME.
+
+# Typing at the first terminal it tries, the screen asking for a password
+# it doesn't have; said to nobody.
+[try_terminal]
+                        | IT WANTS SOMETHING I DON'T HAVE.
+                        | SOMEONE KNEW THE WORD ONCE.
+                        | SO CLOSE. IT KNOWS THINGS.
+                        | MAYBE I KNEW IT. BEFORE.
+hopeless                | EVEN THE MACHINES SHUT ME OUT.
+sure                    | THE WAY OUT IS IN THERE.
+erratic                 | IT'S TALKING ABOUT ME.
+
+# Typing at the first console desk it tries, its screens asking for a
+# password; said to nobody.
+[try_desk]
+                        | SOMEONE SAT HERE. SOMEONE IN CHARGE.
+                        | ALL THESE SCREENS, AND NOT ONE WORD FOR ME.
+                        | WHOEVER RUNS THIS PLACE SAT RIGHT HERE.
+                        | THE COFFEE'S STILL HERE. WHERE ARE THEY?
+hopeless                | THEY LEFT. EVERYONE LEFT.
+timid                   | WHAT IF THEY COME BACK?
+erratic                 | IT SEES ME. I KNOW IT SEES ME.
+
+# Typing at another computer, after one turned it away before: locked by
+# a password again. Said to nobody; a different line each time while
+# any are left.
+[try_again]
+                        | AGAIN.
+                        | THE SAME WORD. ALWAYS THE SAME WORD.
+                        | MAYBE THIS ONE FORGOT TO LOCK.
+                        | WHY DID I THINK THIS ONE WOULD BE DIFFERENT?
+                        | THEY ALL KNOW SOMETHING I DON'T.
+                        | IT'S ON THE TIP OF MY TONGUE.
+                        | NOT ONE OF THEM WILL TALK TO ME.
+hopeless                | WHY DO I KEEP TRYING?
+tired                   | THE LETTERS SWIM.
+brave                   | ONE OF YOU WILL OPEN.
+
+# Seeing someone else at the keys of a computer; said to nobody, about
+# the one typing.
+[watch_typing 0.8]
+                        | DO THEY KNOW THE WORD?
+                        | MAYBE THEY WORKED HERE.
+                        | WHAT ARE THEY LOOKING FOR?
+                        | {WHO} THINKS IT KNOWS SOMETHING.
+timid                   | DON'T WAKE IT UP.
+hopeless                | IT WON'T LET THEM IN EITHER.

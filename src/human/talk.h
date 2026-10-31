@@ -202,6 +202,10 @@ enum class Moment {
     // Toilets: seeing one fouled by someone else, and the first time it uses
     // one and finds no flush (both to nobody).
     ToiletFoul, NoFlush,
+    // Computers (AI/computers_plan.md): the first terminal and the first
+    // console desk it tries, and every later one, each locked by a password
+    // (all to nobody); seeing someone else at the keys (to nobody, about them).
+    TryTerminal, TryDesk, TryAgain, WatchTyping,
     Count
 };
 

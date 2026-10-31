@@ -20,6 +20,8 @@ constexpr float WINDED_FPS = 4.0f;
 constexpr float WAVE_FPS = 10.0f, WAVE_TIME = 0.4f;
 /// Bites and chews.
 constexpr float EAT_FPS = 2.5f;
+/// Keys struck a second, typing.
+constexpr float TYPE_FPS = 5.0f;
 /// Falling dead: still upright until FALL_KNEEL, on the knees until
 /// FALL_DOWN, then flat on the back for good.
 constexpr float FALL_KNEEL = 0.15f, FALL_DOWN = 0.45f;
@@ -102,6 +104,7 @@ template <class F> void HumanSprites::eachFrame(const HumanLook& look, F&& add) 
     add(offerBottle_, look.offerBottle());
     for (int a = 0; a < SHOOT_AIMS; a++)
         for (int fire = 0; fire < 2; fire++) add(shoot_[size_t(a)][size_t(fire)], look.shoot(a - 2, fire == 1));
+    for (int i = 0; i < TYPE_FRAMES; i++) add(type_[size_t(i)], look.type(i));
 }
 
 HumanSprites::HumanSprites(const HumanLook& look) : look_(look), skin_(look.skin) {
@@ -256,6 +259,7 @@ void HumanSprites::draw(Vector2 feet, Pose pose, float animTime, bool flip, int 
                            : pose == Pose::Punch ? punch_
                            : pose == Pose::Offer ? offer_
                            : pose == Pose::Point ? point_
+                           : pose == Pose::Type ? type_[size_t(int(animTime * TYPE_FPS) % TYPE_FRAMES)]
                            : pose == Pose::PointUp ? pointUp_
                            : pose == Pose::PointDown ? pointDown_
                            : pose == Pose::Sip   ? sip_

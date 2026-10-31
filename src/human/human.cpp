@@ -76,6 +76,7 @@ void Human::update(World& world, float dt) {
         if ((rethink_ && !escape_.comingTo) || timer <= 0.0f) startRising();
         return;
     }
+    if (state == State::Typing) return typing(world, dt);
     if (timer > 0.0f) return;
     switch (state) {
     case State::Greeting: {
@@ -101,6 +102,8 @@ void Human::update(World& world, float dt) {
         return finishStash(world);
     case State::Vending:
         return takeVended(world);
+    case State::Typing:
+        return;
     case State::Relieving:
         endRelieving();
         return choose(world);
@@ -166,6 +169,8 @@ Human::Action Human::action() const {
         return Action::Stash;
     case State::Vending:
         return Action::Vend;
+    case State::Typing:
+        return Action::Type;
     case State::Relieving:
         return Action::Relieve;
     case State::Punching:
@@ -417,6 +422,7 @@ bool Human::observe(const World& world) {
         if (const Dispenser* d = world.dispenser(c)) news |= seeDispenser(*d);
         if (const AirlockDoor* a = world.airlock(c)) memory.airlocks[c] = a->in;
         if (t == Tile::Rack) seeServerRoom(world, c);
+        if (const ServerPiece* p = world.piece(c); p && p->kind != Rig::Rack) seeComputer(*p);
         if (t != Tile::Void) {
             if (memory.tile(c) == Tile::Void) {
                 escape_.lastFound = clock_;
@@ -492,6 +498,7 @@ bool Human::observe(const World& world) {
         if (!o->dead()) inSight_.push_back(o->id);
         if (!o->dead()) firstSight(talk::Moment::FirstHuman, o->cell, o->id);
         if (!o->dead()) noticeFilth(*o);
+        if (o->state == State::Typing) watchTyping(*o);
         // Died asleep, from farther off it still looks asleep.
         if (o->dead() && o->sleep_.diedAsleep && !deaths_.seenDead.count(o->id) && cheb(cell, o->cell) > STILL_SEEN) continue;
         if (o->dead()) {

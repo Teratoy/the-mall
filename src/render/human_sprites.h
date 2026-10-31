@@ -31,8 +31,8 @@
 /// ahead (Shoot), down ahead (ShootDownAhead) or straight down (ShootDown);
 /// facing left mirrors them, for eight ways in all. animTime counts from
 /// the shot: the hand kicks back with a flash at the muzzle for SHOT_TIME,
-/// then holds the aim.
-enum class Pose { Idle, Walk, Wave, Eat, Guard, Punch, Offer, Fall, Sit, Rise, Wash, Search, Feed, Wake, Point, PointUp, PointDown, Squat, Piss, Sleep, WakeUp, DiedAsleep, Sip, Fill, Pour, OfferBottle, Lie, Run, Winded, Shoot, ShootUp, ShootUpAhead, ShootDownAhead, ShootDown };
+/// then holds the aim. Type stands at a computer's keys, tapping.
+enum class Pose { Idle, Walk, Wave, Eat, Guard, Punch, Offer, Fall, Sit, Rise, Wash, Search, Feed, Wake, Point, PointUp, PointDown, Squat, Piss, Sleep, WakeUp, DiedAsleep, Sip, Fill, Pour, OfferBottle, Lie, Run, Winded, Shoot, ShootUp, ShootUpAhead, ShootDownAhead, ShootDown, Type };
 
 
 /// One human's frames as textures, made from its look.
@@ -82,6 +82,7 @@ private:
     std::array<Texture2D, WINDED_FRAMES> winded_;
     std::array<Texture2D, WAVE_FRAMES> wave_;
     std::array<Texture2D, EAT_FRAMES> eat_;
+    std::array<Texture2D, TYPE_FRAMES> type_;
     std::array<Texture2D, SIT_FRAMES> sit_;
     std::array<Texture2D, DOZE_FRAMES> doze_;
     std::array<Texture2D, CURL_FRAMES> curl_, curlCarry_;

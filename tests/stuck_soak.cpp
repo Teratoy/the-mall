@@ -31,7 +31,7 @@ using P = SoakProbe;
 
 static const char* GOAL[] = {"Explore", "FetchKey", "OpenDoor", "PassDoor", "Wander", "Meet", "Follow", "Company", "FetchCake", "Drink", "Relieve", "Fight",
                              "Flee", "Share", "CheckDoor", "Wash", "Avoid", "Escort", "Escorted", "Track", "GiveWay", "Loot", "Feed", "Sleep", "Rob", "Watch", "Rescue", "Fill", "Ask", "Pick", "Stash", "Vend", "Voice", "Inspect"};
-static const char* STATE[] = {"Waking", "Idle", "Sitting", "Rising", "Walking", "Greeting", "Eating", "Drinking", "Relieving", "Punching", "Giving", "Washing", "Looting", "Feeding", "Sleeping", "Sipping", "Filling", "Pouring", "Stashing", "Vending", "Dead"};
+static const char* STATE[] = {"Waking", "Idle", "Sitting", "Rising", "Walking", "Greeting", "Eating", "Drinking", "Relieving", "Punching", "Giving", "Washing", "Looting", "Feeding", "Sleeping", "Sipping", "Filling", "Pouring", "Stashing", "Vending", "Typing", "Dead"};
 // A goal or state added to Human needs its name here too.
 static_assert(std::size(GOAL) == size_t(Human::Goal::Inspect) + 1);
 static_assert(std::size(STATE) == size_t(Human::State::Dead) + 1);
@@ -259,6 +259,7 @@ int main(int argc, char** argv) {
                            h.state != Human::State::Looting && h.state != Human::State::Sipping &&
                            h.state != Human::State::Filling && h.state != Human::State::Pouring &&
                            h.state != Human::State::Stashing && h.state != Human::State::Vending &&
+                           h.state != Human::State::Typing &&
                            h.state != Human::State::Feeding && h.state != Human::State::Sleeping) {
                     k.stillFor += dt;
                 } else {

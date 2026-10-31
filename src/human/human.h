@@ -91,12 +91,12 @@ class Human {
 public:
     /// Waking is the first thing every human does: lying where it came to,
     /// knowing nothing, until it sits up (Sitting) and looks round.
-    enum class State { Waking, Idle, Sitting, Rising, Walking, Greeting, Eating, Drinking, Relieving, Punching, Giving, Washing, Looting, Feeding, Sleeping, Sipping, Filling, Pouring, Stashing, Vending, Dead };
+    enum class State { Waking, Idle, Sitting, Rising, Walking, Greeting, Eating, Drinking, Relieving, Punching, Giving, Washing, Looting, Feeding, Sleeping, Sipping, Filling, Pouring, Stashing, Vending, Typing, Dead };
     /// Why the human is walking: what it does on arrival.
     enum class Goal { Explore, FetchKey, OpenDoor, PassDoor, Wander, Meet, Follow, Company, FetchCake, Drink, Relieve, Fight, Flee, Share, CheckDoor, Wash, Avoid, Escort, Escorted, Track, GiveWay, Loot, Feed, Sleep, Rob, Watch, Rescue, Fill, Ask, Pick, Stash, Vend, Voice, Inspect };
     /// What the human is doing, as far as hunger, thirst and tiredness go:
     /// each costs its own of all three.
-    enum class Action { Rest, Sit, Walk, Run, Greet, Eat, Drink, Relieve, Punch, Give, Wash, Loot, Feed, Sleep, Watch, Fill, Pour, Stash, Vend, Count };
+    enum class Action { Rest, Sit, Walk, Run, Greet, Eat, Drink, Relieve, Punch, Give, Wash, Loot, Feed, Sleep, Watch, Fill, Pour, Stash, Vend, Type, Count };
     /// What a human may set out to do once nothing presses. How much it
     /// wants each, by its traits and hunger, is weighed in choose(), which
     /// tries them from the most wanted down; the table of wants is in
@@ -278,6 +278,11 @@ public:
     bool bottleInHand() const;
     bool givingWater() const { return state == State::Giving && water_.givingWater; }
     /// Drinking or filling its bottle at a water dispenser's tap, standing.
+    /// The computer it stands typing at, by its cell (a terminal's, or the
+    /// console desk's top-left), if any: its screen shows a password prompt.
+    std::optional<Vec2i> typingAt() const {
+        return state == State::Typing ? std::optional<Vec2i>(computers_.at) : std::nullopt;
+    }
     bool atTap() const {
         return (state == State::Drinking || state == State::Filling) && memory.tile(water_.drinkAt) == Tile::Dispenser;
     }
@@ -506,6 +511,7 @@ public:
 private:
     /// tests/stuck_soak.cpp reads how walks are going.
     friend struct SoakProbe;
+    friend struct ShotProbe;
     // Each system's state is a struct (voice_, chat_, sleep_, ...) placed
     // beside that system's methods; what the core loop uses everywhere
     // (rng_, clock_, path_, rethink_, dread_, ...) stays loose.
@@ -1631,6 +1637,9 @@ private:
         /// A body, blood or a trap: only the brave and the curious walk up;
         /// the rest look from where they stand.
         bool grim;
+        /// A computer to try, not just look at: it walks to where it is used
+        /// from, and a line is said only once it has tried it.
+        std::optional<Rig> rig;
     };
     struct Inspect {
         /// What it means to look at, in the order seen; the nearest goes first.
@@ -1660,10 +1669,48 @@ private:
     /// Faces the find, stands and says its line there.
     void lookAt(const Find& f, bool walked);
     bool sayFind(const Find& f);
+    /// Says this next, ahead of all but the urgent, standing idle until it is said.
+    void sayHere(Saying s);
     /// A key or cake found that it has seen taken since.
     bool gone(const Find& f) const;
     /// On its way to a find it should give up on.
     bool inspectStale() const;
+    /// Computers (human_computer.cpp): the curious try the first terminal
+    /// and the first console desk they come upon, and now and then another
+    /// they pass, never one tried before; each is locked by a password
+    /// (AI/computers_plan.md).
+    struct Computers {
+        enum class Try : uint8_t { Unweighed, First, Meant, Passed, Tried };
+        /// Every computer it has seen, by cell: yet to be weighed up; meant
+        /// to be tried as the first of its kind (weighed again once it has
+        /// tried one), or by the dice; passed by; or tried.
+        std::unordered_map<Vec2i, Try, Vec2iHash> seen;
+        /// Tried one of each kind, and how many tried in all.
+        bool terminal = false, desk = false;
+        int tries = 0;
+        /// The one it is typing at, and which kind.
+        Vec2i at{};
+        Rig kind = Rig::Terminal;
+        /// It lets computers be until then, not having got to one it meant to try.
+        float pauseUntil = 0.0f;
+        /// Has watched someone else try one.
+        bool watched = false;
+    };
+    Computers computers_;
+    /// A terminal or console desk in sight: the curious mean to try one they
+    /// haven't, the first of each kind always, later ones less and less.
+    void seeComputer(const ServerPiece& p);
+    /// Someone in sight typing at a computer: the curious remark on it, once.
+    void watchTyping(const Human& o);
+    /// Whether it means to try this computer, weighing it up if it hasn't yet.
+    bool meansToTry(const ServerPiece& p);
+    /// A computer find let go of without trying it: it may come back to it.
+    void letComputerBe();
+    /// At the computer: faces it and types for a while.
+    void startTyping(const Find& f);
+    /// Typing: broken off when something presses; done, the password stops it.
+    void typing(World& world, float dt);
+    void endTyping(World& world);
     /// A rack in sight: remembers its room, and remarks on the first.
     void seeServerRoom(const World& world, Vec2i c);
     /// Tired, it makes for a server room it knows and opens its way in with

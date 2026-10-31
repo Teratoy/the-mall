@@ -118,6 +118,7 @@ int main(int argc, char** argv) {
         {"Idle", Pose::Idle},
         {"Walk 1", Pose::Walk, 0.13f},
         {"Point", Pose::Point},
+        {"Type", Pose::Type},
         {"Sip", Pose::Sip, 0.0f, false, true, true},
         {"Sit", Pose::Sit, 1.0f},
         {"Sleep curl", Pose::Sleep, 3.0f},

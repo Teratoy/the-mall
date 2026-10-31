@@ -175,6 +175,8 @@ Pose poseOf(const Human& h) {
     case Human::State::Feeding: return Pose::Feed;
     // An arm out to the buttons.
     case Human::State::Vending: return Pose::Point;
+    // Hands at the keys.
+    case Human::State::Typing: return Pose::Type;
     case Human::State::Idle:
     case Human::State::Walking: break;
     }
@@ -427,6 +429,8 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
     std::sort(drawn.begin(), drawn.end(), [](const Drawn& a, const Drawn& b) {
         bool deadA = a.human && a.human->dead(), deadB = b.human && b.human->dead();
         if (deadA != deadB) return deadA;
+        // On the same row a machine goes behind: whoever sits in the desk's chair is drawn over it.
+        if (a.y == b.y) return (a.piece != nullptr) > (b.piece != nullptr);
         return a.y < b.y;
     });
     const Vector2 viewerFeet = feetOf(viewer);
@@ -453,9 +457,13 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
             for (Vec2i c : pieceCells(p)) lit |= viewer.sight.sees(c);
             const float seconds = float(GetTime()) + float(p.seed % 1000) / 100.0f;
             const int x = p.at.x * CELL_PX - left;
+            // Someone at its keys, in sight: the screen asks them for a password.
+            bool typed = false;
+            for (const auto& o : world.humans())
+                typed |= o->typingAt() == p.at && (reveal || viewer.sight.sees(o->cell));
             if (p.kind == Rig::Rack) drawServerRack(x, int(d.y) - top, lit, seconds);
-            else if (p.kind == Rig::Terminal) drawTerminal(x, int(d.y) - top, lit, seconds);
-            else drawConsoleDesk(x, p.at.y * CELL_PX - top, lit, seconds);
+            else if (p.kind == Rig::Terminal) drawTerminal(x, int(d.y) - top, lit, seconds, typed);
+            else drawConsoleDesk(x, p.at.y * CELL_PX - top, lit, seconds, typed);
             continue;
         }
         if (d.dispenser) {

@@ -17,6 +17,8 @@ inline constexpr int RUN_FRAMES = 4;
 inline constexpr int WINDED_FRAMES = 2;
 inline constexpr int WAVE_FRAMES = 2;
 inline constexpr int EAT_FRAMES = 2;
+/// Typing: the hand up off the keys, then down on them.
+inline constexpr int TYPE_FRAMES = 2;
 /// Seated: eyes open, then a blink.
 inline constexpr int SIT_FRAMES = 2;
 /// Nodding off seated: eyes shut head up, then the head dropped.
@@ -167,10 +169,14 @@ struct HumanLook {
     /// the SHOOT_AIMS ways (GunSpot::aim); fire kicks the hand back a
     /// pixel as it goes off. The gun is out of the waistband.
     SpriteFrame shoot(int aim, bool fire) const;
+    /// At the keys of a computer, the front forearm out level ahead at the
+    /// waist: 0 the hand lifted, 1 down on a key.
+    SpriteFrame type(int frame) const;
 
 private:
     /// What the front arm is doing.
-    enum class Arm { Swing, WaveIn, WaveOut, Guard, Punch, Bite, Chew, Offer, Point, PointUp, PointDown, Pillow, Sip, Fill, Pour, OfferBottle, Aim };
+    enum class Arm { Swing, WaveIn, WaveOut, Guard, Punch, Bite, Chew, Offer, Point, PointUp, PointDown, Pillow, Sip, Fill, Pour,
+                     OfferBottle, Aim, TypeUp, TypeDown };
     struct Stance {
         /// 0 standing, or +1 / -1 for a step with either leg.
         int stride = 0;
