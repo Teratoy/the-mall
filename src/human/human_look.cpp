@@ -519,7 +519,9 @@ SpriteFrame HumanLook::drawBody(const Stance& s) const {
                 float k = 1.0f;
                 if (s.farGun) {
                     armPx(side, x, shoulder, 0, false);
-                    x = tr + 1;
+                    // Raised, it comes up from behind the shoulder's corner;
+                    // otherwise from behind the near arm.
+                    x = s.aim < 0 ? tr : tr + 1;
                     k = FAR_ARM_SHADE;
                 }
                 for (int i = s.farGun ? 1 : 0; i <= reach; i++)
