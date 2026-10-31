@@ -35,9 +35,8 @@ constexpr float DIRTY_FRAY_DARK = 0.75f;
 /// every hundred elsewhere, this many. Of every hundred, this many more are
 /// frayed darker still.
 constexpr int DIRTY_HEM_TORN = 45, DIRTY_TORN = 6, DIRTY_FRAYED = 12;
-/// A holstered gun: the belt and holster are dark leather, the grip shows
-/// above the holster's mouth with the back of the slide.
-constexpr Rgba BELT = hex(0x2e2824), HOLSTER = hex(0x4a3e34), GRIP = hex(0x7a6048), SLIDE = hex(0x8a8e98);
+/// A gun tucked into the waistband: its grip, and the back of its slide.
+constexpr Rgba GRIP = hex(0x7a6048), SLIDE = hex(0x8a8e98);
 /// How far a pixel may be from a colour in shade and still count as it.
 constexpr int SHADE_SLACK = 4;
 
@@ -144,7 +143,7 @@ SpriteFrame HumanLook::draw(const Stance& s) const {
     l.bottom = shade(bottom, DIRTY_CLOTH_DIRT);
     l.shoes = shade(shoes, DIRTY_SHOE_DIRT);
     l.hat = shade(hat, DIRTY_CLOTH_DIRT);
-    l.gearDirt_ = DIRTY_CLOTH_DIRT;
+    l.gunDirt_ = DIRTY_CLOTH_DIRT;
     SpriteFrame f = l.drawBody(s);
     l.wear(f, l.drawBody({}));
     return f;
@@ -155,11 +154,11 @@ void HumanLook::wear(SpriteFrame& f, const SpriteFrame& stand) const {
     const int restHand = SPRITE_H - legH;
     const uint32_t salt = uint32_t(top.r) << 24 ^ uint32_t(bottom.g) << 16 ^ uint32_t(skin.b) << 8 ^ uint32_t(hair.r);
     auto cloth = [&](Rgba p) { return (shadeOf(p, top) || shadeOf(p, bottom)) && !shadeOf(p, skin); };
-    // The holster is leather, not cloth: it neither tears nor frays.
-    auto gear = [&](Rgba p) {
-        if (!holster) return false;
-        for (Rgba c : {BELT, HOLSTER, GRIP, SLIDE})
-            if (Rgba g = shade(c, gearDirt_); p.r == g.r && p.g == g.g && p.b == g.b) return true;
+    // The tucked gun is not cloth: it neither tears nor frays.
+    auto gun = [&](Rgba p) {
+        if (!tuckedGun) return false;
+        for (Rgba c : {GRIP, SLIDE})
+            if (Rgba g = shade(c, gunDirt_); p.r == g.r && p.g == g.g && p.b == g.b) return true;
         return false;
     };
     for (size_t i = 0; i < f.px.size(); i++) {
@@ -174,7 +173,7 @@ void HumanLook::wear(SpriteFrame& f, const SpriteFrame& stand) const {
             if (hand || pixelDie(r, ~salt) < DIRTY_SMUDGED) p = shade(p, DIRTY_SKIN);
             continue;
         }
-        if (part == BodyPart::Head || part == BodyPart::Feet || !cloth(p) || gear(p)) continue;
+        if (part == BodyPart::Head || part == BodyPart::Feet || !cloth(p) || gun(p)) continue;
         // A hem: standing, the cloth stops just below.
         Rgba here = stand.px[size_t(r)];
         Rgba below = ry + 1 < SPRITE_H ? stand.px[size_t(r + SPRITE_W)] : Rgba{};
@@ -358,29 +357,14 @@ SpriteFrame HumanLook::drawBody(const Stance& s) const {
         for (int y = torsoTop + 1; y < torsoBottom; y++) p.set(tl - 1, y, top);
     }
 
-    // A gun holstered behind the hip, hung from a belt round the waist:
-    // the grip above the belt, the holster below it, pointing down the
-    // thigh standing, forward along it seated or curled. It moves with the
-    // torso, so blood lands on it as on the body.
-    if (holster) {
-        auto gearC = [&](Rgba c) { return shade(c, gearDirt_); };
-        const bool folded = s.sit || s.curl;
+    // A gun tucked into the waistband behind the hip: the grip sticks up
+    // and back out of it, the slide's end beside it; the rest is hidden in
+    // the clothes. It moves with the torso, so blood lands on it as on the body.
+    if (tuckedGun) {
         p.body(BodyPart::Torso, lifted);
-        p.row(tl, tr, torsoBottom, gearC(BELT));
-        p.set(CX - 2, torsoBottom - 1, gearC(GRIP));
-        p.set(CX - 1, torsoBottom - 1, gearC(SLIDE));
-        p.row(CX - 2, CX - 1, torsoBottom, gearC(HOLSTER));
-        if (folded) {
-            p.row(CX - 1, CX, legTop, gearC(HOLSTER));
-        } else {
-            p.row(CX - 2, CX - 1, legTop, gearC(HOLSTER));
-            // The tip, kept off the shoes when the knees bend.
-            if (legTop + 1 < feet) {
-                // Past the hem of shorts, a strap round the bare thigh holds it.
-                if (bottomStyle == Bottom::Shorts && legTop + 1 >= shortsEnd) p.set(CX - 2, legTop + 1, gearC(BELT));
-                p.set(CX - 1, legTop + 1, gearC(HOLSTER));
-            }
-        }
+        p.set(CX - 2, torsoBottom - 2, shade(GRIP, gunDirt_));
+        p.set(CX - 2, torsoBottom - 1, shade(GRIP, gunDirt_));
+        p.set(CX - 1, torsoBottom - 1, shade(SLIDE, gunDirt_));
     }
 
     // An arm pixel, counted from the shoulder: tees cover the first two.

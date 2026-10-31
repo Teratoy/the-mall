@@ -33,7 +33,7 @@ toolbox run -c claude-build make check        # soak vs golden output (~75 s)
 | `make coverage` | Lists log lines (`note(...)`) and talk moments that neither the soak nor the scenarios reached |
 | `make stuck` | The soak with its own arguments: `build/stuck_soak [seeds] [minutes] [verbose] [crowd]`. `TRACE=seed:id:from:to` follows one human |
 | `make bottlesheet` | Draws every pose with a bottle at several levels and dirt, scaled up, to `build/bottle-sheet.png` |
-| `make dirtysheet` | Draws one human beside itself dirty in every pose, with cake, bottle, blood and remains, to `build/dirty-sheet.png`. `DIRTYSHEET_ARGS="42 4 holster"` draws a holstered gun on each kind of bottom instead |
+| `make dirtysheet` | Draws one human beside itself dirty in every pose, with cake, bottle, blood and remains, to `build/dirty-sheet.png`. `DIRTYSHEET_ARGS="42 4 gun"` draws a gun tucked into each kind of bottom instead |
 | `make genprobe` | Grows chunk interiors on every footprint (L, T, S, boxes) and checks they keep to it. `GENPROBE_ARGS="20 png"` also saves pictures to `build/genprobe-png/` |
 | `make apk` (on the host, not the toolbox) | Builds `build/TheMall-debug.apk` for the phone with the Android NDK. See `android/apk.mk` and [AI/android_plan.md](AI/android_plan.md) |
 | `make lines` (host or toolbox), or `./lines.sh` (the "The Mall Lines" desktop shortcut) | The lines editor: a local web page at http://localhost:8765 for rewriting `data/lines.txt`, with the game's bubble drawn beside each line. See [AI/lines_editor_plan.md](AI/lines_editor_plan.md) |

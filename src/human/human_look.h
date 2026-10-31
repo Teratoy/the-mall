@@ -87,11 +87,11 @@ struct HumanLook {
     /// Body proportions in sprite pixels.
     int torsoW = 5, torsoH = 5, legH = 4;
     bool beard = false;
-    /// A gun holstered at the back of the hip, hung from a belt over
-    /// whatever it wears below: on trousers it lies over the hip; past the
-    /// hem of shorts it is strapped to the bare thigh; on a skirt it rides
-    /// over the flare. Seated or curled up, it tips forward with the thigh.
-    bool holster = false;
+    /// A gun tucked into the waistband behind the hip, the barrel down
+    /// inside whatever it wears below (trousers, shorts or skirt): only the
+    /// grip and the back of the slide show above the waist, wherever the
+    /// torso goes.
+    bool tuckedGun = false;
     /// Unwashed too long (Human::dirty()): every frame is repainted ragged,
     /// its own hair grown messy (a cap stays on, the bald stay bald), the skin smudged and the hands black with
     /// dirt, the clothes dull, frayed and torn. The body keeps the same
@@ -176,9 +176,8 @@ private:
         bool carry = false;
         bool eyesShut = false;
     };
-    /// The shade the holster's leather and the gun are drawn in: dulled
-    /// with dirt when dirty.
-    float gearDirt_ = 1.0f;
+    /// The shade the tucked gun is drawn in: dulled with dirt when dirty.
+    float gunDirt_ = 1.0f;
     /// The frame for this stance, dirty or not.
     SpriteFrame draw(const Stance& s) const;
     /// The frame for this stance in this look's own colours and hair.
