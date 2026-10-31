@@ -770,6 +770,55 @@ timid                   | I'M SO FAR FROM WHERE I WOKE.
 curious                 | SOMEONE MADE ALL THIS. WHY?
 erratic                 | IT'S GROWING. I KNOW IT IS.
 
+# Stepping out of where it woke, alone, early on: called out into the
+# mall, to nobody, loud enough to carry through the walls. The timid keep
+# quiet and never say these.
+[call_out]
+                        | HELLO?
+                        | IS ANYBODY THERE?
+                        | HEY! ANYONE?
+                        | HELLO-O?
+sociable                | HELLO! ANYONE OUT THERE?
+brave                   | IF ANYONE'S THERE, SHOW YOURSELF!
+curious                 | HELLO? WHO ELSE IS HERE?
+loner                   | ...ANYONE?
+dazed                   | HELLO...? CAN ANYONE HEAR ME?
+
+# Hearing a call, or a call back, from someone out of sight: said to
+# nobody ({WHO} only if it knows whose voice). The timid hush.
+[heard_call]
+                        | DID YOU HEAR THAT?
+                        | SOMEONE ELSE IS HERE.
+                        | A VOICE...
+timid                   | STAY QUIET... STAY QUIET.
+timid                   | DON'T LET THEM HEAR YOU.
+curious                 | WHO'S THAT?
+brave                   | SOMEONE'S OUT THERE.
+loner                   | SO MUCH FOR THE QUIET.
+hopeless                | PROBABLY NOTHING.
+erratic                 | THEY'RE CALLING ME.
+
+# Answering a call from out of sight: shouted back, to nobody, so it
+# carries the same way.
+[call_answer]
+                        | HELLO? WHERE ARE YOU?
+                        | OVER HERE!
+                        | I HEAR YOU! KEEP TALKING!
+                        | HERE! I'M HERE!
+sociable                | HELLO! STAY WHERE YOU ARE!
+brave                   | THIS WAY! FOLLOW MY VOICE!
+dazed                   | WAIT! DON'T GO!
+
+# Its own call answered from out of sight: said to nobody.
+[call_answered]
+                        | THERE'S SOMEONE!
+                        | I'M NOT ALONE!
+                        | SOMEONE HEARD ME.
+loner                   | OH. SOMEONE.
+brave                   | GOOD. NOW WHERE ARE THEY?
+sociable                | YES! I'M COMING!
+hopeless                | MAYBE THEY KNOW THE WAY.
+
 # Still dazed, the room it woke in, a thing at a time, said to nobody. The
 # first giant statue it sees ({THING} is what it is, and statue.mug and the
 # rest which), the first table, and, once it has looked round a while and

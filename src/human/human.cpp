@@ -539,6 +539,7 @@ bool Human::observe(const World& world) {
     // Looked round long enough to be sure: nobody, anywhere it can see.
     if (social_.lastSeen.empty() && !escape_.comingTo && escape_.daze <= EMPTY_ROOM_DAZE) fogSight(talk::Moment::EmptyRoom);
     hearQuiet(alone);
+    callOut(world, alone);
     return news;
 }
 
@@ -644,6 +645,9 @@ void Human::choose(World& world) {
     if (hunger >= fleshBar()) want(Want::Flesh, drive + mind_.appetite);
     if (hunger >= huntBar()) want(Want::Hunt, drive + mind_.appetite);
     if (rescue_.rescuee >= 0) want(Want::Rescue);
+    // A voice from out of sight may be someone who knows the way out: as
+    // much a way to look as any, for the curious and the sociable more.
+    if (!needy && voiceToGo()) want(Want::Voice, OUT_EXPLORE * outDrive());
     if (keys > 0 && (urged_ || doorUrge())) want(Want::UrgedDoor);
     if (traits.brave >= TIMID &&
         std::any_of(deaths_.bodies.begin(), deaths_.bodies.end(), [&](const auto& b) { return worthLooting(b.first); }))
@@ -710,6 +714,8 @@ bool Human::pursue(World& world, Want w) {
         return social_.partner >= 0 && startMeet(world);
     case Want::Rescue:
         return startRescue(world);
+    case Want::Voice:
+        return startVoice(world);
     case Want::UrgedDoor: {
         // Frightened, never a door that lies toward whoever scared it.
         auto it = social_.lastSeen.find(fight_.feared);

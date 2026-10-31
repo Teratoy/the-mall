@@ -60,6 +60,7 @@ constexpr const char* MOMENTS[] = {
     "blank",
     "quiet",
     "it_goes_on", "never_ends",
+    "call_out", "heard_call", "call_answer", "call_answered",
 };
 static_assert(std::size(MOMENTS) == size_t(Moment::Count));
 

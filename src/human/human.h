@@ -91,7 +91,7 @@ public:
     /// knowing nothing, until it sits up (Sitting) and looks round.
     enum class State { Waking, Idle, Sitting, Rising, Walking, Greeting, Eating, Drinking, Relieving, Punching, Giving, Washing, Looting, Feeding, Sleeping, Sipping, Filling, Pouring, Stashing, Vending, Dead };
     /// Why the human is walking: what it does on arrival.
-    enum class Goal { Explore, FetchKey, OpenDoor, PassDoor, Wander, Meet, Follow, Company, FetchCake, Drink, Relieve, Fight, Flee, Share, CheckDoor, Wash, Avoid, Escort, Escorted, Track, GiveWay, Loot, Feed, Sleep, Rob, Watch, Rescue, Fill, Ask, Pick, Stash, Vend };
+    enum class Goal { Explore, FetchKey, OpenDoor, PassDoor, Wander, Meet, Follow, Company, FetchCake, Drink, Relieve, Fight, Flee, Share, CheckDoor, Wash, Avoid, Escort, Escorted, Track, GiveWay, Loot, Feed, Sleep, Rob, Watch, Rescue, Fill, Ask, Pick, Stash, Vend, Voice };
     /// What the human is doing, as far as hunger, thirst and tiredness go:
     /// each costs its own of all three.
     enum class Action { Rest, Sit, Walk, Run, Greet, Eat, Drink, Relieve, Punch, Give, Wash, Loot, Feed, Sleep, Watch, Fill, Pour, Stash, Vend, Count };
@@ -99,7 +99,7 @@ public:
     /// wants each, by its traits and hunger, is weighed in choose(), which
     /// tries them from the most wanted down; the table of wants is in
     /// human_tuning.h. In the order they tie in.
-    enum class Want { Food, Drink, Relieve, Sleep, Flesh, Hunt, Track, Escort, Wash, Fill, Meet, Rescue, UrgedDoor, Loot, Rob, Fetch, Stash, Follow, Company, Explore, OpenDoor, CheckDoor, Wander, Count };
+    enum class Want { Food, Drink, Relieve, Sleep, Flesh, Hunt, Track, Escort, Wash, Fill, Meet, Voice, Rescue, UrgedDoor, Loot, Rob, Fetch, Stash, Follow, Company, Explore, OpenDoor, CheckDoor, Wander, Count };
 
     /// An empty name gives the one grown from seed.
     Human(int id, const HumanLook& look, Vec2i cell, uint64_t seed, std::string chosenName = {});
@@ -595,6 +595,34 @@ private:
         bool keyNoted = false;
     };
     Rescue rescue_;
+    /// Calling out into the mall, and voices heard calling (human_call.cpp,
+    /// AI/waking_talk_plan.md step 5).
+    struct Call {
+        /// It has called out once, at the first door it came to, and
+        /// answered a call once.
+        bool called = false, answered = false;
+        /// The last voice heard calling that it hasn't seen: whose, from
+        /// where, and when. -1 for none.
+        int from = -1;
+        Vec2i at;
+        float heardAt = 0.0f;
+    };
+    Call call_;
+    /// Coming to its first door early on, alone, it calls out once to whoever
+    /// may be beyond; the timid keep quiet.
+    void callOut(const World& world, bool alone);
+    /// A call or an answer said aloud carries this far, through walls, to
+    /// everyone who can't see it.
+    void shout(World& world, bool answer);
+    /// Hearing a call from someone out of sight: the timid hush, the sociable
+    /// answer, and the rest wonder; it remembers where it came from.
+    void hearCall(const Human& caller, bool answer);
+    /// The voice heard is still fresh and worth going to: the one calling is
+    /// unmet and unseen.
+    bool voiceToGo() const;
+    /// Making for where the voice came from, as near as the ground it knows
+    /// gets it. False once there, or with no way.
+    bool startVoice(World& world);
     /// Neither the erratic nor the greedy care who is shut in: they won't go
     /// and won't pass it on.
     bool caresForShutIn() const;

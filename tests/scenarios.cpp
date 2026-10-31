@@ -439,6 +439,48 @@ Checks askForWater(Stage& s, Checks expect, const std::function<void(Human& hold
     return expect;
 }
 
+/// The first human comes to beside a locked door out of the spawn
+/// chunk, and a second, like `hearer`, beyond it in the next chunk, close
+/// enough to hear a call. Both calm, the first knowing its chunk, so its way
+/// out lies by that door.
+Checks callStage(Stage& s, const std::function<bool(const Traits&)>& hearer, uint64_t from,
+                 const std::function<Checks(Human& caller, Human& heard)>& expect) {
+    Human& caller = s.first();
+    Vec2i home = caller.cell;
+    Vec2i slot = World::slotOf(home);
+    std::optional<Vec2i> door;
+    for (int y = 0; y < CHUNK; y++)
+        for (int x = 0; x < CHUNK; x++) {
+            Vec2i c{slot.x * CHUNK + x, slot.y * CHUNK + y};
+            if (s.world.tile(c) == Tile::DoorLocked && (!door || cheb(c, home) < cheb(*door, home))) door = c;
+        }
+    if (!door) return {{"a locked door out of the spawn chunk", [](const Stage&) { return false; }}};
+    // Which way is in, and which beyond.
+    Vec2i in{0, 0};
+    for (Vec2i d : DIRS4)
+        if (s.world.tile(*door + d) == Tile::Floor) in = d;
+    P::place(s.world, caller, *door + in);
+    s.world.ensureGenerated(*door - in);
+    std::optional<Vec2i> beyond;
+    for (int r = 4; r <= 14 && !beyond; r++)
+        for (int y = -r; y <= r && !beyond; y++)
+            for (int x = -r; x <= r && !beyond; x++) {
+                Vec2i c = *door + Vec2i{x, y};
+                if (cheb(c, *door) == r && World::slotOf(c) != slot && s.world.tile(c) == Tile::Floor &&
+                    !s.world.occupant(c))
+                    beyond = c;
+            }
+    if (!beyond) return {{"floor beyond the door", [](const Stage&) { return false; }}};
+    Human& heard = P::addHuman(s.world, HumanLook::random(s.rng), *beyond, seedWhere(hearer, from));
+    heard.bottles = {Bottle{1.0f}};
+    s.humans.push_back(&heard);
+    calm(caller);
+    calm(heard);
+    P::knowChunk(s.world, caller);
+    s.run(60);
+    return expect(caller, heard);
+}
+
 /// Two friends come to: the first knows a basin near by and is calm, the
 /// other is parched with an empty bottle; if asleep, it drops asleep once
 /// both are up, with nobody asked to keep watch.
@@ -1774,6 +1816,33 @@ const std::vector<Scenario> SCENARIOS = {
                        loggedBy(s.first(), "LEFT THE PLACE I WOKE IN. THERE'S MORE OF IT", false)};
      },
      nullptr, true},
+    {"call-answered", "stepping out alone, it calls; a sociable human out of sight calls back, and it hears",
+     seedWhere([](const Traits& t) { return t.brave >= 0.5f; }, 9950),
+     [](Stage& s) {
+         return callStage(s, [](const Traits& t) { return t.sociable >= 0.7f && t.brave >= 0.4f; }, 20000,
+                          [](Human& caller, Human& heard) {
+                              return Checks{loggedBy(caller, "CALLED OUT INTO THE MALL"),
+                                            loggedBy(heard, "CALLED BACK"),
+                                            loggedBy(caller, "MY CALL WAS ANSWERED")};
+                          });
+     }},
+    {"call-follow", "a curious, unsociable human hears a call from out of sight and goes toward the voice",
+     seedWhere([](const Traits& t) { return t.brave >= 0.5f; }, 9950),
+     [](Stage& s) {
+         return callStage(s, [](const Traits& t) { return t.curious >= 0.7f && t.sociable < 0.5f && t.brave >= 0.4f; },
+                          20000, [](Human&, Human& heard) {
+                              return Checks{loggedBy(heard, "HEARD SOMEONE CALL OUT"),
+                                            loggedBy(heard, "WENT TOWARD THE VOICE")};
+                          });
+     }},
+    {"call-timid", "a timid human hears a call from out of sight, hushes, and doesn't go to it",
+     seedWhere([](const Traits& t) { return t.brave >= 0.5f; }, 9950),
+     [](Stage& s) {
+         return callStage(s, [](const Traits& t) { return t.brave < 0.25f; }, 20000, [](Human&, Human& heard) {
+             return Checks{loggedBy(heard, "HEARD SOMEONE CALL OUT"), loggedBy(heard, "WENT TOWARD THE VOICE", false),
+                           loggedBy(heard, "CALLED BACK", false)};
+         });
+     }},
     {"lead-drink", "a friend that knows water leads a parched friend with none there",
      seedWhere([](const Traits& t) { return t.sociable >= 0.6f; }, 9900),
      [](Stage& s) { return leadToDrink(s, false, {loggedBy(s.first(), "TOOK @ TO WATER TO DRINK")}); }, nullptr},

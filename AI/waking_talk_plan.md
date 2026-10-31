@@ -207,6 +207,42 @@ so it will move the golden output.
 
 Open question 4: build calling at all, or keep this plan to words only?
 
+### Built (2026-10-31)
+
+New file `human_call.cpp` and state `call_`. Changes from the plan:
+- The trigger is the first door it comes to, open or locked, not the
+  first door out of its room: the spawn room is the whole inside of its
+  chunk, and its only doors are the locked ways out, so "out of its room"
+  would wait for the first key. It calls through the locked door to
+  whoever may be beyond. Only alone, up, and in its first CALL_EARLY
+  (300 s) of life; once each. The timid keep quiet. Log "CALLED OUT INTO
+  THE MALL"; `[call_out]`.
+- Said, a call or an answer carries CALL_RADIUS (24) cells through walls
+  to everyone who can't see the speaker (`shout`, from `speak()`), and cuts
+  in ahead of small talk still queued, as trap cries do, so it is heard
+  when it happens.
+- Hearing one (`hearCall`), it notes "HEARD SOMEONE CALL OUT" and keeps
+  where it came from for CALL_STALE (90 s). The timid are shaken (dread
+  0.1) and hush (`[heard_call]` "STAY QUIET... STAY QUIET."); the sociable
+  (0.55+), calm and not needy, call back once (`[call_answer]`, log
+  "CALLED BACK"), and the caller hearing it notes "MY CALL WAS ANSWERED"
+  (`[call_answered]`); the rest wonder (`[heard_call]`).
+- Going toward it: new Want::Voice and Goal::Voice ("GOING TOWARD A VOICE"
+  in the HUD), wanted while the voice is fresh and its owner unmet and
+  unseen, by all but the timid, with the same wanting-out push as
+  exploring (OUT_EXPLORE), so it is exploring with a direction: the
+  curious and sociable go, an incurious loner explores as before. It
+  makes for the edge of what it knows within 10 cells of the voice, else
+  the known ground nearest it; "WENT TOWARD THE VOICE", then "GOT AS NEAR
+  AS I COULD TO THE VOICE". Seeing the one it heard, it drops it.
+- The timid don't steer away; they only hush and are shaken.
+
+Scenarios `call-answered`, `call-follow`, `call-timid`: the caller wakes
+beside a locked door out of the spawn chunk, the hearer in the next chunk.
+In the soak a voice is gone to 0.1% of the time. New in the soak: a
+29-step pacing of Wander in a cramped spot before sleep (s2, flagged as a
+loop) and one more 30 s greeting stall (s4); neither is calling.
+
 ### 6. It goes on
 
 The first time it crosses into a new chunk while still near its first

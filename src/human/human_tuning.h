@@ -501,6 +501,7 @@ constexpr Wanting WANTING[] = {
     {0.85f, -0.3f, 0.0f, 0.0f, 0.0f}, // Wash
     {0.60f, 0.0f, 0.0f, -0.2f, 0.0f}, // Fill
     {0.30f, 0.0f, 0.0f, 0.0f, 0.6f}, // Meet
+    {0.15f, 0.0f, 0.0f, 0.4f, 0.5f}, // Voice
     {1.50f, 0.2f, 0.0f, 0.0f, 0.0f}, // Rescue
     {0.70f, 0.3f, 0.0f, 0.0f, 0.0f}, // UrgedDoor
     {0.40f, 0.2f, 0.45f, 0.0f, -0.15f}, // Loot

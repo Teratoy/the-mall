@@ -175,6 +175,11 @@ enum class Moment {
     // Setting foot outside the place it woke in for the first time, and the
     // first new place that no longer lifts its hope (both to nobody).
     ItGoesOn, NeverEnds,
+    // Calling out on its first door out of where it woke (shouted, to
+    // nobody); hearing a call from out of sight (to nobody, about the
+    // caller), and answering it (shouted); hearing its call answered (to
+    // nobody, about who answered).
+    CallOut, HeardCall, CallAnswer, CallAnswered,
     Count
 };
 
