@@ -194,6 +194,10 @@ inline bool isCry(Moment m) {
     return m == Moment::Hit || m == Moment::Ouch || m == Moment::Darted || m == Moment::Spiked ||
            m == Moment::Slammed;
 }
+/// An emergency: blows and cries, and the shout of who killed. These cut in
+/// over a line that has shown long enough to read, and the lines still
+/// waiting are dropped for them.
+inline bool isUrgent(Moment m) { return isCry(m) || m == Moment::Blame; }
 
 /// The moment for bringing up a topic of this kind.
 inline Moment chatMoment(Topic::Kind k) { return Moment(int(Moment::ChatHere) + int(k)); }

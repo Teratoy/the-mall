@@ -9,6 +9,7 @@
 // Exits non-zero if any scenario fails. Deterministic, like the soak.
 #include "human/human_tuning.h"
 #include "probe.h"
+#include "human/human_tuning.h"
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
@@ -1113,8 +1114,10 @@ const std::vector<Scenario> SCENARIOS = {
     {"bottle-refuse", "a stingy stranger won't give any of its water",
      seedWhere([](const Traits& t) { return t.greedy < 0.35f && t.sociable < 0.4f && t.brave < 0.3f; }, 15119),
      [](Stage& s) {
+         // The asker counts the stranger a friend, so it surely asks; the
+         // stranger doesn't, so it surely refuses.
          return askForWater(s, {logged({"WOULDN'T GIVE @ WATER"}), logged({"@ WOULDN'T GIVE ME WATER"})},
-                            [](Human&, Human&) {});
+                            [](Human& holder, Human& asker) { P::setTrust(asker, holder, 0.8f); });
      }},
     {"bottle-snatch", "a bold, thirsty human with nothing to drink takes a foe's bottle in a fight", 99,
      [](Stage& s) {
@@ -1146,6 +1149,24 @@ const std::vector<Scenario> SCENARIOS = {
          return Checks{loggedBy(h, "FOUND A BOTTLE LYING THERE"),
                        {"left it lying while not thirsty", [leftIt](const Stage&) { return leftIt; }},
                        loggedBy(h, "PICKED UP A BOTTLE LYING THERE"), loggedBy(h, "DRANK FROM MY BOTTLE")};
+     },
+     nullptr, true},
+    {"wake-first", "waking as in play, it says where it is before the bottle it finds", 99,
+     [](Stage& s) {
+         Human& h = s.first();
+         s.run(20);
+         // Its first line, on waking, shows its full time before the next,
+         // for the bottle found beside it, is said.
+         return Checks{loggedBy(h, "WOKE UP, REMEMBERING NOTHING"), loggedBy(h, "FOUND A BOTTLE LYING THERE"),
+                       {"the waking line is read before the bottle line", [&h](const Stage&) {
+                            std::vector<float> said;
+                            bool wokeFirst = false;
+                            for (const auto& e : h.log.entries()) {
+                                if (e.what == "FOUND A BOTTLE LYING THERE") wokeFirst = said.size() == 1;
+                                if (e.what.rfind("SAID ", 0) == 0) said.push_back(e.time);
+                            }
+                            return wokeFirst && said.size() >= 2 && said[1] - said[0] >= SPEECH_TIME;
+                        }}};
      },
      nullptr, true},
     {"bottle-gone", "a stranger takes the bottle a human found and left; it finds it gone, a loss", 99,
@@ -1563,7 +1584,7 @@ const std::vector<Scenario> SCENARIOS = {
          P::setTrust(keeper, leader, 0.6f);
          // Given up on a way out, it has no use of its own for the door.
          P::settle(keeper, keeper.cell);
-         s.run(100);
+         s.run(160);
          return Checks{logged({"NO WATER ANYWHERE. LYING BY A LOCKED DOOR, CALLING FOR HELP"}),
                        logged({"OPENED THE DOOR @ WAS CALLING THROUGH"}), logged({"@ LET ME OUT"})};
      }},

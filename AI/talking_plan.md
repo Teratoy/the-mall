@@ -77,6 +77,53 @@ After: replies start 0.4 s after the line they answer (median), effects
 land with the bubble, no lines shown out of earshot; the only overlaps
 left are fight cries. Bubbles still show ~2 s (about 8 letters/s).
 
+## Readable bubbles (2026-10-31)
+
+The user saw a waking human's first line ("WHERE AM I?") replaced at
+once by its line for the bottle lying beside it. Nothing overwrote it:
+lines already waited in turn. But a short line showed 1.5 s (1.2 s +
+0.05 s a letter) and the next followed 0.35 s later, too fast to read.
+And with longer bubbles, more lines would wait and go unsaid after 5 s.
+
+### User's decisions (2026-10-31)
+
+- Each line shows 2.5 s + 0.06 s a letter ("HELLO?" ~2.9 s, 40 letters
+  ~4.9 s).
+- Urgent lines (blows and cries: hit, ouch, darts, spikes, slam; and the
+  shout of who killed) may cut in over a line still showing, but only once
+  it has shown a minimum (1.5 s). Ordinary lines wait for it to end.
+- Without an emergency, lines are kept until they are said: nothing goes
+  unsaid for having waited. When an emergency comes, the newest wins: the
+  ordinary lines still waiting are dropped, and the urgent one goes first.
+
+### Built (2026-10-31)
+
+- SPEECH_TIME 2.5, SPEECH_PER_LETTER 0.06, SPEECH_MIN 1.5
+  (`human_tuning.h`); `talk::isUrgent()` is the cries plus Blame.
+- `sayLater()`: an urgent saying goes to the front and drops the ordinary
+  ones waiting (an awaited plea or threat among them stops being awaited);
+  an older blow still waiting is dropped for the newer.
+- `speak()`: an urgent saying at the front ends a line that has shown
+  SPEECH_MIN, and is said at once, skipping the pause and the turns. A
+  blow no longer goes unsaid after 0.5 s: it waits out the minimum at most,
+  and a newer blow replaces it.
+- Ordinary lines no longer go unsaid from waiting. Still dropped: a line
+  to someone gone out of earshot or dead, and a new one when SPEECH_QUEUE
+  are already waiting. A long SPEECH_STUCK (30 s) remains only so a
+  speaker can never stand forever awaiting its turn.
+- GREET_LONGEST 10 -> 20 s: with lines about twice as long, greeters
+  walked off before word was said (lies and sales failed in scenarios).
+- `parched-door` runs 160 s, not 100: the keeper's dice per call heard
+  fell later once the rolls shifted.
+- Soak after (on main): 0 loops, 0 blocks >= 5 s; give-ups 12 -> 30
+  (blocked 0.03% -> 0.06%), standing still 30 s went 1 -> 9,
+  all Greeting in the crowded spawns: a human greets one partner, then
+  the next who walks up, without moving. A line can now be said well after
+  its moment (a bottle remarked on 13 s after it was found, the greetings
+  in between), as the user chose.
+- Scenario `wake-first`: a human waking as in play says its waking line,
+  and only then, after the waking bubble's time, the bottle line.
+
 ## Not done / later
 
 - Muttering alone (hungry, scared, sitting, a trap going off).
