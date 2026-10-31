@@ -30,8 +30,10 @@ HIDEF := build/hidef
 BOTTLESHEET := build/bottle_sheet
 # A human beside itself gone dirty, in every pose, with all that rides on it.
 DIRTYSHEET := build/dirty_sheet
+# One human shooting all eight ways, as animation frames (tools/frames_gif.py makes the GIF).
+SHOOTANIM := build/shoot_anim
 
-.PHONY: all run clean stuck check golden coverage shot scenarios genprobe hidef bottlesheet dirtysheet spritesheet spriteref fontdump lines sprites trapprobe icon apk install-apk logcat simprofile gprof
+.PHONY: all run clean stuck check golden coverage shot scenarios genprobe hidef bottlesheet dirtysheet shootanim spritesheet spriteref fontdump lines sprites trapprobe icon apk install-apk logcat simprofile gprof
 
 all: $(BIN)
 
@@ -110,6 +112,13 @@ $(DIRTYSHEET): tools/dirty_sheet.cpp $(filter-out build/main.o,$(OBJ))
 
 dirtysheet: $(DIRTYSHEET)
 	./$(DIRTYSHEET) build/dirty-sheet.png $(DIRTYSHEET_ARGS)
+
+$(SHOOTANIM): tools/shoot_anim.cpp $(filter-out build/main.o,$(OBJ))
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@ $(LDLIBS)
+
+shootanim: $(SHOOTANIM)
+	rm -rf build/shoot-anim
+	./$(SHOOTANIM) build/shoot-anim $(SHOOTANIM_ARGS)
 
 # Every sprite from data/sprites.txt at 1x, in all the ways the game draws it (tools/sprite_sheet.cpp).
 SPRITESHEET := build/sprite_sheet
