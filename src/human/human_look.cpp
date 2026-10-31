@@ -359,12 +359,16 @@ SpriteFrame HumanLook::drawBody(const Stance& s) const {
 
     // A gun tucked into the waistband behind the hip: the grip sticks up
     // and back out of it, the slide's end beside it; the rest is hidden in
-    // the clothes. It moves with the torso, so blood lands on it as on the body.
+    // the clothes. The slide's end rests on the waistline: just above the
+    // waistband a tall torso shows, or on the shirt's bottom row, which
+    // meets the waist, on a short one. It moves with the torso, so blood
+    // lands on it as on the body.
     if (tuckedGun) {
+        const int waistline = torsoH >= 5 ? torsoBottom - 1 : torsoBottom;
         p.body(BodyPart::Torso, lifted);
-        p.set(CX - 2, torsoBottom - 2, shade(GRIP, gunDirt_));
-        p.set(CX - 2, torsoBottom - 1, shade(GRIP, gunDirt_));
-        p.set(CX - 1, torsoBottom - 1, shade(SLIDE, gunDirt_));
+        p.set(CX - 2, waistline - 1, shade(GRIP, gunDirt_));
+        p.set(CX - 2, waistline, shade(GRIP, gunDirt_));
+        p.set(CX - 1, waistline, shade(SLIDE, gunDirt_));
     }
 
     // An arm pixel, counted from the shoulder: tees cover the first two.
