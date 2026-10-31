@@ -136,6 +136,7 @@ void save(const Chunk& c, const std::string& path, const World* w = nullptr) {
             case Tile::Statue: col = {250, 250, 250, 255}; break;
             case Tile::Table: col = {140, 90, 50, 255}; break;
             case Tile::Basin: col = {60, 120, 200, 255}; break;
+            case Tile::Vending: col = {120, 220, 200, 255}; break;
             default: break;
             }
             if (w && w->hasCake(c.origin() + Vec2i{x, y})) col = {250, 80, 160, 255};
@@ -150,7 +151,7 @@ void save(const Chunk& c, const std::string& path, const World* w = nullptr) {
 constexpr int WORLD_CHUNKS = 40;
 
 struct Tally {
-    int chunks = 0, doors = 0, keys = 0, cakes = 0;
+    int chunks = 0, doors = 0, keys = 0, cakes = 0, machines = 0;
     /// Cakes only water keeps from the entry.
     int overWater = 0;
     double slowest = 0.0;
@@ -241,6 +242,21 @@ int growWorld(uint64_t seed, std::map<std::string, Tally>& tally, bool png) {
                 if (!near(walked, k)) t.overWater++;
                 if (!near(swum, k)) why = "a cake sealed off";
             }
+        // A machine stands with wall behind both cells and is worked from
+        // floor that can be reached, as a cake can, maybe from another door.
+        for (const Machine& m : w.machines())
+            if (w.chunkIdAt(m.at) == c.id) {
+                t.machines++;
+                bool reached = false;
+                for (Vec2i cell : {m.at, m.at + m.along()}) {
+                    if (w.tile(cell) != Tile::Vending || w.tile(cell - m.facing) != Tile::Wall)
+                        why = "a machine not against a wall";
+                    Vec2i front = cell + m.facing - c.origin();
+                    reached |= c.owns(front) && swum[size_t(front.y * c.w + front.x)];
+                }
+                if (m.facing.y < 0) why = "a machine with its back to the viewer";
+                if (!reached) why = "a machine sealed off";
+            }
         // Big plazas are rare, so any grown is drawn.
         if (png && c.kind == ChunkKind::Plaza && c.slotCount() >= 9)
             save(c, "build/genprobe-png/world" + std::to_string(seed) + "-plaza" + std::to_string(c.id) + ".png", &w);
@@ -303,10 +319,10 @@ int main(int argc, char** argv) {
     int grown = 0;
     for (const auto& [shape, t] : tally) {
         grown += t.chunks;
-        std::printf("world %-6s %4d chunks, per chunk %4.1f new doors %4.1f keys %4.1f cakes (%4.1f over water), "
-                    "slowest %5.1f ms\n",
+        std::printf("world %-6s %4d chunks, per chunk %4.1f new doors %4.1f keys %4.1f cakes (%4.1f over water) "
+                    "%4.2f machines, slowest %5.1f ms\n",
                     shape.c_str(), t.chunks, double(t.doors) / t.chunks, double(t.keys) / t.chunks,
-                    double(t.cakes) / t.chunks, double(t.overWater) / t.chunks, t.slowest);
+                    double(t.cakes) / t.chunks, double(t.overWater) / t.chunks, double(t.machines) / t.chunks, t.slowest);
     }
     std::printf("genprobe: %d worlds, %d chunks grown, %d failed\n", seeds, grown, worldFailed);
     failed += worldFailed;

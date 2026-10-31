@@ -150,6 +150,10 @@ enum class Moment {
     // whom it blames); the first time it runs its bottle dry or fills it,
     // seeing that water is scarce (to nobody).
     SeeBottle, BottleGone, BottleStolen, Scarce,
+    // Vending machines: the first one it ever sees, buying a cake or a
+    // bottle with keys, finding it empty (all to nobody); a machine at a
+    // greeting, told or sold (to the one told).
+    FirstVending, VendCake, VendBottle, VendEmpty, TellVending, SellVending,
     Count
 };
 

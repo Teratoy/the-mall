@@ -14,8 +14,9 @@ inline constexpr int CELL_PX = 6;
 /// tables, which stand on floor and hold what lies on them. A statue's base
 /// stands on floor too, and blocks both. A basin is a little square of
 /// water in a stone rim, standing on floor, drunk from like any water. A
-/// toilet stands on floor against a wall, and blocks walking, not sight.
-enum class Tile : uint8_t { Void, Floor, Wall, DoorLocked, DoorOpen, Water, Table, Statue, Basin, Toilet };
+/// toilet stands on floor against a wall, and blocks walking, not sight;
+/// so does each of a vending machine's two cells.
+enum class Tile : uint8_t { Void, Floor, Wall, DoorLocked, DoorOpen, Water, Table, Statue, Basin, Toilet, Vending };
 
 inline bool passable(Tile t) { return t == Tile::Floor || t == Tile::DoorOpen; }
 /// Water to drink from or wash in: pools, canals and basins.

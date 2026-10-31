@@ -3,6 +3,7 @@
 #include "world/chunk.h"
 #include "world/pile.h"
 #include "world/trap.h"
+#include "world/vending.h"
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -51,6 +52,14 @@ public:
     std::unordered_set<int> mess;
     std::unordered_set<Vec2i, Vec2iHash> keys;
     std::unordered_set<Vec2i, Vec2iHash> cakes;
+    /// A vending machine as it last saw it, or was told of it: what it
+    /// sells, and how many items were behind the glass.
+    struct SeenMachine {
+        Vend kind = Vend::Cake;
+        int stock = 0;
+    };
+    /// The machines it knows, by their first cell.
+    std::unordered_map<Vec2i, SeenMachine, Vec2iHash> machines;
     /// What it saw lying put down on the floor, as it was then; and, of
     /// those, the ones it knows are someone's stash, and whose: seen being
     /// stashed, or told of.

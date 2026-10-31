@@ -5,7 +5,7 @@ decisions, what was built, and what is still open. Read a feature's plan
 before changing it. When you build a step, note it under that step
 ("### Built (date)"), and update the status below.
 
-Status as of 2026-10-30.
+Status as of 2026-10-31.
 
 | Plan | What it covers | Status | Still open |
 |---|---|---|---|
@@ -33,6 +33,7 @@ Status as of 2026-10-30.
 | [lessons_plan.md](lessons_plan.md) | Self-lessons announced once, again, or for good; a slower fade; a line for surviving thirst | Built | — |
 | [trap_wary_plan.md](trap_wary_plan.md) | Wary of the next trap like one that caught it: table cakes after darts, one-door rooms after a slam | Built | Should seeing someone else caught make it wary too? |
 | [feral_plan.md](feral_plan.md) | The feral human's look: a flag that repaints every frame ragged (dirty, torn clothes, messed-up hair) on the same skeleton | Art built; never set in play | When it turns feral and what changes (not asked yet); questions 1–3 on the look |
+| [vending_plan.md](vending_plan.md) | Cake and empty-bottle vending machines: paid in 3 keys, restock one a day, in rooms and plazas against north or side walls, remembered and told of like cakes | Built | Tuning from play; gun machines wait for guns |
 | [human_split_plan.md](human_split_plan.md) | Splitting Human into per-system classes | Not started | Advised against for now; if done, only system by system, when that system is being reworked anyway |
 
 ## Known gaps found by the tests

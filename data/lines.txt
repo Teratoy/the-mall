@@ -2142,3 +2142,63 @@ brave                   | WHOEVER HAS IT WILL GIVE IT BACK.
                         | I'M NOT LETTING GO OF THIS.
 timid                   | I CAN'T LOSE THIS. I CAN'T.
 greedy                  | NOBODY GETS THIS BOTTLE.
+
+# ---- Vending machines ------------------------------------------------------
+
+# The first vending machine it ever sees, lit up behind its glass, said to
+# nobody.
+[first_vending]
+                        | IT'S... STILL ON.
+                        | WHO KEEPS THIS RUNNING?
+                        | THERE'S A SLOT. FOR WHAT?
+curious                 | WHAT DOES IT TAKE?
+hungry                  | FOOD. BEHIND GLASS.
+thirsty                 | NOTHING TO DRINK IN IT?
+keys                    | IT WANTS KEYS.
+timid                   | IT HUMS.
+greedy                  | ALL OF IT. I WANT ALL OF IT.
+
+# Paying keys for a cake from a machine, said to nobody.
+[vend_cake 0.7]
+                        | THREE DOORS I WON'T OPEN.
+                        | WORTH IT. FOR NOW.
+                        | IT EATS KEYS.
+hungry                  | FINALLY.
+starving                | ANYTHING. ANYTHING.
+curious                 | SOMEONE STOCKS IT. SOMEONE.
+greedy                  | ONE MORE FOR LATER.
+hopeless                | WHAT WERE THE KEYS FOR ANYWAY.
+sure                    | THE WAY OUT CAN WAIT.
+
+# Paying keys for an empty bottle from a machine, said to nobody.
+[vend_bottle 0.7]
+                        | NOW TO FIND WATER.
+                        | EMPTY. OF COURSE.
+                        | SOMETHING TO CARRY IT IN.
+thirsty                 | IT'S A START.
+timid                   | I WON'T LOSE THIS ONE.
+greedy                  | MINE.
+
+# At the machine, and nothing left in it: said to nobody.
+[vend_empty 0.8]
+                        | NOTHING.
+                        | EMPTY. EMPTY.
+                        | SOMEONE GOT HERE FIRST.
+hungry                  | NO. NOT NOW.
+starving rude           | NO! COME ON!
+brave                   | IT'LL FILL UP AGAIN. IT HAS TO.
+
+# Telling someone of a vending machine at a greeting, to them.
+[tell_vending]
+                        | THERE'S A MACHINE. IT TAKES KEYS.
+                        | KEYS GET YOU FOOD, NOT FAR FROM HERE.
+friend warm             | I KNOW A MACHINE. IT'S NOT EMPTY YET.
+they.hungry             | GOT KEYS? THEN YOU CAN EAT.
+they.keys               | SPEND THEM WISELY. THERE'S A MACHINE.
+curious                 | SOMEONE STILL FILLS THE MACHINES.
+
+# Selling word of a machine for a cake, to the one told.
+[sell_vending]
+                        | A CAKE, AND I'LL TELL YOU WHERE TO SPEND THOSE KEYS.
+greedy                  | THE MACHINE'S WORTH A CAKE TO KNOW.
+                        | YOUR KEYS ARE NO GOOD WITHOUT ME.
