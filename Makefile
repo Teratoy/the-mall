@@ -33,7 +33,7 @@ DIRTYSHEET := build/dirty_sheet
 # One human shooting all eight ways, as animation frames (tools/frames_gif.py makes the GIF).
 SHOOTANIM := build/shoot_anim
 
-.PHONY: all run clean stuck check golden coverage shot scenarios genprobe hidef bottlesheet dirtysheet shootanim spritesheet spriteref fontdump lines sprites trapprobe icon apk install-apk logcat simprofile gprof
+.PHONY: all run clean trips stuck check golden coverage shot scenarios genprobe hidef bottlesheet dirtysheet shootanim spritesheet spriteref fontdump lines sprites trapprobe icon apk install-apk logcat simprofile gprof
 
 all: $(BIN)
 
@@ -157,6 +157,16 @@ lines:
 LIFELOG := build/lifelog
 $(LIFELOG): tools/lifelog.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out tests/probe.h,$^) -o $@ $(LDLIBS)
+
+# How trips for needs go: done or dropped on the way, and for what.
+# build/trips [seeds] [minutes] [crowd] [examples].
+TRIPS := build/trips
+TRIPS_ARGS ?= 6 15 6
+$(TRIPS): tools/trips.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out tests/probe.h,$^) -o $@ $(LDLIBS)
+
+trips: $(TRIPS)
+	./$(TRIPS) $(TRIPS_ARGS)
 
 clean:
 	rm -rf build

@@ -44,6 +44,7 @@ Status as of 2026-10-31.
 | [sprite_editor_plan.md](sprite_editor_plan.md) | `make sprites`: a local web page for redrawing the glyph sprites, moved to data/sprites.txt (F5 reloads), with game-scale, human and machine previews | Built | — |
 | [sim_speed_plan.md](sim_speed_plan.md) | Where the sim spends its time; faster search with the same results; `make simprofile`, `make gprof` | Search speedups built (seed 4: 84.7 s to 8.1 s, `make check` unchanged) | A1, A2 (exact); B1, B2 change behaviour: questions 1–3 |
 | [sound_plan.md](sound_plan.md) | Sound and music: view-only noises from the sim, sounds from data, hearing through the followed human's ears, pops, mood; music later | Planned, all questions answered | Bare feet need the look to roll them first |
+| [needs_planning_plan.md](needs_planning_plan.md) | Looking after needs with some foresight: topping up, a sense of range, looking for water when none is known, sticking to an errand, two errands on one trip; `make trips` measures it | Planned, all questions answered | — |
 | [human_split_plan.md](human_split_plan.md) | Splitting Human into per-system classes | Not started | Advised against for now; if done, only system by system, when that system is being reworked anyway |
 
 ## Known gaps found by the tests

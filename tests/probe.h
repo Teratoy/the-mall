@@ -40,6 +40,17 @@ struct SoakProbe {
     static bool knowsWater(const World& w, const Human& h) {
         return finds(w, h, [&](Vec2i c) { return h.waterBeside(c).has_value(); });
     }
+    /// How many steps to the nearest water it would drink, -1 none known (tools/trips.cpp).
+    static int waterSteps(const World& w, const Human& h) {
+        Rng saved = h.rng_;
+        auto p = h.search(w, [&](Vec2i c) {
+            auto water = h.waterBeside(c);
+            return water && h.wouldDrink(w, c, *water);
+        });
+        h.rng_ = saved;
+        return p ? int(p->size()) : -1;
+    }
+    static bool besideWater(const Human& h) { return h.waterBeside(h.cell).has_value(); }
     static bool knowsToilet(const World& w, const Human& h) {
         return finds(w, h, [&](Vec2i c) { return h.toiletBefore(w, c).has_value(); });
     }
