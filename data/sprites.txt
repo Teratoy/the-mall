@@ -61,6 +61,34 @@ rr.t..
 rrtt..
 rr....
 
+sprite gun held
+# In the hand, aimed ahead: the slide over the hand, which holds the grip
+# just under its back end (the bottom-left '.'). The game turns it a
+# quarter to aim it straight up or down.
+ink n b4b8c0 slide lit
+ink t 8a8e98 trigger guard
+nnnn
+.t..
+
+sprite gun held raised
+# In the hand, aimed up ahead, the hand at the bottom-left '.'; turned a
+# quarter to aim down ahead.
+ink n b4b8c0 slide lit
+ink t 8a8e98 trigger guard
+...n
+..nn
+.nn.
+nt..
+....
+
+sprite muzzle flash
+# Out of the muzzle as the gun goes off, whichever way it aims.
+ink W fff8d0 core
+ink y ffc040 flame
+.y.
+yWy
+.y.
+
 group Traps
 
 sprite spikes

@@ -1,7 +1,7 @@
 // Every sprite drawn from data/sprites.txt, at 1x, in all the ways the game
 // draws it: the machines at every stock and both blinks, the toilet turned
 // to each wall and dirtied, the items and traps lit and dimmed, a sleeper's
-// Z's and a human carrying cakes, and the icon. Compare two of these with
+// Z's, a human carrying cakes and shooting every way, and the icon. Compare two of these with
 // cmp to check a change drew the same, pixel for pixel.
 //
 // Usage: build/sprite_sheet [out.png]      (make spritesheet)
@@ -102,6 +102,15 @@ void drawSheet(const HumanSprites& human, Texture2D icon) {
         x += 80;
     }
     DrawTexture(icon, x, y, WHITE);
+    // A human shooting every way, facing right then left, aiming then going off.
+    y += icon.height + GAP;
+    x = GAP + 6;
+    for (bool flip : {false, true})
+        for (float t : {1.0f, 0.0f})
+            for (Pose p : {Pose::ShootUp, Pose::ShootUpAhead, Pose::Shoot, Pose::ShootDownAhead, Pose::ShootDown}) {
+                human.draw({float(x + SPRITE_W / 2), float(y + SPRITE_H)}, p, t, flip, 1);
+                x += SPRITE_W + 12;
+            }
 }
 
 /// Writes what the sprite editor's previews need into dir: human.png, a

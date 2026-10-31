@@ -31,6 +31,9 @@ inline constexpr float STAND_UP_TIME = 0.2f;
 inline constexpr float LIE_DOWN_TIME = 2.6f;
 inline constexpr float ROUSE_TIME = 1.2f;
 
+/// Shooting: the ways the arm aims facing right, from straight up through
+/// ahead to straight down; facing left mirrors them, for eight in all.
+inline constexpr int SHOOT_AIMS = 5;
 inline constexpr int SPRITE_PX = SPRITE_W * SPRITE_H;
 /// A cake held in the hand: frosting over sponge, HELD_CAKE_W across and
 /// HELD_CAKE_H high, so the cakes carried pile up that many rows apart.
@@ -51,6 +54,16 @@ struct BottleSpot {
     bool valid() const { return x >= 0; }
 };
 
+/// Where a frame holds a gun: the pixel of the hand holding it, which way
+/// it points facing right (-2 straight up, -1 up ahead, 0 ahead, 1 down
+/// ahead, 2 straight down), and whether it is going off. None when x is
+/// below 0.
+struct GunSpot {
+    int8_t x = -1, y = -1, aim = 0;
+    bool fire = false;
+    bool valid() const { return x >= 0; }
+};
+
 /// One frame's pixels, and for each, the pixel of the standing pose (idle,
 /// facing right) it is the same bit of body as, so whatever is on the body
 /// moves with it from pose to pose, and the body part it belongs to.
@@ -66,6 +79,8 @@ struct SpriteFrame {
     /// filling, pouring, handing it over). Cakes and bottle are drawn over
     /// the frame, the bottle as full and as dirty as it is.
     BottleSpot held, hand;
+    /// The gun in the front hand, shooting; drawn over the frame.
+    GunSpot gun;
 
     SpriteFrame() {
         rest.fill(-1);
@@ -90,7 +105,7 @@ struct HumanLook {
     /// A gun tucked into the waistband behind the hip, the barrel down
     /// inside whatever it wears below (trousers, shorts or skirt): only the
     /// grip and the back of the slide show above the waist, wherever the
-    /// torso goes.
+    /// torso goes. Shooting, it is in the hand instead.
     bool tuckedGun = false;
     /// Unwashed too long (Human::dirty()): every frame is repainted ragged,
     /// its own hair grown messy (a cap stays on, the bald stay bald), the skin smudged and the hands black with
@@ -148,10 +163,14 @@ struct HumanLook {
     SpriteFrame pour() const;
     /// Holding a bottle out to someone, upright.
     SpriteFrame offerBottle() const;
+    /// Shooting: the front arm held out straight with the gun, aimed one of
+    /// the SHOOT_AIMS ways (GunSpot::aim); fire kicks the hand back a
+    /// pixel as it goes off. The gun is out of the waistband.
+    SpriteFrame shoot(int aim, bool fire) const;
 
 private:
     /// What the front arm is doing.
-    enum class Arm { Swing, WaveIn, WaveOut, Guard, Punch, Bite, Chew, Offer, Point, PointUp, PointDown, Pillow, Sip, Fill, Pour, OfferBottle };
+    enum class Arm { Swing, WaveIn, WaveOut, Guard, Punch, Bite, Chew, Offer, Point, PointUp, PointDown, Pillow, Sip, Fill, Pour, OfferBottle, Aim };
     struct Stance {
         /// 0 standing, or +1 / -1 for a step with either leg.
         int stride = 0;
@@ -175,6 +194,9 @@ private:
         /// Curled, a cake hugged to the chest.
         bool carry = false;
         bool eyesShut = false;
+        /// With Arm::Aim, which way (GunSpot::aim), and whether it fires.
+        int aim = 0;
+        bool fire = false;
     };
     /// The shade the tucked gun is drawn in: dulled with dirt when dirty.
     float gunDirt_ = 1.0f;

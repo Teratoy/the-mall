@@ -1,6 +1,7 @@
 #include "render/human_sprites.h"
 #include "render/blood_art.h"
 #include "render/bottle_art.h"
+#include "render/gun_art.h"
 #include "render/mess_art.h"
 #include "render/remains_art.h"
 #include "render/sprites.h"
@@ -26,6 +27,8 @@ constexpr float FALL_KNEEL = 0.15f, FALL_DOWN = 0.45f;
 constexpr float BLINK_EVERY = 3.2f, BLINK_TIME = 0.15f;
 /// Coming to, the eyes stay shut this long, then blink slow and heavy.
 constexpr float WAKE_EYES_SHUT = 1.5f, WAKE_BLINK_EVERY = 1.1f, WAKE_BLINK_TIME = 0.3f;
+/// Shooting, the kick and the muzzle flash last this long after each shot.
+constexpr float SHOT_TIME = 0.1f;
 /// Feeding, the head dips a pixel this often.
 constexpr float FEED_FPS = 3.0f;
 /// Nodding off, the head drops, jerks back up, then drops for good.
@@ -97,6 +100,8 @@ template <class F> void HumanSprites::eachFrame(const HumanLook& look, F&& add) 
     add(fill_, look.fill());
     add(pour_, look.pour());
     add(offerBottle_, look.offerBottle());
+    for (int a = 0; a < SHOOT_AIMS; a++)
+        for (int fire = 0; fire < 2; fire++) add(shoot_[size_t(a)][size_t(fire)], look.shoot(a - 2, fire == 1));
 }
 
 HumanSprites::HumanSprites(const HumanLook& look) : look_(look), skin_(look.skin) {
@@ -124,7 +129,7 @@ HumanSprites::~HumanSprites() {
 
 void HumanSprites::add(Texture2D& t, SpriteFrame f) {
     t = toTexture(f);
-    spots_[&t] = {f.held, f.hand};
+    spots_[&t] = {f.held, f.hand, f.gun};
     frames_.emplace_back(&t, std::move(f));
 }
 
@@ -134,7 +139,7 @@ void HumanSprites::setDirty(bool dirty) {
     // The frames come in the same order as they were added in.
     size_t i = 0;
     eachFrame(look_, [&](Texture2D& t, SpriteFrame f) {
-        spots_[&t] = {f.held, f.hand};
+        spots_[&t] = {f.held, f.hand, f.gun};
         frames_[i].second = std::move(f);
         paint(t, frames_[i++].second);
     });
@@ -234,6 +239,13 @@ void HumanSprites::draw(Vector2 feet, Pose pose, float animTime, bool flip, int 
         drawCurled(feet, tex, flip, scale, tint, -1.0f);
         return;
     }
+    const bool shooting = pose == Pose::Shoot || pose == Pose::ShootUp || pose == Pose::ShootUpAhead ||
+                          pose == Pose::ShootDownAhead || pose == Pose::ShootDown;
+    const int aim = pose == Pose::ShootUp          ? -2
+                    : pose == Pose::ShootUpAhead   ? -1
+                    : pose == Pose::ShootDownAhead ? 1
+                    : pose == Pose::ShootDown      ? 2
+                                                   : 0;
     const Texture2D& seated = sit_[std::fmod(animTime, BLINK_EVERY) < BLINK_EVERY - BLINK_TIME ? 0 : 1];
     const Texture2D& tex = pose == Pose::Walk  ? walk_[size_t(int(animTime * WALK_FPS) % WALK_FRAMES)]
                            : pose == Pose::Run ? run_[size_t(int(animTime * RUN_FPS) % RUN_FRAMES)]
@@ -250,6 +262,7 @@ void HumanSprites::draw(Vector2 feet, Pose pose, float animTime, bool flip, int 
                            : pose == Pose::Fill  ? fill_
                            : pose == Pose::Pour  ? pour_
                            : pose == Pose::OfferBottle ? offerBottle_
+                           : shooting  ? shoot_[size_t(aim + 2)][animTime < SHOT_TIME ? 1 : 0]
                            : pose == Pose::Fall  ? (animTime < FALL_KNEEL ? idle_ : kneel_)
                            : pose == Pose::Sit   ? (animTime < SIT_DOWN_TIME ? crouch_ : seated)
                            : pose == Pose::Rise && animTime < STAND_UP_TIME ? crouch_
@@ -267,8 +280,9 @@ void HumanSprites::draw(Vector2 feet, Pose pose, float animTime, bool flip, int 
                    {0, 0}, 0.0f, tint);
     auto it = spots_.find(&tex);
     if (it == spots_.end()) return;
-    auto [held, hand] = it->second;
+    auto [held, hand, gun] = it->second;
     Vector2 origin{std::round(x), y};
+    drawHeldGun(origin, gun, flip, scale, tint);
     // The cake being eaten is in the front hand, not on the pile.
     int piled = held.valid() ? std::max(0, cakes - (pose == Pose::Eat ? 1 : 0)) : 0;
     for (int i = 0; i < piled; i++) drawHeldCake(origin, held.x, held.y - i * HELD_CAKE_H, flip, scale, tint);

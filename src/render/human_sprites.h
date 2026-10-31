@@ -26,8 +26,13 @@
 /// Sip drinks from a bottle held up to the mouth; Fill kneels with it in
 /// the water; Pour holds it out upside down, water running out of it;
 /// OfferBottle holds it out to someone. Run is the run cycle; Winded stands
-/// bent over, hands on its knees, panting.
-enum class Pose { Idle, Walk, Wave, Eat, Guard, Punch, Offer, Fall, Sit, Rise, Wash, Search, Feed, Wake, Point, PointUp, PointDown, Squat, Piss, Sleep, WakeUp, DiedAsleep, Sip, Fill, Pour, OfferBottle, Lie, Run, Winded };
+/// bent over, hands on its knees, panting. Shooting holds the gun out at
+/// arm's length, aimed straight up (ShootUp), up ahead (ShootUpAhead),
+/// ahead (Shoot), down ahead (ShootDownAhead) or straight down (ShootDown);
+/// facing left mirrors them, for eight ways in all. animTime counts from
+/// the shot: the hand kicks back with a flash at the muzzle for SHOT_TIME,
+/// then holds the aim.
+enum class Pose { Idle, Walk, Wave, Eat, Guard, Punch, Offer, Fall, Sit, Rise, Wash, Search, Feed, Wake, Point, PointUp, PointDown, Squat, Piss, Sleep, WakeUp, DiedAsleep, Sip, Fill, Pour, OfferBottle, Lie, Run, Winded, Shoot, ShootUp, ShootUpAhead, ShootDownAhead, ShootDown };
 
 
 /// One human's frames as textures, made from its look.
@@ -65,7 +70,13 @@ private:
         sip_, fill_, pour_, offerBottle_;
     /// Where each texture's frame holds what it carries, and a bottle in
     /// the front hand.
-    std::unordered_map<const Texture2D*, std::pair<BottleSpot, BottleSpot>> spots_;
+    struct Spots {
+        BottleSpot held, hand;
+        GunSpot gun;
+    };
+    std::unordered_map<const Texture2D*, Spots> spots_;
+    /// Shooting, each way it aims (GunSpot::aim + 2): holding the aim, and going off.
+    std::array<std::array<Texture2D, 2>, SHOOT_AIMS> shoot_;
     std::array<Texture2D, WALK_FRAMES> walk_;
     std::array<Texture2D, RUN_FRAMES> run_;
     std::array<Texture2D, WINDED_FRAMES> winded_;

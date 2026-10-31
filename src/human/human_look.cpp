@@ -234,6 +234,10 @@ SpriteFrame HumanLook::pour() const { return draw({.front = Arm::Pour}); }
 
 SpriteFrame HumanLook::offerBottle() const { return draw({.front = Arm::OfferBottle}); }
 
+SpriteFrame HumanLook::shoot(int aim, bool fire) const {
+    return draw({.front = Arm::Aim, .aim = std::clamp(aim, -2, 2), .fire = fire});
+}
+
 // Built from the feet up, so short legs and torsos leave empty rows on top.
 SpriteFrame HumanLook::drawBody(const Stance& s) const {
     Paper p;
@@ -363,7 +367,7 @@ SpriteFrame HumanLook::drawBody(const Stance& s) const {
     // waistband a tall torso shows, or on the shirt's bottom row, which
     // meets the waist, on a short one. It moves with the torso, so blood
     // lands on it as on the body.
-    if (tuckedGun) {
+    if (tuckedGun && s.front != Arm::Aim) {
         const int waistline = torsoH >= 5 ? torsoBottom - 1 : torsoBottom;
         p.body(BodyPart::Torso, lifted);
         p.set(CX - 2, waistline - 1, shade(GRIP, gunDirt_));
@@ -486,6 +490,16 @@ SpriteFrame HumanLook::drawBody(const Stance& s) const {
                 armPx(side, x + 2, shoulder, 2, true);
                 p.f.hand = {int8_t(x + 2), int8_t(shoulder - 1), BottleTurn::Up};
                 break;
+            case Arm::Aim: {
+                // Straight out from the shoulder the way it aims, a step at
+                // a time; going off, the kick pulls the hand back a step.
+                static constexpr Vec2i STEP[SHOOT_AIMS] = {{0, -1}, {1, -1}, {1, 0}, {1, 1}, {0, 1}};
+                Vec2i d = STEP[s.aim + 2];
+                int reach = s.fire ? 1 : 2;
+                for (int i = 0; i <= reach; i++) armPx(side, x + d.x * i, shoulder + d.y * i, i, i == reach);
+                p.f.gun = {int8_t(x + d.x * reach), int8_t(shoulder + d.y * reach), int8_t(s.aim), s.fire};
+                break;
+            }
             case Arm::Swing:
                 break;
             }
