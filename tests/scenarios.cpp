@@ -193,6 +193,46 @@ void foulAll(World& w, Human& h, const std::vector<Vec2i>& body, float foul) {
     }
 }
 
+/// The basin by the spawn fouled, as taster remembers tasting it; taster
+/// moved out of sight of it, knowing the chunk; and clean water put
+/// farther off the other way (at cleanAt). The foul cells, none if it
+/// can't be done.
+std::vector<Vec2i> foulAndClean(Stage& s, Human& taster, Vec2i* cleanAt = nullptr) {
+    auto b = s.basin();
+    if (!b) return {};
+    auto foul = waterBody(s.world, *b);
+    foulAll(s.world, taster, foul, 0.5f);
+    P::place(s.world, taster, s.farFrom(*b, Sight::RADIUS + 5));
+    P::knowChunk(s.world, taster);
+    int near = cheb(taster.cell, *b);
+    Vec2i slot = World::slotOf(taster.cell);
+    std::optional<Vec2i> clean;
+    for (int y = 0; y < CHUNK; y++)
+        for (int x = 0; x < CHUNK; x++) {
+            Vec2i c{slot.x * CHUNK + x, slot.y * CHUNK + y};
+            int d = cheb(c, taster.cell);
+            if (s.world.tile(c) != Tile::Floor || s.world.table(c) || s.world.statue(c) || s.world.occupant(c) ||
+                d <= near + 5 || d > near + 20)
+                continue;
+            if (!clean || cheb(c, *b) > cheb(*clean, *b)) clean = c;
+        }
+    if (!clean) return {};
+    P::addWater(s.world, *clean);
+    taster.memory.see(*clean, Tile::Basin);
+    taster.hunger = 0.1f;
+    if (cleanAt) *cleanAt = *clean;
+    return foul;
+}
+/// Runs the stage, and how close h came to the foul cells.
+int keptOff(Stage& s, const Human& h, const std::vector<Vec2i>& foul, int seconds) {
+    int closest = 1 << 20;
+    for (int t = 0; t < seconds; t++) {
+        s.run(1);
+        for (Vec2i c : foul) closest = std::min(closest, cheb(h.cell, c));
+    }
+    return closest;
+}
+
 /// A cunning liar who counts victim a foe, knowing a trap (in its memory
 /// only, unless real) next to it that victim doesn't know of.
 void setUpLie(Stage& s, Human& liar, Human& victim, TrapKind bait = TrapKind::Spikes, int gap = 1) {
@@ -1005,6 +1045,16 @@ const std::vector<Scenario> SCENARIOS = {
          return Checks{unlogged("FILLED MY BOTTLE FROM ONE LYING THERE"), unlogged("POURED MY BOTTLE INTO A FULLER ONE"),
                        unlogged("PICKED UP A BOTTLE LYING THERE")};
      }},
+    {"pile-dirty-parched", "parched, its bottle empty, a human takes a full dirty one lying there", 99,
+     [](Stage& s) {
+         Human& h = s.first();
+         s.world.putDown(s.freeNear(h.cell, 1), 0, {Bottle{0.9f, 0.4f, 0.0f}});
+         h.bottles = {Bottle{}};
+         h.hunger = 0.1f;
+         h.thirst = 0.85f;
+         s.run(40);
+         return Checks{logged({"LEFT MY EMPTY BOTTLE FOR ONE OF DIRTY WATER"})};
+     }},
     {"put-down", "a human kneels and puts cakes and a bottle down", 99,
      [](Stage& s) {
          Human& h = s.first();
@@ -1169,41 +1219,37 @@ const std::vector<Scenario> SCENARIOS = {
     {"foul-memory", "a human who tasted foul water goes to clean water it knows instead, farther off", 99,
      [](Stage& s) {
          Human& h = s.first();
-         auto b = s.basin();
-         if (!b) return Checks{{"a basin near the spawn", [](const Stage&) { return false; }}};
-         // Out of sight of the basin, which it remembers foul; clean water
-         // farther off the other way, both known.
-         auto foul = waterBody(s.world, *b);
-         foulAll(s.world, h, foul, 0.5f);
-         P::place(s.world, h, s.farFrom(*b, Sight::RADIUS + 5));
-         P::knowChunk(s.world, h);
-         int near = cheb(h.cell, *b);
-         Vec2i slot = World::slotOf(h.cell);
-         std::optional<Vec2i> clean;
-         for (int y = 0; y < CHUNK; y++)
-             for (int x = 0; x < CHUNK; x++) {
-                 Vec2i c{slot.x * CHUNK + x, slot.y * CHUNK + y};
-                 int d = cheb(c, h.cell);
-                 if (s.world.tile(c) != Tile::Floor || s.world.table(c) || s.world.statue(c) || d <= near + 5 ||
-                     d > near + 20)
-                     continue;
-                 if (!clean || cheb(c, *b) > cheb(*clean, *b)) clean = c;
-             }
-         if (!clean) return Checks{{"floor for clean water", [](const Stage&) { return false; }}};
-         P::addWater(s.world, *clean);
-         h.memory.see(*clean, Tile::Basin);
+         auto foul = foulAndClean(s, h);
+         if (foul.empty()) return Checks{{"a basin near the spawn and floor for clean water", [](const Stage&) { return false; }}};
          // No bottle to drink from or fill: it has to kneel at the water.
          h.bottles.clear();
          h.thirst = 0.7f;
-         h.hunger = 0.1f;
-         int closest = near;
-         for (int t = 0; t < 120; t++) {
-             s.run(1);
-             for (Vec2i c : foul) closest = std::min(closest, cheb(h.cell, c));
-         }
+         int closest = keptOff(s, h, foul, 120);
          return Checks{logged({"DRANK WATER"}),
                        {"no foul water drunk",
                         [](const Stage& st) { return !st.logged("DRANK FOUL WATER") && !st.logged("DRANK FOUL WATER AGAIN"); }},
+                       {"kept off the foul basin", [closest](const Stage&) { return closest > 2; }}};
+     }},
+    {"foul-warned", "a human going for water it doesn't know is foul is warned off by one it walks with",
+     seedWhere([](const Traits& t) { return t.sociable < 0.3f; }),
+     [](Stage& s) {
+         Human& knower = s.first();
+         Vec2i cleanAt;
+         auto foul = foulAndClean(s, knower, &cleanAt);
+         if (foul.empty()) return Checks{{"a basin near the spawn and floor for clean water", [](const Stage&) { return false; }}};
+         Human& h = s.add(seedWhere(plain, 6000));
+         P::knowChunk(s.world, h);
+         h.memory.see(cleanAt, Tile::Basin);
+         P::setTrust(h, knower, 0.5f);
+         P::setTrust(knower, h, 0.5f);
+         P::setMet(h, knower, 0.0f);
+         P::setMet(knower, h, 0.0f);
+         P::keepWith(h, knower);
+         h.hunger = 0.1f;
+         knower.thirst = 0.1f;
+         h.thirst = 0.7f;
+         int closest = keptOff(s, h, foul, 120);
+         return Checks{logged({"WARNED @ THE WATER IS FOUL"}), logged({"@ WARNED ME THE WATER IS FOUL"}),
                        {"kept off the foul basin", [closest](const Stage&) { return closest > 2; }}};
      }},
     {"foul-parched", "a parched human with only foul water it knows drinks it, knowingly", 99,

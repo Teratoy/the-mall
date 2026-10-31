@@ -248,6 +248,8 @@ public:
     std::vector<Bottle> bottles;
     /// All the water in them, 0 to the number of bottles.
     float bottleWater() const;
+    /// Its fullest bottle, or an empty one if none holds water.
+    Bottle fullestBottle() const;
     /// The bottle it shows: the one in its hand while drinking, filling,
     /// pouring or handing water over, else the fullest; null if it has none.
     const Bottle* shownBottle() const;
@@ -289,6 +291,8 @@ public:
     /// How many it counts friends, and foes, from what it saw and was told.
     int friendCount() const;
     int foeCount() const;
+    /// How many it knows it killed: seen die by its hand, or found dead of its beating.
+    int killCount() const { return deaths_.kills; }
     /// Whom it keeps company with, -1 if nobody; and whether it is standing
     /// waiting for its group to catch up.
     int companion() const { return social_.companion; }
@@ -702,9 +706,10 @@ private:
         bool searched = false;
         int meals = 0;
         bool spoiled = false;
-        /// The bottles last seen on it, and the water in them.
+        /// The bottles last seen on it, and the fullest of them as it looked,
+        /// so it knows whether there is one it would take.
         int bottles = 0;
-        float water = 0.0f;
+        Bottle fullest;
     };
     /// The dead: those it saw, the bodies it knows, and its own death.
     struct Deaths {
@@ -715,6 +720,8 @@ private:
         int killer = -1;
         /// Whether the killer saw it die; if not, it learns it on finding the body.
         bool killerSaw = false;
+        /// How many it knows it killed.
+        int kills = 0;
         std::unordered_map<int, Body> bodies;
         /// The body it is going to, or kneeling by, to go through.
         int corpse = -1;
@@ -976,16 +983,20 @@ private:
         std::unordered_map<int, float> knewNone;
         /// Sitting, lying down instead: parched and lost, waiting by a door.
         bool lying = false;
-        /// Foul water it has tasted, by water cell: how foul it found it
-        /// with feces and piss, and with blood. Kept as it was until it sees
-        /// that water again.
+        /// Foul water it has tasted, or been warned of, by water cell: how
+        /// foul it found it (or was told) with feces and piss, and with blood,
+        /// and who warned it (-1 if it tasted it). Kept as it was until it
+        /// sees that water again.
         struct Foul {
             float filth, blood;
+            int toldBy = -1;
         };
         std::unordered_map<Vec2i, Foul, Vec2iHash> foul;
-        /// This drink: whether it knew the water foul when it knelt, and
-        /// whether it has tasted the foulness yet.
+        /// This drink: whether it knew the water foul when it knelt (and
+        /// who warned it, -1 if it tasted it before), and whether it has
+        /// tasted the foulness yet.
         bool knewFoul = false, tastedFoul = false;
+        int warnedBy = -1;
         /// The bottle it found lying while it had none, to come back for,
         /// and who it last saw beside it.
         std::optional<Vec2i> found;
@@ -1267,7 +1278,7 @@ private:
     /// own holds clean water and isn't full, to pour together with another.
     bool roomForBottle() const;
     /// Whether it would take b: with none, any; holding one, b must hold
-    /// clean water too.
+    /// clean water too, unless its own is empty and it would drink b anyway.
     bool wouldTakeBottle(const Bottle& b) const;
     /// With no bottle, whether it would take one lying about now: thirsty,
     /// or knowing water to fill it at (it has drunk somewhere).
@@ -1515,6 +1526,9 @@ private:
     void tasteFoul(const World& world);
     /// Seeing water it remembers foul, it knows how foul it is now.
     void seeWater(const World& world, Vec2i water);
+    /// Setting off for water it can't see, someone it walks with who knows
+    /// it foul and sees it go warns it, and it believes them. True if so.
+    bool warnedOfFoul(World& world, Vec2i water);
     /// Would drink this water from that cell: not too foul or red, as far
     /// as it can see, no filth round the spot too much for its modesty, and
     /// no body close by, unless parched, craving flesh (the red, the body,

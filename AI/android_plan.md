@@ -82,7 +82,9 @@ rules), a small `src/core/files.{h,cpp}`.
   `-target aarch64`), so `apk.mk` compiles raylib's seven C files itself.
   The first build clones raylib 5.5 into `build/android/raylib`.
 - The package is `com.teratoy.themall`, version 0.1-debug, debuggable,
-  with no icon yet (Android shows its default one).
+  with the game's square spiral as an adaptive launcher icon: a vector
+  (`android/res/drawable/ic_spiral.xml`) on the paper colour, written by
+  `make icon` from the same picture as the window icon.
 - `src/core/files.{h,cpp}`: `files::asset()` reads `data/lines.txt` and
   `data/names.txt` from the APK; `files::savePath()` puts the obituary in
   the app's storage. Both do nothing new on a computer. `files::TOUCH_ONLY`

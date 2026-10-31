@@ -274,3 +274,12 @@ All six steps, as planned.
   (was 6), 1 starved (was 11).** No loops; target flips 1 → 3 (Feed,
   Explore, OpenDoor, none in bottle code). Tune from play if thirst now
   bites too hard (a fuller bottle, or taking it at once).
+
+### Changed (2026-10-31): parched, an empty bottle for a dirty one
+
+User's decision: the exception is wanted. A human whose own bottle is
+empty takes a full dirty one if it would drink it (parched, erratic, or
+craving blood): `wouldTakeBottle` allows it, and the swap is logged "LEFT
+MY EMPTY BOTTLE FOR ONE OF DIRTY WATER" (moment swap_bottle). Dirt still
+never mixes: a bottle with any water in it takes only clean water.
+Scenario pile-dirty-parched. The soak doesn't reach it (unchanged).

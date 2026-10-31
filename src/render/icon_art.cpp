@@ -4,8 +4,7 @@
 namespace {
 
 /// The spiral, # its wall, entered at the top left.
-constexpr int SPIRAL_PX = 15;
-constexpr const char* SPIRAL_GLYPH[SPIRAL_PX] = {
+constexpr const char* SPIRAL_GLYPH[ICON_PX] = {
     "###############",
     "..............#",
     "#############.#",
@@ -29,12 +28,14 @@ constexpr int ICON_SCALE = 4;
 
 } // namespace
 
+bool iconWall(int x, int y) { return SPIRAL_GLYPH[y][x] == '#'; }
+
 Image makeIcon() {
-    int side = SPIRAL_PX + 2 * MARGIN_PX;
+    int side = ICON_PX + 2 * MARGIN_PX;
     Image icon = GenImageColor(side * ICON_SCALE, side * ICON_SCALE, ui::PAPER);
-    for (int y = 0; y < SPIRAL_PX; ++y)
-        for (int x = 0; x < SPIRAL_PX; ++x)
-            if (SPIRAL_GLYPH[y][x] == '#')
+    for (int y = 0; y < ICON_PX; ++y)
+        for (int x = 0; x < ICON_PX; ++x)
+            if (iconWall(x, y))
                 ImageDrawRectangle(&icon, (x + MARGIN_PX) * ICON_SCALE, (y + MARGIN_PX) * ICON_SCALE, ICON_SCALE,
                                    ICON_SCALE, ui::BRIGHT);
     return icon;

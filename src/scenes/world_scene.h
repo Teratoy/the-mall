@@ -17,7 +17,7 @@ class Human;
 /// bottom. The buttons down the right edge: + and - (or the wheel, or the
 /// keys) zoom in and out, the arrows either side of the speed step it
 /// between X1 and X16, and LOG (or L) opens the followed human's log over
-/// the world, newest first, scrolled with the wheel or a drag. Tapping
+/// the world, newest at the bottom, scrolled with the wheel or a drag. Tapping
 /// the followed human's name at the top (or S) opens their stats in the
 /// same place instead: traits, people, mind and lessons. MAP beside LOG
 /// (or M) opens their map there: all they remember, with symbols for what
@@ -124,9 +124,10 @@ private:
     /// in doingRows, in a strip from stripY down the bottom of the square.
     void drawWide(const Human& viewer, Vector2 mouse, const std::vector<std::string>& doingRows, int stripY);
     void drawControls(const Controls& c, Vector2 mouse);
-    /// The followed human's log, newest first, in area: on the phone the
-    /// space between the strips left of the buttons.
-    void drawLog(const Human& viewer, Rectangle area);
+    /// The followed human's log, newest at the bottom, in area: on the phone the
+    /// space between the strips left of the buttons. Its bottom clear pixels
+    /// are left free for a button over them.
+    void drawLog(const Human& viewer, Rectangle area, int clear = 0);
     /// The followed human's stats, in area: on the phone the log's place.
     void drawStats(const Human& viewer, Rectangle area);
     /// Their map in area, following them or where it was dragged to.

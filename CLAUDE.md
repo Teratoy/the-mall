@@ -20,22 +20,23 @@ don't try to install anything.
 
 ```bash
 toolbox run -c claude-build make -j8          # build/themall
-toolbox run -c claude-build make check        # soak vs golden output (~1 min)
+toolbox run -c claude-build make check        # soak vs golden output (~75 s)
 ```
 
 | Command (inside the toolbox) | What it does |
 |---|---|
 | `make` | Builds `build/themall`. Zero warnings is the norm: keep it so |
 | `./play.sh` (from the host) | Rebuilds if needed and opens the game window |
-| `make check` | Runs the scenarios, then the headless soak (`build/stuck_soak 6 15 1 6`), diffing it with `tests/golden/soak.txt` |
+| `make check` | Runs the headless soak (`build/stuck_soak 6 15 1 6`, one process per seed) with the scenarios beside it, diffing the soak with `tests/golden/soak.txt`. The soak's output is kept in `build/soak.txt` and only rerun when the soak, the data files or the Makefile change |
 | `make scenarios` | The scenarios alone (3 s): set-up situations that check rare features still happen. `build/scenarios NAME` runs one and prints every log line |
-| `make golden` | Rewrites the golden output after a change meant to alter behaviour. Commit it with that change |
+| `make golden` | Rewrites the golden output after a change meant to alter behaviour. Commit it with that change. Straight after a failed `make check` it just copies `build/soak.txt`, so it takes no time |
 | `make coverage` | Lists log lines (`note(...)`) and talk moments that neither the soak nor the scenarios reached |
 | `make stuck` | The soak with its own arguments: `build/stuck_soak [seeds] [minutes] [verbose] [crowd]`. `TRACE=seed:id:from:to` follows one human |
 | `make bottlesheet` | Draws every pose with a bottle at several levels and dirt, scaled up, to `build/bottle-sheet.png` |
 | `make feralsheet` | Draws one human beside itself feral in every pose, with cake, bottle, blood and remains, to `build/feral-sheet.png` |
 | `make genprobe` | Grows chunk interiors on every footprint (L, T, S, boxes) and checks they keep to it. `GENPROBE_ARGS="20 png"` also saves pictures to `build/genprobe-png/` |
 | `make apk` (on the host, not the toolbox) | Builds `build/TheMall-debug.apk` for the phone with the Android NDK. See `android/apk.mk` and [AI/android_plan.md](AI/android_plan.md) |
+| `make lines` (host or toolbox) | The lines editor: a local web page at http://localhost:8765 for rewriting `data/lines.txt`, with the game's bubble drawn beside each line. See [AI/lines_editor_plan.md](AI/lines_editor_plan.md) |
 | `make shot SHOT_ARGS="..."` | Saves `build/shot.png` without a visible window. See `tools/shot.cpp` for the options (`--scene`, `--seconds`, `--seed`, `--zoom`, `--stats`, `--log`, `--reveal`, `--wide`) |
 
 **The sim is deterministic.** Same seeds, same output, byte for byte. So:
@@ -88,6 +89,10 @@ lost, and several useful probes already have been.
 - `data/lines.txt`: everything humans say. The user edits it, and F5
   reloads it in game. Its header explains the format.
 - `data/names.txt`: what names are grown from.
+- `data/lines_review.json` and `data/lines_drafts.json`: the lines editor's
+  review marks, and rewrites Claude drafts for the user to accept or reject
+  there (format at the top of `tools/lines_editor.py`). Draft rewrites go in
+  the drafts file, not straight into `data/lines.txt`.
 - `data/obituary.txt`: the player's save file. It isn't tracked by git,
   so don't commit or reset it.
 - `AI/`: plans, one per feature, with the user's decisions and what was

@@ -115,7 +115,8 @@ And with longer bubbles, more lines would wait and go unsaid after 5 s.
   walked off before word was said (lies and sales failed in scenarios).
 - `parched-door` runs 160 s, not 100: the keeper's dice per call heard
   fell later once the rolls shifted.
-- Soak after: 0 loops, 0 blocks >= 5 s; standing still 30 s went 1 -> 7,
+- Soak after (on main): 0 loops, 0 blocks >= 5 s; give-ups 12 -> 30
+  (blocked 0.03% -> 0.06%), standing still 30 s went 1 -> 9,
   all Greeting in the crowded spawns: a human greets one partner, then
   the next who walks up, without moving. A line can now be said well after
   its moment (a bottle remarked on 13 s after it was found, the greetings

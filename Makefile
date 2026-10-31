@@ -31,7 +31,7 @@ BOTTLESHEET := build/bottle_sheet
 # A human beside itself gone feral, in every pose, with all that rides on it.
 FERALSHEET := build/feral_sheet
 
-.PHONY: all run clean stuck check golden coverage shot scenarios genprobe hidef bottlesheet feralsheet trapprobe apk install-apk logcat
+.PHONY: all run clean stuck check golden coverage shot scenarios genprobe hidef bottlesheet feralsheet fontdump lines trapprobe icon apk install-apk logcat
 
 all: $(BIN)
 
@@ -57,16 +57,23 @@ $(STUCK): tests/stuck_soak.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
 stuck: $(STUCK)
 	./$(STUCK)
 
+# The soak's output, remade only when the soak or what it reads has changed,
+# so make golden after a failed make check copies it instead of running it again.
+build/soak.txt: $(STUCK) data/lines.txt data/names.txt Makefile
+	./$(STUCK) $(SOAK_ARGS) > $@.tmp && mv $@.tmp $@
+
+# The scenarios run on a spare core while the soak runs, and print after it.
 check: $(STUCK) $(SCENARIOS)
-	./$(SCENARIOS)
-	./$(STUCK) $(SOAK_ARGS) > build/soak.txt
+	@./$(SCENARIOS) > build/scenarios.txt & sc=$$!; \
+	$(MAKE) --no-print-directory build/soak.txt; soak=$$?; \
+	wait $$sc; ok=$$?; cat build/scenarios.txt; [ $$ok = 0 ] && [ $$soak = 0 ]
 	@diff -u $(GOLDEN) build/soak.txt > build/soak.diff \
 		&& echo "check: soak output matches $(GOLDEN)" \
 		|| (head -40 build/soak.diff; echo "check: soak output CHANGED (full diff in build/soak.diff)"; exit 1)
 
-golden: $(STUCK)
+golden: build/soak.txt
 	@mkdir -p $(dir $(GOLDEN))
-	./$(STUCK) $(SOAK_ARGS) > $(GOLDEN)
+	cp build/soak.txt $(GOLDEN)
 	@echo "golden: $(GOLDEN) rewritten; commit it with the change that moved it"
 
 coverage: $(STUCK) $(SCENARIOS)
@@ -104,6 +111,21 @@ $(FERALSHEET): tools/feral_sheet.cpp $(filter-out build/main.o,$(OBJ))
 feralsheet: $(FERALSHEET)
 	./$(FERALSHEET) build/feral-sheet.png $(FERALSHEET_ARGS)
 
+# raylib's default font, saved for the lines editor (tools/font_dump.cpp).
+FONTDUMP := build/font_dump
+
+$(FONTDUMP): tools/font_dump.cpp
+	@mkdir -p build
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@ $(LDLIBS)
+
+fontdump: $(FONTDUMP)
+	./$(FONTDUMP) tools/lines_editor
+
+# The lines editor: a local web page for data/lines.txt, at http://localhost:8765.
+# Python only, so it runs on the host too.
+lines:
+	python3 tools/lines_editor.py
+
 # Life logs of one soak world: build/lifelog seed [minutes] [crowd] [name] [every].
 LIFELOG := build/lifelog
 $(LIFELOG): tools/lifelog.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
@@ -122,6 +144,14 @@ $(TRAPPROBE): tools/trap_probe.cpp tests/probe.h $(filter-out build/main.o,$(OBJ
 
 trapprobe: $(TRAPPROBE)
 	./$(TRAPPROBE) $(TRAPPROBE_ARGS)
+
+# The icon, written where the desktop shortcut and the APK find it (tools/icon.cpp).
+ICON := build/icon
+$(ICON): tools/icon.cpp build/render/icon_art.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@ $(LDLIBS)
+
+icon: $(ICON)
+	./$(ICON)
 
 # The phone build: see android/apk.mk. Run these on the host, not in the toolbox.
 apk install-apk logcat:
