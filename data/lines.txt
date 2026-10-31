@@ -701,6 +701,42 @@ hungry                  | FOOD. FIRST, FOOD.
 thirsty                 | WATER. I NEED WATER.
 erratic                 | THEY PUT ME HERE. THEY DID.
 
+# Still dazed, the room it woke in, a thing at a time, said to nobody. The
+# first giant statue it sees ({THING} is what it is, and statue.mug and the
+# rest which), the first table, and, once it has looked round a while and
+# seen nobody at all, the emptiness.
+[first_statue]
+                        | WHY IS IT SO BIG?
+                        | AM I... SMALL?
+                        | THAT CAN'T BE RIGHT.
+                        | A {THING}. A HUGE {THING}.
+curious                 | WHO MADE A {THING} THAT SIZE?
+timid                   | DON'T FALL ON ME...
+homebody                | I DON'T LIKE THIS ROOM.
+erratic                 | IT'S WATCHING ME.
+statue.clock            | IT ISN'T TICKING.
+statue.toilet           | WHO WOULD EVEN SIT ON THAT?
+statue.lamp             | IS IT ON?
+
+[first_table]
+                        | SOMEONE SET THIS OUT.
+                        | LIKE IT WAS WAITING FOR ME.
+                        | WHO WAS HERE?
+timid                   | IS SOMEONE COMING BACK?
+curious                 | FOR ME? OR FOR SOMEONE ELSE?
+homebody                | ALMOST LIKE HOME. ALMOST.
+hungry                  | ANYTHING TO EAT?
+
+[empty_room 0.8]
+                        | NOBODY. NOBODY AT ALL.
+                        | JUST ME, THEN.
+                        | NO WINDOWS. NOT ONE.
+sociable                | WHERE IS EVERYONE?
+loner                   | GOOD. QUIET.
+timid                   | I DON'T WANT TO BE ALONE HERE.
+brave                   | THEN I FIND MY OWN WAY.
+curious                 | SOMEONE BUILT THIS. FOR WHAT?
+
 
 # The first time it ever sees each of these, said to nobody, once each:
 # a key, a cake, a door, water, another human, and someone else's
@@ -725,6 +761,8 @@ greedy                  | A CAKE! MINE.
 curious                 | WHO PUTS CAKES OUT HERE?
 timid                   | IS IT SAFE TO EAT?
 loner                   | AT LEAST THERE'S FOOD.
+dazed                   | CAKE? HERE?
+dazed hungry            | IS THAT... FOR ME?
 
 [first_door]
                         | A DOOR.
@@ -2151,6 +2189,9 @@ greedy                  | MINE NOW.
 curious                 | WHO LEAVES A BOTTLE OUT HERE?
 timid                   | SOMEONE ELSE'S?
 thirsty                 | WATER. THANK GOD.
+dazed                   | IS THIS MINE?
+dazed                   | WHO PUT THIS HERE?
+dazed thirsty           | SOMEONE LEFT ME WATER.
 
 # Coming back for the bottle it found, and it's gone, said to nobody.
 [bottle_gone 0.7]

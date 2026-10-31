@@ -806,6 +806,10 @@ private:
         bool comingTo = false;
         /// It has stirred where it lies, before sitting up.
         bool stirred = false;
+        /// Remarks on the room through the fog made, a bit each in the order
+        /// of talk::Moment from FirstStatue, and when the last was.
+        unsigned fogSights = 0;
+        float fogAt = -1e9f;
         /// See outUrge() and hunch().
         float out = 1.0f;
         float hunch = 0.0f;

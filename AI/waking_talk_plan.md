@@ -116,6 +116,36 @@ truth). New moments, once each per life:
 
 The existing `first_cake` and `first_door` gain more dazed lines.
 
+### Built (2026-10-31)
+
+Moments `FirstStatue`, `FirstTable`, `EmptyRoom` at the end of
+`talk::Moment`, remarked in `observe()` through `fogSight`, with their own
+bits (`escape_.fogSights`) and last time (`escape_.fogAt`). Only while daze
+is at least DAZE_REMARK_MIN (0.3, the `dazed` condition), past the lie,
+DAZE_REMARK_GAP (6 s) after the last one, and sharing one remark a look
+with the `first_*` sights.
+
+Changes from the plan:
+- No `first_bottle`: `[see_bottle]` already fires for the bottle beside
+  it, so it got `dazed` lines instead ("IS THIS MINE?"), and `[first_cake]`
+  some too.
+- A fog remark only fills a silence while it is alone: nothing else
+  queued to say, and nobody alive in sight. Without that, a thirsty human
+  busy remarking on the table never asked for water in time and grabbed
+  the bottle instead (bottle-only).
+- `[empty_room 0.8]` comes once daze is down to EMPTY_ROOM_DAZE (0.6,
+  about 16 s in) if it has never seen anyone alive (`social_.lastSeen`).
+- `[first_statue]` passes the statue as a Here topic, so `{THING}` and
+  `statue.*` work as in chat_here ("WHO MADE A PAINTED ALARM CLOCK THAT
+  SIZE?"); a topic makes the wording fixed, with no dice.
+- Two lines dropped that hinted at a life before (pure blank memory).
+
+Scenarios: `waking-alone` now runs 40 s (seed 9720) and also checks the
+table and empty-room remarks; the stand line has to come within 4 s of
+getting up. `waking-statue` stands a clock statue in the spawn
+(`SoakProbe::placeStatue`). New seeds again for dice that moved:
+bottle-sell and hard-no-sell 13014, stash-robbed 18014.
+
 ### 4. The quiet of the place
 
 Atmosphere that comes from no single thing: after it has been up and alone

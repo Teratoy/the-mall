@@ -36,6 +36,12 @@ constexpr float WAKE_LIE_MIN = 3.0f, WAKE_LIE_MAX = 6.0f;
 constexpr float WAKE_SIT_MIN = 2.0f, WAKE_SIT_MAX = 4.0f;
 /// Lying there this long, eyes still shut, it stirs and mutters.
 constexpr float WAKE_STIR_AT = 1.0f;
+/// Still this dazed, the room it woke in is remarked on, a thing at a time,
+/// no sooner than DAZE_REMARK_GAP apart; once the daze is down to
+/// EMPTY_ROOM_DAZE with nobody ever seen, it says so.
+constexpr float DAZE_REMARK_MIN = 0.3f;
+constexpr float DAZE_REMARK_GAP = 6.0f;
+constexpr float EMPTY_ROOM_DAZE = 0.6f;
 constexpr float DAZE_TIME = 40.0f;
 constexpr int DAZE_SIGHT = 6;
 constexpr float DAZE_SLOW = 0.6f;
