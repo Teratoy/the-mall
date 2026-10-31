@@ -11,9 +11,9 @@ constexpr float SMELL_FORGET = 120.0f;
 /// Dirty this long it smells (grime, of GRIME_MAX 3): about five minutes
 /// after turning dirty (the user). From faint, it gets stronger up to GRIME_MAX.
 constexpr float SMELL_GRIME = 1.5f, SMELL_GRIME_TOP = 3.0f, SMELL_HUMAN_MIN = 0.3f;
-/// A bloody body smells at least this strongly; a rotting one from
-/// BODY_ROT_MIN, more as it goes.
-constexpr float BODY_BLOODY = 0.5f, BODY_ROT_MIN = 0.5f;
+/// A body smells only once it has begun to rot (Human::spoiled), from
+/// this strongly, more as it goes, bloody or not (the user).
+constexpr float BODY_ROT_MIN = 0.5f;
 /// Walking on or next to the strongest smell it knows costs this many
 /// tenths of a cell more, at middling modesty.
 constexpr float SMELL_STEP_COST = 60.0f;
@@ -30,10 +30,8 @@ float Human::smellStrength() const {
         float past = (grime_.level - SMELL_GRIME) / (SMELL_GRIME_TOP - SMELL_GRIME);
         return std::clamp(SMELL_HUMAN_MIN + (1.0f - SMELL_HUMAN_MIN) * past, SMELL_HUMAN_MIN, 1.0f);
     }
-    if (bones()) return 0.0f;
-    float s = stains.any() ? BODY_BLOODY : 0.0f;
-    if (spoiled()) s = std::max(s, BODY_ROT_MIN + (1.0f - BODY_ROT_MIN) * decay());
-    return std::min(1.0f, s);
+    if (bones() || !spoiled()) return 0.0f;
+    return std::min(1.0f, BODY_ROT_MIN + (1.0f - BODY_ROT_MIN) * decay());
 }
 
 void Human::sniff(const World& world, float dt) {

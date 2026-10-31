@@ -113,7 +113,8 @@ What the user asked for (2026-10-31):
    new way of knowing, alongside seeing and being told, and so finding
    bodies by smell becomes possible.
 4. **Bodies**: **any rotting body** smells, bloody or not, until it is bare
-   bones; blood on it makes it smell at once.
+   bones. Not right away (2026-10-31, changed): a fresh body doesn't
+   smell, bloody or not, until it begins to rot (`spoiled()`, 300 s).
 5. **Foul water** smells from foulness **0.5** (where it sickens).
 6. **Flies**: a **swarm by strength**, 1 to 5 one-pixel dots buzzing in
    small loops over the smelly cell or head, drawn in code like the z's of
@@ -125,8 +126,8 @@ Also as asked before: feces smell until they dry; feces footprints don't.
 
 - **Sources** (`World::gatherSmells`, every second, `world/smell.h`):
   humans by `Human::smellStrength()`: alive once dirty to grime 1.5
-  (`SMELL_GRIME`), 0.3 then stronger to grime 3; dead, at once if bloody
-  (0.5), and once spoiled (300 s) from 0.5 up with rot, until bare bones.
+  (`SMELL_GRIME`), 0.3 then stronger to grime 3; dead, only once spoiled
+  (300 s), from 0.5 up with rot, until bare bones.
   Fresh feces until they dry as far as no longer sticking (freshness 0.4),
   by size and freshness. Water from foulness 0.5, 0.2 then stronger.
   Footprints, piss and poured water don't smell.

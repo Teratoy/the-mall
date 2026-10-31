@@ -250,7 +250,7 @@ public:
     /// How long it has gone unwashed, 1 being long enough to turn dirty.
     float grime() const { return grime_.level; }
     /// How strongly it smells, 0 to 1: alive, from going dirty too long;
-    /// dead, from rotting, or at once if bloody, until it is bare bones
+    /// dead, once it has begun to rot, until it is bare bones
     /// (human_smell.cpp).
     float smellStrength() const;
     /// Gone unwashed long enough to smell.
