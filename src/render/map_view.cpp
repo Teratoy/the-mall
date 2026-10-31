@@ -71,7 +71,9 @@ Color tileColor(Tile t) {
     case Tile::Basin: return BASIN;
     case Tile::Table: return TABLE;
     case Tile::Statue:
-    case Tile::Vending: return STATUE;
+    case Tile::Vending:
+    case Tile::Rack:
+    case Tile::Console: return STATUE;
     case Tile::Void: break;
     }
     return BLANK;

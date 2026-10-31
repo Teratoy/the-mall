@@ -1,10 +1,13 @@
 #include "render/world_view.h"
 #include "human/human.h"
 #include "render/blood_art.h"
+#include "render/cable_art.h"
+#include "render/computer_art.h"
 #include "render/bottle_art.h"
 #include "render/floor_tiles.h"
 #include "render/human_sprites.h"
 #include "render/mess_art.h"
+#include "render/server_rack_art.h"
 #include "render/statue_art.h"
 #include "render/table_art.h"
 #include "render/toilet_art.h"
@@ -138,6 +141,8 @@ void drawCell(int x, int y, Tile t, Tile above, Tile below, Floor floor, WallSty
     case Tile::Basin:
     case Tile::Toilet:
     case Tile::Vending:
+    case Tile::Rack:
+    case Tile::Console:
         DrawRectangle(x, y, CELL_PX, CELL_PX, dim(toColor(FLOOR_PALETTES[floor.palette].base), lit));
         break;
     case Tile::Wall:
@@ -365,11 +370,20 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
                                     dim(toColor(WALL_PALETTES[w.palette].ink), lit));
                 continue;
             }
-            if (tile != Tile::Floor && tile != Tile::Table && tile != Tile::Statue && tile != Tile::Vending) continue;
+            if (tile != Tile::Floor && tile != Tile::Table && tile != Tile::Statue && tile != Tile::Vending &&
+                tile != Tile::Rack && tile != Tile::Console)
+                continue;
             Floor f = world.floor(c);
             floorTiles.draw(x * CELL_PX - left, y * CELL_PX - top, c, f.pattern,
                             dim(toColor(FLOOR_PALETTES[f.palette].ink), lit));
         }
+
+    // Cables on the floor never move, so one is drawn wherever its cell is known.
+    for (int y = y0; y <= y1; y++)
+        for (int x = x0; x <= x1; x++)
+            if (uint8_t k = world.cable({x, y}); k && known({x, y}) != Tile::Void)
+                drawCable(x * CELL_PX - left, y * CELL_PX - top, uint8_t(k & 15), k >> 4,
+                          reveal || viewer.sight.sees({x, y}));
 
     // Blood in sight as it is, elsewhere as the viewer last saw it. On
     // floor and walls now; on tables and statues once they are drawn.
@@ -386,7 +400,7 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
         for (int x = x0; x <= x1; x++) {
             Tile tile = known({x, y});
             if (tile != Tile::Void && tile != Tile::Table && tile != Tile::Statue && tile != Tile::Basin &&
-                tile != Tile::Vending)
+                tile != Tile::Vending && tile != Tile::Rack && tile != Tile::Console)
                 drawBlood({x, y}, 0);
         }
 
@@ -469,6 +483,7 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
         const Human* human;
         int statue;
         const Machine* machine = nullptr;
+        const ServerPiece* piece = nullptr;
     };
     std::vector<Drawn> drawn;
     for (const auto& h : world.humans())
@@ -484,6 +499,23 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
         if (last.x < x0 - 1 || m.at.x > x1 + 1 || last.y < y0 || m.at.y > y1 + VENDING_H / CELL_PX + 1) continue;
         if (known(m.at) != Tile::Vending && known(last) != Tile::Vending) continue;
         drawn.push_back({float((last.y + 1) * CELL_PX), nullptr, -1, &m});
+    }
+    // Server room machines the viewer knows any cell of, standing on the
+    // bottom edge of their foot row.
+    auto pieceCells = [](const ServerPiece& p) {
+        std::vector<Vec2i> cells;
+        for (int dy = 0; dy < DESK_D; dy++)
+            for (int dx = 0; dx < DESK_W; dx++)
+                if (ServerPiece::covers(p.kind, {dx, dy})) cells.push_back(p.at + Vec2i{dx, dy});
+        return cells;
+    };
+    for (const ServerPiece& p : world.pieces()) {
+        if (p.at.x < x0 - DESK_W || p.at.x > x1 + 1 || p.at.y < y0 - DESK_D ||
+            p.footRow() > y1 + SERVER_RACK_H / CELL_PX + 1)
+            continue;
+        bool knownAny = false;
+        for (Vec2i c : pieceCells(p)) knownAny |= known(c) == Tile::Rack || known(c) == Tile::Console;
+        if (knownAny) drawn.push_back({float((p.footRow() + 1) * CELL_PX), nullptr, -1, nullptr, &p});
     }
     std::sort(drawn.begin(), drawn.end(), [](const Drawn& a, const Drawn& b) {
         bool deadA = a.human && a.human->dead(), deadB = b.human && b.human->dead();
@@ -507,6 +539,18 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
         }
     };
     for (const Drawn& d : drawn) {
+        if (d.piece) {
+            // Each blinks to its own clock; remembered, it holds still.
+            const ServerPiece& p = *d.piece;
+            bool lit = reveal;
+            for (Vec2i c : pieceCells(p)) lit |= viewer.sight.sees(c);
+            const float seconds = float(GetTime()) + float(p.seed % 1000) / 100.0f;
+            const int x = p.at.x * CELL_PX - left;
+            if (p.kind == Rig::Rack) drawServerRack(x, int(d.y) - top, lit, seconds);
+            else if (p.kind == Rig::Terminal) drawTerminal(x, int(d.y) - top, lit, seconds);
+            else drawConsoleDesk(x, p.at.y * CELL_PX - top, lit, seconds);
+            continue;
+        }
         if (d.machine) {
             // In sight it shows what it holds now; remembered, what the viewer saw in it, dimmed and still.
             const Machine& m = *d.machine;

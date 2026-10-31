@@ -1795,6 +1795,8 @@ private:
     /// One of items, as remembered, it could take standing at cell at.
     std::optional<Vec2i> inReach(Vec2i at, const std::unordered_set<Vec2i, Vec2iHash>& items) const;
     bool knownPassable(Vec2i c) const;
+    /// Whether the door is an airlock door it knows opens at a push from the cell.
+    bool pushesOpen(Vec2i from, Vec2i door) const;
     /// A known trap it won't step on.
     bool avoids(Vec2i c) const;
     /// Known floor next to unknown cells: where exploring leads.

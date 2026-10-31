@@ -80,6 +80,7 @@ const char* kindName(ChunkKind k) {
     case ChunkKind::Maze: return "maze";
     case ChunkKind::WaterMaze: return "watermaze";
     case ChunkKind::Plaza: return "plaza";
+    case ChunkKind::DataCentre: return "datacentre";
     default: return "other";
     }
 }
@@ -137,6 +138,8 @@ void save(const Chunk& c, const std::string& path, const World* w = nullptr) {
             case Tile::Table: col = {140, 90, 50, 255}; break;
             case Tile::Basin: col = {60, 120, 200, 255}; break;
             case Tile::Vending: col = {120, 220, 200, 255}; break;
+            case Tile::Rack: col = {40, 200, 80, 255}; break;
+            case Tile::Console: col = {160, 230, 120, 255}; break;
             default: break;
             }
             if (w && w->hasCake(c.origin() + Vec2i{x, y})) col = {250, 80, 160, 255};
@@ -151,7 +154,7 @@ void save(const Chunk& c, const std::string& path, const World* w = nullptr) {
 constexpr int WORLD_CHUNKS = 40;
 
 struct Tally {
-    int chunks = 0, doors = 0, keys = 0, cakes = 0, machines = 0;
+    int chunks = 0, doors = 0, keys = 0, cakes = 0, machines = 0, servers = 0;
     /// Cakes only water keeps from the entry.
     int overWater = 0;
     double slowest = 0.0;
@@ -257,6 +260,19 @@ int growWorld(uint64_t seed, std::map<std::string, Tally>& tally, bool png) {
                 if (m.facing.y < 0) why = "a machine with its back to the viewer";
                 if (!reached) why = "a machine sealed off";
             }
+        // Every cell of a server room's floor can be walked to through its
+        // airlock: no row of racks or desk walls any of it off.
+        for (const ServerRoom& r : w.serverRooms())
+            if (w.chunkIdAt({r.x, r.y}) == c.id) {
+                t.servers++;
+                for (int y = r.y; y < r.y + r.h; y++)
+                    for (int x = r.x; x < r.x + r.w; x++) {
+                        Vec2i l = Vec2i{x, y} - c.origin();
+                        if (passable(c.get(l)) && !swum[size_t(l.y * c.w + l.x)]) why = "a server room cell walled off";
+                    }
+            }
+        if (png && c.kind == ChunkKind::DataCentre)
+            save(c, "build/genprobe-png/world" + std::to_string(seed) + "-datacentre" + std::to_string(c.id) + ".png", &w);
         // Big plazas are rare, so any grown is drawn.
         if (png && c.kind == ChunkKind::Plaza && c.slotCount() >= 9)
             save(c, "build/genprobe-png/world" + std::to_string(seed) + "-plaza" + std::to_string(c.id) + ".png", &w);
@@ -278,7 +294,8 @@ int main(int argc, char** argv) {
     if (png) mkdir("build/genprobe-png", 0755);
     int failed = 0, made = 0;
     for (const Shape& s : shapes())
-        for (ChunkKind kind : {ChunkKind::Rooms, ChunkKind::Maze, ChunkKind::WaterMaze, ChunkKind::Plaza}) {
+        for (ChunkKind kind :
+             {ChunkKind::Rooms, ChunkKind::Maze, ChunkKind::WaterMaze, ChunkKind::Plaza, ChunkKind::DataCentre}) {
             const Vec2i box = footprintBox(s.parts);
             if (kind == ChunkKind::Plaza && (box.x != box.y || s.parts.size() != size_t(box.x * box.y))) continue;
             double slowest = 0.0;
@@ -290,6 +307,9 @@ int main(int argc, char** argv) {
                     gen::rooms(c, rng);
                     gen::connectRegions(c, 3);
                     gen::slamRooms(c, rng, c.slotCount());
+                } else if (kind == ChunkKind::DataCentre) {
+                    gen::dataCentre(c, rng);
+                    gen::connectRegions(c, 3);
                 } else if (kind == ChunkKind::Plaza) {
                     // Half with a fountain round an island the size of a grand statue's plinth.
                     gen::plaza(c, rng, seed % 2 ? Vec2i{14, 7} : Vec2i{});
@@ -320,9 +340,10 @@ int main(int argc, char** argv) {
     for (const auto& [shape, t] : tally) {
         grown += t.chunks;
         std::printf("world %-6s %4d chunks, per chunk %4.1f new doors %4.1f keys %4.1f cakes (%4.1f over water) "
-                    "%4.2f machines, slowest %5.1f ms\n",
+                    "%4.2f machines %4.2f server rooms, slowest %5.1f ms\n",
                     shape.c_str(), t.chunks, double(t.doors) / t.chunks, double(t.keys) / t.chunks,
-                    double(t.cakes) / t.chunks, double(t.overWater) / t.chunks, double(t.machines) / t.chunks, t.slowest);
+                    double(t.cakes) / t.chunks, double(t.overWater) / t.chunks, double(t.machines) / t.chunks,
+                    double(t.servers) / t.chunks, t.slowest);
     }
     std::printf("genprobe: %d worlds, %d chunks grown, %d failed\n", seeds, grown, worldFailed);
     failed += worldFailed;

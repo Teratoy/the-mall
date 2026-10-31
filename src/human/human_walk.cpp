@@ -51,6 +51,8 @@ void Human::step(World& world) {
     if (path_.empty()) return arrive(world);
     Vec2i next = path_.front();
     world.ensureGenerated(next);
+    // An airlock door gives at a push from inside.
+    if (world.tile(next) == Tile::DoorLocked && pushesOpen(cell, next)) world.pushOpen(next, cell);
     if (!passable(world.tile(next)) || avoids(next)) {
         // The world isn't what it remembered, say a gate slammed, or a trap
         // was found on the way: look again, then think again.
@@ -376,6 +378,11 @@ bool Human::doorDue(Vec2i c) const {
 
 bool Human::knownPassable(Vec2i c) const { return passable(memory.tile(c)); }
 
+bool Human::pushesOpen(Vec2i from, Vec2i door) const {
+    auto it = memory.airlocks.find(door);
+    return it != memory.airlocks.end() && from == door + it->second;
+}
+
 // The starving would rather be hurt than go without the cake on a dart plate.
 bool Human::avoids(Vec2i c) const {
     auto it = memory.traps.find(c);
@@ -461,8 +468,10 @@ std::optional<std::vector<Vec2i>> Human::searchFrom(const World& world, Vec2i st
         expanded++;
         for (Vec2i d : DIRS8) {
             Vec2i m = n.at + d;
-            if (!open(m)) continue;
             bool diagonal = d.x != 0 && d.y != 0;
+            // A shut airlock door is a way out to whoever is inside it.
+            bool pushed = !diagonal && memory.tile(m) == Tile::DoorLocked && pushesOpen(n.at, m) && !avoids(m);
+            if (!open(m) && !pushed) continue;
             if (diagonal && (!open(n.at + Vec2i{d.x, 0}) || !open(n.at + Vec2i{0, d.y}))) continue;
             int c = n.cost + (diagonal ? 14 : 10) + bloodCost(m) + messCost(world, m) + smellCost(m);
             auto it = cost.find(m);

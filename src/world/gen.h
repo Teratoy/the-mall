@@ -48,6 +48,10 @@ struct RoomBox {
 /// by a canal and dotted with pools. Returns the rooms.
 std::vector<RoomBox> rooms(Chunk& c, Rng& rng);
 
+/// A data centre: a grid of corridors across the chunk, leaving solid
+/// blocks between them for server rooms to be carved into.
+void dataCentre(Chunk& c, Rng& rng);
+
 /// What a plaza leaves for statues, in local cells: the middle of its hall,
 /// the island in its fountain if it has one, and how far out from the
 /// middle a ring of smaller statues would stand.

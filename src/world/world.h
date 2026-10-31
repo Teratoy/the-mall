@@ -6,12 +6,14 @@
 #include "world/gen.h"
 #include "world/mess.h"
 #include "world/pile.h"
+#include "world/server_room.h"
 #include "world/smell.h"
 #include "world/statue.h"
 #include "world/table.h"
 #include "world/toilet.h"
 #include "world/trap.h"
 #include "world/vending.h"
+#include <algorithm>
 #include <memory>
 #include <optional>
 #include <string>
@@ -32,6 +34,9 @@ struct HumanLook;
 /// A plaza without a fountain has a basin to drink from. Here and there, rarely, stands a toilet.
 /// Now and then in room networks and plazas a vending machine stands
 /// against a wall, selling cakes or empty bottles for keys.
+/// Rarely a room network has a server room, and a data centre is full of
+/// them: racks, terminals and a console desk behind an airlock of two
+/// locked doors, a key each to get in, free to leave.
 /// Hidden traps lie about every chunk but the spawn: spikes in the open,
 /// darts rigged under some cakes, and in room networks slam rooms baited
 /// with a cake, each with one more key to open it again.
@@ -91,11 +96,41 @@ public:
     /// what it holds; false if there is none or nothing left in it.
     bool vend(Vec2i cell);
 
+    /// The server room machine on a cell, if any. They never move.
+    const ServerPiece* piece(Vec2i cell) const {
+        auto it = pieceCells_.find(cell);
+        return it == pieceCells_.end() ? nullptr : &pieces_[size_t(it->second)];
+    }
+    const std::vector<ServerPiece>& pieces() const { return pieces_; }
+    const std::vector<ServerRoom>& serverRooms() const { return serverRooms_; }
+    /// The server room whose floor the cell is, if any.
+    const ServerRoom* serverRoom(Vec2i cell) const;
+    /// Whether the cell is a server room's floor, door or lobby.
+    bool serverRoomAt(Vec2i cell) const {
+        return std::any_of(serverRooms_.begin(), serverRooms_.end(), [&](const ServerRoom& r) { return r.encloses(cell); });
+    }
+    /// The airlock door on a cell, if any.
+    const AirlockDoor* airlock(Vec2i cell) const {
+        auto it = airlocks_.find(cell);
+        return it == airlocks_.end() ? nullptr : &it->second;
+    }
+    /// Opens the airlock door for someone on the cell from, without a key,
+    /// if from is its inside. False if it isn't, or the door isn't one.
+    bool pushOpen(Vec2i door, Vec2i from);
+    /// The cable lying on a cell: the edges it leaves by (CABLE_N/E/S/W) in
+    /// the low four bits and its look above them; 0 where there is none.
+    uint8_t cable(Vec2i cell) const {
+        auto it = cables_.find(cell);
+        return it == cables_.end() ? 0 : it->second;
+    }
+    const std::unordered_map<Vec2i, uint8_t, Vec2iHash>& cables() const { return cables_; }
+
     bool hasKey(Vec2i cell) const { return keys_.count(cell) > 0; }
     bool takeKey(Vec2i cell) { return keys_.erase(cell) > 0; }
     const std::unordered_set<Vec2i, Vec2iHash>& keys() const { return keys_; }
     /// Unlocks the door the cell is part of, on both sides, or the slam
-    /// room gate it is, for good. False if the cell is neither, locked.
+    /// room gate it is, for good; or opens the airlock door it is, until it
+    /// shuts again. False if the cell is none of those, locked.
     bool unlock(Vec2i cell);
 
     bool hasCake(Vec2i cell) const { return cakes_.count(cell) > 0; }
@@ -186,6 +221,12 @@ private:
     std::vector<Machine> machines_;
     /// Which machine stands on each cell.
     std::unordered_map<Vec2i, int, Vec2iHash> machineCells_;
+    std::vector<ServerPiece> pieces_;
+    /// Which piece blocks each cell.
+    std::unordered_map<Vec2i, int, Vec2iHash> pieceCells_;
+    std::vector<ServerRoom> serverRooms_;
+    std::unordered_map<Vec2i, AirlockDoor, Vec2iHash> airlocks_;
+    std::unordered_map<Vec2i, uint8_t, Vec2iHash> cables_;
     std::unordered_set<Vec2i, Vec2iHash> keys_;
     std::unordered_set<Vec2i, Vec2iHash> cakes_;
     std::unordered_map<Vec2i, Pile, Vec2iHash> piles_;
@@ -247,6 +288,17 @@ private:
     bool standMachine(Chunk& c, Vend kind, Vec2i at, Vec2i facing, int stock);
     /// Machines get an item back each day.
     void updateMachines(float dt);
+    /// Server rooms carved into solid wall, up to count of them, each
+    /// behind its airlock and grown inside to fit. In gen_server.cpp.
+    /// Returns how many were made.
+    int placeServerRooms(Chunk& c, Rng& dice, int count);
+    /// Fills a server room's floor with rows of racks, a desk on the back
+    /// wall when it is big enough, terminals and cables. In gen_server.cpp.
+    void furnishServerRoom(Chunk& c, Rng& dice, const ServerRoom& r, Vec2i door);
+    /// Stands a machine of a server room at the world cell.
+    void standPiece(Chunk& c, Rig kind, Vec2i at, uint32_t seed);
+    /// Airlock doors left open shut and lock once nobody stands in them.
+    void updateAirlocks(float dt);
     /// Sets a square basin with its top left corner at the cell, with floor
     /// all round it. False if it doesn't fit there.
     bool placeBasin(Chunk& c, Vec2i cell);

@@ -62,6 +62,10 @@ public:
     };
     /// The machines it knows, by their first cell.
     std::unordered_map<Vec2i, SeenMachine, Vec2iHash> machines;
+    /// The airlock doors of server rooms it has seen, by cell, and the way
+    /// into the room through each: from that side a door opens at a push,
+    /// from the other only with a key.
+    std::unordered_map<Vec2i, Vec2i, Vec2iHash> airlocks;
     /// What it saw lying put down on the floor, as it was then; and, of
     /// those, the ones it knows are someone's stash, and whose: seen being
     /// stashed, or told of.

@@ -15,20 +15,23 @@ inline constexpr int CELL_PX = 6;
 /// stands on floor too, and blocks both. A basin is a little square of
 /// water in a stone rim, standing on floor, drunk from like any water. A
 /// toilet stands on floor against a wall, and blocks walking, not sight;
-/// so does each of a vending machine's two cells.
-enum class Tile : uint8_t { Void, Floor, Wall, DoorLocked, DoorOpen, Water, Table, Statue, Basin, Toilet, Vending };
+/// so does each of a vending machine's two cells. In a server room a rack
+/// blocks walking and sight, and a terminal or the console desk walking only.
+enum class Tile : uint8_t { Void, Floor, Wall, DoorLocked, DoorOpen, Water, Table, Statue, Basin, Toilet, Vending, Rack,
+                            Console };
 
 inline bool passable(Tile t) { return t == Tile::Floor || t == Tile::DoorOpen; }
 /// Water to drink from or wash in: pools, canals and basins.
 inline bool drinkable(Tile t) { return t == Tile::Water || t == Tile::Basin; }
 /// Blocks sight. Void is anywhere not generated yet.
 inline bool opaque(Tile t) {
-    return t == Tile::Void || t == Tile::Wall || t == Tile::DoorLocked || t == Tile::Statue;
+    return t == Tile::Void || t == Tile::Wall || t == Tile::DoorLocked || t == Tile::Statue || t == Tile::Rack;
 }
 
 /// WaterMaze is a maze walled with water instead of stone. Plaza is one
-/// grand hall round a fountain.
-enum class ChunkKind { Spawn, Maze, WaterMaze, Rooms, Plaza };
+/// grand hall round a fountain. DataCentre is a grid of corridors with
+/// server rooms between them.
+enum class ChunkKind { Spawn, Maze, WaterMaze, Rooms, Plaza, DataCentre };
 
 /// The slots a chunk owns, as offsets from the top-left of its box, which
 /// is offset {0, 0}'s row and column. A box owns every slot in it; an L, T,

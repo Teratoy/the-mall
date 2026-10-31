@@ -28,6 +28,15 @@ constexpr int DOOR_MARGIN = 8;
 /// Plazas only come square.
 constexpr ChunkKind KINDS[] = {ChunkKind::Rooms, ChunkKind::Maze, ChunkKind::WaterMaze, ChunkKind::Plaza};
 const std::vector<float> KIND_WEIGHTS = {0.5f, 0.25f, 0.13f, 0.12f};
+/// Chance a chunk is a data centre, rolled with dice of its own after its
+/// kind, so other chunks come out as they would without (user: uncommon).
+constexpr float DATA_CENTRE_CHANCE = 0.125f;
+/// Server rooms a data centre wants for each slot it covers.
+constexpr int CENTRE_ROOMS_PER_SLOT = 8;
+/// Chance a room network has a server room (user: rare).
+constexpr float SERVER_ROOM_CHANCE = 0.1f;
+/// An airlock door shuts and locks this long after the last one through it stepped out of it.
+constexpr float AIRLOCK_SHUT_TIME = 1.0f;
 /// Mazes, of stone or water, come no bigger than this many slots (user).
 constexpr int MAZE_SLOTS_MAX = 2;
 /// Width of the corridors that join stray areas and doors to the rest.
@@ -100,6 +109,8 @@ constexpr int SPAWN_STATUE_GAP = 14;
 /// Cells per side of a basin. A plaza with no fountain gets this many.
 constexpr int BASIN_SIZE = 2;
 constexpr int PLAZA_BASINS_MIN = 1, PLAZA_BASINS_MAX = 2;
+/// Basins a data centre has at its corridor crossings, for each slot it covers.
+constexpr int CENTRE_BASINS_MIN = 2, CENTRE_BASINS_MAX = 3;
 /// A statue keeps at least this many cells from any door, and from the
 /// cell it is told to keep clear.
 constexpr int STATUE_DOOR_GAP = 3;
@@ -275,7 +286,10 @@ void World::generate(Vec2i slot, Vec2i entry) {
     const Vec2i box = footprintBox(*parts);
     if (box.x != box.y || int(parts->size()) != box.x * box.y) kindWeights[3] = 0.0f;
     if (int(parts->size()) > MAZE_SLOTS_MAX) kindWeights[1] = kindWeights[2] = 0.0f;
-    Chunk& c = addChunk(KINDS[rng_.weighted(kindWeights)], origin, *parts);
+    ChunkKind kind = KINDS[rng_.weighted(kindWeights)];
+    Rng serverDice(seed_ ^ uint64_t(chunks_.size() + 1) * 0xD1B54A32D192ED03ull);
+    if (serverDice.chance(DATA_CENTRE_CHANCE)) kind = ChunkKind::DataCentre;
+    Chunk& c = addChunk(kind, origin, *parts);
     const int slotCount = c.slotCount();
     markDoors(c);
     std::vector<gen::RoomBox> rooms;
@@ -289,6 +303,8 @@ void World::generate(Vec2i slot, Vec2i entry) {
         rooms = gen::rooms(c, rng_);
     else if (c.kind == ChunkKind::Plaza)
         plaza = gen::plaza(c, rng_, rng_.chance(FOUNTAIN_CHANCE) ? grand.size + Vec2i{2, 2} : Vec2i{});
+    else if (c.kind == ChunkKind::DataCentre)
+        gen::dataCentre(c, rng_);
     else
         gen::maze(c, rng_);
     int fresh = placeDoors(c, entry - c.origin(), NEW_DOOR_CHANCE, 1, 4 * slotCount);
@@ -303,17 +319,27 @@ void World::generate(Vec2i slot, Vec2i entry) {
     // Slam rooms go in last, so nothing digs a second way into them.
     std::vector<gen::SlamRoom> slams;
     if (c.kind == ChunkKind::Rooms) slams = gen::slamRooms(c, rng_, rng_.range(0, SLAM_ROOMS_MAX) * slotCount);
-    // A plaza without a fountain has basins to drink from instead.
-    if (c.kind == ChunkKind::Plaza && plaza.islandSize.x == 0) {
-        int basins = rng_.range(PLAZA_BASINS_MIN, PLAZA_BASINS_MAX);
+    // Server rooms after the slam rooms: nothing digs after either.
+    int servers = 0;
+    if (c.kind == ChunkKind::DataCentre)
+        servers = placeServerRooms(c, serverDice, CENTRE_ROOMS_PER_SLOT * slotCount);
+    else if (c.kind == ChunkKind::Rooms && serverDice.chance(SERVER_ROOM_CHANCE))
+        servers = placeServerRooms(c, serverDice, 1);
+    // A plaza without a fountain has basins to drink from instead, and a
+    // data centre, which has no water of its own, some at its crossings.
+    if ((c.kind == ChunkKind::Plaza && plaza.islandSize.x == 0) || c.kind == ChunkKind::DataCentre) {
+        int basins = c.kind == ChunkKind::DataCentre ? serverDice.range(CENTRE_BASINS_MIN, CENTRE_BASINS_MAX) * slotCount
+                                                      : rng_.range(PLAZA_BASINS_MIN, PLAZA_BASINS_MAX);
         for (Vec2i s : deepSpots(c, entry - c.origin()))
-            if (basins > 0 && placeBasin(c, s)) basins--;
+            if (basins > 0 && !serverRoomAt(s) && placeBasin(c, s)) basins--;
     }
     std::vector<Vec2i> spots = deepSpots(c, entry - c.origin());
-    // Nothing lies in a slam room but its bait.
+    // Nothing lies in a slam room but its bait, nor in a server room or its airlock.
     std::erase_if(spots, [&](Vec2i s) {
         return std::any_of(slams.begin(), slams.end(),
-                           [&](const gen::SlamRoom& r) { return r.contains(s - c.origin()); });
+                           [&](const gen::SlamRoom& r) { return r.contains(s - c.origin()); }) ||
+               std::any_of(serverRooms_.end() - servers, serverRooms_.end(),
+                           [&](const ServerRoom& r) { return r.encloses(s); });
     });
     // Kiosk tables come first: those deep enough take the keys, and the
     // rest the first cakes.
@@ -331,7 +357,8 @@ void World::generate(Vec2i slot, Vec2i entry) {
     spots.insert(spots.begin(), deepKiosks.begin(), deepKiosks.end());
     TableMaterial house = randomMaterial(rng_);
     size_t next = 0, nextKiosk = 0;
-    int keys = fresh + int(slams.size());
+    // A server room brings one key, though getting in takes two (a default: the user may change it).
+    int keys = fresh + int(slams.size()) + servers;
     keys += (keys + LOCKS_PER_SPARE_KEY / 2) / LOCKS_PER_SPARE_KEY;
     for (int i = 0; i < keys; i++)
         if (auto s = tableSpot(c, spots, next, house, true)) keys_.insert(*s);
@@ -763,6 +790,12 @@ Bottle World::takePileBottle(Vec2i cell, size_t i) {
 }
 
 bool World::unlock(Vec2i cell) {
+    if (auto it = airlocks_.find(cell); it != airlocks_.end()) {
+        if (tile(cell) != Tile::DoorLocked) return false;
+        setTile(cell, Tile::DoorOpen);
+        it->second.open = AIRLOCK_SHUT_TIME;
+        return true;
+    }
     if (gates_.erase(cell) > 0) {
         setTile(cell, Tile::DoorOpen);
         return true;
@@ -776,6 +809,29 @@ bool World::unlock(Vec2i cell) {
         if (Chunk* c = chunkAt(s))
             for (Vec2i p : d.cellsIn(s)) c->set(p - c->origin(), Tile::DoorOpen);
     return true;
+}
+
+bool World::pushOpen(Vec2i door, Vec2i from) {
+    auto it = airlocks_.find(door);
+    if (it == airlocks_.end() || from != door + it->second.in) return false;
+    setTile(door, Tile::DoorOpen);
+    it->second.open = AIRLOCK_SHUT_TIME;
+    return true;
+}
+
+const ServerRoom* World::serverRoom(Vec2i cell) const {
+    for (const ServerRoom& r : serverRooms_)
+        if (r.contains(cell)) return &r;
+    return nullptr;
+}
+
+// Held open while anyone stands in it, it shuts a moment after they step out.
+void World::updateAirlocks(float dt) {
+    for (auto& [cell, d] : airlocks_) {
+        if (tile(cell) != Tile::DoorOpen) continue;
+        if (occupant(cell)) d.open = AIRLOCK_SHUT_TIME;
+        else if ((d.open -= dt) <= 0.0f) setTile(cell, Tile::DoorLocked);
+    }
 }
 
 void World::setTile(Vec2i cell, Tile t) {
@@ -897,6 +953,7 @@ void World::update(float dt) {
     for (auto& c : chunks_) c->simulate(dt);
     updateTraps(dt);
     updateMachines(dt);
+    updateAirlocks(dt);
     blood_.update(dt);
     for (const auto& [c, f] : blood_.takeFoul()) mess_.foulWater(c, f, true);
     mess_.update(dt, [&](Vec2i c) { return drinkable(tile(c)); });
