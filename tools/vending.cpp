@@ -4,7 +4,7 @@
 // last machine sells lies beside it, blown up and at phone size.
 //
 // Usage: build/vending [out.png] [seed]
-// Build, after make: g++ -std=c++20 -Isrc tools/vending.cpp $(find build -name "*.o" ! -name main.o)
+// Build, after make: g++ -std=c++20 -Isrc tools/vending.cpp $(find build -path build/android -prune -o -name "*.o" ! -name main.o -print)
 //                    -o build/vending $(pkg-config --libs raylib) -lm
 #include "core/rng.h"
 #include "human/human_look.h"

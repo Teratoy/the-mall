@@ -96,7 +96,7 @@ constexpr Look LOOKS[] = {
      {"...c...", ".lllll.", ".lslsl.", ".sssss.", ".lllll.", ".sssss."},
      CAKE_ITEM, 3, 3, 2, 3, {2, 6}, {5, 9, 13}, {8, 12, 16}},
     {hex(0x4a9ac4), hex(0x346f92), hex(0xffffff), hex(0x6ee0ff),
-     {"..aA..aA..", "..qv..qv..", "..vv..vv.."},
+     {".vvvvvv...", ".v....vvA.", ".vvvvvv..."},
      {"...a...", "...q...", "..qqq..", "..Qqq..", "..Qqq..", "..qqq.."},
      BOTTLE_ITEM, 2, 5, 3, 2, {1, 4, 7}, {5, 11}, {10, 16}},
     {hex(0x5e6648), hex(0x434a32), hex(0xff4a3a), hex(0xffb03a),
