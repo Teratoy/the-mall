@@ -32,6 +32,23 @@ cannibalism (hunting prey), sleep (robbers), dread (`scare()`), bottles
   run (limping). Carrying slows the run, and may spill water or drop a
   cake. Every new reason to run gets a log line and a voice moment.
 
+### Answers to the open questions (2026-10-31)
+
+1. **Speed**: a running step takes 0.6 of a walking step (`RUN` from 0.7).
+2. **Breath**: 7–9 s of running from full breath (rolled per human, by
+   `rng_`), then 2–3 s winded.
+3. **Costs**: running makes it thirstier and more tired than walking.
+   Being winded costs the same as standing idle (`Action::Rest`).
+4. **Dropping**: nothing spills. Bottles and cakes drop whole, onto the
+   floor, one at a time, and only while running in a chase (chaser or
+   chased). Only the stack carried in the back hand drops: cakes, and the
+   bottle on top of them. At 2 things or fewer in all the chance is very
+   low; it rises exponentially with each one more, and at 5 it is very high.
+5. **Racing for water**: never for a basin, as basins don't run out. Not
+   for a vending machine either, unless it has only one thing left.
+   Racing is for cakes, bottles, and a machine's last one.
+6. **Breath shows** in the stats menu (`WorldScene::drawStats`).
+
 ## Steps
 
 ### 1. Running as its own thing
@@ -44,23 +61,24 @@ cannibalism (hunting prey), sleep (robbers), dread (`scare()`), bottles
 - `startRunning(Goal, target, why)`: like `startWalking`, setting `run_`.
   Every `startWalking` clears it, so a run never outlasts its reason.
 - Fight and Flee go through it, so today's behaviour is the first case.
-- `Action::Run` already has hunger and thirst rows. Add its row to
-  `TIRED_PER_SECOND` in `human_sleep.cpp` if it's still the walk's (check),
-  higher than walking.
+- `Action::Run` already has hunger and thirst rows (thirst higher than
+  walking). Make sure its `TIRED_PER_SECOND` row in `human_sleep.cpp` is
+  higher than walking's too.
+- `RUN` goes from 0.7 to 0.6.
 - Pure refactor apart from that: `make check` should pass unchanged
   except for the tiredness change.
 
 ### 2. Breath and being winded
 
-- Breath drains while running (`BREATH_RUN`, about 8–10 s of running from
-  full), refills while walking slowly and faster while standing or sitting
+- Breath drains while running (7–9 s of running from full, the length
+  rolled once per human), refills while walking slowly and faster while standing or sitting
   (`BREATH_REST`).
 - At 0: `State::Winded` for `WINDED_TIME` (~2–3 s): standing still, bent
   over. It can't run again until breath is back over `BREATH_AGAIN` (~0.4);
   until then it walks, even fleeing.
 - Fleeing winded is the danger: a chaser with more breath catches up.
-- Winded counts as `Action::Rest` for the tables (or a new
-  `Action::Pant`, with rows in all three, if the user wants it to cost more).
+- Winded counts as `Action::Rest` for the tables, like idling.
+- Breath shows in the stats menu, beside the other needs.
 - Log: "Out of breath." Moment: `Winded`.
 
 ### 3. The run and winded poses
@@ -81,10 +99,16 @@ cannibalism (hunting prey), sleep (robbers), dread (`scare()`), bottles
   starving or parched, it can't run, only walk; between that and full
   health the run step lengthens. A deep wound makes it limp (slower
   walking too, and a limp in the walk frames if cheap).
-- **Carrying**: each cake and a bottle's water lengthen the run step a
-  little (`RUN_LOAD`). Running with an open bottle may spill some water
-  (a small puddle, `Spill` log line); a cake may drop now and then when
-  carrying many (`RUN_DROP_CHANCE`), left where it fell.
+- **Carrying**: each cake and a bottle lengthen the run step a little
+  (`RUN_LOAD`).
+- **Dropping in a chase**: while running in a chase (step 7), chaser or
+  chased, the stack in the back hand may drop one thing at a time, the top
+  first (the bottle, which rides on the cakes, then cakes). Nothing spills:
+  a dropped bottle keeps its water. It lies on the floor like any dropped
+  cake or bottle, for anyone to pick up. The chance per second grows
+  exponentially with how many things it carries: `DROP_BASE * DROP_GROW^(n-1)`,
+  tuned so 1–2 is very low and 5 is very high. A bottle held in the front
+  hand never drops. Log: "Dropped a cake running." Moment: `Dropped`.
 - All dice through `rng_`.
 
 ### 5. Urgent needs
@@ -122,13 +146,16 @@ Log: "Ran after Hut." / "Hut ran after me." Moments: `Chase`, `Chased`.
 
 ### 8. Racing for what keeps it alive
 
-- When a human going for a cake, a bottle or water it needs sees another
+- When a human going for a cake or a bottle it needs, or for a vending
+  machine it saw had one thing left, sees another
   going for the same one (closer than it, or as close), and neither trusts
   the other much, it runs for it. The other, seeing it run, may run too.
 - Humans only know what they see: the race starts from seeing the other
   head for it, not from knowing their goal.
 - The greedy race sooner; the generous, trusting, or not that hungry let it
   go.
+- Never for a water basin, which doesn't run out, or a machine with more
+  than one left.
 - Whoever gets there first takes it; the loser may beg, fight, or walk off
   as today.
 
@@ -138,7 +165,8 @@ Log: "Raced Hut for a cake, and won/lost." Moments: `Race`, `RaceWon`,
 ### 9. Scenario and coverage
 
 A scenario per reason the soak seldom reaches: winded while fleeing and
-caught; chasing a thief; a race for one cake; spilling from a bottle. Check
+caught; chasing a thief; a race for one cake; a chased human with 5 things
+dropping some. Check
 `make coverage` lists none of the new lines.
 
 ## Build order
@@ -148,16 +176,5 @@ a time, each with its lines in `data/lines.txt` and its scenario.
 
 ## Open questions
 
-1. **Speed**: keep the run at 0.7 of a walk step (about 1.4x as fast), or
-   faster? Recommendation: 0.6.
-2. **Breath length**: about 8–10 s of running from full, 2–3 s winded?
-3. **Winded cost**: just resting, or a new `Pant` action that costs more
-   thirst?
-4. **Spilling and dropping**: how often? Recommendation: a spill only from
-   a bottle over half full, a sip's worth now and then; a cake dropped only
-   when carrying 3 or more, rarely.
-5. **Racing water**: water basins don't run out, so is a race only for
-   cakes and bottles, or also for a basin someone guards or a vending
-   machine?
-6. **The player's human**: anything different, for example a line in the
-   stats menu showing breath?
+All six were answered on 2026-10-31 (see "Answers to the open questions"
+under the user's decisions). New ones go here as they come up.

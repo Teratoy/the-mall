@@ -36,7 +36,7 @@ Status as of 2026-10-31.
 | [dirty_plan.md](dirty_plan.md) | Going unwashed: grime, turning dirty (a ragged look on the same skeleton), washing for it by modesty, dried blood only washed by the modest; smell from the dirty, bodies, feces and foul water, sniffed through walls, flies | Built | Hunched/claws on the look; tuning from play |
 | [waking_talk_plan.md](waking_talk_plan.md) | More muttering in the first minutes: stirring, standing, reaching for memory, the room through the fog, the quiet, calling out, it goes on | Step 1 built | Dread from the quiet; longer waking; the mall's sound |
 | [vending_plan.md](vending_plan.md) | Cake and empty-bottle vending machines: paid in 3 keys, restock one a day, in rooms and plazas against north or side walls, remembered and told of like cakes | Built | Tuning from play; gun machines wait for guns |
-| [running_plan.md](running_plan.md) | Running beyond fights: urgent needs, fear, chasing, racing for cake and water; breath and being winded; run and winded poses; traits, wounds and load | Planned | Speed, breath length, winded cost, spill/drop rates, racing for water, breath in stats |
+| [running_plan.md](running_plan.md) | Running beyond fights: urgent needs, fear, chasing, racing for cake and water; breath and being winded; run and winded poses; traits, wounds and load | Planned | — |
 | [human_split_plan.md](human_split_plan.md) | Splitting Human into per-system classes | Not started | Advised against for now; if done, only system by system, when that system is being reworked anyway |
 
 ## Known gaps found by the tests
