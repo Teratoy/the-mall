@@ -20,19 +20,21 @@ seed 1: 11 humans (7 alive), 5 chunks, 9 bodies gone through (5 empty), starving
   s2 t=  38.5 STILL30 #6 Greeting/Explore @(51,49) tgt(51,49) path0 partner1 leader-1 foe-1 keys0 cakes0 hunger0.09 
   s2 t= 529.6 FLIP    #7 Walking/Explore @(113,141) tgt(104,161) path28 partner-1 leader-1 foe-1 keys0 cakes1 hunger0.14 8 target changes among 3
   s2 t= 595.8 FLIP    #7 Walking/Explore @(182,114) tgt(186,113) path5 partner-1 leader-1 foe-1 keys0 cakes1 hunger0.31 114 target changes among 3
-seed 2: 8 humans (2 alive), 2 chunks, 7 bodies gone through (5 empty), starving spells 4, lessons: 4 hoard, 1 keys first
-   flesh: 7 meals (0 rotten), 3 hunts, 1 killed to eat, eaters 0 guilty / 3 craving, 0 broken by guilt, 7 snapped, 3 saw it
+  s2 t= 597.9 FLIP    #0 Walking/Explore @(163,116) tgt(208,114) path45 partner-1 leader-1 foe-1 keys0 cakes0 hunger0.68 83 target changes among 3
+  s2 t= 818.7 FLIP    #5 Walking/Avoid @(146,115) tgt(145,115) path1 partner-1 leader-1 foe-1 keys0 cakes0 hunger0.21 23 target changes among 3
+seed 2: 8 humans (3 alive), 2 chunks, 8 bodies gone through (7 empty), starving spells 6, lessons: 6 hoard, 0 keys first
+   flesh: 10 meals (1 rotten), 3 hunts, 2 killed to eat, eaters 0 guilty / 4 craving, 0 broken by guilt, 7 snapped, 1 saw it
    kills: 2 by a last blow, 3 known at once, 0 learnt at the body
-   thirst: 15 parched spells, 15 drinks; died of thirst 1, starved 0, bled 3, other 2
+   thirst: 19 parched spells, 16 drinks; died of thirst 1, starved 0, bled 2, other 2
    sleep: 5 slept, 0 collapsed, 0 exhausted spells, 0 woken by a blow, 0 learnt to sleep safe
    asleep: 0 robbed unseen (0 blamed someone), 0 caught robbing, 0 hit, 0 woken by noise, 0 died
    watch: 0 kept, 0 asked (0 refused, 0 paid), 0 alarms, 0 turns, 0 slept on it, 0 robbed on it, 0 blamed
-   going: 5 pissed, 2 shat, 41 left lying; 0 stepped in it, 1 filthy at the end, 0 washed it off, 0 sick from foul water
-   dirty: 5 turned dirty, 0 washed for it, 0 washed clean, 2 dirty at the end
+   going: 6 pissed, 2 shat, 20 left lying; 0 stepped in it, 1 filthy at the end, 0 washed it off, 0 sick from foul water
+   dirty: 5 turned dirty, 0 washed for it, 0 washed clean, 3 dirty at the end
    smell: 5 started to smell, 0 smelt death unseen, 0 followed it, 0 walked off to eat
-   water tips: 0 told, 0 over spikes, 8 asks of the group said, 0 led to drink; 7 learnt to keep near water
+   water tips: 0 told, 0 over spikes, 6 asks of the group said, 0 led to drink; 7 learnt to keep near water
    guarded water: 0 homes by water, 0 let drink, 0 asked a cake (0 paid, 0 cheated), 0 turned away
-   accidents: 0 wet, 0 soiled, 3 wet in fright; seen going 0, accident seen 1, going in water seen 0, mocked 0
+   accidents: 0 wet, 0 soiled, 1 wet in fright; seen going 0, accident seen 1, going in water seen 0, mocked 0
    toilets: 9, 3 uses, 0 misses, dirtiest 0.26, 0 waits
    water: 0 cells foul, 0 >= 0.3, 0 >= 0.5, worst 0.00; 0 foul gulps
    machines: 0, 0 items left, 0 found, 0 cakes and 0 bottles bought, 0 found empty, 0 told of
@@ -118,13 +120,13 @@ seed 6: 12 humans (10 alive), 6 chunks, 2 bodies gone through (1 empty), starvin
    water: 309 cells foul, 0 >= 0.3, 0 >= 0.5, worst 0.15; 1 foul gulps
    machines: 4, 21 items left, 0 found, 0 cakes and 0 bottles bought, 0 found empty, 0 told of
 
-== 596 human-minutes ==
-asleep 5.1% of the time
+== 597 human-minutes ==
+asleep 5.2% of the time
 made way 22 times; blocked 0.26% of time, 123 give-ups, 1 mutual blocks, 0 blocks >=5s
-went 52 times, 12 in someone's sight (7 of those erratic or bursting)
-unmoved >=30s (not sitting): 16   loops (25+ steps on <=8 cells in 60s): 0   target flips: 6
+went 53 times, 12 in someone's sight (7 of those erratic or bursting)
+unmoved >=30s (not sitting): 16   loops (25+ steps on <=8 cells in 60s): 0   target flips: 8
 still by:  Greeting/Company=3  Greeting/Explore=2  Greeting/Meet=10  Idle/Company=1
-flip by:  Explore=2  FetchCake=1  Pick=2  Relieve=1
+flip by:  Avoid=1  Explore=3  FetchCake=1  Pick=2  Relieve=1
 goals never seen: Rob Watch Rescue Vend
 states never seen: Vending
-goal time (blocked share):  Explore 41.5%(0%)  FetchKey 2.2%(0%)  OpenDoor 4.4%(0%)  PassDoor 0.3%(0%)  Wander 10.3%(0%)  Meet 9.6%(0%)  Follow 0.2%(0%)  Company 3.9%(2%)  FetchCake 3.0%(0%)  Drink 4.8%(0%)  Relieve 0.9%(0%)  Fight 2.2%(0%)  Flee 0.2%(0%)  Share 0.0%(0%)  CheckDoor 1.2%(0%)  Wash 2.0%(0%)  Avoid 0.9%(0%)  Escort 0.0%(0%)  Escorted 0.0%(0%)  Track 1.4%(0%)  GiveWay 0.2%(0%)  Loot 1.6%(0%)  Feed 0.9%(0%)  Sleep 5.3%(0%)  Fill 0.9%(0%)  Ask 0.1%(0%)  Pick 1.3%(7%)  Stash 0.4%(0%)  Voice 0.0%(0%)
+goal time (blocked share):  Explore 41.6%(0%)  FetchKey 2.2%(0%)  OpenDoor 4.4%(0%)  PassDoor 0.3%(0%)  Wander 10.1%(0%)  Meet 9.7%(0%)  Follow 0.2%(0%)  Company 3.7%(2%)  FetchCake 3.0%(0%)  Drink 4.8%(0%)  Relieve 0.9%(0%)  Fight 2.3%(0%)  Flee 0.2%(0%)  Share 0.0%(0%)  CheckDoor 1.3%(0%)  Wash 2.0%(0%)  Avoid 0.9%(0%)  Escort 0.0%(0%)  Escorted 0.0%(0%)  Track 1.5%(0%)  GiveWay 0.2%(0%)  Loot 1.8%(0%)  Feed 1.0%(0%)  Sleep 5.4%(0%)  Fill 0.9%(0%)  Ask 0.1%(0%)  Pick 1.3%(7%)  Stash 0.3%(0%)  Voice 0.0%(0%)

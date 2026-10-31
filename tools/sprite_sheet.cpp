@@ -74,9 +74,16 @@ void drawSheet(const HumanSprites& human, Texture2D icon) {
         for (TrapKind kind : {TrapKind::Spikes, TrapKind::Slam})
             for (bool sprung : {false, true}) drawTrap(tx, y, kind, sprung, lit), tx += CELL_PX + GAP;
         for (Vec2i back : {Vec2i{0, -1}, Vec2i{0, 1}, Vec2i{-1, 0}, Vec2i{1, 0}})
-            for (float dirt : {0.0f, 1.0f, 3.0f, 8.0f}) drawToilet(tx, y, back, dirt, 7, lit), tx += CELL_PX + GAP;
+            for (float dirt : {0.0f, 1.0f, 3.0f, 8.0f}) drawToilet(tx, y, back, dirt, 0.0f, 7, lit), tx += CELL_PX + GAP;
         y += CELL_PX + GAP;
     }
+    // Toilets pissed in, yellowing, then shat in too, lit then dimmed.
+    x = GAP;
+    for (bool lit : {true, false}) {
+        for (float piss : {0.0f, 0.04f, 0.1f, 0.2f, 0.3f}) drawToilet(x, y, {0, -1}, piss, piss, 7, lit), x += CELL_PX + GAP;
+        drawToilet(x, y, {0, -1}, 1.3f, 0.3f, 7, lit), x += CELL_PX + 3 * GAP;
+    }
+    y += CELL_PX + GAP;
     // A human carrying cakes, and asleep with its Z's rising at a few moments.
     x = GAP;
     for (int cakes = 1; cakes <= 3; cakes++, x += SPRITE_W + GAP)

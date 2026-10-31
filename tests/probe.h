@@ -86,6 +86,12 @@ struct SoakProbe {
     /// A basin with its top left corner at the cell, as the world sets
     /// them. False if it doesn't fit there.
     static bool placeBasin(World& w, Vec2i cell) { return w.placeBasin(*w.chunkAt(World::slotOf(cell)), cell); }
+    /// A toilet on the cell, used from front, already this dirty and this
+    /// much of it piss.
+    static void placeToilet(World& w, Vec2i at, Vec2i front, float dirt = 0.0f, float piss = 0.0f) {
+        w.setTile(at, Tile::Toilet);
+        w.toilets_[at] = {front, dirt, piss, 7};
+    }
     /// A statue of this kind about the cell, kept clear of the human; false if none fits.
     static bool placeStatue(World& w, Vec2i cell, const Human& h, StatueKind kind) {
         Chunk& c = *w.chunkAt(World::slotOf(cell));

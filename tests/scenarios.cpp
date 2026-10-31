@@ -296,6 +296,31 @@ std::vector<Vec2i> foulAndClean(Stage& s, Human& taster, Vec2i* cleanAt = nullpt
     return foul;
 }
 /// Runs the stage, and how close h came to the foul cells.
+/// Two toilets on floor either side of h, both in sight: a foul one,
+/// pissed and shat in, nearer, and a clean one farther off. Gives the
+/// cells h would stand at to use each (foul first); none if the floor
+/// isn't there.
+std::optional<std::pair<Vec2i, Vec2i>> foulAndCleanToilet(Stage& s, const Human& h) {
+    Vec2i foulAt = h.cell + Vec2i{3, 0}, cleanAt = h.cell + Vec2i{-6, 0};
+    for (Vec2i c : {foulAt, foulAt - Vec2i{1, 0}, cleanAt, cleanAt + Vec2i{1, 0}})
+        if (s.world.tile(c) != Tile::Floor || s.world.occupant(c) || s.world.table(c) || s.world.statue(c))
+            return std::nullopt;
+    P::placeToilet(s.world, foulAt, foulAt - Vec2i{1, 0}, 1.5f, 0.3f);
+    P::placeToilet(s.world, cleanAt, cleanAt + Vec2i{1, 0});
+    return std::pair{foulAt - Vec2i{1, 0}, cleanAt + Vec2i{1, 0}};
+}
+
+/// Runs the stage, a second at a time, noting each cell h stood at in
+/// state.
+std::vector<Vec2i> stoodAt(Stage& s, const Human& h, Human::State state, int seconds) {
+    std::vector<Vec2i> at;
+    for (int t = 0; t < seconds * 30; t++) {
+        s.run(1.0f / 30.0f);
+        if (h.state == state && std::find(at.begin(), at.end(), h.cell) == at.end()) at.push_back(h.cell);
+    }
+    return at;
+}
+
 int keptOff(Stage& s, const Human& h, const std::vector<Vec2i>& foul, int seconds) {
     int closest = 1 << 20;
     for (int t = 0; t < seconds; t++) {
@@ -1497,6 +1522,41 @@ const std::vector<Scenario> SCENARIOS = {
          int closest = keptOff(s, h, foul, 120);
          return Checks{logged({"WARNED @ THE WATER IS FOUL"}), logged({"@ WARNED ME THE WATER IS FOUL"}),
                        {"kept off the foul basin", [closest](const Stage&) { return closest > 2; }}};
+     }},
+    {"toilet-foul", "seeing a toilet fouled, a human needing to go uses the clean one farther off, and finds no flush",
+     seedWhere([](const Traits& t) { return (t.sociable + 1.0f - t.brave) / 2.0f < 0.8f; }),
+     [](Stage& s) {
+         Human& h = s.first();
+         auto fronts = foulAndCleanToilet(s, h);
+         if (!fronts) return Checks{{"floor for two toilets by the spawn", [](const Stage&) { return false; }}};
+         h.bladder = 0.95f;
+         h.hunger = h.thirst = 0.1f;
+         auto at = stoodAt(s, h, Human::State::Relieving, 60);
+         auto [foul, clean] = *fronts;
+         return Checks{loggedBy(h, "SAW A FOUL TOILET"), loggedBy(h, "FOUND NO FLUSH"),
+                       {"went at the clean toilet, not the foul one",
+                        [at, foul, clean](const Stage&) {
+                            return std::count(at.begin(), at.end(), clean) && !std::count(at.begin(), at.end(), foul);
+                        }},
+                       {"its own piss is no news: one SAW A FOUL TOILET", [&h](const Stage&) {
+                            return std::count_if(h.log.entries().begin(), h.log.entries().end(),
+                                                 [](const auto& e) { return e.what == "SAW A FOUL TOILET"; }) == 1;
+                        }}};
+     }},
+    {"toilet-parched", "a parched human with no water drinks from the toilet it saw clean, not the nearer foul one", 99,
+     [](Stage& s) {
+         Human& h = s.first();
+         auto fronts = foulAndCleanToilet(s, h);
+         if (!fronts) return Checks{{"floor for two toilets by the spawn", [](const Stage&) { return false; }}};
+         h.bottles.clear();
+         h.thirst = 0.9f;
+         h.hunger = h.bladder = 0.1f;
+         auto at = stoodAt(s, h, Human::State::Drinking, 60);
+         auto [foul, clean] = *fronts;
+         return Checks{logged({"DRANK FROM A TOILET"}),
+                       {"drank at the clean toilet, not the foul one", [at, foul, clean](const Stage&) {
+                            return std::count(at.begin(), at.end(), clean) && !std::count(at.begin(), at.end(), foul);
+                        }}};
      }},
     {"foul-parched", "a parched human with only foul water it knows drinks it, knowingly", 99,
      [](Stage& s) {

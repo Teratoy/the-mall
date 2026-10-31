@@ -186,6 +186,9 @@ enum class Moment {
     FirstServerRoom, SeekHum, SleepHum,
     // Running out of breath, bent over winded (to nobody).
     Winded,
+    // Toilets: seeing one fouled by someone else, and the first time it uses
+    // one and finds no flush (both to nobody).
+    ToiletFoul, NoFlush,
     Count
 };
 

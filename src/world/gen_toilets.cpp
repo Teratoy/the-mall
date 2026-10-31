@@ -91,7 +91,7 @@ void World::placeRestrooms(Chunk& c) {
                             c.get(l + back - step) == Tile::Wall && c.get(l - back) == Tile::Floor;
                 if (!fits) continue;
                 c.set(l, Tile::Toilet);
-                toilets_[c.origin() + l] = {c.origin() + l - back, 0.0f, uint32_t(rng_.next())};
+                toilets_[c.origin() + l] = {c.origin() + l - back, 0.0f, 0.0f, uint32_t(rng_.next())};
                 since = 0;
             }
         };
@@ -147,7 +147,7 @@ std::vector<gen::RoomBox> World::placeWashrooms(Chunk& c, Rng& dice, int count) 
         for (int i = 0; i < toilets; i++) {
             Vec2i l = back + along * (2 * i);
             c.set(l, Tile::Toilet);
-            toilets_[c.origin() + l] = {c.origin() + l + out, 0.0f, uint32_t(dice.next())};
+            toilets_[c.origin() + l] = {c.origin() + l + out, 0.0f, 0.0f, uint32_t(dice.next())};
         }
         made.push_back({x, y, w, h, door});
     }
@@ -174,7 +174,7 @@ void World::placePlazaToilets(Chunk& c) {
             if (!fits) continue;
             if (rng_.chance(PLAZA_TOILET_FILL)) {
                 c.set(l, Tile::Toilet);
-                toilets_[c.origin() + l] = {c.origin() + l + front, 0.0f, uint32_t(rng_.next())};
+                toilets_[c.origin() + l] = {c.origin() + l + front, 0.0f, 0.0f, uint32_t(rng_.next())};
             }
             break;
         }
@@ -204,7 +204,7 @@ void World::placeToilets(Chunk& c) {
             }
             if (!fits) continue;
             c.set(l, Tile::Toilet);
-            toilets_[c.origin() + l] = {c.origin() + l + front, 0.0f, uint32_t(rng_.next())};
+            toilets_[c.origin() + l] = {c.origin() + l + front, 0.0f, 0.0f, uint32_t(rng_.next())};
             want--;
             break;
         }

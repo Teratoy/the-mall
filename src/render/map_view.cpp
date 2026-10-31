@@ -237,7 +237,12 @@ void drawMap(const World& world, const Human& viewer, Rectangle area, int cellPx
     const Glyph &toilet = symbol("map toilet"), &trap = symbol("map trap"), &body = symbol("map body");
     const Glyph &key = symbol("map key"), &cake = symbol("map cake"), &you = symbol("map you");
     const Glyph& machine = symbol("map machine");
-    for (Vec2i c : toilets) f.glyph(c, toilet, inkOf(toilet));
+    // Brown once seen pissed or shat in.
+    const Glyph& fouled = symbol("map toilet fouled");
+    for (Vec2i c : toilets) {
+        const Glyph& g = viewer.seenToiletDirt(c) >= Toilet::FOULED ? fouled : toilet;
+        f.glyph(c, g, inkOf(g));
+    }
     for (const auto& [c, kind] : memory.traps) f.item(c, trap, inkOf(trap), told(c));
     for (Vec2i c : viewer.bodyCells()) f.glyph(c, body, inkOf(body));
     for (Vec2i c : memory.keys) f.item(c, key, inkOf(key), told(c));

@@ -81,9 +81,12 @@ public:
         return it == toilets_.end() ? nullptr : &it->second;
     }
     const std::unordered_map<Vec2i, Toilet, Vec2iHash>& toilets() const { return toilets_; }
-    /// Someone left this much in the toilet on the cell.
-    void soilToilet(Vec2i cell, float amount) {
-        if (auto it = toilets_.find(cell); it != toilets_.end()) it->second.dirt += amount;
+    /// Someone left this much in the toilet on the cell, piss or not.
+    void soilToilet(Vec2i cell, float amount, bool piss) {
+        if (auto it = toilets_.find(cell); it != toilets_.end()) {
+            it->second.dirt += amount;
+            if (piss) it->second.piss += amount;
+        }
     }
 
     /// The vending machine on a cell, if any. Machines never move.

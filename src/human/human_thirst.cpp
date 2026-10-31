@@ -17,7 +17,8 @@
 // taste for flesh (who drink blood gladly) and, by a body, the brave. Whoever washes in the water someone
 // drinks from, or lives by, is thought the worse of. With no water to be
 // had, the parched and the erratic drink from a toilet, as foul as it is
-// dirty, and anyone who sees it thinks less of them.
+// dirty, the parched from one they saw clean if they can, and anyone who
+// sees it thinks less of them.
 
 namespace {
 
@@ -71,6 +72,9 @@ constexpr int FILTH_REACH = 1;
 /// thinks this much less of the drinker (half within its group).
 constexpr float TOILET_FOUL = 0.5f;
 constexpr float TRUST_TOILET_DRINK = -0.1f;
+/// A toilet it saw dirty is as far off as this many tenths of a cell more
+/// walking, per unit of dirt, to the parched (the erratic don't mind).
+constexpr float TOILET_DRINK_DIRT_COST = 300.0f;
 /// Cruel enough to mock it, as for an accident (human_relief.cpp).
 constexpr float CRUEL_DRINK_GREEDY = 0.6f, CRUEL_DRINK_SOCIABLE = 0.4f;
 constexpr float BLOOD_FILTH = 1.0f;
@@ -696,12 +700,17 @@ float Human::waterTether() const {
 }
 
 // Only for the parched and the erratic, and only once there is no water;
-// from the floor in front, as for going.
+// from the floor in front, as for going. The parched go to the cleanest
+// they saw, within reason.
 bool Human::seekToilet(World& world) {
     if (!parched() && !isErratic()) return false;
     auto p = !memory.known(Tile::Toilet)
                  ? searchedNothing()
-                 : search(world, [&](Vec2i c) { return toiletBefore(world, c).has_value(); }, true);
+                 : search(world, [&](Vec2i c) { return toiletBefore(world, c).has_value(); }, true,
+                          [&](Vec2i c) {
+                              if (isErratic()) return 0;
+                              return int(seenToiletDirt(*toiletBefore(world, c)) * TOILET_DRINK_DIRT_COST);
+                          });
     if (!p) return false;
     if (!p->empty()) {
         startWalking(Goal::Drink, *p);
