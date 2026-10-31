@@ -29,6 +29,13 @@ constexpr int SPEED_COUNT = sizeof SPEEDS / sizeof SPEEDS[0];
 /// zoomed out, some world pixels are skipped.
 constexpr float ZOOMS[] = {0.5f, 1.0f, 2.0f, 3.0f};
 constexpr int ZOOM_COUNT = sizeof ZOOMS / sizeof ZOOMS[0];
+/// How fast the camera closes on the human it follows: each second it
+/// closes all but e^-CAMERA_CATCH of the gap. Walking, it trails by about
+/// the speed over this.
+constexpr float CAMERA_CATCH = 8.0f;
+/// The furthest it trails, in world pixels, so at high speeds the human
+/// stays near the middle.
+constexpr float CAMERA_LAG_MAX = 12.0f;
 
 // The HUD is two shaded strips, laid out from measured text so nothing is
 // cut off: the top one about the followed human and the world, the bottom
@@ -437,7 +444,22 @@ void WorldScene::update(float dt, const Canvas& canvas) {
     }
     mapTime_ += dt;
     for (float left = dt * SPEEDS[speed_]; left > 0.0f; left -= MAX_TICK) world_.update(std::min(left, MAX_TICK));
+    easeCamera(dt);
     if (world_.human(0).dead()) record();
+}
+
+void WorldScene::easeCamera(float dt) {
+    Vector2 feet = feetOf(world_.human(follow_));
+    if (focusOf_ != follow_) {
+        focus_ = feet;
+        focusOf_ = follow_;
+        return;
+    }
+    float k = 1.0f - std::exp(-CAMERA_CATCH * dt);
+    focus_.x += (feet.x - focus_.x) * k;
+    focus_.y += (feet.y - focus_.y) * k;
+    float dx = feet.x - focus_.x, dy = feet.y - focus_.y, d = std::hypot(dx, dy);
+    if (d > CAMERA_LAG_MAX) focus_ = {feet.x - dx * CAMERA_LAG_MAX / d, feet.y - dy * CAMERA_LAG_MAX / d};
 }
 
 // Each entry is its time, dimmed, then what happened, wrapped under itself.
@@ -550,20 +572,21 @@ void WorldScene::drawStats(const Human& viewer, Rectangle area) {
 void WorldScene::draw(const Canvas& canvas) {
     ClearBackground(BLACK);
     const Human& viewer = world_.human(follow_);
+    if (focusOf_ != follow_) easeCamera(0.0f);
     bool wide = canvas.wide();
     Rectangle view = wide ? WIDE_VIEW : PHONE_VIEW;
     drawWorld(world_, viewer, [this](const Human& h) -> const HumanSprites& { return spritesFor(h); },
-              floorTiles_, statueArt_, reveal_, ZOOMS[zoom_], view, feetOf(viewer));
+              floorTiles_, statueArt_, reveal_, ZOOMS[zoom_], view, focus_);
     // Under the pause menu nothing else takes a tap.
     Vector2 mouse = paused_ ? Vector2{-1.0f, -1.0f} : canvas.mouse();
     if (wide) {
         std::vector<std::string> rows = ui::wrap(doing(viewer), WIDE_DOING_W);
         int stripY = Canvas::H - int(rows.size()) * ui::ROW - 2 * MARGIN;
-        drawSpeech(world_, viewer, reveal_, ZOOMS[zoom_], view, 0, stripY, feetOf(viewer));
+        drawSpeech(world_, viewer, reveal_, ZOOMS[zoom_], view, 0, stripY, focus_);
         drawWide(viewer, mouse, rows, stripY);
     } else {
-        if (!logOpen_ && !statsOpen_ && !mapOpen_) drawSpeech(world_, viewer, reveal_, ZOOMS[zoom_], view, TOP_H, BOTTOM_Y,
-                                                             feetOf(viewer));
+        if (!logOpen_ && !statsOpen_ && !mapOpen_)
+            drawSpeech(world_, viewer, reveal_, ZOOMS[zoom_], view, TOP_H, BOTTOM_Y, focus_);
         drawPhone(viewer, mouse);
     }
     if (paused_) drawPause(canvas.mouse(), canvas.width());
