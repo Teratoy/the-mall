@@ -31,7 +31,7 @@ BOTTLESHEET := build/bottle_sheet
 # A human beside itself gone feral, in every pose, with all that rides on it.
 FERALSHEET := build/feral_sheet
 
-.PHONY: all run clean stuck check golden coverage shot scenarios genprobe hidef bottlesheet feralsheet trapprobe icon apk install-apk logcat
+.PHONY: all run clean stuck check golden coverage shot scenarios genprobe hidef bottlesheet feralsheet fontdump lines trapprobe icon apk install-apk logcat
 
 all: $(BIN)
 
@@ -110,6 +110,21 @@ $(FERALSHEET): tools/feral_sheet.cpp $(filter-out build/main.o,$(OBJ))
 
 feralsheet: $(FERALSHEET)
 	./$(FERALSHEET) build/feral-sheet.png $(FERALSHEET_ARGS)
+
+# raylib's default font, saved for the lines editor (tools/font_dump.cpp).
+FONTDUMP := build/font_dump
+
+$(FONTDUMP): tools/font_dump.cpp
+	@mkdir -p build
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@ $(LDLIBS)
+
+fontdump: $(FONTDUMP)
+	./$(FONTDUMP) tools/lines_editor
+
+# The lines editor: a local web page for data/lines.txt, at http://localhost:8765.
+# Python only, so it runs on the host too.
+lines:
+	python3 tools/lines_editor.py
 
 # Life logs of one soak world: build/lifelog seed [minutes] [crowd] [name] [every].
 LIFELOG := build/lifelog
