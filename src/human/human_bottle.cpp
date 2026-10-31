@@ -174,7 +174,10 @@ void Human::spotBottle(Vec2i c, const Pile& p) {
     water_.found = c;
     water_.foundNear = -1;
     note("FOUND A BOTTLE LYING THERE");
-    sayLater(talk::Moment::SeeBottle);
+    // The first it ever finds it goes and looks at.
+    bool first = !inspect_.bottle;
+    inspect_.bottle = true;
+    if (!first || !discover({talk::Moment::SeeBottle, c})) sayLater(talk::Moment::SeeBottle);
 }
 
 void Human::bottleGone() {

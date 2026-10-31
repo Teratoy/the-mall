@@ -213,6 +213,7 @@ std::string doing(const Human& h) {
     case Human::Goal::Stash: return "TAKING THINGS TO A STASH";
     case Human::Goal::Vend: return "GOING TO A MACHINE";
     case Human::Goal::Voice: return "GOING TOWARD A VOICE";
+    case Human::Goal::Inspect: return "GOING TO LOOK";
     case Human::Goal::Feed: return "GOING TO " + who + "'S BODY";
     case Human::Goal::Rob: return "SNEAKING UP ON " + who;
     case Human::Goal::Watch: return "GOING TO KEEP WATCH OVER " + who;

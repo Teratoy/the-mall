@@ -125,7 +125,8 @@ void Human::move(World& world, Vec2i next) {
     timer = stepTime;
     world.setOff(cell, *this);
     if (dead()) return;
-    takeInReach(world);
+    // Come up to look at something, it looks before it takes anything.
+    if (goal != Goal::Inspect || !path_.empty()) takeInReach(world);
     enterChunk(world);
     bool news = observe(world);
     // A hidden trap beside it may catch its eye.
@@ -135,12 +136,19 @@ void Human::move(World& world, Vec2i next) {
             note(std::string("SPOTTED HIDDEN ") + trapWord(t->kind));
             rememberAt(cell + d, Episode::What::Spotted, EPISODE_SPOTTED, -1, -1, int(t->kind));
             trapWhereTold(cell + d);
+            // The first it ever spots it stops and looks at.
+            if (!inspect_.trap) {
+                inspect_.trap = true;
+                if (!discover({talk::Moment::SpotTrap, cell + d, 1, -1, std::nullopt, true}))
+                    sayLater(talk::Moment::SpotTrap);
+            }
         }
     checkDoorsNear();
     if (news && goal != Goal::PassDoor && goal != Goal::GiveWay) rethink_ = true;
     // Seen opened from afar: no need to walk up to it.
     if (goal == Goal::CheckDoor && !lockedDoorBeside(target_)) rethink_ = true;
     if (goal == Goal::Explore && !isFrontier(target_) && !openDoorBeside(target_)) rethink_ = true;
+    if (inspectStale()) rethink_ = true;
     if (goal == Goal::FetchCake && !cakeInReach(target_)) rethink_ = true;
     // Seen empty, or its keys gone, the machine is no use.
     if (goal == Goal::Vend && (!canBuy() || memory.machines[vend_.at].stock <= 0)) rethink_ = true;
@@ -199,6 +207,14 @@ void Human::arrive(World& world) {
         break;
     case Goal::Wander:
         return rest();
+    case Goal::Inspect:
+        if (inspect_.going) {
+            Find f = std::move(*inspect_.going);
+            inspect_.going.reset();
+            if (!gone(f)) return lookAt(f, true);
+            sayFind(f);
+        }
+        return choose(world);
     case Goal::Wash:
         if (startWash(world)) return;
         return choose(world);

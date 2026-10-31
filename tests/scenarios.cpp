@@ -158,8 +158,9 @@ Check saidAround(const Human& h, const std::string& line, bool after) {
                 for (size_t i = 0; i < es.size(); i++) {
                     if (es[i].what != line) continue;
                     if (!after) return i > 0 && es[i - 1].what.rfind("SAID ", 0) == 0;
-                    return i + 1 < es.size() && es[i + 1].what.rfind("SAID ", 0) == 0 &&
-                           es[i + 1].time - es[i].time <= 4.0f;
+                    for (size_t j = i + 1; j < es.size() && es[j].time - es[i].time <= 4.0f; j++)
+                        if (es[j].what.rfind("SAID ", 0) == 0) return true;
+                    return false;
                 }
                 return false;
             }};
@@ -462,6 +463,9 @@ Checks askForWater(Stage& s, Checks expect, const std::function<void(Human& hold
     asker.thirst = 0.7f;
     asker.bottles = {Bottle{}};
     asker.cakes = 0;
+    // Water dealt over, not discoveries looked at.
+    P::seenItAll(holder);
+    P::seenItAll(asker);
     setUp(holder, asker);
     s.run(100);
     return expect;
@@ -774,6 +778,8 @@ const std::vector<Scenario> SCENARIOS = {
          // Nothing to drink on either, nor to fight over.
          victim.bottles = {Bottle{}};
          liar.bottles.clear();
+         P::seenItAll(liar);
+         P::seenItAll(victim);
          s.run(60);
          return Checks{logged({"TOLD @ A WAY TO WATER OVER SPIKES"}), straightFace(liar)};
      }},
@@ -1859,6 +1865,8 @@ const std::vector<Scenario> SCENARIOS = {
     {"waking-alone", "coming to alone, it mutters with its eyes shut, sits up, and steadies itself getting up",
      seedWhere(plain, 9720),
      [](Stage& s) {
+         // The fog's remarks, not discoveries looked at.
+         P::seenItAll(s.first());
          s.run(40);
          return Checks{saidAround(s.first(), "WOKE UP, REMEMBERING NOTHING", false),
                        loggedBy(s.first(), "GOT UP, STILL IN A FOG"),
@@ -2160,6 +2168,55 @@ const std::vector<Scenario> SCENARIOS = {
          s.run(40);
          return Checks{loggedBy(h, "POURED MY BOTTLE INTO THE WATER DISPENSER"),
                        {"the bottle poured in", [&d](const Stage&) { return d.water > 1.2f; }}};
+     }},
+    {"inspect", "a curious human walks up to the first cake it sees, stands, and remarks on it there",
+     seedWhere([](const Traits& t) { return t.curious >= 0.7f; }, 9000),
+     [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         Vec2i cake = s.freeNear(h.cell, 5);
+         P::addCake(s.world, cake);
+         calm(h);
+         s.run(40);
+         return Checks{loggedBy(h, "WENT CLOSER TO LOOK AT A CAKE"), saidAround(h, "WENT CLOSER TO LOOK AT A CAKE", true),
+                       {"nothing left to look at", [&h](const Stage&) { return P::findsKept(h) == 0; }}};
+     }},
+    {"inspect-hungry", "a hungry human goes for the cake it sees without stopping to look at anything",
+     seedWhere([](const Traits& t) { return t.curious >= 0.7f; }, 9000),
+     [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         P::addCake(s.world, s.freeNear(h.cell, 5));
+         calm(h);
+         h.hunger = 0.7f;
+         h.cakes = 0;
+         s.run(40);
+         return Checks{loggedBy(h, "PICKED UP A CAKE"), {"never stopped to look", [&h](const Stage&) {
+                           for (const auto& e : h.log.entries())
+                               if (e.what.find("TO LOOK AT") != std::string::npos) return false;
+                           return true;
+                       }}};
+     }},
+    {"inspect-body-timid", "a timid, incurious human looks at the first body it finds from where it stands",
+     seedWhere([](const Traits& t) { return t.brave < 0.4f && t.curious < 0.4f; }, 9000),
+     [](Stage& s) {
+         Human& finder = s.first();
+         Human& victim = s.add(seedWhere(plain, 9900), 4);
+         P::kill(s.world, victim);
+         calm(finder);
+         s.run(30);
+         return Checks{loggedBy(finder, "STOPPED TO LOOK AT A BODY"), loggedBy(finder, "WENT CLOSER TO LOOK AT A BODY", false),
+                       loggedBy(finder, "FOUND @ DEAD")};
+     }},
+    {"inspect-body-brave", "a brave human walks up to the first body it finds to look at it",
+     seedWhere([](const Traits& t) { return t.brave >= 0.7f && t.curious >= 0.4f; }, 9000),
+     [](Stage& s) {
+         Human& finder = s.first();
+         Human& victim = s.add(seedWhere(plain, 9900), 4);
+         P::kill(s.world, victim);
+         calm(finder);
+         s.run(30);
+         return Checks{loggedBy(finder, "WENT CLOSER TO LOOK AT A BODY"), loggedBy(finder, "FOUND @ DEAD")};
      }},
 };
 

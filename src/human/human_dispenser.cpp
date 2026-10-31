@@ -41,7 +41,7 @@ bool Human::seeDispenser(const Dispenser& d) {
     if (!dispense_.seen && state != State::Waking) {
         dispense_.seen = true;
         note("FOUND A WATER DISPENSER");
-        sayLater(talk::Moment::FirstDispenser);
+        if (!discover({talk::Moment::FirstDispenser, d.at})) sayLater(talk::Moment::FirstDispenser);
     }
     return wasDry && d.water > DRY && thirsty() && goal != Goal::Drink;
 }

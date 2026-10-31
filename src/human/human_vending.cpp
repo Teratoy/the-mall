@@ -121,7 +121,7 @@ bool Human::seeMachine(const Machine& m, Vec2i c) {
     if (!vend_.seen && state != State::Waking) {
         vend_.seen = true;
         note("FOUND A MACHINE THAT TAKES KEYS");
-        sayLater(talk::Moment::FirstVending);
+        if (!discover({talk::Moment::FirstVending, c})) sayLater(talk::Moment::FirstVending);
     }
     return fresh && m.stock > 0 && canBuy() && (m.kind == Vend::Cake ? hungry() : needsBottle());
 }

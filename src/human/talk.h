@@ -197,6 +197,8 @@ enum class Moment {
     // finding one dry it came for or keeps; pouring its bottle into the one
     // it keeps (all to nobody).
     FirstDispenser, DispenserDrink, DispenserDry, RefillDispenser,
+    // Looking at the first hidden trap it ever spots (to nobody).
+    SpotTrap,
     Count
 };
 

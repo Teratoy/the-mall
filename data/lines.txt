@@ -2596,3 +2596,13 @@ settled                 | HOME KEEPS.
 greedy                  | MINE. ALL OF IT.
 timid                   | WHEN THEY COME, I'LL HAVE WATER.
 generous                | SOMEONE WILL NEED IT.
+
+# Looking at the first hidden trap it ever spots, said to nobody.
+[spot_trap]
+                        | THAT WAS MEANT FOR SOMEONE.
+                        | WHO WOULD SET THAT?
+                        | CLOSE. TOO CLOSE.
+timid                   | I'M NOT GOING NEAR THAT.
+curious                 | HOW DOES IT WORK?
+brave                   | NICE TRY.
+erratic                 | IT'S WAITING FOR ME.

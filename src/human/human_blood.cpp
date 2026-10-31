@@ -455,7 +455,10 @@ bool Human::noticeBlood(const World& world, Vec2i c) {
             scare(DREAD_POOL);
             note("SAW A FRESH POOL OF BLOOD");
             rememberAt(c, Episode::What::Pool, EPISODE_POOL);
-            sayLater(talk::Moment::Pool);
+            // The first it ever sees it stares at, from beyond the ring it shuns.
+            bool first = !inspect_.pool;
+            inspect_.pool = true;
+            if (!first || !discover({talk::Moment::Pool, c, 2, -1, std::nullopt, true})) sayLater(talk::Moment::Pool);
             news = true;
         }
     }

@@ -94,6 +94,16 @@ struct SoakProbe {
     /// Which remarks on the room through the fog it has made, a bit each
     /// from talk::Moment::FirstStatue.
     static unsigned fogSights(const Human& h) { return h.escape_.fogSights; }
+    /// As if it had seen one of everything worth a look before: nothing
+    /// pulls it aside to look (human_inspect.cpp).
+    static void seenItAll(Human& h) {
+        h.firstSights_ = ~0u;
+        h.escape_.fogSights |= 1u;
+        h.vend_.seen = h.server_.seen = true;
+        h.inspect_.body = h.inspect_.pool = h.inspect_.trap = h.inspect_.bottle = true;
+    }
+    /// What it has kept to go and look at.
+    static size_t findsKept(const Human& h) { return h.inspect_.queue.size() + (h.inspect_.going ? 1 : 0); }
     /// As if it had already set foot in n other places (ids no chunk has).
     /// Drops asleep where it is, worn out, asking nobody to keep watch.
     static void collapse(World& w, Human& h) {
