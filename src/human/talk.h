@@ -163,6 +163,15 @@ enum class Moment {
     // Coming to: stirring while it still lies with its eyes shut, and
     // getting up out of the waking sit (both to nobody).
     WakeStir, WakeStand,
+    // Still dazed, the first giant statue and the first table it sees, and
+    // finding nobody about once it has looked round (all to nobody).
+    FirstStatue, FirstTable, EmptyRoom,
+    // Still dazed, trying to remember anything from before and finding
+    // only its own name (to nobody).
+    Blank,
+    // Up, alone and finding nothing new for a while, the quiet of the place
+    // (to nobody).
+    Quiet,
     // Running out of breath, bent over winded (to nobody).
     Winded,
     Count

@@ -83,8 +83,9 @@ scenarios.
 
 The faster run changed the timing of three scenarios that rely on a human
 asking or moving a stash before a chaser gets there: bottle-sell,
-hard-no-sell (holder seed search now starts at 13100) and stash-robbed
-(18100). Those scenarios are fragile: about a third of nearby seeds pass.
+hard-no-sell and stash-robbed. The waking talk work had reseeded the same
+three (13014, 18014), and those seeds pass with running too. They are
+fragile: about a third of nearby seeds pass.
 
 ### 2. Breath and being winded
 

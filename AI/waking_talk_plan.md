@@ -96,6 +96,18 @@ it tries to remember and can't: `[blank]`.
   before (a kitchen, a child, a job)? Hints would be the same for no two
   humans and true for none: nothing in the world backs them.
 
+### Built (2026-10-31)
+
+Moment `Blank`, `[blank]` in lines.txt after `[wake_stand]`, always said.
+A fog remark (step 3's rules: dazed, alone, silent, 6 s after the last),
+once it is up (`!comingTo`), the daze down to BLANK_DAZE (0.75, about 10 s
+in) and still in the chunk it woke in (`chunksIn` of one). Log: "TRIED TO
+REMEMBER ANYTHING FROM BEFORE. NOTHING". Lines miss a life before without
+hinting at one ("I HAD A HOME. DIDN'T I?", "{ME}. I'M {ME}. THAT'S ALL.").
+`waking-alone` checks the log line; parched-door moved to seed 17696.
+The soak's unmoved-30 s count went 2 → 5, all in the crowded spawn's group
+greeting and keeping company, which fog remarks don't touch.
+
 ### 3. Seeing the room through the fog
 
 While dazed, the first sight of each thing in the spawn room gets a
@@ -116,6 +128,36 @@ truth). New moments, once each per life:
 
 The existing `first_cake` and `first_door` gain more dazed lines.
 
+### Built (2026-10-31)
+
+Moments `FirstStatue`, `FirstTable`, `EmptyRoom` at the end of
+`talk::Moment`, remarked in `observe()` through `fogSight`, with their own
+bits (`escape_.fogSights`) and last time (`escape_.fogAt`). Only while daze
+is at least DAZE_REMARK_MIN (0.3, the `dazed` condition), past the lie,
+DAZE_REMARK_GAP (6 s) after the last one, and sharing one remark a look
+with the `first_*` sights.
+
+Changes from the plan:
+- No `first_bottle`: `[see_bottle]` already fires for the bottle beside
+  it, so it got `dazed` lines instead ("IS THIS MINE?"), and `[first_cake]`
+  some too.
+- A fog remark only fills a silence while it is alone: nothing else
+  queued to say, and nobody alive in sight. Without that, a thirsty human
+  busy remarking on the table never asked for water in time and grabbed
+  the bottle instead (bottle-only).
+- `[empty_room 0.8]` comes once daze is down to EMPTY_ROOM_DAZE (0.6,
+  about 16 s in) if it has never seen anyone alive (`social_.lastSeen`).
+- `[first_statue]` passes the statue as a Here topic, so `{THING}` and
+  `statue.*` work as in chat_here ("WHO MADE A PAINTED ALARM CLOCK THAT
+  SIZE?"); a topic makes the wording fixed, with no dice.
+- Two lines dropped that hinted at a life before (pure blank memory).
+
+Scenarios: `waking-alone` now runs 40 s (seed 9720) and also checks the
+table and empty-room remarks; the stand line has to come within 4 s of
+getting up. `waking-statue` stands a clock statue in the spawn
+(`SoakProbe::placeStatue`). New seeds again for dice that moved:
+bottle-sell and hard-no-sell 13014, stash-robbed 18014.
+
 ### 4. The quiet of the place
 
 Atmosphere that comes from no single thing: after it has been up and alone
@@ -131,6 +173,19 @@ once a minute, only in its first few minutes or when alone again for long.
 
 Small effect: `[quiet]` nudges dread up a little for the timid and
 sociable, down for the loner. Or none (open question 3).
+
+### Built (2026-10-31)
+
+Words only: no dread from the quiet yet (open question 1 stays open).
+Moment `Quiet`, `[quiet]` in lines.txt after `[blank]`, always said, with
+the log line "ALONE IN THE QUIET". `Human::hearQuiet(alone)` in
+human_hope.cpp, called at the end of each look: nobody alive in sight, up
+and not talking, nothing new seen and nobody seen for QUIET_AFTER (15 s).
+In its first QUIET_EARLY (180 s) no oftener than QUIET_AGAIN (60 s);
+after that only once alone for QUIET_LONELY (300 s), no oftener than
+QUIET_LONELY_AGAIN (240 s). Exploring keeps finding new floor, so it
+comes seldom: once in three minutes in the `quiet` scenario. Lines name
+only silence, its steps, breath and heart, as decided.
 
 ### 5. Calling out
 

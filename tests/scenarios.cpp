@@ -130,7 +130,13 @@ Check loggedBy(const Human& h, const std::string& line, bool said = true) {
             }};
 }
 
-/// h said something just before (after false) or just after this line in its log.
+/// h remarked on the room it woke in this way (a fog remark).
+Check remarked(const Human& h, talk::Moment m) {
+    return {std::string("#") + std::to_string(h.id) + " remarked " + std::to_string(int(m) - int(talk::Moment::FirstStatue)),
+            [&h, m](const Stage&) { return (P::fogSights(h) >> (int(m) - int(talk::Moment::FirstStatue))) & 1u; }};
+}
+
+/// h said something just before (after false) or within 4 s after this line in its log.
 Check saidAround(const Human& h, const std::string& line, bool after) {
     return {std::string("#") + std::to_string(h.id) + " said something " + (after ? "after " : "before ") + line,
             [&h, line, after](const Stage&) {
@@ -138,7 +144,8 @@ Check saidAround(const Human& h, const std::string& line, bool after) {
                 for (size_t i = 0; i < es.size(); i++) {
                     if (es[i].what != line) continue;
                     if (!after) return i > 0 && es[i - 1].what.rfind("SAID ", 0) == 0;
-                    return i + 1 < es.size() && es[i + 1].what.rfind("SAID ", 0) == 0;
+                    return i + 1 < es.size() && es[i + 1].what.rfind("SAID ", 0) == 0 &&
+                           es[i + 1].time - es[i].time <= 4.0f;
                 }
                 return false;
             }};
@@ -1025,7 +1032,7 @@ const std::vector<Scenario> SCENARIOS = {
          });
      }},
     {"bottle-sell", "a grasping stranger asked for water sells it for a cake",
-     seedWhere([](const Traits& t) { return t.greedy >= 0.55f && t.sociable < 0.4f && t.brave < 0.4f; }, 13100),
+     seedWhere([](const Traits& t) { return t.greedy >= 0.55f && t.sociable < 0.4f && t.brave < 0.4f; }, 13014),
      [](Stage& s) {
          return askForWater(s, {logged({"SOLD @ SOME WATER FOR A CAKE"}), logged({"BOUGHT SOME WATER FROM @ FOR A CAKE"})},
                             [](Human&, Human& asker) { asker.cakes = 1; });
@@ -1108,7 +1115,7 @@ const std::vector<Scenario> SCENARIOS = {
                             });
      }},
     {"hard-no-sell", "a grasping stranger who learnt the thirst lesson won't sell its water",
-     seedWhere([](const Traits& t) { return t.greedy >= 0.55f && t.sociable < 0.4f && t.brave < 0.4f; }, 13100),
+     seedWhere([](const Traits& t) { return t.greedy >= 0.55f && t.sociable < 0.4f && t.brave < 0.4f; }, 13014),
      [](Stage& s) {
          return askForWater(s, {logged({"ASKED @ FOR WATER"}), notLogged({"SOLD @ SOME WATER FOR A CAKE"})},
                             [](Human& holder, Human& asker) {
@@ -1245,7 +1252,7 @@ const std::vector<Scenario> SCENARIOS = {
          s.world.putDown(at, 6, {});
          P::ownStash(s.world, owner, at);
          P::place(s.world, owner, s.farFrom(at, 18));
-         Human& other = P::addHuman(s.world, HumanLook::random(s.rng), s.freeNear(at, 1), seedWhere(plain, 18100));
+         Human& other = P::addHuman(s.world, HumanLook::random(s.rng), s.freeNear(at, 1), seedWhere(plain, 18014));
          s.humans.push_back(&other);
          other.cakes = 0;
          other.hunger = 0.6f;
@@ -1452,7 +1459,7 @@ const std::vector<Scenario> SCENARIOS = {
                        unlogged("LEFT @. THEY KNOW NO MORE THAN I DO")};
      }},
     {"parched-door", "a caring human with a key, beyond the door the parched lie calling through, opens it",
-     seedWhere([](const Traits& t) { return t.sociable >= 0.75f && t.brave >= 0.3f; }, 17626),
+     seedWhere([](const Traits& t) { return t.sociable >= 0.75f && t.brave >= 0.3f; }, 17696),
      [](Stage& s) {
          Human& leader = s.first();
          Human& follower = s.add(seedWhere([](const Traits& t) { return t.sociable >= 0.75f; }, 17500), 2);
@@ -1726,12 +1733,33 @@ const std::vector<Scenario> SCENARIOS = {
                        logged({"ATE FROM @'S ROTTEN BODY", "ATE FROM @'S BODY"})};
      }},
     {"waking-alone", "coming to alone, it mutters with its eyes shut, sits up, and steadies itself getting up",
-     seedWhere(plain, 9700),
+     seedWhere(plain, 9720),
      [](Stage& s) {
-         s.run(20);
+         s.run(40);
          return Checks{saidAround(s.first(), "WOKE UP, REMEMBERING NOTHING", false),
                        loggedBy(s.first(), "GOT UP, STILL IN A FOG"),
-                       saidAround(s.first(), "GOT UP, STILL IN A FOG", true)};
+                       saidAround(s.first(), "GOT UP, STILL IN A FOG", true),
+                       remarked(s.first(), talk::Moment::FirstTable), remarked(s.first(), talk::Moment::EmptyRoom),
+                       loggedBy(s.first(), "TRIED TO REMEMBER ANYTHING FROM BEFORE. NOTHING")};
+     },
+     nullptr, true},
+    {"quiet", "alone and finding nothing new for a while in its first minutes, it remarks on the quiet",
+     seedWhere(plain, 9850),
+     [](Stage& s) {
+         calm(s.first());
+         s.run(180);
+         return Checks{loggedBy(s.first(), "ALONE IN THE QUIET")};
+     },
+     nullptr, true},
+    {"waking-statue", "still dazed, it remarks on a giant statue in the room it woke in", seedWhere(plain, 9800),
+     [](Stage& s) {
+         Human& h = s.first();
+         bool stood = false;
+         for (Vec2i d : {Vec2i{4, 0}, Vec2i{-4, 0}, Vec2i{0, 4}, Vec2i{0, -4}, Vec2i{4, 4}, Vec2i{-4, -4}})
+             if ((stood = P::placeStatue(s.world, h.cell + d, h, StatueKind::Clock))) break;
+         if (!stood) return Checks{{"room for a statue in the spawn", [](const Stage&) { return false; }}};
+         s.run(30);
+         return Checks{remarked(h, talk::Moment::FirstStatue)};
      },
      nullptr, true},
 };

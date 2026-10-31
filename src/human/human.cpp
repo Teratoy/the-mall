@@ -364,6 +364,24 @@ bool Human::observe(const World& world) {
         remarked = true;
         if (sayLater(m, -1, about)) firstSights_ |= bit;
     };
+    // Still dazed, the room it woke in is remarked on too, a thing at a time,
+    // to fill a silence while it is alone: anyone about has its attention.
+    bool alone = std::none_of(world.humans().begin(), world.humans().end(), [&](const auto& o) {
+        return o.get() != this && !o->dead() && sight.sees(o->cell);
+    });
+    bool foggy = state != State::Waking && escape_.daze >= DAZE_REMARK_MIN &&
+                 world.time() - escape_.fogAt >= DAZE_REMARK_GAP && voice_.sayings.empty() && alone;
+    auto fogSight = [&](talk::Moment m, std::optional<Topic> topic = std::nullopt) {
+        unsigned bit = 1u << (int(m) - int(talk::Moment::FirstStatue));
+        if (remarked || !foggy || (escape_.fogSights & bit)) return false;
+        Saying s(m);
+        s.topic = std::move(topic);
+        if (!sayLater(std::move(s))) return false;
+        remarked = true;
+        escape_.fogSights |= bit;
+        escape_.fogAt = world.time();
+        return true;
+    };
     sight.forEach([&](Vec2i c) {
         Tile t = world.tile(c);
         if (t == Tile::DoorLocked || t == Tile::DoorOpen) firstSight(talk::Moment::FirstDoor);
@@ -372,6 +390,15 @@ bool Human::observe(const World& world) {
             seeWater(world, c);
         }
         if (world.toilet(c)) firstSight(talk::Moment::FirstToilet);
+        if (const Statue* st = world.statue(c)) {
+            // The statue as a thing in sight, so the line can name it.
+            Topic t{Topic::Kind::Here};
+            t.cell = st->at;
+            t.thing = Topic::Thing::Statue;
+            t.detail = int(st->kind) * 16 + int(st->material);
+            fogSight(talk::Moment::FirstStatue, t);
+        }
+        if (world.table(c)) fogSight(talk::Moment::FirstTable);
         if (const Machine* m = world.machine(c)) news |= seeMachine(*m, c);
         if (t != Tile::Void) {
             if (memory.tile(c) == Tile::Void) {
@@ -508,6 +535,13 @@ bool Human::observe(const World& world) {
         news |= judge(*o);
     }
     for (Vec2i c : checks) checkStash(c, world.pile(c));
+    // Up and still where it woke, it reaches back for anything from before.
+    if (!escape_.comingTo && escape_.daze <= BLANK_DAZE && escape_.chunksIn.size() <= 1 &&
+        fogSight(talk::Moment::Blank))
+        note("TRIED TO REMEMBER ANYTHING FROM BEFORE. NOTHING");
+    // Looked round long enough to be sure: nobody, anywhere it can see.
+    if (social_.lastSeen.empty() && !escape_.comingTo && escape_.daze <= EMPTY_ROOM_DAZE) fogSight(talk::Moment::EmptyRoom);
+    hearQuiet(alone);
     return news;
 }
 
