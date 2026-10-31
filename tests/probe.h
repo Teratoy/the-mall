@@ -18,6 +18,7 @@ struct SoakProbe {
     static int leader(const Human& h) { return h.social_.leader; }
     static int companion(const Human& h) { return h.social_.companion; }
     static int foe(const Human& h) { return h.fight_.foe; }
+    static void setLungs(Human& h, float seconds) { h.run_.lungs = seconds; }
     static bool ateFlesh(const Human& h) { return !h.mind_.ateFrom.empty(); }
     static float thirstOf(const Human& h) { return h.thirst; }
     static int keysOf(const Human& h) { return h.keys; }

@@ -176,6 +176,7 @@ std::string doing(const Human& h) {
     case Human::State::Idle:
     case Human::State::Walking: break;
     }
+    if (h.winded()) return "CATCHING BREATH";
     if (h.waitingForCompany()) return "WAITING FOR THE OTHERS";
     if (h.state == Human::State::Idle && h.goal != Human::Goal::Follow && h.goal != Human::Goal::Company &&
         h.goal != Human::Goal::Escort &&
@@ -525,8 +526,10 @@ void WorldScene::drawStats(const Human& viewer, Rectangle area) {
     y = pipRow("ERRATIC", viewer.erratic(), x, right, y, viewer.isErratic() ? ERRATIC_INK : ui::INK);
     y = pipRow("GUILT", viewer.guilt(), x, right, y);
     y = pipRow("CRAVE", viewer.appetite(), x, right, y);
-    // How badly they need to go, and how long they have gone unwashed.
+    // Breath left for running, how badly they need to go, and how long
+    // they have gone unwashed.
     y = section("BODY", x, y + SECTION_GAP);
+    y = pipRow("BREATH", viewer.breath(), x, right, y);
     y = pipRow("BLADDER", viewer.bladder, x, right, y);
     y = pipRow("BOWELS", viewer.bowels, x, right, y);
     y = pipRow("GRIME", viewer.grime(), x, right, y);

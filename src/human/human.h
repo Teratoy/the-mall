@@ -120,6 +120,12 @@ public:
     /// full tiredness it drops asleep where it stands (human_sleep.cpp).
     bool tired() const;
     bool exhausted() const;
+    /// Running this walk: in a hurry, with breath left (human_run.cpp).
+    bool running() const;
+    /// Stopped out of breath, hands on knees.
+    bool winded() const { return run_.winded > 0.0f; }
+    /// Breath left, 1 full to 0 out of it.
+    float breath() const { return run_.breath; }
     /// Getting up from sleep: still curled, then up.
     bool rousing() const { return sleep_.roused && state == State::Rising; }
     /// Woke from a dream lately, half a memory of before.
@@ -1128,6 +1134,30 @@ private:
     void startRising();
     void startWalking(Goal g, std::vector<Vec2i> path);
     void startPassDoor(Vec2i door);
+
+    /// Why a walk is run, for the log and its lines.
+    enum class RunWhy : uint8_t { Fight, Flee };
+    /// Running (human_run.cpp): a run step takes RUN of a walking step
+    /// while there is breath. Out of breath, it stands winded a moment, then
+    /// walks on until it has some back.
+    struct Run {
+        /// This walk is run, and why. Every new walk starts unhurried.
+        bool on = false;
+        RunWhy why = RunWhy::Fight;
+        /// 1 full, 0 out of breath.
+        float breath = 1.0f;
+        /// Seconds of running a full breath lasts, its own.
+        float lungs = 8.0f;
+        /// Seconds left standing winded.
+        float winded = 0.0f;
+        /// Ran out: no running again until breath is back over BREATH_AGAIN.
+        bool spent = false;
+    };
+    Run run_;
+    /// Walks the path running, for why.
+    void startRunning(Goal g, std::vector<Vec2i> path, RunWhy why);
+    /// Breath goes running and comes back resting; at none it is winded.
+    void breathe(float dt);
 
     /// Others: whom it deals with, keeps with, trusts and owes (human_social.cpp, human_company.cpp).
     struct Social {

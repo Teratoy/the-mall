@@ -38,7 +38,7 @@ Status as of 2026-10-31.
 | [vending_plan.md](vending_plan.md) | Cake and empty-bottle vending machines: paid in 3 keys, restock one a day, in rooms and plazas against north or side walls, remembered and told of like cakes | Built | Tuning from play; gun machines wait for guns |
 | [machine_room_art_plan.md](machine_room_art_plan.md) | Old computers as art: server rack, CRT terminal, console desk, cable floor decals | Art built | Where they stand in the world; any use |
 | [server_rooms_plan.md](server_rooms_plan.md) | Server rooms in the world: grown in room networks and a data-centre chunk, two locked doors in a row (2 keys in, free out, relocking), racks block sight, first sight remembered, a good place to sleep | Built | Defaults to confirm (a key per room; slipping through behind someone); telling of them |
-| [running_plan.md](running_plan.md) | Running beyond fights: urgent needs, fear, chasing, racing for cake and water; breath and being winded; run and winded poses; traits, wounds and load | Planned | — |
+| [running_plan.md](running_plan.md) | Running beyond fights: urgent needs, fear, chasing, racing for cake and water; breath and being winded; run and winded poses; traits, wounds and load | Steps 1–3 built (running, breath and winded, run and winded poses, breath in stats) | Steps 4–9: who runs and how fast, needs, fear, chases and dropping, races, scenarios |
 | [human_split_plan.md](human_split_plan.md) | Splitting Human into per-system classes | Not started | Advised against for now; if done, only system by system, when that system is being reworked anyway |
 
 ## Known gaps found by the tests

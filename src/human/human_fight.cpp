@@ -224,7 +224,7 @@ bool Human::startFight(World& world) {
         fight_.foe = -1;
         return false;
     }
-    startWalking(Goal::Fight, *p);
+    startRunning(Goal::Fight, *p, RunWhy::Fight);
     return true;
 }
 
@@ -535,7 +535,7 @@ bool Human::startFlee(World& world) {
     Vec2i from = world.human(fight_.feared).cell;
     auto p = search(world, [&](Vec2i c) { return cheb(c, from) >= FLEE_DIST; }, true);
     if (!p || p->empty()) return false;
-    startWalking(Goal::Flee, *p);
+    startRunning(Goal::Flee, *p, RunWhy::Flee);
     return true;
 }
 

@@ -68,6 +68,25 @@ cannibalism (hunting prey), sleep (robbers), dread (`scare()`), bottles
 - Pure refactor apart from that: `make check` should pass unchanged
   except for the tiredness change.
 
+
+#### Built (2026-10-31)
+
+`run_` (`Human::Run`) and `human_run.cpp`. `startRunning(goal, path, why)`
+sets the walk running; `startWalking` clears it. Fight and Flee start
+through it (`RunWhy::Fight`, `RunWhy::Flee`); `running()` drives the step
+time, `Action::Run` and the pose. `RUN` is 0.6. Run's tiredness row was
+already 4x walking's, so it stays.
+
+Lungs (7–9 s) are rolled from the human's seed, as traits are, not from
+`rng_`: an extra roll there shifted every later die and changed unrelated
+scenarios.
+
+The faster run changed the timing of three scenarios that rely on a human
+asking or moving a stash before a chaser gets there: bottle-sell,
+hard-no-sell and stash-robbed. The waking talk work had reseeded the same
+three (13014, 18014), and those seeds pass with running too. They are
+fragile: about a third of nearby seeds pass.
+
 ### 2. Breath and being winded
 
 - Breath drains while running (7–9 s of running from full, the length
@@ -81,6 +100,19 @@ cannibalism (hunting prey), sleep (robbers), dread (`scare()`), bottles
 - Breath shows in the stats menu, beside the other needs.
 - Log: "Out of breath." Moment: `Winded`.
 
+
+#### Built (2026-10-31)
+
+Breath comes back at 1/20 a second walking, 1/6 standing, sitting or
+winded (`BREATH_WALK`, `BREATH_REST` in `human_run.cpp`). Winded is not a
+state: `step()` stands it still while `run_.winded` lasts, keeping its goal
+and path, so it walks on after (spent until `BREATH_AGAIN`, 0.4). Standing
+still it counts as `Action::Rest`. Log "OUT OF BREATH", moment `winded`
+with lines in `data/lines.txt`. The HUD says "CATCHING BREATH". Breath is
+under BODY in the stats menu. Scenario `winded` (short lungs set through
+`SoakProbe::setLungs`). Nobody runs out of breath in the soak yet: fights
+and flights are short.
+
 ### 3. The run and winded poses
 
 - `Pose::Run`: its own frames in `human_sprites.cpp`, body leaning
@@ -90,6 +122,15 @@ cannibalism (hunting prey), sleep (robbers), dread (`scare()`), bottles
 - `world_view.cpp` picks Run when `h.running()` and moving.
 - Add both to `make bottlesheet` and `make dirtysheet`, and the create
   scene's pose cycle if it fits.
+
+
+#### Built (2026-10-31)
+
+`HumanLook::run(frame)` (strides 2, 1, -2, -1, head a pixel ahead, arms
+bent: the hand swung ahead comes up, the one swung back trails behind) and
+`HumanLook::winded(frame)` (legs a row shorter, head hung and ahead, arms
+straight down to the knees, breathing in on frame 1). `Pose::Run` at 14
+fps, `Pose::Winded` at 4. In `make dirtysheet` and `make bottlesheet`.
 
 ### 4. Who runs, and how fast
 

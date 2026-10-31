@@ -184,6 +184,8 @@ enum class Moment {
     // keys to spend, to sleep in one it knows; lying down to sleep among
     // the humming machines (all to nobody).
     FirstServerRoom, SeekHum, SleepHum,
+    // Running out of breath, bent over winded (to nobody).
+    Winded,
     Count
 };
 

@@ -624,6 +624,24 @@ const std::vector<Scenario> SCENARIOS = {
      }},
     {"wary-slam-key", "shut in once, with a key in hand it goes for the bait anyway", seedWhere(plain, 9000),
      [](Stage& s) { return wareSlam(s, 1, {logged({"PICKED UP A CAKE"})}); }},
+    {"winded", "short of breath, a run in a fight ends winded",
+     seedWhere([](const Traits& t) { return t.sociable >= 0.6f && t.greedy >= 0.5f && !cunning(t); }, 4200),
+     [](Stage& s) {
+         Human& robber = s.first();
+         Human& victim = s.add(seedWhere([](const Traits& t) { return t.brave < 0.4f && t.greedy >= 0.8f; }, 5000), 4);
+         P::clearChunk(s.world, robber.cell);
+         robber.hunger = 0.6f;
+         robber.cakes = 0;
+         victim.hunger = 0.1f;
+         victim.cakes = 2;
+         robber.thirst = victim.thirst = robber.tiredness = victim.tiredness = 0.1f;
+         P::setTrust(robber, victim, 0.2f);
+         P::setTrust(victim, robber, 0.2f);
+         P::setLungs(robber, 0.3f);
+         P::setLungs(victim, 0.3f);
+         s.run(60);
+         return Checks{logged({"OUT OF BREATH"})};
+     }},
     {"share", "a friend with cakes to spare feeds a starving friend", 99,
      [](Stage& s) {
          Human& giver = s.first();

@@ -283,7 +283,8 @@ Pose poseOf(const Human& h) {
     case Human::State::Idle:
     case Human::State::Walking: break;
     }
-    return h.moving ? Pose::Walk : Pose::Idle;
+    if (h.moving) return h.running() ? Pose::Run : Pose::Walk;
+    return h.winded() ? Pose::Winded : Pose::Idle;
 }
 
 } // namespace
