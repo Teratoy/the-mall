@@ -41,7 +41,29 @@ does anything yet.
   `tools/computers.cpp` (`build/computers.png`, with a small room wired up).
   Built by hand; see their header comments.
 
+## Server rooms (2026-10-31)
+
+The user asked for three server rooms of different sizes, as layouts to
+look at first; world generation comes later, with its own questions.
+Sizes picked: a 6x5 closet, a 12x9 room and a 20x14 hall (inside the walls).
+
+`tools/server_rooms.cpp` (`build/server_rooms.png`) draws them from maps of
+letters at the top of the file, so a layout is changed by editing its map:
+- **Closet**: two racks and a terminal against the back wall, wired
+  together and out through the side wall.
+- **Room**: three racks and the console desk along the back wall, a second
+  row of two racks and a terminal, cables under each row joined by a trunk
+  and leaving through the right wall, perforated tiles in the cold aisle.
+- **Hall**: racks either side of the console desk along the back, a long
+  second row of nine racks, three terminals in front, a trunk down from the
+  back row to the collector run.
+
+Seen from the front, a rack hides the four rows behind it, so rows of racks
+stand five or six rows apart, or the aisle between them disappears.
+Cables run on the floor in front of each row; where a run ends, it goes
+into the machine or wall it reaches.
+
 ## Open
 
-- Where these stand in the world (a machine-room chunk interior?), and
-  whether humans can use them.
+- Where the server rooms go in the world (as chunk interiors?), how often,
+  whether the machines block their cells, and whether humans can use them.
