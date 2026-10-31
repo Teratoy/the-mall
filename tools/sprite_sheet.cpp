@@ -8,6 +8,7 @@
 //        build/sprite_sheet --ref DIR       the sprite editor's human and machine slots (make spriteref)
 #include "core/rng.h"
 #include "human/human_look.h"
+#include "render/dispenser_art.h"
 #include "render/gun_art.h"
 #include "render/human_sprites.h"
 #include "render/icon_art.h"
@@ -77,6 +78,13 @@ void drawSheet(const HumanSprites& human, Texture2D icon) {
             for (float dirt : {0.0f, 1.0f, 3.0f, 8.0f}) drawToilet(tx, y, back, dirt, 7, lit), tx += CELL_PX + GAP;
         y += CELL_PX + GAP;
     }
+    // Water dispensers at every level the jug shows, from the front and both sides, lit then dimmed.
+    x = GAP;
+    for (bool lit : {true, false})
+        for (int view = 0; view < 3; view++)
+            for (int level = 0; level <= 6; level++, x += DISPENSER_W + GAP)
+                drawDispenser(x, y + DISPENSER_H, float(level) / 6.0f, view > 0, view == 2, lit);
+    y += DISPENSER_H + GAP;
     // A human carrying cakes, and asleep with its Z's rising at a few moments.
     x = GAP;
     for (int cakes = 1; cakes <= 3; cakes++, x += SPRITE_W + GAP)
