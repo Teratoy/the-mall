@@ -31,7 +31,7 @@ BOTTLESHEET := build/bottle_sheet
 # A human beside itself gone dirty, in every pose, with all that rides on it.
 DIRTYSHEET := build/dirty_sheet
 
-.PHONY: all run clean stuck check golden coverage shot scenarios genprobe hidef bottlesheet dirtysheet spritesheet spriteref fontdump lines sprites trapprobe icon apk install-apk logcat simprofile gprof
+.PHONY: all run clean stuck check golden coverage shot scenarios genprobe hidef bottlesheet dirtysheet spritesheet soundsheet spriteref fontdump lines sprites trapprobe icon apk install-apk logcat simprofile gprof
 
 all: $(BIN)
 
@@ -110,6 +110,15 @@ $(DIRTYSHEET): tools/dirty_sheet.cpp $(filter-out build/main.o,$(OBJ))
 
 dirtysheet: $(DIRTYSHEET)
 	./$(DIRTYSHEET) build/dirty-sheet.png $(DIRTYSHEET_ARGS)
+
+# Every sound from data/sounds.txt rendered to build/sounds/*.wav, clear and muffled (tools/sound_sheet.cpp).
+SOUNDSHEET := build/sound_sheet
+
+$(SOUNDSHEET): tools/sound_sheet.cpp build/audio/synth.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@ $(LDLIBS)
+
+soundsheet: $(SOUNDSHEET)
+	./$(SOUNDSHEET) data/sounds.txt build/sounds
 
 # Every sprite from data/sprites.txt at 1x, in all the ways the game draws it (tools/sprite_sheet.cpp).
 SPRITESHEET := build/sprite_sheet

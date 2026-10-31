@@ -73,6 +73,20 @@ volume and a **low-bit** switch that crushes the music to 4 bits at
   Pausing quiets the world's sounds.
 - Android: stop all sound when the app goes to the background.
 
+### Built (2026-11-01)
+
+- `src/audio/audio.{h,cpp}`: opened in `main.cpp`; plays each sound clear
+  or muffled with its own six voices (raylib sound aliases), volume, pan
+  and pitch. Where there is no device (the tools), nothing plays.
+- MASTER and SOUNDS only, 0–10, saved in `data/settings.txt` (ignored by
+  git). The music volume waits for the music.
+- `ConfigPanel` (`src/scenes/config_panel.cpp`) is the CONFIGURATION
+  menu: `ConfigScene` on the main menu under OBITUARY, and over the
+  pause menu, between RESUME and MAIN MENU. A change plays a pop.
+- Pausing simply stops new sounds; nothing loops yet, so nothing needs
+  quieting. Not done: stopping sound when the Android app goes to the
+  background (untried on the phone).
+
 ## 2. Noises from the sim
 
 - `World` keeps a per-tick list of `Noise {kind, cell, who, loud}`,
@@ -81,6 +95,16 @@ volume and a **low-bit** switch that crushes the music to 4 bits at
   reads it, so the soak is unchanged; a check in `make check` confirms
   it.
 - Speech already reaches the view through bubbles; voices read those.
+
+### Built (2026-11-01)
+
+- `World::noise()` keeps the newest 256 in `World::noises()` with a count
+  of all ever made; `Hearing` plays those it hasn't yet. Made at: a key
+  unlocking (door, gate, airlock), an airlock pushed open and falling
+  shut, a slam gate locking, spikes, darts fired and striking, a blow
+  landing (`takeHit`), a death (`die`). `make check` passes unchanged.
+- Footsteps and pops don't need noises: the view hears a human come onto
+  a new cell, and a new line over a head.
 
 ## 3. The sounds themselves
 
@@ -92,6 +116,16 @@ art drawn in code:
   listen to, and `cmp` before and after a refactor.
 - Small random pitch and volume wobble each play, from a view-only Rng,
   so 30 footsteps don't sound like a machine gun.
+
+### Built (2026-11-01)
+
+- `src/audio/synth.{h,cpp}`: square, triangle, saw, sine and noise layers
+  sliding in pitch under an envelope, with low and high pass, repeats and
+  wobble; then the crush, 5 bits at 8 kHz by default. The file's header
+  explains the format.
+- `make soundsheet` (`tools/sound_sheet.cpp`) writes each sound clear and
+  muffled to `build/sounds/` and prints its length.
+- `data/sounds.txt` ships in the APK beside the other data files.
 
 ## 4. First sounds
 
@@ -105,6 +139,15 @@ What the player most needs to hear, by group:
 - **Places (loops):** water lapping, server room hum, flies near smell,
   the room tone of each kind of place (rooms, plazas, mazes).
 
+### Built (2026-11-01): the first sounds
+
+`step`, `run`, `step_wet` (fresh piss or poured water), `step_blood` (wet
+blood), `step_filth` (fresh feces), `pop`, `cry`, `unlock`,
+`airlock_open`, `airlock_shut`, `slam`, `spikes`, `dart_fire`,
+`dart_hit`, `hit`, `death`. Still to come: breath, eating, sipping,
+snoring, retching, keys and cakes picked up, bottles, flushes, vending,
+and the place loops.
+
 ## 5. Where sound is heard from
 
 - Volume falls with distance from the followed human's ears,
@@ -116,12 +159,29 @@ What the player most needs to hear, by group:
   ones (cries, slams, deaths) always play.
 - At high speed sounds thin out so X16 isn't a roar; cries, slams and deaths always play.
 
+### Built (2026-11-01)
+
+`src/audio/hearing.cpp`, from the followed human's cell: each sound
+fades out at its own reach (steps 9 cells, a slam 30), each wall on the
+line between keeps 45% of it, muffled, and past 3 walls nothing is
+heard. Asleep it hears 8% (urgent ones 30%). Pan up to 0.3 either side
+over 12 cells. At speed xN, steps play one in N and anything not urgent
+is quieter by the square root of N. At most 6 sounds start a frame,
+loudest first, besides the urgent ones (cries, slams, spikes, deaths).
+
 ## 6. Voices
 
 - A soft pop as each bubble opens (user's decision), pitched a little
   per human from its seed so a crowd isn't one note.
 - Urgent moments (`talk::isUrgent`) get their own louder cry instead,
   cutting in like their bubbles.
+
+### Built early (2026-11-01)
+
+A pop as a bubble the player can see opens, pitched by the speaker's id.
+A line in the Fear tone is a `cry` instead, heard bubble or not, through
+walls. The violent urgent moments (hit, darts, spikes) already sound
+through their noises.
 
 ## 7. Mood
 

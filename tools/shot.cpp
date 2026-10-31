@@ -2,7 +2,7 @@
 // in a hidden raylib window and saves what it draws as a PNG.
 //
 // Usage: build/shot out.png [options]   (or: make shot, to build/shot.png)
-//   --scene world|menu|create|obituary   which screen (world)
+//   --scene world|menu|create|obituary|config   which screen (world)
 //   --seconds S    world time to run before the shot (8)
 //   --seed N       the world's seed (7); the human you made is seeded 99
 //   --zoom Z       world zoom level 0-3 (2)
@@ -33,6 +33,7 @@
 #include "core/rng.h"
 #include "human/human_look.h"
 #include "render/canvas.h"
+#include "scenes/config_scene.h"
 #include "scenes/create_scene.h"
 #include "scenes/menu_scene.h"
 #include "scenes/obituary_scene.h"
@@ -262,7 +263,7 @@ struct ShotProbe {
 
 int main(int argc, char** argv) {
     if (argc < 2 || argv[1][0] == '-') {
-        std::fprintf(stderr, "usage: %s out.png [--scene world|menu|create|obituary] [--seconds S] [--seed N] "
+        std::fprintf(stderr, "usage: %s out.png [--scene world|menu|create|obituary|config] [--seconds S] [--seed N] "
                              "[--zoom 0-3] [--stats] [--log] [--map] [--reveal] [--wide] [--pile] [--smells] "
                              "[--vending] [--server] [--typing terminal|desk] [--washroom] [--pissed]\n", argv[0]);
         return 1;
@@ -334,6 +335,8 @@ int main(int argc, char** argv) {
             s = std::make_unique<CreateScene>(seed);
         } else if (scene == "obituary") {
             s = std::make_unique<ObituaryScene>();
+        } else if (scene == "config") {
+            s = std::make_unique<ConfigScene>();
         } else {
             std::fprintf(stderr, "unknown scene %s\n", scene.c_str());
         }

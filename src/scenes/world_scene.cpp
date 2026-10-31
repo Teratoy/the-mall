@@ -1,4 +1,5 @@
 #include "scenes/world_scene.h"
+#include "audio/audio.h"
 #include "human/human.h"
 #include "human/obituary.h"
 #include "human/talk.h"
@@ -73,13 +74,16 @@ constexpr Rectangle SPEED_UP_BUTTON = buttonAt(2);
 constexpr Rectangle SPEED_SLOT = buttonAt(3);
 constexpr Rectangle SPEED_DOWN_BUTTON = buttonAt(4);
 constexpr Rectangle PAUSE_BUTTON = buttonAt(5);
-/// The pause menu: its title and two buttons down the middle, over the
+/// The pause menu: its title and three buttons down the middle, over the
 /// whole screen darkened.
 constexpr int PAUSE_W = 100, PAUSE_H = 24, PAUSE_GAP = 10;
 constexpr int PAUSE_TITLE_Y = Canvas::H / 2 - 50;
-constexpr Rectangle RESUME_BUTTON{(Canvas::W - PAUSE_W) / 2.0f, Canvas::H / 2.0f - 20, PAUSE_W, PAUSE_H};
-constexpr Rectangle MENU_BUTTON{(Canvas::W - PAUSE_W) / 2.0f, Canvas::H / 2.0f - 20 + PAUSE_H + PAUSE_GAP, PAUSE_W,
-                                PAUSE_H};
+constexpr Rectangle pauseButton(int i) {
+    return {(Canvas::W - PAUSE_W) / 2.0f, Canvas::H / 2.0f - 20 + i * (PAUSE_H + PAUSE_GAP), PAUSE_W, PAUSE_H};
+}
+constexpr Rectangle RESUME_BUTTON = pauseButton(0);
+constexpr Rectangle CONFIG_BUTTON = pauseButton(1);
+constexpr Rectangle MENU_BUTTON = pauseButton(2);
 constexpr Color PAUSE_SHADE = {0, 0, 0, 180};
 /// The open log covers the world between the strips, left of the buttons,
 /// darker than the strips so it reads over anything.
@@ -326,10 +330,15 @@ const Human* WorldScene::nearestLiving() const {
 }
 
 void WorldScene::update(float dt, const Canvas& canvas) {
-    if (ui::backPressed()) pauseToggle_ = true;
+    // Back from CONFIGURATION goes to the pause menu, not the world.
+    if (ui::backPressed()) {
+        if (configOpen_) configOpen_ = false;
+        else pauseToggle_ = true;
+    }
     if (pauseToggle_) {
         pauseToggle_ = false;
         paused_ = !paused_;
+        configOpen_ = false;
     }
     if (toMenu_) {
         next = std::make_unique<MenuScene>();
@@ -347,6 +356,7 @@ void WorldScene::update(float dt, const Canvas& canvas) {
     if (IsKeyPressed(KEY_F5)) {
         talk::reload();
         sprites::reload();
+        audio::reload();
     }
     int step = zoomStep_;
     zoomStep_ = 0;
@@ -438,6 +448,7 @@ void WorldScene::update(float dt, const Canvas& canvas) {
     }
     mapTime_ += dt;
     for (float left = dt * SPEEDS[speed_]; left > 0.0f; left -= MAX_TICK) world_.update(std::min(left, MAX_TICK));
+    hearing_.update(world_, world_.human(follow_), SPEEDS[speed_], reveal_);
     if (world_.human(0).dead()) record();
 }
 
@@ -708,8 +719,13 @@ void WorldScene::drawPause(Vector2 mouse, int width) {
     auto shifted = [shift](Rectangle r) { return Rectangle{r.x + shift, r.y, r.width, r.height}; };
     Rectangle menu = shifted(MENU_BUTTON);
     DrawRectangle(0, 0, width, Canvas::H, PAUSE_SHADE);
+    if (configOpen_) {
+        if (config_.draw(mouse, width)) configOpen_ = false;
+        return;
+    }
     ui::textCentred("PAUSED", width / 2, PAUSE_TITLE_Y, ui::BRIGHT);
     pauseToggle_ |= ui::button(shifted(RESUME_BUTTON), "RESUME", mouse);
+    configOpen_ |= ui::button(shifted(CONFIG_BUTTON), "CONFIGURATION", mouse);
     toMenu_ |= ui::button(menu, "MAIN MENU", mouse);
     if (!recorded_) {
         std::string warning = caps(world_.human(0).name) + " WILL BE LEFT BEHIND";

@@ -2,7 +2,8 @@
 #include "scenes/scene.h"
 
 /// The first screen: the game's name, ENTER THE MALL to make a human
-/// (or ENTER), and OBITUARY for the humans you made whose runs are over.
+/// (or ENTER), OBITUARY for the humans you made whose runs are over, and
+/// CONFIGURATION for the settings.
 class MenuScene : public Scene {
 public:
     void update(float dt, const Canvas& canvas) override;
@@ -11,4 +12,5 @@ public:
 private:
     bool enter_ = false;
     bool obituary_ = false;
+    bool configuration_ = false;
 };
