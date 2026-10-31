@@ -34,6 +34,7 @@ Status as of 2026-10-30.
 | [trap_wary_plan.md](trap_wary_plan.md) | Wary of the next trap like one that caught it: table cakes after darts, one-door rooms after a slam | Built | Should seeing someone else caught make it wary too? |
 | [feral_plan.md](feral_plan.md) | The feral human's look: a flag that repaints every frame ragged (dirty, torn clothes, messed-up hair) on the same skeleton | Art built; never set in play | When it turns feral and what changes (not asked yet); questions 1–3 on the look |
 | [lines_editor_plan.md](lines_editor_plan.md) | `make lines`: a local web page for rewriting data/lines.txt, with bubble previews, review marks and Claude's drafts | Built | — |
+| [machine_room_art_plan.md](machine_room_art_plan.md) | Old computers as art: server rack, CRT terminal, console desk, cable floor decals | Art built | Where they stand in the world; any use |
 | [human_split_plan.md](human_split_plan.md) | Splitting Human into per-system classes | Not started | Advised against for now; if done, only system by system, when that system is being reworked anyway |
 
 ## Known gaps found by the tests
