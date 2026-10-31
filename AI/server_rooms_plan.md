@@ -170,9 +170,15 @@ World (`src/world/server_room.h`, `src/world/gen_server.cpp`):
   cables and the door; cables in front of each row joined by a trunk down
   the side away from the desk, out through the front wall.
 - `ChunkKind::DataCentre`: a grid of 4-wide corridors 28 x 24 apart, up
-  to 8 server rooms a slot carved between them, and 2-3 basins a slot at
-  the crossings, as it has no other water (the soak found the spawn's
-  neighbour turned data centre left everyone to die of thirst).
+  to 8 server rooms a slot carved between them, and a washroom a slot
+  (user, in place of the basins first tried at the crossings): a little
+  tiled room flush with a corridor, its doorway in the middle of the
+  corridor's wall, 3 deep, with 2-3 toilets a cell apart along its back
+  wall (`World::placeWashrooms`, gen_toilets.cpp). It is placed before the
+  server rooms, which fit round it and never run their corridor into it.
+  Its toilets are the data centre's only water: the parched drink from
+  them. In soak seed 2, whose spawn's neighbour is a data centre, 3 of 10
+  live where 16 of 23 did with basins (with no water at all, none did).
 - Airlock doors: a key opens one from outside (`World::unlock`); from
   inside `World::pushOpen` opens it free. Each shuts and locks 1 s after
   nobody stands in it (`updateAirlocks`).
@@ -195,12 +201,13 @@ Humans:
   place of the usual lying-down line and asking for a watch).
 
 Tools and tests: `make genprobe` checks no server room floor is walled
-off; `make shot SHOT_ARGS="--server"`; `tools/server_probe.cpp`;
+off; `make shot SHOT_ARGS="--server"` and `"--washroom"`; `tools/server_probe.cpp`;
 scenarios `hum-sleep`, `hum-out`, `hum-lobby`.
 
+Settled: each server room brings one key to its chunk, though getting in
+takes two (user).
+
 Defaults taken, for the user to confirm or change:
-- **Each server room brings one key** to its chunk, though getting in
-  takes two.
 - The desk's chair cells stay walkable.
 - A door shuts 1 s after nobody stands in it, so someone close behind
   can slip through on the same key.

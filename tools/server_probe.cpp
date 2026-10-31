@@ -1,5 +1,5 @@
 // Grows a soak world from its spawn through its doors, as humans would,
-// and reports on each chunk: its kind, server rooms, keys, locked doors and water, so a data
+// and reports on each chunk: its kind, server rooms, keys, locked doors, toilets and water, so a data
 // centre's effect on the humans can be checked. Saves a picture of each
 // data centre to build/server-probe-<chunk>.png (genprobe's colours).
 //
@@ -41,19 +41,20 @@ int main(int argc, char** argv) {
     }
     for (const auto& cp : P::chunks(w)) {
         const Chunk& c = *cp;
-        int keys = 0, water = 0, locked = 0, rooms = 0, floor = 0;
+        int keys = 0, water = 0, locked = 0, rooms = 0, floor = 0, toilets = 0;
         for (Vec2i k : w.keys()) keys += w.chunkIdAt(k) == c.id;
         for (int y = 0; y < c.h; y++)
             for (int x = 0; x < c.w; x++) {
                 Tile t = c.get({x, y});
                 water += drinkable(t);
                 locked += t == Tile::DoorLocked;
+                toilets += t == Tile::Toilet;
                 floor += t == Tile::Floor;
             }
         for (const ServerRoom& r : w.serverRooms()) rooms += w.chunkIdAt({r.x, r.y}) == c.id;
-        std::printf("chunk %2d kind %d slots %d at (%d,%d): %d server rooms, %d keys, %d locked door cells, %d water, "
+        std::printf("chunk %2d kind %d slots %d at (%d,%d): %d server rooms, %d keys, %d locked door cells, %d toilets, %d water, "
                     "%d floor\n",
-                    c.id, int(c.kind), c.slotCount(), c.slot.x, c.slot.y, rooms, keys, locked, water, floor);
+                    c.id, int(c.kind), c.slotCount(), c.slot.x, c.slot.y, rooms, keys, locked, toilets, water, floor);
         if (c.kind != ChunkKind::DataCentre) continue;
         Image img = GenImageColor(c.w, c.h, BLACK);
         for (int y = 0; y < c.h; y++)
@@ -67,6 +68,7 @@ int main(int argc, char** argv) {
                 case Tile::Rack: col = {40, 200, 80, 255}; break;
                 case Tile::Console: col = {160, 230, 120, 255}; break;
                 case Tile::Table: col = {140, 90, 50, 255}; break;
+                case Tile::Toilet: col = {250, 250, 250, 255}; break;
                 default: if (drinkable(c.get({x, y}))) col = {60, 120, 200, 255}; break;
                 }
                 if (w.hasKey(c.origin() + Vec2i{x, y})) col = {250, 230, 0, 255};

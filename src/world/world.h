@@ -277,6 +277,10 @@ private:
     /// A toilet plaza's toilets: along the hall's walls and round its
     /// columns, wherever one blocks nothing. In gen_toilets.cpp.
     void placePlazaToilets(Chunk& c);
+    /// A data centre's washrooms, up to count: walled rooms off a corridor
+    /// with toilets along the back. In gen_toilets.cpp. Returns their floor
+    /// boxes, the doorway as centre.
+    std::vector<gen::RoomBox> placeWashrooms(Chunk& c, Rng& dice, int count);
     /// Now and then, in a room network or plaza, a vending machine or a
     /// pair against a straight wall, clear of doors and slam rooms. In
     /// gen_vending.cpp.
@@ -290,8 +294,8 @@ private:
     void updateMachines(float dt);
     /// Server rooms carved into solid wall, up to count of them, each
     /// behind its airlock and grown inside to fit. In gen_server.cpp.
-    /// Returns how many were made.
-    int placeServerRooms(Chunk& c, Rng& dice, int count);
+    /// Returns how many were made. None opens into a room kept off.
+    int placeServerRooms(Chunk& c, Rng& dice, int count, const std::vector<gen::RoomBox>& keepOff = {});
     /// Fills a server room's floor with rows of racks, a desk on the back
     /// wall when it is big enough, terminals and cables. In gen_server.cpp.
     void furnishServerRoom(Chunk& c, Rng& dice, const ServerRoom& r, Vec2i door);

@@ -45,8 +45,7 @@ constexpr int DESK_ROOM_W = 8, DESK_ROOM_H = 7;
 constexpr int TERMINAL_FLOOR = 90;
 /// The raised floor: a seam round every cell, in grey.
 constexpr Floor SERVER_FLOOR{FloorPattern::Grid, 0};
-/// The data centre's corridors: this wide, so a basin fits at each crossing,
-/// laid out on a grid this far apart.
+/// The data centre's corridors: this wide, laid out on a grid this far apart.
 constexpr int CENTRE_CORRIDOR = 4, CENTRE_PITCH_X = 28, CENTRE_PITCH_Y = 24;
 
 constexpr Vec2i SIDES[] = {{0, -1}, {1, 0}, {0, 1}, {-1, 0}};
@@ -75,7 +74,7 @@ void dataCentre(Chunk& c, Rng& rng) {
 
 } // namespace gen
 
-int World::placeServerRooms(Chunk& c, Rng& dice, int count) {
+int World::placeServerRooms(Chunk& c, Rng& dice, int count, const std::vector<gen::RoomBox>& keepOff) {
     const std::vector<float>& weights = c.kind == ChunkKind::DataCentre ? CENTRE_SIZE_WEIGHTS : ROOMS_SIZE_WEIGHTS;
     const Floor paint = c.paint;
     int made = 0;
@@ -104,7 +103,9 @@ int World::placeServerRooms(Chunk& c, Rng& dice, int count) {
         bool reached = false;
         for (Vec2i p = outer + out; c.interior(p) && int(corridor.size()) <= SERVER_CORRIDOR_MAX; p = p + out) {
             if (c.get(p) == Tile::Floor) {
-                reached = true;
+                reached = std::none_of(keepOff.begin(), keepOff.end(), [&](const gen::RoomBox& b) {
+                    return p.x >= b.x && p.y >= b.y && p.x < b.x + b.w && p.y < b.y + b.h;
+                });
                 break;
             }
             if (c.get(p) != Tile::Wall) break;

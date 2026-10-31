@@ -109,8 +109,9 @@ constexpr int SPAWN_STATUE_GAP = 14;
 /// Cells per side of a basin. A plaza with no fountain gets this many.
 constexpr int BASIN_SIZE = 2;
 constexpr int PLAZA_BASINS_MIN = 1, PLAZA_BASINS_MAX = 2;
-/// Basins a data centre has at its corridor crossings, for each slot it covers.
-constexpr int CENTRE_BASINS_MIN = 2, CENTRE_BASINS_MAX = 3;
+/// Washrooms a data centre has for each slot it covers. It has no other
+/// water than their toilets (user).
+constexpr int CENTRE_WASHROOMS_PER_SLOT = 1;
 /// A statue keeps at least this many cells from any door, and from the
 /// cell it is told to keep clear.
 constexpr int STATUE_DOOR_GAP = 3;
@@ -321,17 +322,18 @@ void World::generate(Vec2i slot, Vec2i entry) {
     if (c.kind == ChunkKind::Rooms) slams = gen::slamRooms(c, rng_, rng_.range(0, SLAM_ROOMS_MAX) * slotCount);
     // Server rooms after the slam rooms: nothing digs after either.
     int servers = 0;
-    if (c.kind == ChunkKind::DataCentre)
-        servers = placeServerRooms(c, serverDice, CENTRE_ROOMS_PER_SLOT * slotCount);
+    if (c.kind == ChunkKind::DataCentre) {
+        // Its washrooms first, so the server rooms fit round them.
+        std::vector<gen::RoomBox> washrooms = placeWashrooms(c, serverDice, CENTRE_WASHROOMS_PER_SLOT * slotCount);
+        servers = placeServerRooms(c, serverDice, CENTRE_ROOMS_PER_SLOT * slotCount, washrooms);
+    }
     else if (c.kind == ChunkKind::Rooms && serverDice.chance(SERVER_ROOM_CHANCE))
         servers = placeServerRooms(c, serverDice, 1);
-    // A plaza without a fountain has basins to drink from instead, and a
-    // data centre, which has no water of its own, some at its crossings.
-    if ((c.kind == ChunkKind::Plaza && plaza.islandSize.x == 0) || c.kind == ChunkKind::DataCentre) {
-        int basins = c.kind == ChunkKind::DataCentre ? serverDice.range(CENTRE_BASINS_MIN, CENTRE_BASINS_MAX) * slotCount
-                                                      : rng_.range(PLAZA_BASINS_MIN, PLAZA_BASINS_MAX);
+    // A plaza without a fountain has basins to drink from instead.
+    if (c.kind == ChunkKind::Plaza && plaza.islandSize.x == 0) {
+        int basins = rng_.range(PLAZA_BASINS_MIN, PLAZA_BASINS_MAX);
         for (Vec2i s : deepSpots(c, entry - c.origin()))
-            if (basins > 0 && !serverRoomAt(s) && placeBasin(c, s)) basins--;
+            if (basins > 0 && placeBasin(c, s)) basins--;
     }
     std::vector<Vec2i> spots = deepSpots(c, entry - c.origin());
     // Nothing lies in a slam room but its bait, nor in a server room or its airlock.
@@ -357,7 +359,7 @@ void World::generate(Vec2i slot, Vec2i entry) {
     spots.insert(spots.begin(), deepKiosks.begin(), deepKiosks.end());
     TableMaterial house = randomMaterial(rng_);
     size_t next = 0, nextKiosk = 0;
-    // A server room brings one key, though getting in takes two (a default: the user may change it).
+    // A server room brings one key, though getting in takes two (user).
     int keys = fresh + int(slams.size()) + servers;
     keys += (keys + LOCKS_PER_SPARE_KEY / 2) / LOCKS_PER_SPARE_KEY;
     for (int i = 0; i < keys; i++)

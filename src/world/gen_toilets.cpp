@@ -5,7 +5,9 @@
 // stretch of wall with floor all round the rest of it so it blocks nothing,
 // and one now and then in a maze, filling the end of a dead end. A maze may
 // also have a restroom: a tiled hall cut through it, its walls lined with
-// toilets. A toilet plaza has them all round its walls and columns.
+// toilets. A toilet plaza has them all round its walls and columns. A data
+// centre has a washroom or two: a little tiled room off a corridor, walled
+// in, with a row of toilets along its back wall (user).
 
 namespace {
 
@@ -34,6 +36,11 @@ constexpr FloorPattern RESTROOM_PATTERNS[] = {FloorPattern::Grid, FloorPattern::
 constexpr uint8_t RESTROOM_PALETTES[] = {2, 5, 7};
 /// Share of the spots that fit a toilet in a toilet plaza that get one.
 constexpr float PLAZA_TOILET_FILL = 0.7f;
+/// A data centre's washroom: this many toilets, a cell apart along its
+/// back wall, and this many rows of floor in front of them.
+constexpr int WASHROOM_TOILETS_MIN = 2, WASHROOM_TOILETS_MAX = 3;
+constexpr int WASHROOM_DEPTH = 3;
+constexpr int WASHROOM_TRIES = 200;
 
 } // namespace
 
@@ -103,6 +110,48 @@ void World::placeRestrooms(Chunk& c) {
         line(mid - out, step, length, out);
         line(mid + out, step, length, -out);
     }
+}
+
+// The washroom's front wall is the corridor's own, so it sits flush with
+// it and the doorway in its middle opens straight out; the rest of it, its
+// walls included, is cut from solid wall, so it opens nowhere else.
+std::vector<gen::RoomBox> World::placeWashrooms(Chunk& c, Rng& dice, int count) {
+    std::vector<gen::RoomBox> made;
+    for (int t = 0; t < WASHROOM_TRIES * count && int(made.size()) < count; t++) {
+        const int toilets = dice.range(WASHROOM_TOILETS_MIN, WASHROOM_TOILETS_MAX);
+        // Its long side along the corridor: out is from the back wall to the doorway.
+        const Vec2i out = SIDES[size_t(dice.range(0, 3))], along{out.y != 0 ? 1 : 0, out.x != 0 ? 1 : 0};
+        const int len = 2 * toilets - 1, w = along.x ? len : WASHROOM_DEPTH, h = along.x ? WASHROOM_DEPTH : len;
+        const int x = dice.range(2, c.w - 3 - w), y = dice.range(2, c.h - 3 - h);
+        bool clear = true;
+        for (int yy = y - 1; yy <= y + h && clear; yy++)
+            for (int xx = x - 1; xx <= x + w && clear; xx++)
+                clear = c.interior({xx, yy}) && c.get({xx, yy}) == Tile::Wall;
+        if (!clear) continue;
+        // The back row, its first cell, and the doorway, the middle of the front wall.
+        const Vec2i back = out.x > 0 ? Vec2i{x, y} : out.x < 0 ? Vec2i{x + w - 1, y} : out.y > 0 ? Vec2i{x, y}
+                                                                                                 : Vec2i{x, y + h - 1};
+        const Vec2i door = back + along * (toilets - 1) + out * WASHROOM_DEPTH;
+        // Corridor all along the front wall's outside, so it reads as one of its walls.
+        for (int i = -1; i <= len && clear; i++) {
+            Vec2i p = back + along * i + out * (WASHROOM_DEPTH + 1);
+            clear = c.interior(p) && c.get(p) == Tile::Floor;
+        }
+        if (!clear) continue;
+
+        Floor before = c.paint;
+        c.paint = {dice.pick(RESTROOM_PATTERNS), dice.pick(RESTROOM_PALETTES)};
+        gen::carveRect(c, x, y, w, h);
+        gen::carve(c, door);
+        c.paint = before;
+        for (int i = 0; i < toilets; i++) {
+            Vec2i l = back + along * (2 * i);
+            c.set(l, Tile::Toilet);
+            toilets_[c.origin() + l] = {c.origin() + l + out, 0.0f, uint32_t(dice.next())};
+        }
+        made.push_back({x, y, w, h, door});
+    }
+    return made;
 }
 
 // A toilet has wall behind it and floor on its sides, all three cells in

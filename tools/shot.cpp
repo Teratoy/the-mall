@@ -15,6 +15,7 @@
 //                  stands in it, and put the followed human in front of it
 //   --server       grow the mall round the spawn until a server room
 //                  stands in it, and put the followed human inside it
+//   --washroom     the same for a data centre's washroom, the human at its doorway
 //   --pile         put a heap of cakes and bottles down near the human at
 //                  the start, to see how piles look
 //   --smells       leave a big and a small pile of fresh feces near the
@@ -126,13 +127,47 @@ struct ShotProbe {
             return;
         }
     }
+
+    /// Grows the mall round the spawn until a data centre stands in it, and
+    /// puts the followed human in a doorway of one of its washrooms: the
+    /// floor cell walled on both sides two in front of a toilet.
+    static void washroom(WorldScene& s) {
+        World& w = s.world_;
+        // In a chunk with a server room: the restrooms of mazes have none.
+        auto inCentre = [&](Vec2i c) {
+            return std::any_of(w.serverRooms().begin(), w.serverRooms().end(),
+                               [&](const ServerRoom& r) { return w.chunkIdAt({r.x, r.y}) == w.chunkIdAt(c); });
+        };
+        auto found = [&] {
+            for (const auto& [at, t] : w.toilets()) if (inCentre(at)) return true;
+            return false;
+        };
+        for (int r = 1; r <= 6 && !found(); r++)
+            for (int y = -r; y <= r; y++)
+                for (int x = -r; x <= r; x++) w.ensureGenerated(Vec2i{x, y} * CHUNK + Vec2i{CHUNK / 2, CHUNK / 2});
+        std::vector<Vec2i> doors;
+        for (const auto& [at, t] : w.toilets()) {
+            if (!inCentre(at)) continue;
+            Vec2i out = t.front - at, door = at + out * 3, side{out.y, out.x};
+            if (w.tile(door) == Tile::Floor && w.tile(door + side) == Tile::Wall && w.tile(door - side) == Tile::Wall)
+                doors.push_back(door);
+        }
+        if (doors.empty()) return;
+        std::sort(doors.begin(), doors.end(), [](Vec2i a, Vec2i b) { return a.y != b.y ? a.y < b.y : a.x < b.x; });
+        Human& h = w.human(s.follow_);
+        Vec2i to = doors.front();
+        if (w.occupant(to)) return;
+        w.moveOccupant(h.cell, to, &h);
+        h.cell = h.prev = to;
+        h.observe(w);
+    }
 };
 
 int main(int argc, char** argv) {
     if (argc < 2 || argv[1][0] == '-') {
         std::fprintf(stderr, "usage: %s out.png [--scene world|menu|create|obituary] [--seconds S] [--seed N] "
                              "[--zoom 0-3] [--stats] [--log] [--map] [--reveal] [--wide] [--pile] [--smells] "
-                             "[--vending] [--server]\n", argv[0]);
+                             "[--vending] [--server] [--washroom]\n", argv[0]);
         return 1;
     }
     const char* out = argv[1];
@@ -141,7 +176,7 @@ int main(int argc, char** argv) {
     uint64_t seed = 7;
     int zoom = 2;
     bool stats = false, log = false, reveal = false, wide = false, pile = false, smelly = false, vending = false,
-         map = false, server = false;
+         map = false, server = false, washroom = false;
     for (int i = 2; i < argc; i++) {
         auto value = [&]() -> const char* {
             if (i + 1 >= argc) {
@@ -163,6 +198,7 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(argv[i], "--smells")) smelly = true;
         else if (!std::strcmp(argv[i], "--vending")) vending = true;
         else if (!std::strcmp(argv[i], "--server")) server = true;
+        else if (!std::strcmp(argv[i], "--washroom")) washroom = true;
         else {
             std::fprintf(stderr, "unknown option %s\n", argv[i]);
             return 1;
@@ -185,6 +221,7 @@ int main(int argc, char** argv) {
             if (smelly) ShotProbe::smells(*w);
             if (vending) ShotProbe::vending(*w);
             if (server) ShotProbe::server(*w);
+            if (washroom) ShotProbe::washroom(*w);
             world = w.get();
             s = std::move(w);
         } else if (scene == "menu") {
