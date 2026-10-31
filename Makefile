@@ -31,7 +31,7 @@ BOTTLESHEET := build/bottle_sheet
 # A human beside itself gone feral, in every pose, with all that rides on it.
 FERALSHEET := build/feral_sheet
 
-.PHONY: all run clean stuck check golden coverage shot scenarios genprobe hidef bottlesheet feralsheet trapprobe icon apk install-apk logcat
+.PHONY: all run clean stuck check golden coverage shot scenarios genprobe hidef bottlesheet feralsheet trapprobe icon apk install-apk logcat simprofile gprof
 
 all: $(BIN)
 
@@ -119,7 +119,33 @@ $(LIFELOG): tools/lifelog.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
 clean:
 	rm -rf build
 
--include $(OBJ:.o=.d)
+-include $(OBJ:.o=.d) $(PG_OBJ:.o=.d)
+
+# The sim's own time on one soak seed, without the soak watching it
+# (tools/sim_profile.cpp): build/sim_profile [seed] [minutes] [crowd].
+SIMPROFILE := build/sim_profile
+SIMPROFILE_ARGS ?= 4 15 6
+$(SIMPROFILE): tools/sim_profile.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out tests/probe.h,$^) -o $@ $(LDLIBS)
+
+simprofile: $(SIMPROFILE)
+	./$(SIMPROFILE) $(SIMPROFILE_ARGS)
+
+# The same run built with -pg, its gprof flat profile and call graph in
+# build/gprof.txt. The drawing code isn't needed, so it isn't built. It runs
+# from here, as data/ is looked for beside the build folder.
+PG_SRC := $(filter-out src/main.cpp src/render/% src/scenes/% src/ui/%,$(SRC))
+PG_OBJ := $(PG_SRC:src/%.cpp=build/pg/%.o)
+build/pg/%.o: src/%.cpp
+	@mkdir -p $(@D)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -pg -c $< -o $@
+
+build/pg/sim_profile: tools/sim_profile.cpp tests/probe.h $(PG_OBJ)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -pg $(filter-out tests/probe.h,$^) -o $@ $(LDLIBS)
+
+gprof: build/pg/sim_profile
+	./build/pg/sim_profile $(SIMPROFILE_ARGS) && mv gmon.out build/pg/ && gprof -b build/pg/sim_profile build/pg/gmon.out > build/gprof.txt
+	@echo "gprof: build/gprof.txt"
 
 # Every trap set off in the soak worlds: same plate again, or a new one.
 TRAPPROBE := build/trap_probe

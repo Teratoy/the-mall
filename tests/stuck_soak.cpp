@@ -180,6 +180,16 @@ struct SeedPool {
     }
 };
 
+// How many different cells a run of timed cells went over. Run every tick
+// for every human, so it sorts a reused buffer rather than building a set.
+static size_t distinctCells(const std::deque<std::pair<float, Vec2i>>& timed) {
+    static std::vector<std::pair<int, int>> cells;
+    cells.clear();
+    for (auto& [_, c] : timed) cells.push_back({c.x, c.y});
+    std::sort(cells.begin(), cells.end());
+    return size_t(std::unique(cells.begin(), cells.end()) - cells.begin());
+}
+
 static std::string label(const Human& h) {
     char b[200];
     std::snprintf(b, sizeof b, "#%d %s/%s @(%d,%d) tgt(%d,%d) path%zu partner%d leader%d foe%d keys%d cakes%d hunger%.2f",
@@ -297,24 +307,22 @@ int main(int argc, char** argv) {
                     T.stillBy[std::string(STATE[int(h.state)]) + "/" + GOAL[int(h.goal)]]++;
                     note("STILL30", h, "");
                 }
-                if (k.steps.size() >= 25 && t > 60) {
-                    std::set<std::pair<int, int>> distinct;
-                    for (auto& [_, c] : k.steps) distinct.insert({c.x, c.y});
-                    if (distinct.size() <= 8 && t - k.reportedLoop > 60) {
+                if (k.steps.size() >= 25 && t > 60 && t - k.reportedLoop > 60) {
+                    size_t distinct = distinctCells(k.steps);
+                    if (distinct <= 8) {
                         k.reportedLoop = t;
                         T.loops++;
                         T.loopBy[GOAL[int(h.goal)]]++;
-                        note("LOOP", h, std::to_string(k.steps.size()) + " steps over " + std::to_string(distinct.size()) + " cells");
+                        note("LOOP", h, std::to_string(k.steps.size()) + " steps over " + std::to_string(distinct) + " cells");
                     }
                 }
-                if (k.targets.size() >= 8) {
-                    std::set<std::pair<int, int>> distinct;
-                    for (auto& [_, c] : k.targets) distinct.insert({c.x, c.y});
-                    if (distinct.size() <= 3 && t - k.reportedFlip > 60) {
+                if (k.targets.size() >= 8 && t - k.reportedFlip > 60) {
+                    size_t distinct = distinctCells(k.targets);
+                    if (distinct <= 3) {
                         k.reportedFlip = t;
                         T.flips++;
                         T.flipBy[GOAL[int(h.goal)]]++;
-                        note("FLIP", h, std::to_string(k.targets.size()) + " target changes among " + std::to_string(distinct.size()));
+                        note("FLIP", h, std::to_string(k.targets.size()) + " target changes among " + std::to_string(distinct));
                     }
                 }
             }
