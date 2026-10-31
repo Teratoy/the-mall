@@ -17,7 +17,7 @@ bool Human::seekFood(World& world) {
     auto it = social_.lastSeen.find(fight_.feared);
     bool afraid = fight_.fear > 0.0f && it != social_.lastSeen.end();
     Shy shied = Shy::None;
-    auto p = search(world, [&](Vec2i c) {
+    auto p = memory.cakes.empty() ? searchedNothing() : search(world, [&](Vec2i c) {
         auto k = cakeInReach(c, &shied);
         return k && !(afraid && cheb(*k, it->second) < FLEE_DIST);
     });

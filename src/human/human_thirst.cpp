@@ -236,7 +236,8 @@ bool Human::seekWater(World& world) {
         auto w = waterBeside(c);
         return w ? knownFoul(world, *w) : 0.0f;
     };
-    auto find = [&] {
+    auto find = [&]() -> std::optional<std::vector<Vec2i>> {
+        if (!memory.known(Tile::Water) && !memory.known(Tile::Basin)) return searchedNothing();
         return search(world, [&](Vec2i c) {
             auto w = waterBeside(c);
             return w && wouldDrink(world, c, *w);
@@ -697,7 +698,9 @@ float Human::waterTether() const {
 // from the floor in front, as for going.
 bool Human::seekToilet(World& world) {
     if (!parched() && !isErratic()) return false;
-    auto p = search(world, [&](Vec2i c) { return toiletBefore(world, c).has_value(); }, true);
+    auto p = !memory.known(Tile::Toilet)
+                 ? searchedNothing()
+                 : search(world, [&](Vec2i c) { return toiletBefore(world, c).has_value(); }, true);
     if (!p) return false;
     if (!p->empty()) {
         startWalking(Goal::Drink, *p);

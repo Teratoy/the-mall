@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <iterator>
+#include <memory>
 #include <queue>
 
 // One cell along the path. A cell in a slot nobody has entered yet is
@@ -411,6 +412,74 @@ std::optional<std::vector<Vec2i>> Human::search(const World& world, const std::f
     return searchFrom(world, cell, done, avoidCrowd, goalCost);
 }
 
+namespace {
+
+/// What one search knows of a cell: its best cost so far and the cell it
+/// came from, and whether the cell is open to it, worked out once.
+struct SearchCell {
+    int cost;
+    Vec2i from;
+    uint32_t reached = 0;
+    uint32_t judged = 0;
+    bool open;
+};
+
+/// The cells of every search, kept between searches so they need not be
+/// made and cleared each time: a cell counts for a search only when its
+/// stamp is that search's. Held per chunk slot, the last slot looked up
+/// kept at hand, since a search mostly steps within one slot.
+class SearchGrid {
+public:
+    void begin() {
+        if (++stamp_ == 0) {
+            for (auto& block : blocks_) std::fill(block.begin(), block.end(), SearchCell{});
+            stamp_ = 1;
+        }
+        lastSlot_ = {INT32_MIN, INT32_MIN};
+        last_ = nullptr;
+    }
+    uint32_t stamp() const { return stamp_; }
+
+    SearchCell& at(Vec2i c) {
+        Vec2i slot{floorDiv(c.x, CHUNK), floorDiv(c.y, CHUNK)};
+        if (slot != lastSlot_) {
+            auto [it, made] = slots_.try_emplace(slot, blocks_.size());
+            if (made) blocks_.emplace_back(size_t(CHUNK * CHUNK));
+            lastSlot_ = slot;
+            last_ = blocks_[it->second].data();
+        }
+        Vec2i l = c - slot * CHUNK;
+        return last_[l.y * CHUNK + l.x];
+    }
+
+    /// The cell and the eight round it, by [dy + 1][dx + 1]: away from a
+    /// slot's edge, all nine lie in one block at fixed steps from the cell.
+    void around(Vec2i c, SearchCell* out[3][3]) {
+        SearchCell* mid = &at(c);
+        Vec2i l = c - lastSlot_ * CHUNK;
+        if (l.x > 0 && l.y > 0 && l.x < CHUNK - 1 && l.y < CHUNK - 1) {
+            for (int dy = -1; dy <= 1; dy++)
+                for (int dx = -1; dx <= 1; dx++) out[dy + 1][dx + 1] = mid + dy * CHUNK + dx;
+            return;
+        }
+        for (int dy = -1; dy <= 1; dy++)
+            for (int dx = -1; dx <= 1; dx++) out[dy + 1][dx + 1] = &at(c + Vec2i{dx, dy});
+    }
+
+private:
+    std::unordered_map<Vec2i, size_t, Vec2iHash> slots_;
+    std::vector<std::vector<SearchCell>> blocks_;
+    uint32_t stamp_ = 0;
+    Vec2i lastSlot_{INT32_MIN, INT32_MIN};
+    SearchCell* last_ = nullptr;
+};
+
+/// One grid per depth, in case a search is ever begun from inside another.
+std::vector<std::unique_ptr<SearchGrid>> searchGrids;
+size_t searchDepth = 0;
+
+} // namespace
+
 // A done cell with a goal cost goes back in the queue as an ending, at
 // what it costs to get there and end there; the first ending out wins.
 std::optional<std::vector<Vec2i>> Human::searchFrom(const World& world, Vec2i start,
@@ -423,45 +492,67 @@ std::optional<std::vector<Vec2i>> Human::searchFrom(const World& world, Vec2i st
         bool ending = false;
         bool operator>(const Node& o) const { return cost != o.cost ? cost > o.cost : tie > o.tie; }
     };
+    if (searchGrids.size() <= searchDepth) searchGrids.push_back(std::make_unique<SearchGrid>());
+    SearchGrid& grid = *searchGrids[searchDepth];
+    struct Depth {
+        Depth() { searchDepth++; }
+        ~Depth() { searchDepth--; }
+    } depth;
+    grid.begin();
+    const uint32_t stamp = grid.stamp();
     auto shunned = shunZone(world, start);
-    auto open = [&](Vec2i c) {
+    auto open = [&](Vec2i c, SearchCell& s) {
+        if (s.judged == stamp) return s.open;
+        s.judged = stamp;
+        s.open = false;
         if (!knownPassable(c) || avoids(c) || (shunned && shunned(c))) return false;
-        if (!avoidCrowd) return true;
-        Human* o = world.occupant(c);
-        return !o || o == this || !sight.sees(c);
+        Human* o = avoidCrowd ? world.occupant(c) : nullptr;
+        s.open = !o || o == this || !sight.sees(c);
+        return s.open;
     };
     std::priority_queue<Node, std::vector<Node>, std::greater<Node>> frontier;
-    std::unordered_map<Vec2i, int, Vec2iHash> cost;
-    std::unordered_map<Vec2i, Vec2i, Vec2iHash> from;
     Rng tie(rng_.next());
     frontier.push({0, 0, start});
-    cost[start] = 0;
+    {
+        SearchCell& s = grid.at(start);
+        s.reached = stamp;
+        s.cost = 0;
+    }
     int expanded = 0;
     while (!frontier.empty() && expanded < SEARCH_LIMIT) {
         Node n = frontier.top();
         frontier.pop();
         int extra = 0;
         if (!n.ending) {
-            if (n.cost > cost[n.at]) continue;
+            if (n.cost > grid.at(n.at).cost) continue;
             if (done(n.at) && goalCost) extra = goalCost(n.at);
         }
         if (n.ending || (extra <= 0 && done(n.at))) {
             std::vector<Vec2i> path;
-            for (Vec2i c = n.at; c != start; c = from[c]) path.push_back(c);
+            for (Vec2i c = n.at; c != start; c = grid.at(c).from) path.push_back(c);
             return std::vector<Vec2i>(path.rbegin(), path.rend());
         }
         if (extra > 0) frontier.push({n.cost + extra, uint32_t(tie.next()), n.at, true});
         expanded++;
+        // Each way judged once: the corners look at the straight ways beside them.
+        SearchCell* near[3][3];
+        grid.around(n.at, near);
+        bool way[3][3];
+        for (Vec2i d : DIRS8) way[d.y + 1][d.x + 1] = open(n.at + d, *near[d.y + 1][d.x + 1]);
         for (Vec2i d : DIRS8) {
-            Vec2i m = n.at + d;
-            if (!open(m)) continue;
+            if (!way[d.y + 1][d.x + 1]) continue;
             bool diagonal = d.x != 0 && d.y != 0;
-            if (diagonal && (!open(n.at + Vec2i{d.x, 0}) || !open(n.at + Vec2i{0, d.y}))) continue;
-            int c = n.cost + (diagonal ? 14 : 10) + bloodCost(m) + messCost(world, m);
-            auto it = cost.find(m);
-            if (it != cost.end() && it->second <= c) continue;
-            cost[m] = c;
-            from[m] = n.at;
+            if (diagonal && (!way[1][d.x + 1] || !way[d.y + 1][1])) continue;
+            Vec2i m = n.at + d;
+            // Blood and mess only add, so a cell already reached as cheaply is skipped unweighed.
+            int c = n.cost + (diagonal ? 14 : 10);
+            SearchCell& s = *near[d.y + 1][d.x + 1];
+            if (s.reached == stamp && s.cost <= c) continue;
+            c += bloodCost(m) + messCost(world, m);
+            if (s.reached == stamp && s.cost <= c) continue;
+            s.reached = stamp;
+            s.cost = c;
+            s.from = n.at;
             frontier.push({c, uint32_t(tie.next()), m});
         }
     }
