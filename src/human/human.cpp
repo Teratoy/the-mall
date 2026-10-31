@@ -208,6 +208,7 @@ void Human::live(World& world, float dt) {
     thirst = std::min(1.0f, thirst + THIRST_PER_SECOND[size_t(action())] * dt);
     tire(dt);
     press(dt);
+    soil(dt);
     if (hunger >= 1.0f) health -= STARVE_RATE * dt;
     if (thirst >= 1.0f) health -= PARCH_RATE * dt;
     if (!hungry() && !thirsty() && wounds.empty() && mind_.sick <= 0.0f)
@@ -562,7 +563,7 @@ void Human::choose(World& world) {
     if (!needy) {
         // Guilt keeps it to itself.
         want(Want::Escort, -GUILT_ALONE * mind_.guilt + parchedToLead(world));
-        want(Want::Wash, wantsWashing() ? FILTH_WASH * (0.5f + modesty()) : 0.0f);
+        want(Want::Wash, wantsWashing() ? FILTH_WASH * (0.5f + modesty()) : wantsScrub() ? GRIME_WASH * modesty() : 0.0f);
         if (float fill = fillDrive(); fill >= 0.0f) want(Want::Fill, fill);
         // The cunning go out of their way to lie to a foe.
         if (social_.partner >= 0)

@@ -1,10 +1,10 @@
-// Draws a sheet of one human beside itself gone feral, in every pose and
+// Draws a sheet of one human beside itself gone dirty, in every pose and
 // with everything that rides on the body: a cake carried, a bottle in the
 // pocket and in the hand, pointing, blood, feces and piss, and the remains
 // eaten and rotten. It all goes through HumanSprites::draw, as in the game,
-// so the sheet shows whether the feral frames still line up with all of it.
-// Usage: build/feral_sheet [out.png] [seed] [scale] [styles]   (make feralsheet)
-// Each cell is the normal human on the left and the feral one on the right,
+// so the sheet shows whether the dirty frames still line up with all of it.
+// Usage: build/dirty_sheet [out.png] [seed] [scale] [styles]   (make dirtysheet)
+// Each cell is the normal human on the left and the dirty one on the right,
 // with what it shows written above. With styles, the sheet is instead one
 // row for each hair style, in a few poses, each row a human of its own with
 // and without a beard in turn.
@@ -104,7 +104,7 @@ Coated coat(const HumanLook& look, Coat c) {
 } // namespace
 
 int main(int argc, char** argv) {
-    const char* out = argc > 1 ? argv[1] : "build/feral-sheet.png";
+    const char* out = argc > 1 ? argv[1] : "build/dirty-sheet.png";
     uint64_t seed = argc > 2 ? std::strtoull(argv[2], nullptr, 10) : 42;
     int scale = argc > 3 ? std::atoi(argv[3]) : 4;
     bool styles = argc > 4 && std::string(argv[4]) == "styles";
@@ -170,7 +170,7 @@ int main(int argc, char** argv) {
 
     SetTraceLogLevel(LOG_WARNING);
     SetConfigFlags(FLAG_WINDOW_HIDDEN);
-    InitWindow(64, 64, "feral sheet");
+    InitWindow(64, 64, "dirty sheet");
     const int cellW = (2 * SLOT + PAIR_GAP) * scale, cellH = SLOT * scale + LABEL;
     const int rows = styles ? HAIRS : (int(cells.size()) + COLUMNS - 1) / COLUMNS;
     RenderTexture2D rt = LoadRenderTexture(COLUMNS * cellW, rows * cellH);
@@ -180,13 +180,13 @@ int main(int argc, char** argv) {
         const Bottle bottle{0.7f};
         BeginTextureMode(rt);
         ClearBackground(BACKDROP);
-        // Draws a row of cells for one human, normal and feral, from cell first on.
+        // Draws a row of cells for one human, normal and dirty, from cell first on.
         auto drawCells = [&](const HumanLook& normal, const std::vector<Cell>& row, int first, const char* tag) {
-            HumanLook feral = normal;
-            feral.feral = true;
+            HumanLook grubby = normal;
+            grubby.dirty = true;
             Coated coats[2][7];
             for (int f = 0; f < 2; f++)
-                for (int c = 0; c < 7; c++) coats[f][c] = coat(f ? feral : normal, Coat(c));
+                for (int c = 0; c < 7; c++) coats[f][c] = coat(f ? grubby : normal, Coat(c));
             for (size_t j = 0; j < row.size(); j++) {
                 const Cell& c = row[j];
                 int i = first + int(j);

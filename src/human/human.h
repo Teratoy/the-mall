@@ -235,6 +235,11 @@ public:
     /// How filthy it looks: the feces on its feet and legs and the piss
     /// on it, 0 to 1.
     float filth() const;
+    /// Gone unwashed so long it looks it: ragged, smudged, its hair a mess
+    /// (human_grime.cpp). Until it washes it all off.
+    bool dirty() const { return grime_.dirty; }
+    /// How long it has gone unwashed, 1 being long enough to turn dirty.
+    float grime() const { return grime_.level; }
     /// While Punching: the fist is out and the blow has landed.
     bool punchLanded = false;
     int keys = 0;
@@ -1450,6 +1455,24 @@ private:
         std::unordered_set<int> filthNoted;
     };
     Relief relief_;
+    /// Going unwashed (human_grime.cpp).
+    struct Grime {
+        /// 0 just washed; grows by 1 every GRIME_TIME, up to GRIME_MAX.
+        float level = 0.0f;
+        /// Turned dirty at level 1; clean again only once washed to 0.
+        bool dirty = false;
+    };
+    Grime grime_;
+    /// Grime building over dt, faster with blood, feces or piss on it.
+    void soil(float dt);
+    /// Modest enough to wash for grime and dried blood at all: the
+    /// shameless wash only fresh blood and feces off.
+    bool washesForLooks() const;
+    /// Dirty, and modest enough to wash for it now: the most modest as
+    /// soon as it turns dirty, the less modest only once far grimier.
+    bool wantsScrub() const;
+    /// Scrubs a little more grime off at the water. False once it is clean.
+    bool scrub();
     /// Bladder and bowels filling over dt; human_relief.cpp, like the rest
     /// of going.
     void press(float dt);

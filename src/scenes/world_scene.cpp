@@ -299,6 +299,7 @@ const HumanSprites& WorldScene::spritesFor(const Human& h) {
     if (!s) s = std::make_unique<HumanSprites>(h.look);
     s->bloody(h.stains);
     s->dirty(h.dirt, h.soaked);
+    s->setDirty(h.dirty());
     if (h.dead()) s->remains(1.0f - float(h.flesh) / Human::FLESH_MEALS, h.decay(), uint64_t(h.id) * 2654435761ULL + 1, h.diedAsleep());
     return *s;
 }
@@ -519,10 +520,11 @@ void WorldScene::drawStats(const Human& viewer, Rectangle area) {
     y = pipRow("ERRATIC", viewer.erratic(), x, right, y, viewer.isErratic() ? ERRATIC_INK : ui::INK);
     y = pipRow("GUILT", viewer.guilt(), x, right, y);
     y = pipRow("CRAVE", viewer.appetite(), x, right, y);
-    // How badly they need to go.
+    // How badly they need to go, and how long they have gone unwashed.
     y = section("BODY", x, y + SECTION_GAP);
     y = pipRow("BLADDER", viewer.bladder, x, right, y);
     y = pipRow("BOWELS", viewer.bowels, x, right, y);
+    y = pipRow("GRIME", viewer.grime(), x, right, y);
     y = section("LESSONS", x, y + SECTION_GAP);
     y = pipRow("HOARDS", viewer.lessons.hoard, x, right, y);
     y = pipRow("KEYS FIRST", viewer.lessons.keysFirst, x, right, y);

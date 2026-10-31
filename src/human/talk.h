@@ -124,6 +124,9 @@ enum class Moment {
     // theirs (to them), and their answer: owning up, denying it; a denial
     // seen through (to the denier).
     TellStash, SellStash, LieStash, StashTold, AskStash, OwnStash, DenyStash, CaughtDenying,
+    // Turning dirty from going unwashed, and washed clean of it again (both
+    // to nobody).
+    GotDirty, WashedClean,
     Count
 };
 

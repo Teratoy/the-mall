@@ -33,7 +33,7 @@ toolbox run -c claude-build make check        # soak vs golden output (~1 min)
 | `make coverage` | Lists log lines (`note(...)`) and talk moments that neither the soak nor the scenarios reached |
 | `make stuck` | The soak with its own arguments: `build/stuck_soak [seeds] [minutes] [verbose] [crowd]`. `TRACE=seed:id:from:to` follows one human |
 | `make bottlesheet` | Draws every pose with a bottle at several levels and dirt, scaled up, to `build/bottle-sheet.png` |
-| `make feralsheet` | Draws one human beside itself feral in every pose, with cake, bottle, blood and remains, to `build/feral-sheet.png` |
+| `make dirtysheet` | Draws one human beside itself dirty in every pose, with cake, bottle, blood and remains, to `build/dirty-sheet.png` |
 | `make genprobe` | Grows chunk interiors on every footprint (L, T, S, boxes) and checks they keep to it. `GENPROBE_ARGS="20 png"` also saves pictures to `build/genprobe-png/` |
 | `make apk` (on the host, not the toolbox) | Builds `build/TheMall-debug.apk` for the phone with the Android NDK. See `android/apk.mk` and [AI/android_plan.md](AI/android_plan.md) |
 | `make shot SHOT_ARGS="..."` | Saves `build/shot.png` without a visible window. See `tools/shot.cpp` for the options (`--scene`, `--seconds`, `--seed`, `--zoom`, `--stats`, `--log`, `--reveal`, `--wide`) |
@@ -80,7 +80,7 @@ lost, and several useful probes already have been.
   - social: trust, greeting, tells, lies, names
   - fight: cakes, fights, hits, looting
   - speech: lines and the log
-  - blood, thirst, bottle, relief, sleep, flesh, hope, rescue, company, chat, topic, episode
+  - blood, thirst, bottle, relief, grime, sleep, flesh, hope, rescue, company, chat, topic, episode
 - `src/world/`: chunks and generation (`gen_*.cpp`), blood, mess, traps,
   tables, statues, toilets.
 - `src/render/`: pixel art drawn in code; `src/scenes/`: menu, create,

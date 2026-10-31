@@ -66,6 +66,13 @@ struct SoakProbe {
     }
     /// Fresh blood on h's face and hands, as if from someone else.
     static void bloody(Human& h) { h.stain({BodyPart::Head, BodyPart::FrontArm, BodyPart::BackArm}, 40, 200); }
+    /// Gone unwashed this long, 1 being long enough to turn dirty.
+    static void setGrime(Human& h, float level) { h.grime_.level = level; }
+    /// The blood on h dried.
+    static void dry(Human& h) {
+        h.stains.wet.fill(0.0f);
+        h.stains.version++;
+    }
     /// Washed clean all at once.
     static void clean(Human& h) {
         h.stains.amount.fill(0);

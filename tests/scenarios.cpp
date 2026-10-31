@@ -136,6 +136,41 @@ bool plain(const Traits&) { return true; }
 bool blamesBefore(const Traits& t) { return t.brave < 0.3f && t.curious < 0.6f; }
 bool blamesAfter(const Traits& t) { return t.brave >= 0.6f && t.curious < 0.6f; }
 
+// How much shame a human feels (Human::modesty: sociable and timid).
+bool modest(const Traits& t) { return (t.sociable + 1.0f - t.brave) / 2.0f >= 0.75f; }
+bool shameless(const Traits& t) { return (t.sociable + 1.0f - t.brave) / 2.0f < 0.27f; }
+/// Shameless, but neither so bold nor so curious it puts washing off.
+bool shamelessMeek(const Traits& t) { return shameless(t) && t.brave <= 0.62f && t.curious < 0.45f; }
+
+/// This line in h's own log, or (with yes false) not.
+Check own(const Human& h, std::string line, bool yes = true) {
+    std::string label = (yes ? "#" : "no #") + std::to_string(h.id) + " " + line;
+    return {label, [&h, line, yes](const Stage&) {
+                bool found = false;
+                for (const auto& e : h.log.entries()) found |= e.what == line;
+                return found == yes;
+            }};
+}
+
+/// A modest human and a shameless one by a basin they know, calm, each
+/// set up the same way by dirty().
+Checks washOrNot(Stage& s, const std::function<void(Human&)>& dirty,
+                 const std::function<Checks(const Human& modest, const Human& shameless)>& expect,
+                 bool (*slobLike)(const Traits&) = shameless) {
+    auto b = s.basin();
+    if (!b) return {{"room for a basin near the spawn", [](const Stage&) { return false; }}};
+    Human& prim = s.first();
+    Human& slob = s.add(seedWhere(slobLike, 12000), 2);
+    for (Human* h : {&prim, &slob}) {
+        P::knowChunk(s.world, *h);
+        h->hunger = h->thirst = h->tiredness = 0.05f;
+        h->bladder = h->bowels = 0.0f;
+        dirty(*h);
+    }
+    s.run(60);
+    return expect(prim, slob);
+}
+
 /// A stranger, thirsty and not yet parched, near a settler at home by
 /// the basin, with a cake or not.
 Checks guardedWater(Stage& s, bool strangerHasCake, Checks expect) {
@@ -896,6 +931,29 @@ const std::vector<Scenario> SCENARIOS = {
          s.run(90);
          return Checks{logged({"HEARD @ CALLING FOR HELP"}), notLogged({"GOING TO LET @ OUT", "GOING TO CALL BACK TO @"}),
                        notLogged({"TOLD @ SOMEONE IS SHUT IN"}), logged({"MET @", "CAUGHT UP WITH @"})};
+     }},
+    {"dirty-wash", "turning dirty, the modest wash it off and the shameless don't", seedWhere(modest, 12500),
+     [](Stage& s) {
+         return washOrNot(s, [](Human& h) { P::setGrime(h, 0.97f); }, [](const Human& prim, const Human& slob) {
+             return Checks{own(prim, "TURNED DIRTY"), own(prim, "WASHED OFF DIRT"), own(prim, "WASHED CLEAN"),
+                           own(slob, "TURNED DIRTY"), own(slob, "WASHED OFF DIRT", false),
+                           {"#0 done washing", [&prim](const Stage&) { return prim.state != Human::State::Washing; }}};
+         });
+     }},
+    {"dry-blood", "with dried blood on, the modest wash it off and the shameless don't", seedWhere(modest, 12500),
+     [](Stage& s) {
+         return washOrNot(s, [](Human& h) { P::bloody(h), P::dry(h); }, [](const Human& prim, const Human& slob) {
+             return Checks{own(prim, "WASHED OFF BLOOD"), own(slob, "WASHED OFF BLOOD", false)};
+         });
+     }},
+    {"fresh-blood", "with fresh blood on, even the shameless wash it off", seedWhere(modest, 12500),
+     [](Stage& s) {
+         return washOrNot(
+             s, [](Human& h) { P::bloody(h); },
+             [](const Human& prim, const Human& slob) {
+                 return Checks{own(prim, "WASHED OFF BLOOD"), own(slob, "WASHED OFF BLOOD")};
+             },
+             shamelessMeek);
      }},
 };
 

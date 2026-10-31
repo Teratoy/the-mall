@@ -1974,3 +1974,21 @@ generous                | IT'S MINE. ASK IF YOU NEED SOME.
 rude                    | I SAW YOU PUT IT THERE.
 rude                    | LIAR. I WATCHED YOU.
 timid                   | BUT... I SAW YOU.
+
+# ---- Going unwashed ---------------------------------------------------------
+
+# Turning dirty from going too long unwashed, said to nobody.
+[got_dirty 0.6]
+                        | I NEED A WASH.
+                        | LOOK AT THE STATE OF ME.
+                        | UGH. I'M FILTHY.
+timid                   | I HOPE NOBODY SEES ME LIKE THIS.
+brave                   | A BIT OF DIRT NEVER HURT.
+erratic                 | DIRT. GOOD DIRT.
+
+# Washed clean of it again, said to nobody.
+[washed_clean 0.6]
+                        | AH. CLEAN AT LAST.
+                        | THAT'S BETTER.
+                        | I FEEL HUMAN AGAIN.
+timid                   | MUCH BETTER. NOBODY SAW.

@@ -25,19 +25,19 @@ constexpr float BEARD_CHANCE = 0.2f;
 /// How much colour every human keeps: 0 is greyscale, 1 the full palette.
 constexpr float COLOUR = 0.2f;
 
-/// A feral human's hair and clothes go dull with dirt, its shoes scuffed.
-constexpr float FERAL_HAIR_DIRT = 0.88f, FERAL_CLOTH_DIRT = 0.86f, FERAL_SHOE_DIRT = 0.8f;
+/// A dirty human's hair and clothes go dull with dirt, its shoes scuffed.
+constexpr float DIRTY_HAIR_DIRT = 0.88f, DIRTY_CLOTH_DIRT = 0.86f, DIRTY_SHOE_DIRT = 0.8f;
 /// Smudges of dirt on its skin, and its hands black with it, are the skin
 /// in this much shade: of every hundred pixels of skin, this many smudged.
-constexpr float FERAL_DIRT = 0.78f;
-constexpr int FERAL_SMUDGED = 22;
+constexpr float DIRTY_SKIN = 0.78f;
+constexpr int DIRTY_SMUDGED = 22;
 /// Frayed cloth is darker still, by this much.
-constexpr float FERAL_FRAY_DARK = 0.75f;
+constexpr float DIRTY_FRAY_DARK = 0.75f;
 /// Of every hundred pixels of cloth at a hem (the shirt's bottom, the end
 /// of a sleeve or a trouser leg), this many are torn away to the skin; of
 /// every hundred elsewhere, this many. Of every hundred, this many more are
 /// frayed darker still.
-constexpr int FERAL_HEM_TORN = 45, FERAL_TORN = 6, FERAL_FRAYED = 12;
+constexpr int DIRTY_HEM_TORN = 45, DIRTY_TORN = 6, DIRTY_FRAYED = 12;
 /// How far a pixel may be from a colour in shade and still count as it.
 constexpr int SHADE_SLACK = 4;
 
@@ -135,14 +135,14 @@ HumanLook HumanLook::random(Rng& rng) {
 }
 
 SpriteFrame HumanLook::draw(const Stance& s) const {
-    if (!feral) return drawBody(s);
+    if (!dirty) return drawBody(s);
     // The same body gone dull with dirt; drawBody messes up its hair.
     HumanLook l = *this;
-    l.hair = shade(hair, FERAL_HAIR_DIRT);
-    l.top = shade(top, FERAL_CLOTH_DIRT);
-    l.bottom = shade(bottom, FERAL_CLOTH_DIRT);
-    l.shoes = shade(shoes, FERAL_SHOE_DIRT);
-    l.hat = shade(hat, FERAL_CLOTH_DIRT);
+    l.hair = shade(hair, DIRTY_HAIR_DIRT);
+    l.top = shade(top, DIRTY_CLOTH_DIRT);
+    l.bottom = shade(bottom, DIRTY_CLOTH_DIRT);
+    l.shoes = shade(shoes, DIRTY_SHOE_DIRT);
+    l.hat = shade(hat, DIRTY_CLOTH_DIRT);
     SpriteFrame f = l.drawBody(s);
     l.wear(f, l.drawBody({}));
     return f;
@@ -162,7 +162,7 @@ void HumanLook::wear(SpriteFrame& f, const SpriteFrame& stand) const {
         // Dirt on the skin: the hands black with it, smudges elsewhere.
         if (shadeOf(p, skin)) {
             bool hand = (part == BodyPart::FrontArm || part == BodyPart::BackArm) && ry == restHand;
-            if (hand || pixelDie(r, ~salt) < FERAL_SMUDGED) p = shade(p, FERAL_DIRT);
+            if (hand || pixelDie(r, ~salt) < DIRTY_SMUDGED) p = shade(p, DIRTY_SKIN);
             continue;
         }
         if (part == BodyPart::Head || part == BodyPart::Feet || !cloth(p)) continue;
@@ -170,11 +170,11 @@ void HumanLook::wear(SpriteFrame& f, const SpriteFrame& stand) const {
         Rgba here = stand.px[size_t(r)];
         Rgba below = ry + 1 < SPRITE_H ? stand.px[size_t(r + SPRITE_W)] : Rgba{};
         bool hem = !cloth(below) || !(shadeOf(below, here) && shadeOf(here, below));
-        int die = pixelDie(r, salt), torn = hem ? FERAL_HEM_TORN : FERAL_TORN;
+        int die = pixelDie(r, salt), torn = hem ? DIRTY_HEM_TORN : DIRTY_TORN;
         if (die < torn)
             p = skin;
-        else if (die < torn + FERAL_FRAYED)
-            p = shade(p, FERAL_FRAY_DARK);
+        else if (die < torn + DIRTY_FRAYED)
+            p = shade(p, DIRTY_FRAY_DARK);
     }
 }
 
@@ -503,8 +503,8 @@ SpriteFrame HumanLook::drawBody(const Stance& s) const {
     p.set(CX - 1, hTop + 2, eyes);
     p.set(CX + 1, hTop + 2, eyes);
     if (beard) p.row(CX - 1, CX + 1, hBottom, hair);
-    // Feral, the beard grows out ragged under the chin.
-    if (beard && feral) p.set(CX, hBottom + 1, hair);
+    // Dirty, the beard grows out ragged under the chin.
+    if (beard && dirty) p.set(CX, hBottom + 1, hair);
 
     // Hair sits on the head; the back of the head is the left side.
     auto crop = [&] {
@@ -546,9 +546,9 @@ SpriteFrame HumanLook::drawBody(const Stance& s) const {
         break;
     }
 
-    // Feral, its own hair grows out messy: tufts and strays standing off
+    // Dirty, its own hair grows out messy: tufts and strays standing off
     // whatever it had, hair sticking out from under a cap. The bald stay bald.
-    if (feral) {
+    if (dirty) {
         auto strays = [&](std::initializer_list<Vec2i> at) {
             for (Vec2i v : at) p.set(CX + v.x, hTop + v.y, hair);
         };
