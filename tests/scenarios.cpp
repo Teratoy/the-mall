@@ -7,14 +7,17 @@
 //   LOGLINES=path writes every distinct log line written, as the soak does,
 //   for tools/coverage.py.
 // Exits non-zero if any scenario fails. Deterministic, like the soak.
+#include "human/human_tuning.h"
 #include "probe.h"
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <deque>
 #include <functional>
 #include <map>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 using P = SoakProbe;
@@ -613,18 +616,61 @@ const std::vector<Scenario> SCENARIOS = {
      seedWhere(cunning),
      [](Stage& s) {
          Human& liar = s.first();
+         // Set up apart from how the spawn room came out: the plate lies in the
+         // corridor to the room's locked door, a few steps in from it, walled
+         // in to one cell there, so the way to that door is over it.
+         const Vec2i home = World::slotOf(liar.cell);
+         std::optional<Vec2i> inner;
+         for (int y = 0; y < CHUNK && !inner; y++)
+             for (int x = 0; x < CHUNK && !inner; x++) {
+                 Vec2i c = home * CHUNK + Vec2i{x, y};
+                 if (s.world.tile(c) != Tile::DoorLocked) continue;
+                 for (Vec2i d : DIRS4)
+                     if (World::slotOf(c + d) == home && s.world.tile(c + d) == Tile::Floor) inner = c + d;
+             }
+         if (!inner) return Checks{{"a locked door out of the room", [](const Stage&) { return false; }}};
+         // Along the corridor from the door, the first cell at least four
+         // steps in where it is just three cells across.
+         auto floor = [&](Vec2i c) { return s.world.tile(c) == Tile::Floor; };
+         std::optional<Vec2i> plate;
+         Vec2i across{};
+         std::unordered_map<Vec2i, int, Vec2iHash> dist{{*inner, 0}};
+         std::deque<Vec2i> open{*inner};
+         while (!open.empty() && !plate) {
+             Vec2i p = open.front();
+             open.pop_front();
+             for (Vec2i a : {Vec2i{1, 0}, Vec2i{0, 1}}) {
+                 Vec2i along{a.y, a.x};
+                 if (dist[p] >= 4 && floor(p + a) && floor(p - a) && !floor(p + a * 2) && !floor(p - a * 2) &&
+                     floor(p + along) && floor(p - along)) {
+                     plate = p;
+                     across = a;
+                     break;
+                 }
+             }
+             for (Vec2i d : DIRS4)
+                 if (floor(p + d) && World::slotOf(p + d) == home && !dist.count(p + d)) {
+                     dist[p + d] = dist[p] + 1;
+                     open.push_back(p + d);
+                 }
+         }
+         if (!plate) return Checks{{"a corridor to the locked door", [](const Stage&) { return false; }}};
+         P::addWall(s.world, *plate + across);
+         P::addWall(s.world, *plate - across);
          P::knowChunk(s.world, liar);
          // A restless loner: it goes its own way, down the route, not with the liar.
          Human& victim = s.add(seedWhere([](const Traits& t) { return t.sociable < 0.3f && t.curious > 0.5f; }, 6000));
-         setUpLie(s, liar, victim, TrapKind::Darts, 4);
-         for (const auto& [c, kind] : liar.memory.traps) P::addTrap(s.world, c, kind);
+         P::setTrust(liar, victim, -0.6f);
+         liar.hunger = victim.hunger = 0.1f;
+         liar.thirst = victim.thirst = 0.1f;
+         P::addTrap(s.world, *plate, TrapKind::Darts);
+         liar.learnTrap(*plate, TrapKind::Darts);
          victim.keys = 1;
          // Hungry with nothing to eat, a key holder makes for a door sooner.
          victim.hunger = 0.7f;
          s.run(150);
          return Checks{logged({"TOLD @ A WAY OVER DARTS"}), logged({"@ LIED ABOUT THE WAY"})};
-     },
-     "since the spawn room shrank to 54 cells a side, the foe never walks into the darts and sees through the lie"},
+     }},
     {"lie-cake", "a cunning human sends a hungry foe to a rigged cake, and is blamed for the darts",
      seedWhere(cunning),
      [](Stage& s) {
@@ -689,45 +735,78 @@ const std::vector<Scenario> SCENARIOS = {
      seedWhere([](const Traits& t) { return cunning(t) && t.greedy >= 0.7f; }),
      [](Stage& s) {
          Human& liar = s.first();
-         // Set up apart from how the spawn room came out: of its two tables
-         // farthest apart, a cake on one and nothing on the other. The liar
-         // knows the room and its cake, and stands about ten cells from the
-         // cake on the side away from the bare table; the rival, a stranger,
-         // wakes beside it, too far from the bare table ever to have seen it.
-         std::vector<Vec2i> tables;
+         // Set up apart from how the spawn room came out: the rival would see
+         // the bare table across the open room once its daze lifts, so that is
+         // through the door, on the table farthest off in the chunk beyond,
+         // and the cake on the room's table farthest from the door. The liar
+         // knows both chunks and the cake, and stands about ten cells from the
+         // cake on the side away from the door; the rival, a stranger, wakes
+         // a few cells behind it, as far from the cake as it can be and still
+         // be a rival for it, so it sees the cake late and the liar is nearer.
+         const Vec2i home = World::slotOf(liar.cell);
+         std::optional<Vec2i> door, cake, bare;
+         for (int y = 0; y < CHUNK && !bare; y++)
+             for (int x = 0; x < CHUNK && !bare; x++) {
+                 Vec2i c = home * CHUNK + Vec2i{x, y};
+                 Tile t = s.world.tile(c);
+                 if (t != Tile::DoorOpen && t != Tile::DoorLocked) continue;
+                 for (Vec2i d : DIRS4) {
+                     Vec2i out = c + d;
+                     if (World::slotOf(out) == home) continue;
+                     s.world.ensureGenerated(out);
+                     for (const Table& tb : s.world.tables())
+                         if (P::chunkOf(s.world, tb.at) == P::chunkOf(s.world, out) && (!bare || cheb(tb.at, c) > cheb(*bare, c)))
+                             bare = tb.at;
+                     if (bare) door = c;
+                 }
+             }
+         if (!bare) return Checks{{"a table through a door of the spawn room", [](const Stage&) { return false; }}};
          for (const Table& t : s.world.tables())
-             if (World::slotOf(t.at) == World::slotOf(liar.cell)) tables.push_back(t.at);
-         std::optional<std::pair<Vec2i, Vec2i>> pair;
-         for (Vec2i a : tables)
-             for (Vec2i b : tables)
-                 if (!pair || cheb(a, b) > cheb(pair->first, pair->second)) pair = {a, b};
-         if (!pair || cheb(pair->first, pair->second) < 40)
-             return Checks{{"two tables far apart in the spawn chunk", [](const Stage&) { return false; }}};
-         auto [cake, bare] = *pair;
-         P::clearChunk(s.world, cake);
-         P::addCake(s.world, cake);
+             if (World::slotOf(t.at) == home && (!cake || cheb(t.at, *door) > cheb(*cake, *door))) cake = t.at;
+         if (!cake) return Checks{{"a table in the spawn room", [](const Stage&) { return false; }}};
+         P::clearChunk(s.world, *bare);
+         P::knowChunkOf(s.world, liar, *bare);
+         P::clearChunk(s.world, *cake);
+         P::addCake(s.world, *cake);
          P::knowChunk(s.world, liar, true);
+         auto open = [&](Vec2i c) {
+             return s.world.tile(c) == Tile::Floor && !s.world.occupant(c) && !s.world.table(c) && !s.world.statue(c);
+         };
          std::optional<Vec2i> stand;
          for (int y = -10; y <= 10; y++)
              for (int x = -10; x <= 10; x++) {
-                 Vec2i c = cake + Vec2i{x, y};
-                 if (cheb(c, cake) < 8 || s.world.tile(c) != Tile::Floor || s.world.occupant(c) || s.world.table(c) ||
-                     s.world.statue(c))
-                     continue;
-                 if (!stand || cheb(c, bare) > cheb(*stand, bare)) stand = c;
+                 Vec2i c = *cake + Vec2i{x, y};
+                 if (cheb(c, *cake) < 8 || !open(c)) continue;
+                 if (!stand || cheb(c, *door) > cheb(*stand, *door)) stand = c;
              }
          if (!stand) return Checks{{"floor near the cake", [](const Stage&) { return false; }}};
          P::place(s.world, liar, *stand);
+         std::optional<Vec2i> behind;
+         for (int y = -10; y <= 10; y++)
+             for (int x = -10; x <= 10; x++) {
+                 Vec2i c = *stand + Vec2i{x, y};
+                 if (cheb(c, *stand) > 6 || cheb(c, *cake) >= RIVAL_NEAR || !open(c)) continue;
+                 if (!behind || cheb(c, *cake) > cheb(*behind, *cake)) behind = c;
+             }
+         if (!behind) return Checks{{"floor behind the liar", [](const Stage&) { return false; }}};
          Human& rival = s.add(seedWhere(plain, 9700));
+         P::place(s.world, rival, *behind);
          liar.hunger = 0.4f;
          liar.cakes = 0;
          rival.hunger = 0.68f;
          rival.cakes = 0;
          liar.thirst = rival.thirst = 0.1f;
          s.run(90);
-         return Checks{logged({"SENT @ AWAY FROM A CAKE I WANT"}), logged({"@ TOLD ME WHERE A CAKE IS"})};
-     },
-     "since the spawn room shrank to 54 cells a side, the rival sees the cake from where it wakes and eats it first"},
+         Check took{"the liar picked up the cake after the lie", [&liar](const Stage&) {
+                        float lied = -1.0f;
+                        for (const auto& e : liar.log.entries()) {
+                            if (e.what == "SENT @ AWAY FROM A CAKE I WANT") lied = e.time;
+                            if (lied >= 0.0f && e.what == "PICKED UP A CAKE") return true;
+                        }
+                        return false;
+                    }};
+         return Checks{logged({"SENT @ AWAY FROM A CAKE I WANT"}), logged({"@ TOLD ME WHERE A CAKE IS"}), took};
+     }},
     {"gain-trap", "a cunning stranger sells spikes that aren't there for a cake",
      seedWhere([](const Traits& t) { return cunning(t) && t.greedy >= 0.7f; }),
      [](Stage& s) {
