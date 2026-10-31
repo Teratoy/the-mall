@@ -28,9 +28,11 @@ static_assert(sizeof TERMINAL_GLYPH / sizeof TERMINAL_GLYPH[0] == TERMINAL_H);
 /// The console desk, the screens and the instrument box on top and its
 /// footprint from row CONSOLE_RISE down: a desk along the wall with a wing
 /// coming forward each side, its inner edges slanting in towards the chair.
-/// The screens as the terminal's, d the side of the small one, turned in,
-/// n their necks. V the instrument box, v its shade, R its round scope with
-/// the sweep going round, r the scope's rim. T the desk's top, t its shade
+/// The screens stand on the desk, as the terminal's, U the tops of their
+/// deep cases seen from above, d the side of the small one, turned in, n
+/// their necks and N their feet, each casting its shade t on the desk. V
+/// the instrument box on its lamp panel, u its top, v its shade, R its
+/// round scope with the sweep going round, r the scope's rim. T the desk's top, t its shade
 /// against the wall, h its lit front rim, E its front, e the drawer
 /// handles, K the dark under it where the knees go. On the top: P the
 /// switch panels, l their lamps, x their toggles, k the keyboard set
@@ -39,23 +41,21 @@ static_assert(sizeof TERMINAL_GLYPH / sizeof TERMINAL_GLYPH[0] == TERMINAL_H);
 /// colours with its slot in K, F a floppy and f its label, Q the phone and
 /// q its dial, W loose sheets. The chair, turned a little to the left: s
 /// its seat, B its back, b the back's shade, a the arms, n the stem, w the
-/// wheels. L a cable falling off the left wing and trailing on the floor.
+/// wheels. A dropped sheet lies on the floor.
 constexpr const char* CONSOLE_GLYPH[CONSOLE_H] = {
-    ".............CCCCCCCCC.....VVVVVV...",
-    "............CCCCCCCCCCC...VVrRRrVv..",
+    ".............UUUUUUUUU.....uuuuuu...",
+    "............UUUUUUUUUUU...VVVVVVVv..",
+    "...........CCCCCCCCCCCCc..VVrRRrVv..",
     "...........CCSSSSSSSSSCc..VrRRRRrv..",
     "...........CCSSSSSSSSSCc..VrRRRRrv..",
-    "..CCCCC....CCSSSSSSSSSCc..VVrRRrVv..",
-    ".dCSSSSc...CCSSSSSSSSSCc..VVVVoVVv..",
-    ".dCSSSSc...CCSSSSSSSSSCc...vvvvvv...",
+    "..UUUU.....CCSSSSSSSSSCc..VVrRRrVv..",
+    ".dCCCCCc...CCSSSSSSSSSCc..VVVVoVVv..",
     ".dCSSSSc...CCSSSSSSSSSCc.PPPPPPPPP..",
-    ".dCCCoCc...CCCCCCCCoCCCc.PlPlPlPxP..",
-    "..cccc......cccccccccc...PPPPPPPPP..",
-    "...nn..........nnnn......PxPxPlPlP..",
-    "tttttttttttttttttttttttttPPPPPPPPPtt",
-    "tttttttttttttttttttttttttttttttttttt",
-    "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
-    "TTTTTTTTTTTTTTTTTTTTTTTTTTPPPPPPPFFT",
+    ".dCSSSSc...CCSSSSSSSSSCc.PlPlPlPxP..",
+    "tdCSSSSctttCCCCCCCCoCCCctPxPxPlPlPtt",
+    "TdCCCoCcTTTTTTTnnnnTTTTTTPPPPPPPPPTT",
+    "TTNNNNNTTTTTTTNNNNNNTTTTTtttttttttTT",
+    "TTtttttTTTTTTtttttttttTTTTPPPPPPPFFT",
     "TTTTTTTTTMmMTTkkkkkkkkkkkTPxPxPxPFfT",
     "TTTGgGTTTMMMMTkkkkkkkkkkkTPPPPPPPTTT",
     "TTGgGgTTTMMMTkkkkkkkkkkkTTTTTTTTTTTT",
@@ -68,24 +68,27 @@ constexpr const char* CONSOLE_GLYPH[CONSOLE_H] = {
     "TTTTTTTTTTTT....sssss.....TTTTTTWWTT",
     "TTTTTTTTTTT....aBBBBsa....hhhhhhhhhh",
     "hhhhhhhhhhh...aBBBBBBa....EEEEeeEEEE",
-    "EEEEeeELEEE....BBBBBb.....EEEEEEEEEE",
-    "EEEEEEELEEE....bbbbb................",
-    ".......L..........n.................",
-    "........L.......w.n.w..........WW...",
-    "........L......w..w..w........WWW...",
-    ".........LL...................WW....",
-    "...........LL.......................",
-    ".............L......................",
+    "EEEEeeEEEEE....BBBBBb.....EEEEEEEEEE",
+    "EEEEEEEEEEE....bbbbb................",
+    "..................n.................",
+    "................w.n.w..........WW...",
+    "...............w..w..w........WWW...",
+    "..............................WW....",
+    "....................................",
+    "....................................",
 };
 static_assert(sizeof CONSOLE_GLYPH / sizeof CONSOLE_GLYPH[0] == CONSOLE_H);
 /// The scope's middle, in pixels from the glyph's top-left.
-constexpr float SCOPE_X = 30.0f, SCOPE_Y = 3.0f;
+constexpr float SCOPE_X = 30.0f, SCOPE_Y = CONSOLE_RISE - 5.0f;
 /// Where the scope shows blips, in pixels from its middle, each lit as the sweep passes and fading after.
 constexpr float BLIP_X[] = {-1.5f, 1.5f, 0.5f}, BLIP_Y[] = {-0.5f, 0.5f, -1.5f};
 
 constexpr Rgba PUTTY = hex(0xc8bc9c);
 constexpr Rgba PUTTY_SHADE = hex(0xa89c7e);
 constexpr Rgba PUTTY_TURNED = hex(0x8c8066);
+constexpr Rgba PUTTY_TOP = hex(0xdcd2b4);
+/// The glass catching the light in a screen's top-left corner.
+constexpr Rgba GLINT = hex(0x9ad8a6);
 constexpr Rgba PHOSPHOR_DARK = hex(0x0c2a14);
 constexpr Rgba PHOSPHOR = hex(0x6aff8a);
 constexpr Rgba POWER = hex(0x5cff6a);
@@ -110,6 +113,7 @@ constexpr Rgba PAPER_BAR = hex(0xb8e0b0);
 constexpr Rgba PAPER_EDGE = hex(0xc8c4b8);
 constexpr Rgba INSTRUMENT = hex(0x5e6a5a);
 constexpr Rgba INSTRUMENT_SHADE = hex(0x444e42);
+constexpr Rgba INSTRUMENT_TOP = hex(0x76846f);
 constexpr Rgba SCOPE_RIM = hex(0x1e4a26);
 constexpr Rgba PHOSPHOR_DIM = hex(0x2e8a44);
 constexpr Rgba FLOPPY = hex(0x2a3450);
@@ -117,7 +121,6 @@ constexpr Rgba FLOPPY_LABEL = hex(0xe8e0d0);
 constexpr Rgba PHONE = hex(0xc0302c);
 constexpr Rgba PHONE_DIAL = hex(0x7a1c1a);
 constexpr Rgba SHEET = hex(0xf4f2ec);
-constexpr Rgba CABLE = hex(0x1e1e22);
 constexpr Rgba SEAT = hex(0x3a4a6a);
 constexpr Rgba SEAT_BACK = hex(0x2e3c58);
 constexpr Rgba SEAT_SHADE = hex(0x222c40);
@@ -148,9 +151,11 @@ uint32_t stir(int a, int b, int c) {
 }
 
 /// A screen w wide and h tall, at sx, sy of it: lines of text scrolling
-/// up, the last still being typed by a blinking cursor. Each screen goes
+/// up, the last still being typed by a blinking cursor, the glass glinting
+/// in its top-left corner. Each screen goes
 /// by its own which, so no two say the same.
 Rgba screen(int sx, int sy, int w, int h, int which, int tick) {
+    if (sx == 0 && sy == 0) return GLINT;
     int t = tick + int(stir(which, 5, 6) % SCREEN_SCROLL);
     int line = t / SCREEN_SCROLL + sy;
     int len = 1 + int(stir(line, which, 2) % uint32_t(w - 1));
@@ -237,7 +242,10 @@ Rgba consoleDeskPixel(int gx, int gy, int tick) {
     case 'd': return PUTTY_TURNED;
     case 'S': return screenAt(CONSOLE_GLYPH, CONSOLE_H, gx, gy, tick);
     case 'o': return POWER;
-    case 'n': return gy < CONSOLE_RISE ? STEEL_SHADE : STEEL;
+    case 'U': return PUTTY_TOP;
+    case 'n': return STEEL;
+    case 'N': return STEEL_SHADE;
+    case 'u': return INSTRUMENT_TOP;
     case 'V': return INSTRUMENT;
     case 'v': return INSTRUMENT_SHADE;
     case 'R': return scope(gx, gy, tick);
@@ -247,7 +255,6 @@ Rgba consoleDeskPixel(int gx, int gy, int tick) {
     case 'Q': return PHONE;
     case 'q': return PHONE_DIAL;
     case 'W': return SHEET;
-    case 'L': return CABLE;
     case 'T': return DESK_TOP;
     case 't': return DESK_SHADE;
     case 'h': return DESK_RIM;

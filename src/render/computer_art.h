@@ -13,7 +13,7 @@ inline constexpr int TERMINAL_H = 13;
 inline constexpr int CONSOLE_CELLS_W = 6, CONSOLE_CELLS_D = 4;
 inline constexpr int CONSOLE_W = 36;
 /// The screens stand this far above the desk's footprint, so the picture is this tall in all.
-inline constexpr int CONSOLE_RISE = 11;
+inline constexpr int CONSOLE_RISE = 9;
 inline constexpr int CONSOLE_H = CONSOLE_RISE + 24;
 
 /// The terminal's pixel at gx, gy seen from the front at the given tick of

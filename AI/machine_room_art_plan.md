@@ -31,7 +31,8 @@ does anything yet.
   big main screen, an instrument box with a sweeping round scope on a lamp
   panel, a printer with green-bar paper curling out, a mug, a keyboard set
   askew, a switch panel, a floppy, a red phone, loose sheets, a chair
-  turned a little, and a cable falling off the left wing to the floor.
+  turned a little. The screens stand on the desk on feet, casting a shade,
+  with their deep case tops seen from above and a glint on the glass.
 - `src/render/cable_art.h/.cpp`: `drawCable(x, y, links, variant, lit)`,
   `links` a mask of `CABLE_N/E/S/W`. A 2 px black cable; straights are
   plain, sagging, or tied. A T or cross lays the branch over the run's
