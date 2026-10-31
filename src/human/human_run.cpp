@@ -4,6 +4,8 @@
 #include "human/human.h"
 #include "human/human_tuning.h"
 
+#include <algorithm>
+
 namespace {
 
 /// Breath back per second walking, and standing or sitting still (or winded).
@@ -26,7 +28,9 @@ void Human::startRunning(Goal g, std::vector<Vec2i> path, RunWhy why) {
 
 void Human::breathe(float dt) {
     if (action() == Action::Run) {
-        run_.breath -= dt / run_.lungs;
+        // The more tired it is, the sooner it runs out.
+        float lungs = run_.lungs * (1.0f - (1.0f - LUNGS_EXHAUSTED) * std::clamp(tiredness, 0.0f, 1.0f));
+        run_.breath -= dt / lungs;
         if (run_.breath > 0.0f) return;
         run_.breath = 0.0f;
         run_.spent = true;
