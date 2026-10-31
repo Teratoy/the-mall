@@ -26,6 +26,8 @@ constexpr float SIT_CHANCE = 0.6f;
 /// A restless human sits this much less often, a stay-at-home this much more.
 constexpr float SIT_CURIOUS = 0.4f;
 constexpr float SIT_TIME_MIN = 5.0f, SIT_TIME_MAX = 15.0f;
+/// Lying down awake (parched and lost, human_thirst.cpp), it stays down this long.
+constexpr float LIE_TIME_MIN = 15.0f, LIE_TIME_MAX = 30.0f;
 constexpr float SIT_GLANCE = 0.5f;
 /// Just made, a human lies where it came to this long, then sits up and
 /// looks round this long before getting up. Dazed at first, it sees only
@@ -249,14 +251,30 @@ constexpr float GIVE_TIME = 0.8f;
 /// Lessons, 0 to 1: what one starving spell with no cake, or one dead end
 /// with no key, teaches; what a lesson paying off adds (eating from a
 /// stock, unlocking a door); how fast they are forgotten, all of one in
-/// half an hour; and what a full one does: extra cakes carried, and how
-/// much more fetching is wanted, enough to come before exploring for all
-/// but the most curious.
+/// an hour; below what a hard one is learnt anew rather than again (and
+/// within what of full it already counts as learnt for good); and
+/// what a full one does: extra cakes carried, and how much more fetching
+/// is wanted, enough to come before exploring for all but the most curious.
 constexpr float LESSON_HARD = 0.5f;
 constexpr float LESSON_PAID = 0.1f;
-constexpr float LESSON_FADE = 1.0f / 1800.0f;
+constexpr float LESSON_FADE = 1.0f / 3600.0f;
+constexpr float LESSON_HELD = 0.1f;
 constexpr float LESSON_CARRY = 2.0f;
 constexpr float LESSON_FETCH = 0.6f;
+/// Trap wariness (human_fight.cpp): what each dart volley or slam it sets
+/// off adds; how fast darts are forgotten (a full wariness in ten
+/// minutes; slams fade like lessons); the hunger it takes to risk a table
+/// cake is wariness times WARY_DARTS_BASE, plus WARY_DARTS_HURT for each
+/// bit of health gone, so one volley leaves it fetching only when hungry,
+/// and hurt or darted twice only when starving.
+constexpr float WARY_HIT = 0.5f;
+constexpr float WARY_DARTS_FADE = 1.0f / 600.0f;
+constexpr float WARY_DARTS_BASE = 1.0f;
+constexpr float WARY_DARTS_HURT = 0.8f;
+/// Most cells a room with one door may have and still look like a trap.
+constexpr int WARY_ROOM_MAX = 64;
+/// Trust in whoever tipped it off about a cake that makes the tip safe.
+constexpr float WARY_TIP_TRUST = 0.3f;
 /// Kneeling by a body, going through it.
 constexpr float LOOT_TIME = 2.0f;
 /// A starving human below this health gets beaten up rather than fed;
@@ -300,6 +318,11 @@ constexpr float CUNNING_BRAVE = 0.4f;
 constexpr float TRUST_FRIEND = 0.4f;
 constexpr float TRUST_FOE = -0.4f;
 constexpr float TRUST_FADE = 1.0f / 900.0f;
+/// Having hit or robbed someone, it thinks this much worse of them (it
+/// knows they will of it), and that comes back WRONGED_FADE times as fast
+/// as trust fades.
+constexpr float TRUST_WRONGED = -0.3f;
+constexpr float WRONGED_FADE = 0.33f;
 constexpr int TRUST_STEPS = 10;
 /// Below this health a human runs from a fight, unless starving: the
 /// timid at one and a half times this, the fearless at half.

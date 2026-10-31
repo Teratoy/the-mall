@@ -124,6 +124,32 @@ enum class Moment {
     // theirs (to them), and their answer: owning up, denying it; a denial
     // seen through (to the denier).
     TellStash, SellStash, LieStash, StashTold, AskStash, OwnStash, DenyStash, CaughtDenying,
+    // Parched and lost: asked for water and knowing of none (to the asker);
+    // boxed in, calling through a locked door (to nobody, carrying through
+    // it); leaving a companion as lost as itself (to them); erratic, going
+    // for someone's bottle (to them).
+    NoWater, CallDoor, PartDry, BottleRage,
+    // A lesson it still held, learnt again the hard way, and learnt for good
+    // (to nobody); the first drink after thirst began to kill it (to nobody).
+    LearnAgain, LearnMax, Quenched,
+    // Drinking water it knew was foul (to nobody).
+    FoulAgain,
+    // Leaving the one it kept with or followed after hitting or robbing
+    // them (to nobody, about them).
+    PartWronged,
+    // Wary after a trap, leaving a cake alone (to nobody): it might be on
+    // a dart plate; it lies in a room with one door and no key in hand.
+    WaryCake, WarySlam,
+    // Taking a fuller bottle for its own, poured into it (to nobody).
+    SwapBottle,
+    // Warning someone it walks with off foul water (to them); drinking foul
+    // water it was warned of (to nobody, about whoever warned it).
+    WarnFoul, FoulWarned,
+    // Bottle-less, finding a bottle lying (to nobody); coming back to find it
+    // gone (to nobody), or stolen once it holds on hard (to nobody, about
+    // whom it blames); the first time it runs its bottle dry or fills it,
+    // seeing that water is scarce (to nobody).
+    SeeBottle, BottleGone, BottleStolen, Scarce,
     // Turning dirty from going unwashed, and washed clean of it again (both
     // to nobody).
     GotDirty, WashedClean,

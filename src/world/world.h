@@ -101,8 +101,6 @@ public:
     int takePileCakes(Vec2i cell, int n);
     /// Takes the pile's i-th bottle off it.
     Bottle takePileBottle(Vec2i cell, size_t i);
-    /// Pours up to amount from the pile's i-th bottle into into; how much.
-    float pourFromPile(Vec2i cell, size_t i, Bottle& into, float amount);
 
     /// The trap set off from a cell, if any, hidden or not.
     const Trap* trap(Vec2i cell) const;
@@ -121,6 +119,8 @@ public:
     const Mess& mess() const { return mess_; }
     /// How foul the water at a cell is, from feces, piss and blood in it.
     float foul(Vec2i cell) const { return mess_.foul(cell); }
+    /// How much of it is from feces and piss, not blood.
+    float filthFoul(Vec2i cell) const { return std::max(0.0f, mess_.foul(cell) - mess_.bloodFoul(cell)); }
     /// Everything that smells, as it was when last gathered: every
     /// SMELL_EVERY seconds.
     const std::vector<Smell>& smells() const { return smells_; }
@@ -256,6 +256,9 @@ private:
     void placeSpikes(Chunk& c, const std::vector<gen::SlamRoom>& slams);
     Human& addHuman(const HumanLook& look, Vec2i cell);
     Human& addHuman(const HumanLook& look, Vec2i cell, uint64_t seed, const std::string& name = {});
+    /// Lays the bottle a human wakes to find, a few steps from it, and has
+    /// it look round again to see it.
+    void layBottle(Human& h);
     void setTile(Vec2i cell, Tile t);
     /// Spikes sink, plates re-arm, gates shut, and darts fly.
     void updateTraps(float dt);

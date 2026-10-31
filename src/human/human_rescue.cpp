@@ -86,6 +86,7 @@ bool Human::walledIn(const World& world) const {
 }
 
 void Human::callForHelp(World& world, float dt) {
+    callThroughDoor(world, dt);
     if (!rescue_.slamGate) return;
     // Opened, by itself or by someone else: out of it.
     if (world.tile(*rescue_.slamGate) != Tile::DoorLocked) {
@@ -104,6 +105,25 @@ void Human::callForHelp(World& world, float dt) {
     if (!sayLater(talk::Moment::Help)) return;
     for (const auto& o : world.humans())
         if (o.get() != this && !o->dead() && cheb(o->cell, cell) <= HELP_RADIUS) o->hearHelp(*this, *rescue_.slamGate);
+}
+
+// Heard as a cry from a slam room is: anyone near enough may come with a
+// key, or call back.
+void Human::callThroughDoor(World& world, float dt) {
+    if (!rescue_.callDoor) return;
+    Vec2i door = *rescue_.callDoor;
+    // Opened, no longer parched, or gone from it: done calling.
+    if (world.tile(door) != Tile::DoorLocked || !parched() || cheb(cell, door) > 1 || dead()) {
+        rescue_.callDoor.reset();
+        return;
+    }
+    if ((rescue_.callTimer -= dt) > 0.0f) return;
+    rescue_.callTimer = rng_.range(HELP_EVERY_MIN, HELP_EVERY_MAX);
+    if (state == State::Sleeping || !sayLater(talk::Moment::CallDoor)) return;
+    // Those in there with it just hear it said; it is for whoever is beyond.
+    for (const auto& o : world.humans())
+        if (o.get() != this && !o->dead() && cheb(o->cell, cell) <= HELP_RADIUS && !o->sight.sees(cell))
+            o->hearHelp(*this, door);
 }
 
 void Human::hearHelp(const Human& caller, Vec2i gate) {
@@ -220,7 +240,7 @@ float Human::keyForCries() const {
 }
 
 void Human::heardBack(int from) {
-    if (dead() || !rescue_.slamGate) return;
+    if (dead() || (!rescue_.slamGate && !rescue_.callDoor)) return;
     if (isFriend(from))
         note("@ CALLED BACK THROUGH THE WALL", from);
     else
@@ -301,15 +321,19 @@ bool Human::letOut(World& world, Vec2i gate) {
     bool any = false;
     for (const auto& h : world.humans()) {
         Human& o = *h;
-        if (&o == this || o.dead() || o.rescue_.slamGate != gate) continue;
+        bool slam = o.rescue_.slamGate == gate;
+        // A door runs through both walls: whichever cell of it was unlocked.
+        bool called = o.rescue_.callDoor && world.tile(*o.rescue_.callDoor) != Tile::DoorLocked;
+        if (&o == this || o.dead() || (!slam && !called)) continue;
         any = true;
         rescue_.cries.erase(o.id);
         rescue_.out.insert(o.id);
-        note("LET @ OUT OF A SLAM ROOM", o.id);
+        note(slam ? "LET @ OUT OF A SLAM ROOM" : "OPENED THE DOOR @ WAS CALLING THROUGH", o.id);
         o.note("@ LET ME OUT", id);
         rememberAt(gate, Episode::What::Freed, EPISODE_FREED, id, o.id);
         o.rememberAt(gate, Episode::What::Freed, EPISODE_FREED_ME, id, o.id);
         o.rescue_.slamGate.reset();
+        o.rescue_.callDoor.reset();
         regard(o.id, TRUST_FREER);
         o.regard(id, TRUST_FREED);
         o.lift(HOPE_FREED);

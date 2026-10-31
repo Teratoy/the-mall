@@ -61,8 +61,17 @@ public:
     }
     /// Every water cell fouled, and how foul.
     const std::unordered_map<Vec2i, float, Vec2iHash>& fouled() const { return foul_; }
-    /// Fouls a water cell this much more, there alone at first.
-    void foulWater(Vec2i cell, float amount) { foul_[cell] += amount; }
+    /// How much of that foulness came from blood.
+    float bloodFoul(Vec2i cell) const {
+        auto it = bloodFoul_.find(cell);
+        return it == bloodFoul_.end() ? 0.0f : it->second;
+    }
+    /// Fouls a water cell this much more, there alone at first; blood's
+    /// share is kept apart, for those who don't mind it.
+    void foulWater(Vec2i cell, float amount, bool blood = false) {
+        foul_[cell] += amount;
+        if (blood) bloodFoul_[cell] += amount;
+    }
     /// Foulness seeps slowly into the water next to it (water tells which
     /// cells are), and fades very slowly.
     void update(float dt, const std::function<bool(Vec2i)>& water);
@@ -71,6 +80,8 @@ private:
     std::vector<Dropping> all_;
     std::unordered_map<Vec2i, std::vector<int>, Vec2iHash> cells_;
     std::unordered_map<Vec2i, float, Vec2iHash> foul_;
+    /// Blood's share of foul_, seeping and fading with it.
+    std::unordered_map<Vec2i, float, Vec2iHash> bloodFoul_;
     /// Seconds since foulness last seeped on.
     float seep_ = 0.0f;
 };

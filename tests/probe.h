@@ -14,8 +14,32 @@ struct SoakProbe {
     static bool rethink(const Human& h) { return h.rethink_; }
     static int partner(const Human& h) { return h.social_.partner; }
     static int leader(const Human& h) { return h.social_.leader; }
+    static int companion(const Human& h) { return h.social_.companion; }
     static int foe(const Human& h) { return h.fight_.foe; }
     static bool ateFlesh(const Human& h) { return !h.mind_.ateFrom.empty(); }
+    static float thirstOf(const Human& h) { return h.thirst; }
+    static int keysOf(const Human& h) { return h.keys; }
+    // What it could still go for (tools/lifelog.cpp): somewhere left to
+    // explore, a locked door it knows, water it would drink, a toilet.
+    // search() breaks ties with the human's dice, so they are put back.
+    template <class F> static bool finds(const World& w, const Human& h, F done) {
+        Rng saved = h.rng_;
+        bool found = h.search(w, done).has_value();
+        h.rng_ = saved;
+        return found;
+    }
+    static bool knowsFrontier(const World& w, const Human& h) {
+        return finds(w, h, [&](Vec2i c) { return (c != h.cell && h.isFrontier(c)) || h.openDoorBeside(c).has_value(); });
+    }
+    static bool knowsLockedDoor(const World& w, const Human& h) {
+        return finds(w, h, [&](Vec2i c) { return h.lockedDoorBeside(c).has_value(); });
+    }
+    static bool knowsWater(const World& w, const Human& h) {
+        return finds(w, h, [&](Vec2i c) { return h.waterBeside(c).has_value(); });
+    }
+    static bool knowsToilet(const World& w, const Human& h) {
+        return finds(w, h, [&](Vec2i c) { return h.toiletBefore(w, c).has_value(); });
+    }
 
     // How chunks came out (tools/genprobe.cpp).
     static const std::vector<std::unique_ptr<Chunk>>& chunks(const World& w) { return w.chunks_; }
@@ -30,6 +54,8 @@ struct SoakProbe {
         h.met.insert(o.id);
         h.social_.greetedAt[o.id] = at;
     }
+    /// Keeps with o, as if it had taken up with them.
+    static void setCompanion(Human& h, const Human& o) { h.social_.companion = o.id; }
     /// A real trap at the cell, armed and hidden.
     static void addTrap(World& w, Vec2i cell, TrapKind kind) { w.traps_[cell] = Trap{kind, cell, {0, 0}}; }
     /// Moves h to a free cell, as if it had come to there.
@@ -99,6 +125,10 @@ struct SoakProbe {
         h.shutIn(gate);
         return gate;
     }
+    /// h keeps company with o, as if it had chosen to.
+    static void keepWith(Human& h, const Human& o) { h.social_.companion = o.id; }
+    /// h's mind has snapped.
+    static void unhinge(Human& h) { h.mind_.erratic = 1.0f; }
     /// A walled box round a cell, five across, floor inside; no way in,
     /// unless a gap in its wall at at + gap.
     static void wallIn(World& w, Vec2i at, std::optional<Vec2i> gap = std::nullopt) {
@@ -114,6 +144,19 @@ struct SoakProbe {
     }
     /// Shut in, h cries for help on its next update.
     static void cryNow(Human& h) { h.rescue_.helpTimer = 0.0f; }
+    /// Nothing lies put down anywhere, and h knows of nothing lying: the
+    /// bottle it woke near is gone, as if never laid.
+    static void clearPiles(World& w, Human& h) {
+        w.piles_.clear();
+        h.memory.piles.clear();
+        h.water_.found.reset();
+    }
+    /// The bottle h found lying while it had none, if any.
+    static std::optional<Vec2i> foundBottle(const Human& h) { return h.water_.found; }
+    /// h has drunk somewhere, so it knows water to fill a bottle at.
+    static void setDrankYet(Human& h) { h.water_.drankYet = true; }
+    /// h has seen that water is scarce already.
+    static void setScarce(Human& h) { h.water_.scarce = true; }
     /// Kneels and puts down n cakes and these bottles where it stands.
     static void putDown(Human& h, int cakes, std::vector<size_t> bottles) { h.startPutting(cakes, std::move(bottles)); }
     /// The pile on the cell is a stash of h's, as if h had made it and seen
@@ -142,6 +185,16 @@ struct SoakProbe {
     static void stashHere(Human& h) {
         h.stash_.spot = h.cell;
         h.stashHere();
+    }
+    /// Turns the cell into a basin's worth of water.
+    static void addWater(World& w, Vec2i cell) { w.setTile(cell, Tile::Basin); }
+    /// h tasted the water at the cell this foul (with feces and piss) before.
+    static void tastedFoul(Human& h, Vec2i water, float filth) { h.water_.foul[water] = {filth, 0.0f}; }
+    /// Wary of cakes on tables after darts, and of rooms with one door
+    /// after a slam, as if caught that much (Human::Wary).
+    static void setWary(Human& h, float darts, float slam) {
+        h.wary_.darts = darts;
+        h.wary_.slam = slam;
     }
     /// Given up on a way out, at home on home.
     static void settle(Human& h, Vec2i home) {

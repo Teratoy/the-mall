@@ -17,8 +17,6 @@ Human::Human(int id, const HumanLook& look, Vec2i cell, uint64_t seed, std::stri
     tiredness = rng_.range(0.0f, START_TIRED_MAX);
     timer = rng_.range(WAKE_LIE_MIN, WAKE_LIE_MAX);
     escape_.hunch = rng_.range(0.0f, TAU);
-    // Everyone wakes with a full bottle in a back pocket.
-    bottles.push_back({1.0f});
 }
 
 void Human::update(World& world, float dt) {
@@ -48,6 +46,7 @@ void Human::update(World& world, float dt) {
     chatUrges(world, dt);
     callForHelp(world, dt);
     recallCries();
+    keepTrackOfDry(world);
     timer -= dt;
     // A hit is answered at once, or as soon as the step under way is done.
     if (fight_.provoked && sleep_.stunned <= 0.0f && (!moving || timer <= 0.0f)) {
@@ -211,7 +210,10 @@ void Human::live(World& world, float dt) {
     soil(dt);
     sniff(world, dt);
     if (hunger >= 1.0f) health -= STARVE_RATE * dt;
-    if (thirst >= 1.0f) health -= PARCH_RATE * dt;
+    if (thirst >= 1.0f) {
+        health -= PARCH_RATE * dt;
+        water_.thirstHurt = true;
+    }
     if (!hungry() && !thirsty() && wounds.empty() && mind_.sick <= 0.0f)
         health = std::min(1.0f, health + HEAL_RATE * (state == State::Sleeping ? SLEEP_HEAL : 1.0f) * dt);
     // Darts' bleeding stops short of killing, as darts do.
@@ -228,12 +230,15 @@ void Human::live(World& world, float dt) {
     dread_ = std::max(0.0f, dread_ - DREAD_FADE * sway(traits.brave) * (state == State::Sitting ? DREAD_SIT_FADE : 1.0f) * dt);
     float fade = TRUST_FADE * sway(traits.sociable) * dt;
     for (auto& [who, t] : social_.trust) t = t > 0.0f ? std::max(0.0f, t - fade) : std::min(0.0f, t + fade);
+    std::erase_if(social_.wronged, [&](auto& w) { return (w.second.guilt -= fade * WRONGED_FADE) <= 0.0f; });
     urgeWait_ -= dt;
     // Without hope, what going without taught it sticks.
     lessons.hoard = std::max(0.0f, lessons.hoard - LESSON_FADE * (1.0f - LESSON_GLOOM * gloom()) * dt);
     lessons.keysFirst = std::max(0.0f, lessons.keysFirst - LESSON_FADE * dt);
     lessons.nearWater = std::max(0.0f, lessons.nearWater - LESSON_FADE * dt);
     lessons.safeSleep = std::max(0.0f, lessons.safeSleep - LESSON_FADE * dt);
+    wary_.darts = std::max(0.0f, wary_.darts - WARY_DARTS_FADE * dt);
+    wary_.slam = std::max(0.0f, wary_.slam - LESSON_FADE * dt);
     mind(dt);
     brood(world);
     if (keys > 0) deadEnd_ = false;
@@ -265,21 +270,27 @@ void Human::live(World& world, float dt) {
     }
 }
 
+// A hard lesson it still holds is learnt again, or for good when this
+// fills it (from short of all but full); only one all but forgotten is
+// learnt anew, with its own line.
 void Human::learn(float& lesson, bool hard) {
+    float was = lesson;
     lesson = std::min(1.0f, lesson + (hard ? LESSON_HARD : LESSON_PAID));
     if (!hard) return;
-    if (&lesson == &lessons.safeSleep) {
-        note("LEARNT TO FIND A SAFE PLACE TO SLEEP IN TIME");
+    const char* what = &lesson == &lessons.safeSleep ? "FIND A SAFE PLACE TO SLEEP IN TIME"
+                       : &lesson == &lessons.nearWater ? "KEEP NEAR WATER"
+                       : &lesson == &lessons.hoard     ? "KEEP MORE CAKES"
+                                                       : "TAKE KEYS FIRST";
+    if (was >= LESSON_HELD) {
+        bool full = lesson >= 1.0f && was < 1.0f - LESSON_HELD;
+        note(std::string(full ? "LEARNT FOR GOOD TO " : "LEARNT AGAIN TO ") + what);
+        sayLater(full ? talk::Moment::LearnMax : talk::Moment::LearnAgain);
         return;
     }
-    if (&lesson == &lessons.nearWater) {
-        note("LEARNT TO KEEP NEAR WATER");
-        sayLater(talk::Moment::LearnWater);
-        return;
-    }
-    bool cakes = &lesson == &lessons.hoard;
-    note(cakes ? "LEARNT TO KEEP MORE CAKES" : "LEARNT TO TAKE KEYS FIRST");
-    sayLater(cakes ? talk::Moment::LearnCakes : talk::Moment::LearnKeys);
+    note(std::string("LEARNT TO ") + what);
+    if (&lesson == &lessons.nearWater) sayLater(talk::Moment::LearnWater);
+    else if (&lesson == &lessons.hoard) sayLater(talk::Moment::LearnCakes);
+    else if (&lesson == &lessons.keysFirst) sayLater(talk::Moment::LearnKeys);
 }
 
 float Human::bleeding() const {
@@ -344,7 +355,10 @@ bool Human::observe(const World& world) {
     sight.forEach([&](Vec2i c) {
         Tile t = world.tile(c);
         if (t == Tile::DoorLocked || t == Tile::DoorOpen) firstSight(talk::Moment::FirstDoor);
-        if (drinkable(t)) firstSight(talk::Moment::FirstWater);
+        if (drinkable(t)) {
+            firstSight(talk::Moment::FirstWater);
+            seeWater(world, c);
+        }
         if (world.toilet(c)) firstSight(talk::Moment::FirstToilet);
         if (t != Tile::Void) {
             if (memory.tile(c) == Tile::Void) {
@@ -374,6 +388,7 @@ bool Human::observe(const World& world) {
             memory.stashTips.erase(c);
             bool fresh = !memory.piles.count(c);
             memory.piles[c] = *p;
+            spotBottle(c, *p);
             news |= fresh && !othersStash(c) && ((hungry() && p->cakes > 0) || (thirsty() && p->water() > 0.0f));
             if (othersStash(c)) resent(c, *p, memory.stashes.at(c));
         } else {
@@ -385,6 +400,7 @@ bool Human::observe(const World& world) {
             }
             memory.piles.erase(c);
             memory.stashes.erase(c);
+            spotBottle(c, Pile{});
         }
         if (world.hasKey(c)) {
             firstSight(talk::Moment::FirstKey);
@@ -405,11 +421,15 @@ bool Human::observe(const World& world) {
     });
     // Cakes carried are in plain sight, and so is how starved and hurt someone looks.
     inSight_.clear();
-    // Who it sees beside its stashes, to blame if anything goes missing.
+    // Who it sees beside its stashes, and the bottle it found, to blame if
+    // anything goes missing.
+    if (!bottles.empty()) water_.found.reset();
     for (const auto& o : world.humans())
-        if (o.get() != this && !o->dead() && sight.sees(o->cell))
+        if (o.get() != this && !o->dead() && sight.sees(o->cell)) {
             for (Vec2i s : stash_.mine)
                 if (cheb(o->cell, s) <= 1) stash_.nearBy[s] = o->id;
+            if (water_.found && cheb(o->cell, *water_.found) <= 1) water_.foundNear = o->id;
+        }
     for (const auto& o : world.humans()) {
         if (o.get() == this || !sight.sees(o->cell)) continue;
         if (!o->dead()) inSight_.push_back(o->id);
@@ -424,7 +444,7 @@ bool Human::observe(const World& world) {
             b.cell = o->cell;
             b.cakes = o->cakes;
             b.bottles = int(o->bottles.size());
-            b.water = o->bottleWater();
+            b.fullest = o->fullestBottle();
             b.meals = o->meals();
             b.spoiled = o->spoiled();
             seeRemains(*o);
@@ -437,6 +457,7 @@ bool Human::observe(const World& world) {
                 lift(friendDead ? HOPE_FRIEND_DEAD : o->bones() ? HOPE_BONES : HOPE_BODY);
                 if (o->deaths_.killer == id && !o->deaths_.killerSaw) {
                     note("FOUND @ DEAD. MY BEATING DID IT", o->id);
+                    deaths_.kills++;
                     rememberAt(o->cell, Episode::What::Kill, EPISODE_KILLED, id, o->id);
                 } else if (o->deaths_.killer != id) {
                     if (known) {
@@ -521,6 +542,8 @@ void Human::choose(World& world) {
     if (askForDrink(world)) return;
     if (helpStarving(world)) return;
     if (fight_.foe >= 0 && startFight(world)) return;
+    // Erratic and parched, any bottle it sees is worth a fight (human_bottle.cpp).
+    if (bottleRage(world)) return;
     if (keepAway(world)) return;
     if (leadEscort(world) || followEscort(world)) return;
     if (plead(world)) return;
@@ -667,12 +690,14 @@ bool Human::pursue(World& world, Want w) {
         // For someone shut in, a key before any cake.
         bool forCries = keyForCries() > 0.0f;
         bool wantCakes = cakes < carryMax() && !memory.cakes.empty();
+        Shy shied = Shy::None;
         std::optional<std::vector<Vec2i>> p;
         if (forCries) p = search(world, [&](Vec2i c) { return inReach(c, memory.keys).has_value(); });
         if (!p)
             p = search(world, [&](Vec2i c) {
-                return inReach(c, memory.keys) || (wantCakes && inReach(c, memory.cakes));
+                return inReach(c, memory.keys) || (wantCakes && cakeInReach(c, &shied));
             });
+        noteShy(shied);
         // Cakes lying put down do as well, when nearer, unless it is after a key
         // for someone shut in.
         if (auto q = cakes < carryMax() && !(forCries && p) ? pilePath(world, true, false) : std::nullopt;
@@ -729,6 +754,8 @@ bool Human::pursue(World& world, Want w) {
         }
         return false;
     case Want::Wander: {
+        // Parched with nothing left to try, it waits by a door instead (human_thirst.cpp).
+        if (languish(world)) return true;
         int radius = std::max(2, int(WANDER_RADIUS * sway(traits.curious) * (1.0f - DREAD_SHORT * dread_) *
                                      (1.0f - DESPAIR_SHORT * gloom())));
         // Settled, it potters about home, and so comes back to it; taught

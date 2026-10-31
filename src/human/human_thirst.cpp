@@ -11,9 +11,10 @@
 // drinks from its bottle instead.
 // Water fouled with feces, piss or blood hurts whoever drinks it, and very foul
 // water makes them sick; they go to cleaner water when they can see the
-// difference, unless parched. Red water, and water by a body, put them off
-// too, but for the parched, those with a taste for flesh (who drink blood
-// gladly) and, by a body, the brave. Whoever washes in the water someone
+// difference, or remember tasting it, unless parched. Those with a taste for
+// flesh mind only the feces and piss in it, the erratic nothing. Red water,
+// and water by a body, put them off too, but for the parched, those with a
+// taste for flesh (who drink blood gladly) and, by a body, the brave. Whoever washes in the water someone
 // drinks from, or lives by, is thought the worse of. With no water to be
 // had, the parched and the erratic drink from a toilet, as foul as it is
 // dirty, and anyone who sees it thinks less of them.
@@ -43,8 +44,13 @@ constexpr float FOUL_SICK_TIME = 60.0f;
 constexpr float FOUL_COST = 400.0f;
 /// Won't drink water it sees is this foul at all, unless parched.
 constexpr float FOUL_REFUSE = 0.3f;
-/// Foul enough to taste: noted in the log.
+/// Foul enough to taste: noted in the log, and remembered there and in the
+/// water it sees within FOUL_TASTE_REACH, until seen cleaner than that.
 constexpr float FOUL_NOTED = 0.1f;
+constexpr int FOUL_TASTE_REACH = 2;
+/// Someone it walks with, this close and seeing it go for water it knows
+/// is foul, warns it.
+constexpr int WARN_FOUL_REACH = 10;
 /// Water this red is refused, unless parched or craving flesh (from
 /// BLOOD_CRAVING); drunk anyway, it frightens this much.
 constexpr float RED_WATER = 0.15f;
@@ -94,8 +100,13 @@ constexpr float TRUST_PAID_WATER = 0.1f, TRUST_CHEATED = -0.4f;
 /// to anyone else with a cake; the cunning (WATER_SELL greedy and
 /// WATER_LIE_BRAVE brave) send a thirsty foe over spikes.
 constexpr float WATER_STINGY = 0.67f, WATER_SELL = 0.5f, WATER_LIE_BRAVE = 0.4f;
-/// Knowing no water it can get to, it asks those it walks with this often.
+/// Knowing no water it can get to, it asks those it walks with this often;
+/// out of sight this long, one who knew of none may be asked again.
 constexpr float ASK_WATER_EVERY = 30.0f;
+constexpr float APART_TIME = 20.0f;
+/// Parched and lost by a locked door, it lies down this likely each time
+/// it rests there, else sits (human_walk.cpp has how long).
+constexpr float LANGUISH_LIE = 0.5f;
 /// Leading someone to drink: only those not loners (from LEAD_SOCIABLE),
 /// healthy (LEAD_HEALTH), lead friends and those they walk with within
 /// LEAD_REACH; seeing one adds LEAD_PARCHED to wanting to escort. Being
@@ -127,17 +138,52 @@ std::optional<Vec2i> Human::waterBeside(Vec2i c) const {
     return std::nullopt;
 }
 
-// Those with a taste for flesh don't mind it either: much of what fouls
-// water is blood.
-float Human::seenFoul(const World& world, Vec2i water) const {
-    bool minds = !parched() && !isErratic() && mind_.appetite < BLOOD_CRAVING;
-    return sight.sees(water) && minds ? world.foul(water) : 0.0f;
+// Those with a taste for flesh don't mind the blood in it.
+float Human::knownFoul(const World& world, Vec2i water) const {
+    if (parched() || isErratic()) return 0.0f;
+    float filth, blood;
+    if (sight.sees(water)) {
+        filth = world.filthFoul(water);
+        blood = world.foul(water) - filth;
+    } else if (auto it = water_.foul.find(water); it != water_.foul.end()) {
+        filth = it->second.filth;
+        blood = it->second.blood;
+    } else {
+        return 0.0f;
+    }
+    return mind_.appetite >= BLOOD_CRAVING ? filth : filth + blood;
 }
 
-// Foul water it sees, red water it sees, and bodies it knows of by the
-// water put it off.
+void Human::tasteFoul(const World& world) {
+    for (int y = -FOUL_TASTE_REACH; y <= FOUL_TASTE_REACH; y++)
+        for (int x = -FOUL_TASTE_REACH; x <= FOUL_TASTE_REACH; x++) {
+            Vec2i c = water_.drinkAt + Vec2i{x, y};
+            if (c != water_.drinkAt && (!drinkable(memory.tile(c)) || !sight.sees(c))) continue;
+            if (world.foul(c) < FOUL_NOTED) {
+                water_.foul.erase(c);
+                continue;
+            }
+            float filth = world.filthFoul(c);
+            water_.foul[c] = {filth, world.foul(c) - filth};
+        }
+}
+
+// Cleared, it is forgotten.
+void Human::seeWater(const World& world, Vec2i water) {
+    auto it = water_.foul.find(water);
+    if (it == water_.foul.end()) return;
+    if (world.foul(water) < FOUL_NOTED) {
+        water_.foul.erase(it);
+        return;
+    }
+    it->second.filth = world.filthFoul(water);
+    it->second.blood = world.foul(water) - it->second.filth;
+}
+
+// Foul water it sees or remembers, red water it sees, and bodies it knows
+// of by the water put it off.
 bool Human::wouldDrink(const World& world, Vec2i from, Vec2i water) const {
-    if (seenFoul(world, water) >= FOUL_REFUSE) return false;
+    if (knownFoul(world, water) >= FOUL_REFUSE) return false;
     bool craving = mind_.appetite >= BLOOD_CRAVING || isErratic();
     if (sight.sees(water) && !parched() && !craving && world.blood().tint(water) >= RED_WATER) return false;
     if (parched()) return true;
@@ -166,17 +212,39 @@ float Human::filthAround(const World& world, Vec2i at, bool butBlood) const {
     return sum;
 }
 
+// The sleeping and the erratic warn nobody. All it knows of the water
+// round there goes with the warning.
+bool Human::warnedOfFoul(World& world, Vec2i water) {
+    if (sight.sees(water) || water_.foul.count(water)) return false;
+    for (const auto& o : world.humans()) {
+        if (o.get() == this || o->dead() || o->state == State::Sleeping || o->isErratic() || !inGroupWith(*o) ||
+            cheb(o->cell, cell) > WARN_FOUL_REACH || !o->sight.sees(cell) || !o->water_.foul.count(water))
+            continue;
+        for (const auto& [c, f] : o->water_.foul)
+            if (cheb(c, water) <= FOUL_TASTE_REACH && !water_.foul.count(c)) water_.foul[c] = {f.filth, f.blood, o->id};
+        o->note("WARNED @ THE WATER IS FOUL", id);
+        o->sayLater(talk::Moment::WarnFoul, id);
+        note("@ WARNED ME THE WATER IS FOUL", o->id);
+        return true;
+    }
+    return false;
+}
+
 // Not where someone else stands: that one may be drinking there.
 bool Human::seekWater(World& world) {
     auto foulness = [&](Vec2i c) {
         auto w = waterBeside(c);
-        return w ? seenFoul(world, *w) : 0.0f;
+        return w ? knownFoul(world, *w) : 0.0f;
     };
-    auto p = search(world, [&](Vec2i c) {
-        auto w = waterBeside(c);
-        return w && wouldDrink(world, c, *w);
-    }, true,
-                    [&](Vec2i c) { return 1 + int(foulness(c) * FOUL_COST); });
+    auto find = [&] {
+        return search(world, [&](Vec2i c) {
+            auto w = waterBeside(c);
+            return w && wouldDrink(world, c, *w);
+        }, true, [&](Vec2i c) { return 1 + int(foulness(c) * FOUL_COST); });
+    };
+    auto p = find();
+    // Warned off as it sets out, it thinks again.
+    if (p && !p->empty() && warnedOfFoul(world, *waterBeside(p->back()))) p = find();
     if (p && p->empty()) {
         startDrinking(*waterBeside(cell));
         return true;
@@ -200,7 +268,7 @@ bool Human::seekWater(World& world) {
     // Nothing to drink anywhere: the nearest it saw carrying water, as the
     // hungry go for cakes (human_bottle.cpp).
     if (askForDrink(world)) return true;
-    if (bottles.size() >= size_t(BOTTLE_MAX)) return false;
+    if (!roomForBottle()) return false;
     const Human* h = nearestWaterHolder(world);
     if (!h) return false;
     fight_.foe = h->id;
@@ -213,10 +281,17 @@ bool Human::seekWater(World& world) {
 void Human::startDrinking(Vec2i water) {
     if (state != State::Drinking) {
         note("DRANK WATER");
-        sayLater(talk::Moment::Drink);
+        // The first drink after thirst began to kill it: it lived.
+        if (water_.thirstHurt) note("DRANK, AFTER NEARLY DYING OF THIRST");
+        sayLater(water_.thirstHurt ? talk::Moment::Quenched : talk::Moment::Drink);
+        water_.thirstHurt = false;
         dread_ = std::max(0.0f, dread_ - DRINK_CALM);
         // Found water soon after getting thirsty: keeping near it paid off.
         if (lessons.nearWater > 0.0f && clock_ - water_.thirstyAt < WATER_SOON) learn(lessons.nearWater, false);
+        auto known = water_.foul.find(water);
+        water_.knewFoul = known != water_.foul.end();
+        water_.warnedBy = water_.knewFoul ? known->second.toldBy : -1;
+        water_.tastedFoul = false;
     }
     water_.last = cell;
     water_.drankYet = true;
@@ -262,7 +337,7 @@ void Human::drink(World& world) {
 // The same for a gulp from a pool or from a bottle filled at one: red
 // water frightens all but those craving flesh, foul water hurts, and very
 // foul water sickens.
-void Human::swallow(World&, float foul, float red, std::optional<Vec2i> at, bool fromBottle) {
+void Human::swallow(World& world, float foul, float red, std::optional<Vec2i> at, bool fromBottle) {
     if (red >= RED_WATER) {
         bool glad = mind_.appetite >= BLOOD_CRAVING;
         if (fromBottle)
@@ -273,15 +348,26 @@ void Human::swallow(World&, float foul, float red, std::optional<Vec2i> at, bool
         sayLater(talk::Moment::BloodyWater);
     }
     if (foul <= 0.0f) return;
-    if (foul >= FOUL_NOTED) {
-        note(fromBottle ? "DRANK FOUL WATER FROM MY BOTTLE" : "DRANK FOUL WATER");
-        sayLater(talk::Moment::FoulWater);
+    // At the water, once a drink: knowing, if it had tasted it foul there
+    // before or was warned of it.
+    bool atWater = at && !fromBottle;
+    if (foul >= FOUL_NOTED && !(atWater && water_.tastedFoul)) {
+        bool again = atWater && water_.knewFoul;
+        if (atWater) water_.tastedFoul = true;
+        if (again && water_.warnedBy >= 0) {
+            note("DRANK THE FOUL WATER @ WARNED ME OF", water_.warnedBy);
+            sayLater(talk::Moment::FoulWarned, -1, water_.warnedBy);
+        } else {
+            note(fromBottle ? "DRANK FOUL WATER FROM MY BOTTLE" : again ? "DRANK FOUL WATER AGAIN" : "DRANK FOUL WATER");
+            sayLater(again ? talk::Moment::FoulAgain : talk::Moment::FoulWater);
+        }
         // Strikes it more the fouler it is.
         if (at)
             rememberAt(*at, Episode::What::FoulWater, std::min(1.0f, foul));
         else
             remember(Episode::What::FoulWater, std::min(1.0f, foul));
     }
+    if (atWater && foul >= FOUL_NOTED) tasteFoul(world);
     if (health > FOUL_SURVIVE) health = std::max(FOUL_SURVIVE, health - FOUL_DAMAGE * foul);
     if (foul >= FOUL_SICK && mind_.sick <= 0.0f) {
         mind_.sick = FOUL_SICK_TIME;
@@ -454,6 +540,17 @@ std::optional<Human::Tell> Human::waterFor(const World& world, const Human& o, b
     return t;
 }
 
+void Human::keepTrackOfDry(const World& world) {
+    for (auto it = water_.knewNone.begin(); it != water_.knewNone.end();) {
+        const Human& o = world.human(it->first);
+        if (!o.dead() && sight.sees(o.cell)) it->second = clock_;
+        if (o.dead() || clock_ - it->second > APART_TIME)
+            it = water_.knewNone.erase(it);
+        else
+            ++it;
+    }
+}
+
 void Human::askGroupForWater(World& world) {
     if (clock_ - water_.askedAt < ASK_WATER_EVERY) return;
     water_.askedAt = clock_;
@@ -462,19 +559,33 @@ void Human::askGroupForWater(World& world) {
             return w && wouldDrink(world, c, *w);
         }))
         return;
-    // Asked once, of the nearest; whoever knows answers.
+    // Asked once, of the nearest who hasn't said they know of none; whoever
+    // knows answers, and if nobody does, the one asked says so.
     Human* nearest = nullptr;
     Human* knows = nullptr;
     std::optional<Tell> way;
     for (const auto& o : world.humans()) {
         if (o.get() == this || o->dead() || !sight.sees(o->cell) || !inGroupWith(*o)) continue;
-        if (!nearest || cheb(cell, o->cell) < cheb(cell, nearest->cell)) nearest = o.get();
+        if (!water_.knewNone.count(o->id) && (!nearest || cheb(cell, o->cell) < cheb(cell, nearest->cell)))
+            nearest = o.get();
         if (!knows)
             if ((way = o->waterRoute(world, *this, false))) knows = o.get();
     }
     if (!nearest) return;
     sayLater(talk::Moment::AskWater, nearest->id);
     if (knows) knows->tell(*this, *way);
+}
+
+// Said once the asking is heard (human_speech.cpp): it plainly knows of
+// none itself, or it wouldn't ask.
+void Human::answerWater(const World& world, Human& asker) {
+    asker.note("ASKED @ WHERE THERE'S WATER", id);
+    if (dead() || asker.dead() || state == State::Sleeping) return;
+    water_.knewNone[asker.id] = clock_;
+    // Knowing a way, it has told it already (askGroupForWater).
+    if (waterRoute(world, asker, false)) return;
+    if (asker.water_.knewNone.insert({id, asker.clock_}).second) asker.note("@ KNEW OF NO WATER EITHER", id);
+    sayLater(talk::Moment::NoWater, asker.id);
 }
 
 bool Human::wouldLeadToDrink(const Human& o) const {
@@ -521,6 +632,32 @@ bool Human::offerDrinkEscort(World& world) {
     o->note("@ TOOK ME TO WATER TO DRINK", id);
     sayLater(talk::Moment::LeadDrink, o->id);
     o->sayLater(talk::Moment::LedDrink, id);
+    return true;
+}
+
+// Water, a bottle, a toilet, someone to ask or rob: all tried first
+// (seekWater). A key would open the door instead, and anywhere left to
+// explore may have water.
+bool Human::languish(World& world) {
+    if (!parched() || keys > 0) return false;
+    if (search(world, [&](Vec2i c) { return (c != cell && isFrontier(c)) || openDoorBeside(c).has_value(); }))
+        return false;
+    if (auto door = lockedDoorBeside(cell)) {
+        if (rescue_.callDoor != door) {
+            rescue_.callDoor = door;
+            rescue_.callTimer = 0.0f;
+            note("NO WATER ANYWHERE. LYING BY A LOCKED DOOR, CALLING FOR HELP");
+        }
+        if (door->x != cell.x) facingLeft = door->x < cell.x;
+        if (rng_.chance(LANGUISH_LIE))
+            lieDown();
+        else
+            sitDown();
+        return true;
+    }
+    auto p = search(world, [&](Vec2i c) { return lockedDoorBeside(c).has_value(); });
+    if (!p || p->empty()) return false;
+    startWalking(Goal::CheckDoor, *p);
     return true;
 }
 

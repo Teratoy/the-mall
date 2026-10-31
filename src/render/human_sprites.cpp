@@ -39,6 +39,19 @@ constexpr const char* Z_GLYPH[Z_SIZE] = {"####", "..#.", ".#..", "####"};
 /// The remains are redrawn only every this much of eating and of rot.
 constexpr int EATEN_STEPS = 12, ROT_STEPS = 24;
 
+/// A cake carried, its bottom-left on sprite pixel (x, y), drawn so: a pixel
+/// being scale screen pixels, origin the screen point of pixel (0, 0).
+void drawHeldCake(Vector2 origin, int x, int y, bool flip, int scale, Color tint) {
+    for (int dy = 0; dy < HELD_CAKE_H; dy++)
+        for (int dx = 0; dx < HELD_CAKE_W; dx++) {
+            int px = flip ? SPRITE_W - 1 - (x + dx) : x + dx;
+            Rgba c = dy == 0 ? CAKE_BASE : CAKE_TOP;
+            DrawRectangle(int(origin.x) + px * scale, int(origin.y) + (y - dy) * scale, scale, scale,
+                          {uint8_t(c.r * tint.r / 255), uint8_t(c.g * tint.g / 255), uint8_t(c.b * tint.b / 255),
+                           uint8_t(c.a * tint.a / 255)});
+        }
+}
+
 /// Whether the head hangs this far into nodding off.
 bool nodding(float t) { return (t >= NOD_FIRST && t < NOD_JERK) || t >= NOD_LAST; }
 
@@ -54,7 +67,6 @@ Texture2D toTexture(const SpriteFrame& f) {
 
 template <class F> void HumanSprites::eachFrame(const HumanLook& look, F&& add) {
     add(idle_, look.idle());
-    add(idleCarry_, look.idle(true));
     add(guard_, look.guard());
     add(punch_, look.punch());
     add(offer_, look.offer());
@@ -64,21 +76,11 @@ template <class F> void HumanSprites::eachFrame(const HumanLook& look, F&& add) 
     add(kneel_, look.kneel());
     add(dead_, look.dead());
     add(crouch_, look.crouch());
-    add(crouchCarry_, look.crouch(true));
-    for (int i = 0; i < WALK_FRAMES; i++) {
-        add(walk_[size_t(i)], look.walk(i));
-        add(walkCarry_[size_t(i)], look.walk(i, true));
-    }
+    for (int i = 0; i < WALK_FRAMES; i++) add(walk_[size_t(i)], look.walk(i));
     for (int i = 0; i < WAVE_FRAMES; i++) add(wave_[size_t(i)], look.wave(i));
     for (int i = 0; i < EAT_FRAMES; i++) add(eat_[size_t(i)], look.eat(i));
-    for (int i = 0; i < SIT_FRAMES; i++) {
-        add(sit_[size_t(i)], look.sit(i));
-        add(sitCarry_[size_t(i)], look.sit(i, true));
-    }
-    for (int i = 0; i < DOZE_FRAMES; i++) {
-        add(doze_[size_t(i)], look.doze(i));
-        add(dozeCarry_[size_t(i)], look.doze(i, true));
-    }
+    for (int i = 0; i < SIT_FRAMES; i++) add(sit_[size_t(i)], look.sit(i));
+    for (int i = 0; i < DOZE_FRAMES; i++) add(doze_[size_t(i)], look.doze(i));
     for (int i = 0; i < CURL_FRAMES; i++) {
         add(curl_[size_t(i)], look.curl(i));
         add(curlCarry_[size_t(i)], look.curl(i, true));
@@ -116,7 +118,7 @@ HumanSprites::~HumanSprites() {
 
 void HumanSprites::add(Texture2D& t, SpriteFrame f) {
     t = toTexture(f);
-    spots_[&t] = {f.pocket, f.hand};
+    spots_[&t] = {f.held, f.hand};
     frames_.emplace_back(&t, std::move(f));
 }
 
@@ -126,7 +128,7 @@ void HumanSprites::setDirty(bool dirty) {
     // The frames come in the same order as they were added in.
     size_t i = 0;
     eachFrame(look_, [&](Texture2D& t, SpriteFrame f) {
-        spots_[&t] = {f.pocket, f.hand};
+        spots_[&t] = {f.held, f.hand};
         frames_[i].second = std::move(f);
         paint(t, frames_[i++].second);
     });
@@ -195,15 +197,18 @@ void HumanSprites::paint(Texture2D& t, const SpriteFrame& f) {
 }
 
 void HumanSprites::draw(Vector2 feet, Pose pose, float animTime, bool flip, int scale, Color tint,
-                        bool carrying, const Bottle* bottle, bool inHand) const {
+                        int cakes, const Bottle* bottle, bool inHand) const {
+    bool carrying = cakes > 0;
     // Mirroring keeps the base pixel in place: it is the middle column.
     Rectangle src{0, 0, flip ? -float(SPRITE_W) : float(SPRITE_W), float(SPRITE_H)};
-    bool lying = (pose == Pose::Fall && animTime >= FALL_DOWN) || pose == Pose::Wake;
+    bool lying = (pose == Pose::Fall && animTime >= FALL_DOWN) || pose == Pose::Wake || pose == Pose::Lie;
     if (lying) {
         // Turned a quarter about the sprite's middle so the head falls back,
         // then set down with the shoulders on the bottom of the feet's cell.
-        bool shut = pose == Pose::Fall || animTime < WAKE_EYES_SHUT ||
-                    std::fmod(animTime - WAKE_EYES_SHUT, WAKE_BLINK_EVERY) >= WAKE_BLINK_EVERY - WAKE_BLINK_TIME;
+        // Lying awake, it blinks as one seated does.
+        bool shut = pose == Pose::Lie ? std::fmod(animTime, BLINK_EVERY) >= BLINK_EVERY - BLINK_TIME
+                    : pose == Pose::Fall || animTime < WAKE_EYES_SHUT ||
+                        std::fmod(animTime - WAKE_EYES_SHUT, WAKE_BLINK_EVERY) >= WAKE_BLINK_EVERY - WAKE_BLINK_TIME;
         float lift = SPRITE_W * scale / 2.0f;
         Vector2 mid{std::round(feet.x), std::round(feet.y) - lift};
         DrawTexturePro(shut ? dead_ : idle_, src, {mid.x, mid.y, float(SPRITE_W * scale), float(SPRITE_H * scale)},
@@ -223,11 +228,8 @@ void HumanSprites::draw(Vector2 feet, Pose pose, float animTime, bool flip, int 
         drawCurled(feet, tex, flip, scale, tint, -1.0f);
         return;
     }
-    const auto& walk = carrying ? walkCarry_ : walk_;
-    const Texture2D& crouch = carrying ? crouchCarry_ : crouch_;
-    const Texture2D& seated =
-        (carrying ? sitCarry_ : sit_)[std::fmod(animTime, BLINK_EVERY) < BLINK_EVERY - BLINK_TIME ? 0 : 1];
-    const Texture2D& tex = pose == Pose::Walk  ? walk[size_t(int(animTime * WALK_FPS) % WALK_FRAMES)]
+    const Texture2D& seated = sit_[std::fmod(animTime, BLINK_EVERY) < BLINK_EVERY - BLINK_TIME ? 0 : 1];
+    const Texture2D& tex = pose == Pose::Walk  ? walk_[size_t(int(animTime * WALK_FPS) % WALK_FRAMES)]
                            : pose == Pose::Wave && animTime < WAVE_TIME ? wave_[size_t(int(animTime * WAVE_FPS) % WAVE_FRAMES)]
                            : pose == Pose::Eat  ? eat_[size_t(int(animTime * EAT_FPS) % EAT_FRAMES)]
                            : pose == Pose::Guard ? guard_
@@ -241,29 +243,32 @@ void HumanSprites::draw(Vector2 feet, Pose pose, float animTime, bool flip, int 
                            : pose == Pose::Pour  ? pour_
                            : pose == Pose::OfferBottle ? offerBottle_
                            : pose == Pose::Fall  ? (animTime < FALL_KNEEL ? idle_ : kneel_)
-                           : pose == Pose::Sit   ? (animTime < SIT_DOWN_TIME ? crouch : seated)
-                           : pose == Pose::Rise && animTime < STAND_UP_TIME ? crouch
-                           : pose == Pose::Sleep ? (animTime < SIT_DOWN_TIME ? crouch
-                                                    : (carrying ? dozeCarry_ : doze_)[nodding(animTime) ? 1 : 0])
-                           : pose == Pose::WakeUp && animTime < ROUSE_TIME + STAND_UP_TIME ? crouch
+                           : pose == Pose::Sit   ? (animTime < SIT_DOWN_TIME ? crouch_ : seated)
+                           : pose == Pose::Rise && animTime < STAND_UP_TIME ? crouch_
+                           : pose == Pose::Sleep ? (animTime < SIT_DOWN_TIME ? crouch_
+                                                    : doze_[nodding(animTime) ? 1 : 0])
+                           : pose == Pose::WakeUp && animTime < ROUSE_TIME + STAND_UP_TIME ? crouch_
                            : pose == Pose::Wash || pose == Pose::Search || pose == Pose::Feed || pose == Pose::Squat
                                ? crouch_
-                           : pose == Pose::Piss  ? idle_
-                           : carrying            ? idleCarry_
-                                                 : idle_;
+                               : idle_;
     float x = std::round(feet.x) - (SPRITE_BASE_X + 0.5f) * scale;
     float y = std::round(feet.y) - SPRITE_H * scale;
     // Feeding, it dips down to the body and comes up chewing.
     if (pose == Pose::Feed) y += float(int(animTime * FEED_FPS) % 2 * scale);
     DrawTexturePro(tex, src, {std::round(x), y, float(SPRITE_W * scale), float(SPRITE_H * scale)},
                    {0, 0}, 0.0f, tint);
-    if (!bottle) return;
     auto it = spots_.find(&tex);
     if (it == spots_.end()) return;
-    auto [pocket, hand] = it->second;
-    BottleSpot at = inHand && hand.valid() ? hand : pocket;
-    if (!at.valid()) return;
+    auto [held, hand] = it->second;
     Vector2 origin{std::round(x), y};
+    // The cake being eaten is in the front hand, not on the pile.
+    int piled = held.valid() ? std::max(0, cakes - (pose == Pose::Eat ? 1 : 0)) : 0;
+    for (int i = 0; i < piled; i++) drawHeldCake(origin, held.x, held.y - i * HELD_CAKE_H, flip, scale, tint);
+    if (!bottle) return;
+    bool onPile = !inHand || !hand.valid();
+    BottleSpot at = onPile ? held : hand;
+    if (!at.valid()) return;
+    if (onPile) at.y = int8_t(at.y - piled * HELD_CAKE_H);
     drawBottle(origin, at.x, at.y, at.turn, flip, *bottle, scale, tint);
     if (pose == Pose::Pour) drawPourStream(origin, at.x, at.y, SPRITE_H - 1, flip, *bottle, scale, tint, animTime);
 }

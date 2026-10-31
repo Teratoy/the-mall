@@ -9,9 +9,6 @@ namespace {
 
 constexpr int CX = SPRITE_BASE_X;
 constexpr Rgba EYES = hex(0x141414);
-/// The cake a human eats, held in the hand: frosting over sponge.
-constexpr Rgba CAKE_TOP = hex(0xecb4c4);
-constexpr Rgba CAKE_BASE = hex(0xb07c50);
 
 constexpr uint32_t SKINS[] = {0xf3d2b5, 0xe6b48e, 0xcf9868, 0xa86a44, 0x7b4b2d, 0x4e301f};
 constexpr uint32_t HAIRS[] = {0x1b1411, 0x3a2416, 0x6a4327, 0xb88a4c,
@@ -134,6 +131,7 @@ HumanLook HumanLook::random(Rng& rng) {
     return l;
 }
 
+SpriteFrame HumanLook::idle() const { return draw({}); }
 SpriteFrame HumanLook::draw(const Stance& s) const {
     if (!dirty) return drawBody(s);
     // The same body gone dull with dirt; drawBody messes up its hair.
@@ -178,11 +176,8 @@ void HumanLook::wear(SpriteFrame& f, const SpriteFrame& stand) const {
     }
 }
 
-SpriteFrame HumanLook::idle(bool carrying) const { return draw({.carry = carrying}); }
 
-SpriteFrame HumanLook::walk(int frame, bool carrying) const {
-    return draw({.stride = frame == 1 ? 1 : frame == 3 ? -1 : 0, .carry = carrying});
-}
+SpriteFrame HumanLook::walk(int frame) const { return draw({.stride = frame == 1 ? 1 : frame == 3 ? -1 : 0}); }
 
 SpriteFrame HumanLook::wave(int frame) const { return draw({.front = frame == 0 ? Arm::WaveIn : Arm::WaveOut}); }
 
@@ -202,15 +197,11 @@ SpriteFrame HumanLook::kneel() const { return draw({.kneel = true, .eyesShut = t
 
 SpriteFrame HumanLook::dead() const { return draw({.eyesShut = true}); }
 
-SpriteFrame HumanLook::crouch(bool carrying) const { return draw({.kneel = true, .carry = carrying}); }
+SpriteFrame HumanLook::crouch() const { return draw({.kneel = true}); }
 
-SpriteFrame HumanLook::sit(int frame, bool carrying) const {
-    return draw({.sit = true, .carry = carrying, .eyesShut = frame == 1});
-}
+SpriteFrame HumanLook::sit(int frame) const { return draw({.sit = true, .eyesShut = frame == 1}); }
 
-SpriteFrame HumanLook::doze(int frame, bool carrying) const {
-    return draw({.sit = true, .nod = frame, .carry = carrying, .eyesShut = true});
-}
+SpriteFrame HumanLook::doze(int frame) const { return draw({.sit = true, .nod = frame, .eyesShut = true}); }
 
 SpriteFrame HumanLook::curl(int frame, bool carrying) const {
     return draw({.front = Arm::Pillow, .curl = true, .breathe = frame == 1, .carry = carrying, .eyesShut = frame != 2});
@@ -470,9 +461,8 @@ SpriteFrame HumanLook::drawBody(const Stance& s) const {
                 // Leaning back on a hand flat on the floor.
                 for (int y = shoulder; y <= torsoBottom + 1; y++) armPx(side, x, y, y - shoulder, false);
                 armPx(side, x - 1, feet, 0, true);
-                if (s.carry) cake(x - 3, feet - 1);
-                // Out of the back pocket, standing on the floor behind.
-                p.f.pocket = {int8_t(tl), int8_t(feet), BottleTurn::Up};
+                // Put down on the floor behind.
+                p.f.held = {int8_t(x - 3), int8_t(feet), BottleTurn::Up};
             } else {
                 // Reaching to the raised knee, the hand on top of it.
                 for (int y = shoulder; y < torsoBottom; y++) armPx(side, x, y, y - shoulder, false);
@@ -484,10 +474,8 @@ SpriteFrame HumanLook::drawBody(const Stance& s) const {
         int swing = side == 0 ? stride : -stride;
         int hand = torsoBottom + 1 - (swing > 0 ? 1 : 0);
         for (int y = shoulder; y <= hand; y++) armPx(side, x, y, y - shoulder, y == hand);
-        // Out of the back pocket, behind the hip.
-        if (side == 0) p.f.pocket = {int8_t(tl - 1), int8_t(legTop + 1), BottleTurn::Up};
         // Carried at the side, behind the hand.
-        if (side == 0 && s.carry) cake(x - 2, hand - 1);
+        if (side == 0) p.f.held = {int8_t(x - 2), int8_t(hand), BottleTurn::Up};
     }
 
     p.body(BodyPart::Head, lifted);

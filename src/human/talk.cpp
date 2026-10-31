@@ -45,6 +45,14 @@ constexpr const char* MOMENTS[] = {
     "sip", "bottle_dry", "fill_bottle", "pour_out", "ask_drink", "give_drink", "sell_drink", "bottle_lie",
     "caught_bottle_lie", "refuse_drink", "bottle_taken", "put_down", "pick_up", "stash", "from_stash", "saw_stash", "stash_robbed", "steal_stash", "caught_stealing", "resent",
     "tell_stash", "sell_stash", "lie_stash", "stash_told", "ask_stash", "own_stash", "deny_stash", "caught_denying",
+    "no_water", "call_door", "part_dry", "bottle_rage",
+    "learn_again", "learn_max", "quenched",
+    "foul_again",
+    "part_wronged",
+    "wary_cake", "wary_slam",
+    "swap_bottle",
+    "warn_foul", "foul_warned",
+    "see_bottle", "bottle_gone", "bottle_stolen", "scarce",
     "got_dirty", "washed_clean", "stink", "smell_death", "follow_stench", "put_off",
 };
 static_assert(std::size(MOMENTS) == size_t(Moment::Count));

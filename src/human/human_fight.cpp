@@ -16,10 +16,12 @@
 bool Human::seekFood(World& world) {
     auto it = social_.lastSeen.find(fight_.feared);
     bool afraid = fight_.fear > 0.0f && it != social_.lastSeen.end();
+    Shy shied = Shy::None;
     auto p = search(world, [&](Vec2i c) {
-        auto k = inReach(c, memory.cakes);
+        auto k = cakeInReach(c, &shied);
         return k && !(afraid && cheb(*k, it->second) < FLEE_DIST);
     });
+    noteShy(shied);
     // A body with cakes on it does as well as cakes lying about.
     auto q = lootPath(world, true);
     // And cakes put down on the floor.
@@ -173,6 +175,7 @@ void Human::give(Human& other, Gift why) {
         remember(Episode::What::Gift, EPISODE_YIELDED, id, other.id, int(why));
         other.remember(Episode::What::Gift, EPISODE_YIELDED, id, other.id, int(why));
         if (other.fight_.foe == id) other.fight_.foe = -1;
+        other.wrong(*this, true);
         break;
     }
 }
@@ -186,9 +189,10 @@ bool Human::startFight(World& world) {
     bool running = seen && f.state == State::Walking && f.goal == Goal::Flee;
     bool forFood = hungry() && social_.seenCakes.count(fight_.foe) > 0;
     // Thirsty with nothing to drink, their water is worth a fight too.
-    bool forWater = thirsty() && sippable() < 0 && bottles.size() < size_t(BOTTLE_MAX) &&
-                    social_.seenWater.count(fight_.foe) > 0;
-    bool forCakes = forFood || forWater;
+    bool forWater = thirsty() && sippable() < 0 && roomForBottle() && social_.seenWater.count(fight_.foe) > 0;
+    // Erratic and parched, any bottle at all, while they still carry one.
+    bool forBottle = bottleRaging() && !f.bottles.empty() && (seen || social_.lastSeen.count(fight_.foe));
+    bool forCakes = forFood || forWater || forBottle;
     // Hunted, they are chased however they run, as long as they are in
     // sight or were lately.
     bool hunt = hunting() && social_.lastSeen.count(fight_.foe);
@@ -231,7 +235,8 @@ void Human::startPunch(Human& foe) {
 
 // Lands only if the foe is still within reach, and snatches one of their
 // cakes when there is room for it; thirsty with nothing to drink, their
-// fullest bottle instead, when it has room for one.
+// fullest bottle instead, when it has room for one (raging, an empty one
+// will do).
 void Human::landPunch(World& world) {
     punchLanded = true;
     timer = PUNCH_FOLLOW;
@@ -241,7 +246,11 @@ void Human::landPunch(World& world) {
     Vec2i at = f.stepProgress() < 0.5f ? f.prev : f.cell;
     if (at.x != cell.x) facingLeft = at.x < cell.x;
     if (f.dead() || cheb(cell, at) > PUNCH_REACH) return;
-    bool forWater = thirsty() && sippable() < 0 && bottles.size() < size_t(BOTTLE_MAX) && f.bottleWater() > 0.0f;
+    auto theirs = std::max_element(f.bottles.begin(), f.bottles.end(),
+                                   [](const Bottle& a, const Bottle& b) { return a.water < b.water; });
+    // Raging, it takes theirs full or not.
+    bool forWater = thirsty() && sippable() < 0 && theirs != f.bottles.end() &&
+                    ((!theirs->empty() && wouldTakeBottle(*theirs)) || bottleRaging());
     bool took = f.cakes > 0 && cakes < carryMax() && (!forWater || hungry());
     if (took) {
         f.cakes--;
@@ -249,10 +258,10 @@ void Human::landPunch(World& world) {
     }
     bool tookBottle = !took && forWater;
     if (tookBottle) {
-        auto it = std::max_element(f.bottles.begin(), f.bottles.end(),
-                                   [](const Bottle& a, const Bottle& b) { return a.water < b.water; });
-        bottles.push_back(*it);
-        f.bottles.erase(it);
+        Bottle got = *theirs;
+        f.bottles.erase(theirs);
+        // Its own, emptier, falls to the floor.
+        if (auto left = takeBottle(got)) world.putDown(cell, 0, {*left});
         rethink_ = true;
         f.sayLater(talk::Moment::BottleTaken, id);
     }
@@ -261,6 +270,7 @@ void Human::landPunch(World& world) {
     remember(Episode::What::Fight, EPISODE_HIT, id, f.id);
     f.remember(Episode::What::Fight, took ? EPISODE_ROBBED : EPISODE_GOT_HIT, id, f.id);
     sayLater(talk::Moment::Hit, f.id);
+    wrong(f, true);
     // Wet blood on them comes off on the fist.
     if (f.stains.wetAny()) stain({BodyPart::FrontArm}, 1, 120, true);
     bool asleep = f.state == State::Sleeping;
@@ -283,6 +293,7 @@ void Human::creditKill(World& world, Human& by, bool witnesses) {
     // Bled out out of its sight, it only learns of it at the body.
     deaths_.killerSaw = witnesses || (!by.dead() && by.sight.sees(cell));
     if (!deaths_.killerSaw) return;
+    by.deaths_.kills++;
     by.note(by.hunting() ? "KILLED @ TO EAT" : "KILLED @", id);
     by.remember(Episode::What::Kill, EPISODE_KILLED, by.id, id);
     by.sayLater(talk::Moment::Killed, -1, id);
@@ -373,6 +384,14 @@ void Human::learnTrap(Vec2i cell, TrapKind kind, bool mine) {
         note("SHUT IN A SLAM ROOM");
         sayLater(talk::Moment::Slammed);
     }
+    // Caught itself: wary of the next one like it.
+    if (mine && kind == TrapKind::Darts) {
+        wary_.darts = std::min(1.0f, wary_.darts + WARY_HIT);
+        wary_.notedDarts = false;
+    } else if (mine && kind == TrapKind::Slam) {
+        wary_.slam = std::min(1.0f, wary_.slam + WARY_HIT);
+        wary_.notedSlam = false;
+    }
     // Seen going off, told of or not: a scare.
     scare(DREAD_TRAP_SEEN);
     // Darted lifting a cake it was told of: whoever told it set it up.
@@ -397,6 +416,80 @@ void Human::trapWhereTold(Vec2i cell) {
     remember(Episode::What::Lied, EPISODE_LIED, it->second, id);
     regard(it->second, TRUST_LIED);
     memory.toldBy.erase(it);
+}
+
+// Starving, it takes any risk; tipped off by someone it trusts, it takes
+// their word. Shut in before, it wants a key in hand for a cake in a room
+// with one door. Darted before, it leaves table cakes alone until hunger
+// outweighs the wariness, the more so the more hurt it is.
+Human::Shy Human::shyOf(Vec2i c) const {
+    if (starving() || (wary_.darts <= 0.0f && wary_.slam <= 0.0f)) return Shy::None;
+    if (auto it = memory.cakeTips.find(c); it != memory.cakeTips.end() && trust(it->second) >= WARY_TIP_TRUST)
+        return Shy::None;
+    if (wary_.slam > 0.0f && keys == 0 && oneDoorRoom(c)) return Shy::Slam;
+    if (wary_.darts > 0.0f && memory.tile(c) == Tile::Table &&
+        hunger < wary_.darts * (WARY_DARTS_BASE + WARY_DARTS_HURT * (1.0f - health)))
+        return Shy::Darts;
+    return Shy::None;
+}
+
+// What it remembers round the table, up to the doors: unknown cells, or
+// too many, and it can't tell. Doors side by side are one door.
+bool Human::oneDoorRoom(Vec2i c) const {
+    std::unordered_set<Vec2i, Vec2iHash> seen{c}, doors;
+    std::queue<Vec2i> open;
+    open.push(c);
+    while (!open.empty()) {
+        Vec2i p = open.front();
+        open.pop();
+        for (Vec2i d : DIRS4) {
+            Vec2i n = p + d;
+            Tile t = memory.tile(n);
+            if (t == Tile::Void) return false;
+            if (t == Tile::Wall || !seen.insert(n).second) continue;
+            if (t == Tile::DoorOpen || t == Tile::DoorLocked) {
+                doors.insert(n);
+                continue;
+            }
+            if (int(seen.size()) > WARY_ROOM_MAX) return false;
+            open.push(n);
+        }
+    }
+    if (doors.empty()) return false;
+    // All the door cells one run of door from the first.
+    std::unordered_set<Vec2i, Vec2iHash> run{*doors.begin()};
+    std::queue<Vec2i> next;
+    next.push(*doors.begin());
+    while (!next.empty()) {
+        Vec2i p = next.front();
+        next.pop();
+        for (Vec2i d : DIRS4)
+            if (doors.count(p + d) && run.insert(p + d).second) next.push(p + d);
+    }
+    return run.size() == doors.size();
+}
+
+std::optional<Vec2i> Human::cakeInReach(Vec2i at, Shy* shied) const {
+    for (Vec2i d : REACH) {
+        Vec2i c = at + d;
+        if (!memory.cakes.count(c) || (d != Vec2i{} && (memory.tile(c) != Tile::Table || avoids(c)))) continue;
+        Shy why = shyOf(c);
+        if (why == Shy::None) return c;
+        if (shied) *shied = why;
+    }
+    return std::nullopt;
+}
+
+void Human::noteShy(Shy why) {
+    if (why == Shy::Darts && !wary_.notedDarts) {
+        wary_.notedDarts = true;
+        note("LEFT A CAKE ALONE. IT COULD BE RIGGED");
+        sayLater(talk::Moment::WaryCake);
+    } else if (why == Shy::Slam && !wary_.notedSlam) {
+        wary_.notedSlam = true;
+        note("LEFT THE CAKE IN A ROOM WITH ONE DOOR. NOT WITHOUT A KEY");
+        sayLater(talk::Moment::WarySlam);
+    }
 }
 
 // Hit by a starving human it would feed anyway, it feeds them. Otherwise,
@@ -446,9 +539,10 @@ bool Human::worthLooting(int id, bool cakesOnly) const {
     auto it = deaths_.bodies.find(id);
     if (it == deaths_.bodies.end()) return false;
     bool forCakes = it->second.cakes > 0 && cakes < carryMax();
-    // A bottle with water in it, or any bottle at all to one with none.
+    // A bottle it would take, as loot() does: water it would drink, or any
+    // bottle at all to one with none.
     const Body& b = it->second;
-    bool forBottle = b.bottles > 0 && bottles.size() < size_t(BOTTLE_MAX) && (b.water > 0.0f || bottles.empty());
+    bool forBottle = b.bottles > 0 && wouldTakeBottle(b.fullest);
     return forCakes || (!cakesOnly && (!b.searched || forBottle));
 }
 
@@ -495,8 +589,8 @@ bool Human::startLoot(World& world, bool cakesOnly) {
     return true;
 }
 
-// Everything it holds of keys, and the cakes and bottles there is room for,
-// the fullest bottles first.
+// Everything it holds of keys, the cakes there is room for, and its fullest
+// bottle, taken or poured into its own.
 void Human::loot(World& world) {
     if (sleep_.robbee >= 0) return rob(world);
     Human& b = world.human(deaths_.corpse);
@@ -506,12 +600,15 @@ void Human::loot(World& world) {
     b.cakes -= c;
     keys += k;
     cakes += c;
+    // Its fullest bottle, or the water in it poured into its own.
     std::stable_sort(b.bottles.begin(), b.bottles.end(), [](const Bottle& x, const Bottle& y) { return x.water > y.water; });
     int n = 0;
-    while (!b.bottles.empty() && bottles.size() < size_t(BOTTLE_MAX)) {
-        bottles.push_back(b.bottles.front());
+    bool poured = false;
+    if (!b.bottles.empty() && wouldTakeBottle(b.bottles.front())) {
+        Bottle got = b.bottles.front();
         b.bottles.erase(b.bottles.begin());
-        n++;
+        if (auto left = takeBottle(got, &poured)) b.bottles.push_back(*left);
+        n = poured ? 0 : 1;
     }
     if (k > 0 && social_.leader >= 0) {
         sayLater(talk::Moment::PartOwnKey, social_.leader);
@@ -524,15 +621,16 @@ void Human::loot(World& world) {
     if (k > 0) parts.push_back(count(k, "A KEY", " KEYS"));
     if (c > 0) parts.push_back(count(c, "A CAKE", " CAKES"));
     if (n > 0) parts.push_back(count(n, "A BOTTLE", " BOTTLES"));
+    if (poured) parts.push_back("SOME WATER");
     std::string took;
     for (size_t i = 0; i < parts.size(); i++)
         took += (i == 0 ? "" : i + 1 == parts.size() ? " AND " : ", ") + parts[i];
-    note(k + c + n > 0 ? "TOOK " + took + " OFF @'S BODY" : "WENT THROUGH @'S BODY, FOUND NOTHING", b.id);
+    note(k + c + n + int(poured) > 0 ? "TOOK " + took + " OFF @'S BODY" : "WENT THROUGH @'S BODY, FOUND NOTHING", b.id);
     remember(Episode::What::Loot, EPISODE_LOOTED, id, b.id);
     // Gone through in plain sight: picked over, and a poor thing to do.
     for (const auto& o : world.humans())
         if (!o->dead() && (o.get() == this || o->sight.sees(b.cell)))
-            o->deaths_.bodies[b.id] = {b.cell, b.cakes, true, b.meals(), b.spoiled(), int(b.bottles.size()), b.bottleWater()};
+            o->deaths_.bodies[b.id] = {b.cell, b.cakes, true, b.meals(), b.spoiled(), int(b.bottles.size()), b.fullestBottle()};
     witness(world, *this, b, TRUST_SAW_LOOT, 0.0f, Episode::What::Loot, EPISODE_SAW_LOOT);
     // Said aloud, and the nearest who saw it may say what they think of it.
     sayLater(talk::Moment::Loot, -1, b.id);
@@ -543,5 +641,5 @@ void Human::loot(World& world) {
             critic = o.get();
     if (critic) critic->sayLater(talk::Moment::Shame, id, b.id);
     startIdle(LOOK_TIME_MIN, LOOK_TIME_MAX);
-    if ((c > 0 && hungry()) || (n > 0 && thirsty())) timer = 0.0f;
+    if ((c > 0 && hungry()) || ((n > 0 || poured) && thirsty())) timer = 0.0f;
 }

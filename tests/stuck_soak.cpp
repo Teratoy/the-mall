@@ -1,6 +1,8 @@
 // Headless soak: watches every human for getting stuck, looping, and
 // blocking each other.
 // Usage: build/stuck_soak [seeds=6] [minutes=20] [verbose=1] [crowd=0]
+//   Each seed runs in its own process, one per core, and prints in seed
+//   order, so the output is the same as running them one after another.
 //   crowd: extra humans packed round the spawn, to stress doorways.
 //   TRACE=seed:id:from:to prints one human second by second.
 //   LOGLINES=path writes every distinct log line written, with its count, for
@@ -8,6 +10,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <deque>
 #include <functional>
 #include <initializer_list>
@@ -20,6 +23,8 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include <sys/wait.h>
+#include <unistd.h>
 #include "probe.h"
 
 using P = SoakProbe;
@@ -62,6 +67,119 @@ struct Totals {
     std::map<std::string, int> logLines;
 };
 
+/// Writes a seed's totals for the parent to add up. Doubles go as hex so not a bit is lost.
+static void writeTotals(FILE* f, const Totals& T) {
+    std::fprintf(f, "%a %a %a %d %d %d %d %d %d %d %d %d %d\n", T.humanSeconds, T.asleepSeconds, T.blockedSeconds,
+                 T.giveUps, T.giveWays, T.goes, T.goesWatched, T.goesWatchedBursting, T.mutual, T.longBlocks, T.stills,
+                 T.loops, T.flips);
+    const std::map<std::string, int>* by[] = {&T.stillBy, &T.loopBy, &T.blockBy, &T.flipBy, &T.logLines};
+    for (int i = 0; i < int(std::size(by)); i++)
+        for (auto& [k, v] : *by[i]) std::fprintf(f, "S%d\t%d\t%s\n", i, v, k.c_str());
+    for (auto& [g, v] : T.goalTime) std::fprintf(f, "G %d %a\n", g, v);
+    for (auto& [g, v] : T.goalBlocked) std::fprintf(f, "B %d %a\n", g, v);
+    for (int st : T.statesSeen) std::fprintf(f, "T %d\n", st);
+}
+
+/// Reads a seed's totals back and adds them to T.
+static void addTotals(FILE* f, Totals& T) {
+    Totals o;
+    if (std::fscanf(f, "%la %la %la %d %d %d %d %d %d %d %d %d %d\n", &o.humanSeconds, &o.asleepSeconds,
+                    &o.blockedSeconds, &o.giveUps, &o.giveWays, &o.goes, &o.goesWatched, &o.goesWatchedBursting,
+                    &o.mutual, &o.longBlocks, &o.stills, &o.loops, &o.flips) != 13) {
+        std::fprintf(stderr, "stuck_soak: a seed's totals were cut short\n");
+        std::exit(1);
+    }
+    T.humanSeconds += o.humanSeconds, T.asleepSeconds += o.asleepSeconds, T.blockedSeconds += o.blockedSeconds;
+    T.giveUps += o.giveUps, T.giveWays += o.giveWays, T.goes += o.goes, T.goesWatched += o.goesWatched;
+    T.goesWatchedBursting += o.goesWatchedBursting, T.mutual += o.mutual, T.longBlocks += o.longBlocks;
+    T.stills += o.stills, T.loops += o.loops, T.flips += o.flips;
+    std::map<std::string, int>* by[] = {&T.stillBy, &T.loopBy, &T.blockBy, &T.flipBy, &T.logLines};
+    char line[4096];
+    while (std::fgets(line, sizeof line, f)) {
+        line[std::strcspn(line, "\n")] = 0;
+        int i = 0, n = 0, g = 0;
+        double v = 0;
+        char* key = nullptr;
+        if (line[0] == 'S' && std::sscanf(line, "S%d\t%d\t", &i, &n) == 2 && i >= 0 && i < int(std::size(by)) &&
+            (key = std::strchr(line + 1, '\t')) && (key = std::strchr(key + 1, '\t')))
+            (*by[i])[key + 1] += n;
+        else if (std::sscanf(line, "G %d %la", &g, &v) == 2)
+            T.goalTime[g] += v;
+        else if (std::sscanf(line, "B %d %la", &g, &v) == 2)
+            T.goalBlocked[g] += v;
+        else if (std::sscanf(line, "T %d", &g) == 1)
+            T.statesSeen.insert(g);
+    }
+}
+
+/// Runs seeds in child processes, as many at once as there are cores. Each child prints into its own file and
+/// leaves its totals in another; they are copied out and added up in seed order, so the output doesn't depend on
+/// which seed finishes first.
+struct SeedPool {
+    struct Child {
+        pid_t pid;
+        FILE* out;
+        FILE* totals;
+    };
+    std::deque<Child> running;
+    size_t cores = std::max(1L, sysconf(_SC_NPROCESSORS_ONLN));
+    bool child = false;
+    Child mine{};
+
+    /// In the parent, forks a child for the next seed and returns false. In the child, returns true with T
+    /// emptied and stdout going to the child's file.
+    bool start(Totals& T) {
+        while (running.size() >= cores) collectOne(T);
+        std::fflush(stdout);
+        Child c{0, std::tmpfile(), std::tmpfile()};
+        if (!c.out || !c.totals || (c.pid = fork()) < 0) {
+            std::perror("stuck_soak");
+            std::exit(1);
+        }
+        if (c.pid == 0) {
+            child = true;
+            mine = c;
+            T = Totals{};
+            dup2(fileno(c.out), STDOUT_FILENO);
+            return true;
+        }
+        running.push_back(c);
+        return false;
+    }
+
+    /// In the child, hands its totals over and ends it.
+    [[noreturn]] void finish(const Totals& T) {
+        std::fflush(stdout);
+        writeTotals(mine.totals, T);
+        std::fflush(mine.totals);
+        _exit(0);
+    }
+
+    /// Waits for the oldest child, prints what it printed and adds its totals to T.
+    void collectOne(Totals& T) {
+        Child c = running.front();
+        running.pop_front();
+        int status = 0;
+        waitpid(c.pid, &status, 0);
+        std::rewind(c.out);
+        char buf[1 << 16];
+        for (size_t n; (n = std::fread(buf, 1, sizeof buf, c.out)) > 0;) std::fwrite(buf, 1, n, stdout);
+        std::fflush(stdout);
+        if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+            std::fprintf(stderr, "stuck_soak: a seed's process failed (status %d)\n", status);
+            std::exit(1);
+        }
+        std::rewind(c.totals);
+        addTotals(c.totals, T);
+        std::fclose(c.out);
+        std::fclose(c.totals);
+    }
+
+    void collectAll(Totals& T) {
+        while (!running.empty()) collectOne(T);
+    }
+};
+
 static std::string label(const Human& h) {
     char b[200];
     std::snprintf(b, sizeof b, "#%d %s/%s @(%d,%d) tgt(%d,%d) path%zu partner%d leader%d foe%d keys%d cakes%d hunger%.2f",
@@ -81,7 +199,9 @@ int main(int argc, char** argv) {
     if (trace) std::sscanf(trace, "%d:%d:%f:%f", &tseed, &tid, &tfrom, &tto);
     const float dt = 1.0f / 30.0f;
     Totals T;
+    SeedPool pool;
     for (int s = 1; s <= seeds; s++) {
+        if (!pool.start(T)) continue;
         World w(uint64_t(s) * 7919);
         Rng rng(s);
         Human& first = w.makeSpawn(HumanLook::random(rng), rng.next());
@@ -375,7 +495,9 @@ int main(int argc, char** argv) {
             std::printf("   water: %d cells foul, %d >= 0.3, %d >= 0.5, worst %.2f; %d foul gulps\n", any, refuse, sick,
                         most, foulGulps);
         }
+        pool.finish(T);
     }
+    pool.collectAll(T);
     std::printf("\n== %.0f human-minutes ==\n", T.humanSeconds / 60);
     std::printf("asleep %.1f%% of the time\n", 100 * T.asleepSeconds / T.humanSeconds);
     std::printf("made way %d times; blocked %.2f%% of time, %d give-ups, %d mutual blocks, %d blocks >=5s\n",

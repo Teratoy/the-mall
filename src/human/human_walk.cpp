@@ -134,7 +134,7 @@ void Human::move(World& world, Vec2i next) {
     // Seen opened from afar: no need to walk up to it.
     if (goal == Goal::CheckDoor && !lockedDoorBeside(target_)) rethink_ = true;
     if (goal == Goal::Explore && !isFrontier(target_) && !openDoorBeside(target_)) rethink_ = true;
-    if (goal == Goal::FetchCake && !inReach(target_, memory.cakes)) rethink_ = true;
+    if (goal == Goal::FetchCake && !cakeInReach(target_)) rethink_ = true;
     // Making for a voice with a key, a gate seen near it is worth going to.
     if (goal == Goal::Rescue && keys > 0 && rescue_.rescuee >= 0) {
         auto it = rescue_.cries.find(rescue_.rescuee);
@@ -266,12 +266,20 @@ void Human::sitDown() {
     chat_.restedAt = clock_;
     startIdle(SIT_TIME_MIN, SIT_TIME_MAX);
     state = State::Sitting;
+    water_.lying = false;
     animTime = 0.0f;
     glance_ = SIT_GLANCE;
 }
 
+void Human::lieDown() {
+    sitDown();
+    water_.lying = true;
+    timer = rng_.range(LIE_TIME_MIN, LIE_TIME_MAX);
+}
+
 void Human::sitUp() {
     state = State::Sitting;
+    water_.lying = false;
     animTime = 0.0f;
     timer = rng_.range(WAKE_SIT_MIN, WAKE_SIT_MAX);
     glance_ = 0.0f;
@@ -316,7 +324,7 @@ void Human::takeInReach(World& world) {
         if (!underfoot && (world.tile(c) != Tile::Table || avoids(c))) continue;
         if (!world.hasKey(c)) memory.keys.erase(c);
         if (!world.hasCake(c)) memory.cakes.erase(c);
-        bool key = world.hasKey(c), cake = cakes < carryMax() && world.hasCake(c);
+        bool key = world.hasKey(c), cake = cakes < carryMax() && world.hasCake(c) && shyOf(c) == Shy::None;
         if (!key && !cake) continue;
         if (!underfoot) world.setOff(c, *this);
         if (key && world.takeKey(c)) {

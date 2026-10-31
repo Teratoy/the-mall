@@ -66,6 +66,7 @@ $(B)/libthemall.so: $(OBJ) $(B)/glue.o $(B)/libraylib.a
 	$(CXX) -shared -o $@ $^ -u ANativeActivity_onCreate -Wl,--no-undefined -Wl,-z,max-page-size=16384 $(LDLIBS)
 
 $(B)/res.zip: $(shell find android/res -type f)
+	@mkdir -p $(@D)
 	$(BUILD_TOOLS)/aapt2 compile --dir android/res -o $@
 
 $(KEYSTORE):

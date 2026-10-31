@@ -251,13 +251,16 @@ public:
     int keys = 0;
     /// Cakes carried, the one being eaten included.
     int cakes = 0;
-    /// The water bottles it carries, in a back pocket, in plain sight: one
-    /// to wake with, full; no more than BOTTLE_MAX, taking another as it
-    /// takes a cake, while there is room (human_bottle.cpp).
-    static constexpr int BOTTLE_MAX = 2;
+    /// The water bottle it carries, in the back hand on top of its cakes, in
+    /// plain sight: one to wake with, full, and never more than BOTTLE_MAX.
+    /// Holding one, it takes no other: it pours the emptier into the fuller
+    /// and keeps that, clean water only (human_bottle.cpp).
+    static constexpr int BOTTLE_MAX = 1;
     std::vector<Bottle> bottles;
     /// All the water in them, 0 to the number of bottles.
     float bottleWater() const;
+    /// Its fullest bottle, or an empty one if none holds water.
+    Bottle fullestBottle() const;
     /// The bottle it shows: the one in its hand while drinking, filling,
     /// pouring or handing water over, else the fullest; null if it has none.
     const Bottle* shownBottle() const;
@@ -265,6 +268,8 @@ public:
     /// water over rather than a cake.
     bool bottleInHand() const;
     bool givingWater() const { return state == State::Giving && water_.givingWater; }
+    /// Lying down awake: parched and lost, by a locked door.
+    bool lyingDown() const { return state == State::Sitting && water_.lying; }
     /// Kneeling to put things down, not to pick them up.
     bool putting() const { return state == State::Stashing && stash_.putting; }
     Memory memory;
@@ -297,6 +302,8 @@ public:
     /// How many it counts friends, and foes, from what it saw and was told.
     int friendCount() const;
     int foeCount() const;
+    /// How many it knows it killed: seen die by its hand, or found dead of its beating.
+    int killCount() const { return deaths_.kills; }
     /// Whom it keeps company with, -1 if nobody; and whether it is standing
     /// waiting for its group to catch up.
     int companion() const { return social_.companion; }
@@ -312,6 +319,12 @@ public:
     /// Thinks of someone this much better (or worse, below 0) for what it
     /// just saw them do.
     void regard(int id, float delta);
+    /// Has hit, robbed or threatened a cake off victim: thinks worse of them,
+    /// and leaves them if it kept with or followed them, unless it is cunning
+    /// and they never knew. known: whether they know it was this human.
+    void wrong(const Human& victim, bool known);
+    /// Whether it keeps away from id for what it did to them.
+    bool shuns(int id) const;
     /// A piece of what one human knows, passed to another at a greeting:
     /// where a cake or key lies, a trap, or a route (the cells of a walk
     /// ending at a locked door, told with the tiles round them). What is
@@ -551,6 +564,10 @@ private:
         /// when it next cries for help.
         std::optional<Vec2i> slamGate;
         float helpTimer = 0.0f;
+        /// Parched and boxed in: the locked door it lies by and calls through
+        /// for water, and when it next calls.
+        std::optional<Vec2i> callDoor;
+        float callTimer = 0.0f;
         /// Who it means to let out of a slam room, and where the gate is; whose
         /// cries for help it has heard, each a scare once.
         int rescuee = -1;
@@ -596,9 +613,39 @@ private:
     void heardBack(int from);
     /// The way it knows toward someone shut in, to tell along with them.
     std::vector<Vec2i> wayToShutIn(const World& world, const Tell& t) const;
+    /// Wary of traps like those that caught it (human_fight.cpp). Any cake
+    /// on a table might be on a dart plate, and bait in a small room with
+    /// one door might shut it in, so one hit makes it think twice about the
+    /// next, not only that plate. A trusted tip, or starving, overrides it.
+    struct Wary {
+        /// Darted: how wary of cakes on tables, 0 to 1, raised by each
+        /// volley it set off and fading with time. Hunger weighs against
+        /// it, and being hurt for it.
+        float darts = 0.0f;
+        /// Shut in: while above 0, it takes no cake from a room with one
+        /// door unless it carries a key to let itself out.
+        float slam = 0.0f;
+        /// Said it would leave a cake alone, since it was last caught.
+        bool notedDarts = false, notedSlam = false;
+    };
+    Wary wary_;
+    enum class Shy : uint8_t { None, Darts, Slam };
+    /// Why, wary, it leaves the cake at c alone; None if it takes the risk.
+    Shy shyOf(Vec2i c) const;
+    /// A small room whose only way in is one door, as far as it has seen,
+    /// round the table at c.
+    bool oneDoorRoom(Vec2i c) const;
+    /// A remembered cake it would take standing at cell at; why it left
+    /// one alone goes in shied, if given.
+    std::optional<Vec2i> cakeInReach(Vec2i at, Shy* shied = nullptr) const;
+    /// The first time since it was caught that it leaves a cake alone: a
+    /// note and a word to nobody.
+    void noteShy(Shy why);
     /// Shut in a slam room with no key, it cries for help now and then,
     /// loud enough to carry through walls (human_rescue.cpp).
     void callForHelp(World& world, float dt);
+    /// Parched and lying by a locked door, it calls through it now and then.
+    void callThroughDoor(World& world, float dt);
     /// Nowhere to go but a few cells: walled in.
     bool walledIn(const World& world) const;
     /// Makes for the gate of whoever it means to let out; false, and gives
@@ -670,9 +717,10 @@ private:
         bool searched = false;
         int meals = 0;
         bool spoiled = false;
-        /// The bottles last seen on it, and the water in them.
+        /// The bottles last seen on it, and the fullest of them as it looked,
+        /// so it knows whether there is one it would take.
         int bottles = 0;
-        float water = 0.0f;
+        Bottle fullest;
     };
     /// The dead: those it saw, the bodies it knows, and its own death.
     struct Deaths {
@@ -683,6 +731,8 @@ private:
         int killer = -1;
         /// Whether the killer saw it die; if not, it learns it on finding the body.
         bool killerSaw = false;
+        /// How many it knows it killed.
+        int kills = 0;
         std::unordered_map<int, Body> bodies;
         /// The body it is going to, or kneeling by, to go through.
         int corpse = -1;
@@ -917,6 +967,8 @@ private:
         Vec2i last;
         bool drankYet = false;
         float thirstyAt = 0.0f, hopeAt = -1e9f;
+        /// Thirst has taken health since it last drank.
+        bool thirstHurt = false;
         /// When it last gave offence washing.
         float offendedAt = -1e9f;
         /// Guarding water by its home: whom it lets drink there, until when.
@@ -936,6 +988,33 @@ private:
         /// its mind to ask, and is walking up to (-1 nobody).
         std::unordered_map<int, float> askedDrink;
         int askee = -1;
+        /// Those it asked where water is, or who asked it, and know of none,
+        /// and when it last saw them: not asked again until it has been out
+        /// of sight of them a while (they may have come across some since).
+        std::unordered_map<int, float> knewNone;
+        /// Sitting, lying down instead: parched and lost, waiting by a door.
+        bool lying = false;
+        /// Foul water it has tasted, or been warned of, by water cell: how
+        /// foul it found it (or was told) with feces and piss, and with blood,
+        /// and who warned it (-1 if it tasted it). Kept as it was until it
+        /// sees that water again.
+        struct Foul {
+            float filth, blood;
+            int toldBy = -1;
+        };
+        std::unordered_map<Vec2i, Foul, Vec2iHash> foul;
+        /// This drink: whether it knew the water foul when it knelt (and
+        /// who warned it, -1 if it tasted it before), and whether it has
+        /// tasted the foulness yet.
+        bool knewFoul = false, tastedFoul = false;
+        int warnedBy = -1;
+        /// The bottle it found lying while it had none, to come back for,
+        /// and who it last saw beside it.
+        std::optional<Vec2i> found;
+        int foundNear = -1;
+        /// It has run its bottle dry or filled it once, and seen that water
+        /// is scarce.
+        bool scarce = false;
     };
     Water water_;
     /// Getting thirsty, and parched (with what that may teach it).
@@ -1037,6 +1116,13 @@ private:
         std::unordered_map<int, float> snubbed;
         /// When each human was last too busy to be greeted; let be a while.
         std::unordered_map<int, float> busy;
+        /// Whom it hit or robbed: the trust held down for it, which comes back
+        /// slower than trust fades, and whether it keeps away from them meanwhile.
+        struct Wrong {
+            float guilt = 0.0f;
+            bool shuns = false;
+        };
+        std::unordered_map<int, Wrong> wronged;
     };
     Social social_;
     /// Walks toward social_.partner, or greets them once close. False if they're lost.
@@ -1199,6 +1285,35 @@ private:
     bool wantsFill(const World& world, Vec2i water) const;
     /// Low on water and not thirsty: walks to water to fill up.
     bool seekFill(World& world);
+    /// Whether another bottle could be any use to it: it has none, or its
+    /// own holds clean water and isn't full, to pour together with another.
+    bool roomForBottle() const;
+    /// Whether it would take b: with none, any; holding one, b must hold
+    /// clean water too, unless its own is empty and it would drink b anyway.
+    bool wouldTakeBottle(const Bottle& b) const;
+    /// With no bottle, whether it would take one lying about now: thirsty,
+    /// or knowing water to fill it at (it has drunk somewhere).
+    bool needsBottle() const;
+    /// A bottle lying put down that it would go and take, not anyone's
+    /// stash; with none, it walks back for it (seekFill).
+    bool bottleToFetch(Vec2i c, const Pile& p) const;
+    /// Since it saw that water is scarce, it won't give its only bottle.
+    bool keepsBottle() const;
+    /// Having learnt the thirst lesson, it holds on hard: water only for a
+    /// friend, never sold, and never its own left for another bottle.
+    bool holdsBottleHard() const;
+    /// The first time its bottle runs dry or is filled: water is scarce,
+    /// and it keeps it. True if that was now (and said instead).
+    bool sawScarcity();
+    /// Bottle-less, it sees a bottle lying it hadn't found yet, or sees the
+    /// one it found gone: lost, or stolen once it holds on hard.
+    void spotBottle(Vec2i c, const Pile& p);
+    void bottleGone();
+    /// Takes b, as wouldTakeBottle allows: with none, b itself; holding one,
+    /// the emptier of the two is poured into the fuller, which it keeps.
+    /// Returns the bottle it leaves behind, if any; keptOwn says whether
+    /// that was b, poured into its own.
+    std::optional<Bottle> takeBottle(Bottle b, bool* keptOwn = nullptr);
     /// Seen a human carrying water, and how much, as it last saw it.
     const Human* nearestWaterHolder(const World& world) const;
     /// Thirsty with nothing to drink: asks someone it sees with water, close
@@ -1207,8 +1322,8 @@ private:
     /// Asked for a drink by asker, out loud: pours them some, sells it for
     /// a cake, lies that it has none, or refuses.
     void answerDrink(World& world, Human& asker);
-    /// Pours amount of its water into o's bottle, or hands o a spare
-    /// bottle when o has none; for a cake when sold. False if it can't.
+    /// Pours amount of its water into o's bottle, or, to a friend with none,
+    /// hands over its own; for a cake when sold. False if it can't.
     bool giveWater(World& world, Human& o, bool sold);
     /// Putting things down on the floor and picking them up (human_stash.cpp).
     struct Stash {
@@ -1413,9 +1528,18 @@ private:
     float tiredDrive() const;
     /// Another gulp, or done once quenched or something else comes first.
     void drink(World& world);
-    /// How foul it sees the water is, as far as it minds: nothing to the
-    /// parched, the erratic or those craving flesh, nor where it can't see.
-    float seenFoul(const World& world, Vec2i water) const;
+    /// How foul it knows the water is, as far as it minds: what it sees,
+    /// else what it last tasted there. Nothing to the parched or the
+    /// erratic; to those craving flesh, only the feces and piss in it.
+    float knownFoul(const World& world, Vec2i water) const;
+    /// Tasting foul water, it remembers how foul it and the water it sees
+    /// round it are.
+    void tasteFoul(const World& world);
+    /// Seeing water it remembers foul, it knows how foul it is now.
+    void seeWater(const World& world, Vec2i water);
+    /// Setting off for water it can't see, someone it walks with who knows
+    /// it foul and sees it go warns it, and it believes them. True if so.
+    bool warnedOfFoul(World& world, Vec2i water);
     /// Would drink this water from that cell: not too foul or red, as far
     /// as it can see, no filth round the spot too much for its modesty, and
     /// no body close by, unless parched, craving flesh (the red, the body,
@@ -1446,6 +1570,26 @@ private:
     /// Thirsty and knowing no water it can get to: asks those it walks
     /// with in sight, now and then, and one who knows tells it the way.
     void askGroupForWater(World& world);
+    /// Asked by asker where water is: tells the way if it knows one, else
+    /// says it knows of none, and each remembers the other knows nothing.
+    void answerWater(const World& world, Human& asker);
+    /// Keeps up when it last saw those who know of no water, and forgets
+    /// those it has been apart from long enough.
+    void keepTrackOfDry(const World& world);
+    /// Parched, with no key, nothing to drink it knows of and nowhere left
+    /// to explore: to the nearest locked door it knows, to lie or sit by it
+    /// and call through. False when there is something else to try.
+    bool languish(World& world);
+    /// Lies down where it is, awake, for a while.
+    void lieDown();
+    /// Parched too and as lost: o said they know of no water, and it would
+    /// rather look alone than wait with them.
+    bool leavesLost(const Human& o) const;
+    /// Erratic, parched but not hungry, and dry: anyone with a bottle, full
+    /// or empty, is worth a fight.
+    bool bottleRaging() const;
+    /// Goes for the nearest one it sees carrying a bottle, when raging.
+    bool bottleRage(World& world);
     /// Pissing, shitting and mess (human_relief.cpp).
     struct Relief {
         /// Going, for feces as well, or only to piss.

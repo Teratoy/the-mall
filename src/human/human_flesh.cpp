@@ -131,8 +131,9 @@ void Human::mind(float dt) {
     if (isErratic()) sayLater(talk::Moment::Snap);
 }
 
-// The erratic eat the dead when hungry, the brave when starving, anyone
-// else only at death's door; the timid never.
+// The erratic eat the dead when hungry, and never sooner however they crave
+// it; the brave when starving, anyone else only at death's door; the timid
+// never.
 float Human::fleshBar() const {
     if (traits.brave < TIMID) return NEVER;
     float bar = isErratic()                 ? HUNGRY
@@ -140,16 +141,16 @@ float Human::fleshBar() const {
                 : health < DESPERATE          ? 1.0f
                                               : NEVER;
     if (bar >= NEVER) return NEVER;
-    return std::max(BAR_MIN, bar + GUILT_BAR * mind_.guilt - APPETITE_BAR * mind_.appetite);
+    return std::max(isErratic() ? HUNGRY : BAR_MIN, bar + GUILT_BAR * mind_.guilt - APPETITE_BAR * mind_.appetite);
 }
 
-// The erratic hunt when hungry, the bravest when starving; nobody too hurt
-// to fight.
+// The erratic hunt when hungry (never sooner), the bravest when starving;
+// nobody too hurt to fight.
 float Human::huntBar() const {
     if (traits.brave < TIMID || health < fleeHealth()) return NEVER;
     float bar = isErratic() ? HUNGRY : traits.brave >= BRAVE_HUNT ? STARVING : NEVER;
     if (bar >= NEVER) return NEVER;
-    return std::max(BAR_MIN, bar + GUILT_BAR * mind_.guilt - APPETITE_BAR * mind_.appetite);
+    return std::max(isErratic() ? HUNGRY : BAR_MIN, bar + GUILT_BAR * mind_.guilt - APPETITE_BAR * mind_.appetite);
 }
 
 // Bodies near whoever it fears are left alone, as for looting; a friend

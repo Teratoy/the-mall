@@ -11,7 +11,7 @@ Status as of 2026-10-30.
 |---|---|---|---|
 | [worldgeneration.txt](worldgeneration.txt) | The original world spec: endless chunks, border walls, shared exit doors, keys per door | Built | — |
 | [worldgen_variation_plan.md](worldgen_variation_plan.md) | Giant household statues, richer rooms, plazas, mall wings, districts | Steps 1–4 built | Steps 5 and 6 (mall wing, bigger chunks, districts) moved to chunk_shapes_plan.md; statues in mazes and water mazes |
-| [chunk_shapes_plan.md](chunk_shapes_plan.md) | Odd chunk footprints (L, T, S), bigger rectangles, outlines (ring, cross, band, islands), mall wing, food court, parking, atrium | Steps 1, 2, 12 built (footprints; 3x1, 4x1, 3x3; no mazes on 3+ slots; big plazas) | Steps 3–11 |
+| [chunk_shapes_plan.md](chunk_shapes_plan.md) | Odd chunk footprints (L, T, S), bigger rectangles, outlines (ring, cross, band, islands), mall wing, food court, parking, atrium | Steps 1, 2, 9, 12 built (footprints; 3x1, 4x1, 3x3; no mazes on 3+ slots; `make genprobe`; big plazas) | Steps 3–8, 10, 11 (odd footprints are probed but not yet in `SHAPES`) |
 | [blood_plan.md](blood_plan.md) | Wounds and bleeding, stains on world and bodies, washing, suspicion, escort, trails | All 7 steps built | Q2: should some spike victims survive? Q3: should washing or an escort slow bleeding? |
 | [blame_plan.md](blame_plan.md) | Witnesses tie a bloody human to a fresh body: blame, run or avenge, shout it, hearers suspect | Built | Blame as its own chat episode; clearing a blamed name |
 | [cannibalism_plan.md](cannibalism_plan.md) | The erratic mind, flesh on bodies, scavenging, hunting, guilt and appetite | All 8 steps built | Erratic will be expanded later (user); snapping may need tuning if it should be rarer |
@@ -20,13 +20,19 @@ Status as of 2026-10-30.
 | [chitchat_plan.md](chitchat_plan.md) | Casual talk from context: episodes, chat urge, topics, lines, replies | Steps 1–5 built | Step 6 effects (bonding trust, dread from stories, place remarks teach); step 7 probe; muttering alone (Q4). The other questions are answered under "User's decisions" |
 | [relief_plan.md](relief_plan.md) | Bladder and bowels, private spots, mess, dirty feet, foul water, toilets, being seen | All 6 steps built | — |
 | [thirst_plan.md](thirst_plan.md) | Thirst, basins, bloody and foul water, guarded water, water tips, hope near water | All 5 steps built | Tuning from play |
-| [bottle_plan.md](bottle_plan.md) | Water bottles: everyone wakes with one; sipping, filling, pouring out, dirty water carried over, puddles, looted, snatched, given, sold, lied about | Built | Three calls for the user to check (two bottles at most; giving pours water; the lie). Thirst no longer kills in the soak |
-| [hoarding_plan.md](hoarding_plan.md) | Stashes of cakes and bottles on the floor: making, using, stealing, resentment, tips and lies, groups guarding in turns | Planned | — |
+| [parched_lost_plan.md](parched_lost_plan.md) | Parched with no water known: no asking the same one twice, lying by a locked door calling for help, leaving one as lost, erratic going for bottles | All 4 steps built | Tuning from play |
+| [bottle_plan.md](bottle_plan.md) | Water bottles: one lies half full where each human wakes, left until needed, gone or stolen; water is scarce, kept once seen; carried on top of its cakes; sipping, filling, pouring out, dirty water carried over, puddles, looted, snatched, given, sold, lied about | Built; then one bottle at most, carried on the cakes, poured bottle to bottle | Calls for the user to check: giving pours water; the lie. Thirst kills more since bottles are found (17 deaths in 6 worlds, was 6) |
+| [hoarding_plan.md](hoarding_plan.md) | Stashes of cakes and bottles on the floor: making, using, stealing, resentment, tips and lies, groups guarding in turns | Steps 1–5 built | Step 6 (groups guard in turns). Still rare in normal play: nobody learns whose a stash is in the soak, so steps 3–5 happen only in scenarios |
+| [foul_water_memory_plan.md](foul_water_memory_plan.md) | Remembering foul water: choosing other water, knowing lines, cravers mind only filth, warning those it walks with | Built | Warning outside the group; lying about foul water |
 | [sleep_plan.md](sleep_plan.md) | Tiredness, sleeping, where to sleep, robbing sleepers, keeping watch, dreams | All 5 steps built | Tuning from play (aim: ~15–20 min awake, ~90 s asleep) |
 | [lies_plan.md](lies_plan.md) | Lies out of spite (bait that re-arms, rigged cakes, false tips, slander) and for gain (keeping a cake, selling made-up traps); fixes to greeting so news gets told | Steps 1, 2a, 2c, 3, 4 and gain built | Still rare in normal play (foes come from fights, so liar and foe are seldom calm together); 2b set aside; questions 1, 3–5 unanswered |
+| [wronged_company_plan.md](wronged_company_plan.md) | Leaving the one it hit or robbed: guilt that holds trust down, slow to fade; the cunning stay if never found out | Built | Guilt beyond the parting line |
 | [android_plan.md](android_plan.md) | A debug APK: `make apk` with the NDK, data files as assets, obituary in app storage, touch and the back button | `make apk` and steps 1–3 built | Step 4: try it on the S25 Ultra; the navigation bar still shows |
 | [pc_layout_plan.md](pc_layout_plan.md) | A wide 1014x468 canvas for PC windows: stats, log, square world, HUD over map, all always open | Built | Q1: scale on 1080p (smooth below 2x for now) |
 | [shut_in_plan.md](shut_in_plan.md) | Remembering a cry from a slam room: going later with a key, fetching one, calling back, telling others | Built | — |
+| [lessons_plan.md](lessons_plan.md) | Self-lessons announced once, again, or for good; a slower fade; a line for surviving thirst | Built | — |
+| [trap_wary_plan.md](trap_wary_plan.md) | Wary of the next trap like one that caught it: table cakes after darts, one-door rooms after a slam | Built | Should seeing someone else caught make it wary too? |
+| [lines_editor_plan.md](lines_editor_plan.md) | `make lines`: a local web page for rewriting data/lines.txt, with bubble previews, review marks and Claude's drafts | Built | — |
 | [dirty_plan.md](dirty_plan.md) | Going unwashed: grime, turning dirty (a ragged look on the same skeleton), washing for it by modesty, dried blood only washed by the modest; smell from the dirty, bodies, feces and foul water, sniffed through walls, flies | Built | Hunched/claws on the look; tuning from play |
 | [human_split_plan.md](human_split_plan.md) | Splitting Human into per-system classes | Not started | Advised against for now; if done, only system by system, when that system is being reworked anyway |
 
@@ -35,6 +41,10 @@ Status as of 2026-10-30.
 - **Lies are rare in normal play**: they work when the chance comes up,
   but foes are made by fights, so a liar and its foe are seldom calm
   together. See [lies_plan.md](lies_plan.md).
+- **Stashes are rare in normal play**: hoarders stash where nobody
+  watches, so nobody learns whose a stash is, and stealing, resentment and
+  telling of stashes happen only in the scenarios. See
+  [hoarding_plan.md](hoarding_plan.md).
 
 ## Built without a plan file
 

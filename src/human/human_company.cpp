@@ -36,6 +36,10 @@ constexpr float COMPANY_SIT = 0.7f;
 constexpr int COMPANY_LAG = 6;
 constexpr float COMPANY_PAUSE_MIN = 0.5f, COMPANY_PAUSE_MAX = 1.0f;
 constexpr float COMPANY_PATIENCE = 8.0f;
+/// Parched, keeping with one parched too who knows of no water: it stays if
+/// sociability, and timidity times STAY_LOST_TIMID, and STAY_LOST_FRIEND for
+/// a friend, come to STAY_LOST; else it goes to look alone.
+constexpr float STAY_LOST = 0.8f, STAY_LOST_TIMID = 0.3f, STAY_LOST_FRIEND = 0.3f;
 
 } // namespace
 
@@ -60,10 +64,10 @@ int Human::pickCompany(const World& world) const {
     for (const auto& o : world.humans()) {
         if (o.get() == this || o->dead() || !met.count(o->id) || !sight.sees(o->cell)) continue;
         // Nor someone too filthy for it to greet (human_relief.cpp).
-        if (suspicious(o->id) || isFoe(o->id) || repelledBy(*o)) continue;
+        if (suspicious(o->id) || isFoe(o->id) || shuns(o->id) || repelledBy(*o)) continue;
         float t = trust(o->id);
         if (!isFriend(o->id) && (traits.sociable < SOCIABLE_COMPANY || t < companyTrust())) continue;
-        if (followedBy(world, o->id)) continue;
+        if (followedBy(world, o->id) || leavesLost(*o)) continue;
         float score = t + (o->keys > 0 ? COMPANY_KEYS : 0.0f) - COMPANY_NEAR * float(cheb(cell, o->cell));
         if (best < 0 || score > bestScore) {
             best = o->id;
@@ -77,11 +81,19 @@ bool Human::stillCompany(const World& world) const {
     if (social_.companion < 0) return false;
     const Human& c = world.human(social_.companion);
     if (sight.sees(c.cell) && c.dead()) return false;
-    if (suspicious(c.id) || isFoe(c.id) || (!isFriend(c.id) && trust(c.id) < companyTrust() - TRUST_COMPANY_KEEP))
+    if (suspicious(c.id) || isFoe(c.id) || shuns(c.id) ||
+        (!isFriend(c.id) && trust(c.id) < companyTrust() - TRUST_COMPANY_KEEP))
         return false;
     // Gone filthy: kept away from until washed.
     if (sight.sees(c.cell) && repelledBy(c)) return false;
+    if (leavesLost(c)) return false;
     return !followedBy(world, c.id);
+}
+
+bool Human::leavesLost(const Human& o) const {
+    if (!parched() || !o.parched() || !water_.knewNone.count(o.id)) return false;
+    float stay = traits.sociable + STAY_LOST_TIMID * (1.0f - traits.brave) + (isFriend(o.id) ? STAY_LOST_FRIEND : 0.0f);
+    return stay < STAY_LOST;
 }
 
 bool Human::keepCompany(World& world) {
@@ -133,6 +145,9 @@ void Human::partCompany(const World& world) {
     } else if (sight.sees(c.cell) && repelledBy(c)) {
         note("KEEPING AWAY FROM @ UNTIL THEY WASH", c.id);
         sayLater(talk::Moment::PartFilthy, c.id);
+    } else if (leavesLost(c)) {
+        note("LEFT @. THEY KNOW NO MORE THAN I DO", c.id);
+        sayLater(talk::Moment::PartDry, c.id);
     }
 }
 

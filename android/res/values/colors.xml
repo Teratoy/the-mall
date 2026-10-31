@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Behind the spiral on the launcher icon: the game's paper (ui::PAPER). -->
+<resources>
+    <color name="paper">#181818</color>
+</resources>

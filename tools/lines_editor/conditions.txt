@@ -1,0 +1,174 @@
+# What each condition and tone in data/lines.txt means, in plain words, for
+# the lines editor. Written from what src/human/talk.cpp checks (holds and
+# holdsTopic). A condition the game has but this file lacks shows in the
+# editor as "no description yet": add it here.
+#
+#   name | what it means
+#   ## Heading        starts a group in the editor's list
+# "It" is the speaker, "they" the one it speaks to. "!" in front of a
+# condition asks for the opposite; the editor says so itself.
+
+## The speaker's body and needs
+hungry        | It is hungry (hunger at half or more).
+starving      | It is starving (hunger at 80% or more). Always hungry too.
+thirsty       | It is thirsty (thirst at half or more).
+parched       | It is parched (thirst at 80% or more). Always thirsty too.
+tired         | It is tired enough to want sleep.
+exhausted     | It is exhausted: it walks slower, and soon drops asleep where it stands. Always tired too.
+hurt          | It is hurt: below half its health.
+bleeding      | It has a wound that is still bleeding.
+need.to.go    | It needs to piss or shit and can't put it off.
+bursting      | Its bladder or bowels are about to burst (90% full or more).
+filthy        | It has feces or piss on it.
+scared        | It is frightened right now.
+dazed         | It has only just woken up in the mall and isn't clear-headed yet.
+dreamt        | It woke from a dream of before not long ago.
+cakes         | It carries at least one cake.
+keys          | It carries at least one key.
+
+## The speaker's nature (traits; about a third of humans each way)
+brave         | It is brave.
+timid         | It is timid (the opposite of brave).
+greedy        | It is greedy.
+generous      | It is generous (the opposite of greedy).
+curious       | It is curious: it likes to explore.
+homebody      | It is a homebody (the opposite of curious).
+sociable      | It is sociable: it seeks others out.
+loner         | It is a loner (the opposite of sociable).
+
+## The speaker's mind
+erratic       | Its mind has given way: it acts erratically and may go for flesh.
+guilty        | It feels guilty over flesh it has eaten.
+craving       | It craves more flesh.
+hopeless      | It is losing hope of ever finding a way out.
+settled       | It has given up on getting out and made itself a home.
+sure          | It feels sure of its hunch about which way is out.
+
+## How the speaker sees them
+friend        | It counts them as a friend.
+foe           | It counts them as a foe, and lets it show (a cunning speaker hides it).
+liked         | It likes them a little or more. A friend is always liked too.
+disliked      | It dislikes them a little or more, and lets it show (a cunning speaker hides it).
+suspect       | It thinks they're a killer, from the blood on them.
+afraid        | It is afraid of them: they hit it and it ran.
+
+## Them, the one spoken to
+they.hungry   | They are hungry.
+they.starving | They are starving.
+they.thirsty  | They are thirsty.
+they.parched  | They are parched.
+they.scared   | They are frightened right now.
+they.hurt     | They are hurt: below half their health.
+they.bleeding | They have a wound that is still bleeding.
+they.cakes    | They carry at least one cake.
+they.keys     | They carry at least one key.
+they.dazed    | They have only just woken up and aren't clear-headed yet.
+they.filthy   | They have feces or piss on them.
+they.asleep   | They are asleep (it's talking to a sleeper).
+
+## The body talked about ({WHO}), when that one is dead
+body.fresh    | The body is fresh.
+body.rotting  | The body has started to rot, but isn't bones yet.
+body.bones    | Only bones are left.
+
+## Chit-chat: what the topic is (in chat moments only)
+is.here       | The topic is something in sight (chat_here).
+is.shared     | The topic is something both of them went through or saw (chat_shared).
+is.story      | The topic is something only the speaker went through or saw (chat_story).
+is.someone    | The topic is someone else, out of earshot (chat_someone).
+is.feeling    | The topic is how the speaker is doing (chat_feeling).
+is.way        | The topic is the way out (chat_way).
+is.group      | The topic is the two of them keeping together (chat_group).
+is.before     | The topic is the life before waking that nobody remembers (chat_before).
+
+## Chit-chat: something in sight
+here.statue   | It's a giant statue ({THING} is it, e.g. BRONZE MUG).
+here.water    | It's a pool or canal of water.
+here.basin    | It's a basin of water.
+here.body     | It's a dead body.
+here.blood    | It's a pool of blood.
+here.mess     | It's piss or feces on the floor.
+foul          | The water or basin in sight is one it knows is fouled.
+feces         | The mess in sight is feces, not piss.
+statue.mug     | The statue is a mug.
+statue.duck    | The statue is a rubber duck.
+statue.chair   | The statue is a chair.
+statue.teapot  | The statue is a teapot.
+statue.toilet  | The statue is a toilet.
+statue.toaster | The statue is a toaster.
+statue.lamp    | The statue is a desk lamp.
+statue.clock   | The statue is an alarm clock.
+statue.spoon   | The statue is a spoon.
+statue.bulb    | The statue is a light bulb.
+
+## Chit-chat: what happened (for shared things and stories)
+ep.fight      | It was a fight.
+ep.kill       | Someone was killed.
+ep.body       | A body was found.
+ep.flesh      | Someone ate from a body.
+ep.gnawed     | A half-eaten body was found.
+ep.trap       | A trap went off.
+ep.spotted    | A hidden trap was spotted before it went off.
+ep.gift       | Someone gave someone a cake.
+ep.door       | Someone unlocked a door.
+ep.place      | They came into a part of the mall new to the speaker.
+ep.pool       | A fresh pool of blood was found.
+ep.escort     | Someone led someone to water.
+ep.snapped    | The speaker's mind snapped, or came back (dark tells which).
+ep.friend     | The speaker came to think of someone as a friend.
+ep.foe        | The speaker came to think of someone as a foe.
+ep.lied       | The speaker found out someone lied to it.
+ep.starving   | The speaker went starving.
+ep.parched    | The speaker went parched.
+ep.loot       | Someone went through a body's things.
+ep.foul       | The speaker drank foul water.
+ep.despair    | The speaker lost hope, or got it back (dark tells which).
+ep.settled    | The speaker made itself a home.
+ep.freed      | Someone let someone out of a slam room.
+by.me         | The speaker is the one who did it.
+to.me         | The speaker is the one it was done to.
+by.you        | The listener is the one who did it.
+to.you        | The listener is the one it was done to.
+dark          | The mind snapping or hope lost, as against coming back (with ep.snapped or ep.despair).
+strong        | It struck the speaker hard.
+recent        | It happened within the last minute.
+spikes        | The trap was spikes.
+darts         | The trap was darts.
+slam          | The trap was a slam room (shut in).
+gift.share    | The cake was shared freely.
+gift.pay      | The cake was paid for.
+gift.yield    | The cake was handed over under threat.
+
+## Chit-chat: someone else
+about.dead     | The one talked about is dead, and the speaker knows it.
+about.liked    | The speaker thinks well of the one talked about.
+about.disliked | The speaker thinks badly of the one talked about.
+about.friend   | The one talked about is the speaker's friend.
+about.foe      | The one talked about is the speaker's foe.
+they.know      | The listener has met the one talked about.
+
+## Chit-chat: feelings
+feel.peckish   | It's getting hungry, not yet looking for food.
+feel.dry       | It's getting thirsty.
+feel.footsore  | It has walked a long while without a rest.
+feel.uneasy    | It feels dread.
+feel.gloomy    | It's losing hope.
+feel.hopeful   | It's sure there's a way out.
+
+## Chit-chat: keeping together
+i.lead         | The speaker leads: the listener keeps with it.
+you.lead       | The listener leads: the speaker keeps with them.
+
+## Chit-chat: how the opener was answered (in follow-ups and closes)
+agreed         | The answer agreed: it remembered or thought the same.
+added          | The answer added something of its own.
+disagreed      | The answer thought otherwise.
+unheard        | The answer knew nothing of it.
+
+## Tones: what the line does to whoever hears it
+plain          | No tone: the line is just said.
+warm           | The one spoken to trusts the speaker a little more.
+rude           | The one spoken to trusts the speaker a little less.
+plead          | The one spoken to may be moved to share a cake.
+fear           | Everyone in earshot who doesn't distrust the speaker gets scared.
+threat         | The one threatened may hand over a cake, or else thinks worse of the speaker; anyone else hearing it thinks a bit worse too.

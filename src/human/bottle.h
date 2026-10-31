@@ -1,7 +1,7 @@
 #pragma once
 #include <algorithm>
 
-/// A water bottle, carried in a back pocket. It holds up to a whole thirst
+/// A water bottle, carried in the back hand. It holds up to a whole thirst
 /// bar of water, as foul and as red as the water it was filled from, and
 /// it is see-through: anyone who sees it sees how full and how dirty it is.
 struct Bottle {

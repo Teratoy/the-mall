@@ -53,6 +53,9 @@
 #           (the dead, the looted, the one gossiped about)
 #
 # Keep lines short: the bubble is small. Everything shows in capitals.
+# Never state the obvious: the player just saw what happened, so a line
+# gives the feeling, not an account. "THEY WON'T TRUST ME NOW", not
+# "I ROBBED THEM, THEY WON'T TRUST ME NOW".
 # Each moment says who is speaking to whom.
 
 
@@ -551,6 +554,23 @@ curious                 | WHAT'S BEHIND IT? I NEED A KEY.
 timid                   | I'M STUCK IN HERE...
 timid fear              | LET ME OUT!
 brave rude              | STUPID DOOR.
+
+# Any lesson it still held (cakes, keys, water, sleep) learnt the hard way
+# again. Said to nobody.
+[learn_again 0.7]
+                        | NOT AGAIN!
+                        | AGAIN?!
+                        | I NEVER LEARN.
+timid fear              | WHY DOES THIS KEEP HAPPENING?
+brave rude              | STUPID. STUPID.
+
+# The hard lesson that makes it full strength: learnt for good. Said to
+# nobody.
+[learn_max 0.8]
+                        | NEVER. AGAIN.
+                        | THAT'S IT. I'VE LEARNT.
+                        | I WON'T FORGET THIS TIME.
+brave                   | NOT ONE MORE TIME.
 
 
 # ---- Flesh -----------------------------------------------------------------
@@ -1351,6 +1371,36 @@ parched                 | DON'T CARE. I NEED IT.
 timid fear              | WHAT'S IN THIS WATER?
 erratic                 | TASTES LIKE THE REST OF THIS PLACE.
 
+# Drinking water it had tasted foul there before, knowing it, said to
+# nobody.
+[foul_again 0.6]
+                        | THIS WATER AGAIN...
+                        | STILL FOUL. STILL WATER.
+                        | I KNEW IT WOULD TASTE LIKE THIS.
+parched                 | THIS AGAIN... I NEED IT.
+parched                 | I KNOW. I KNOW. I NEED IT.
+craving                 | TASTES OF THEM. GOOD.
+erratic                 | SAME WATER. SAME TASTE. SAME PLACE.
+
+# Someone it walks with setting off for water it knows is foul, said to
+# them.
+[warn_foul 0.9]
+                        | NOT THAT WATER. IT'S FOUL.
+                        | DON'T DRINK THERE. TRUST ME.
+                        | THAT WATER'S BAD. I TASTED IT.
+friend                  | {NAME}, NOT THAT WATER. IT'S BAD.
+rude                    | YOU'LL DRINK THAT FILTH?
+timid                   | U-UM... THAT WATER MADE ME SICK.
+
+# Drinking foul water it was warned of, said to nobody, about whoever
+# warned it.
+[foul_warned 0.6]
+                        | THEY SAID IT WAS FOUL...
+                        | I WAS WARNED. UGH.
+                        | {WHO} WAS RIGHT. IT'S FOUL.
+parched                 | I KNOW, {WHO}. I NEED IT.
+parched                 | WARNED OR NOT, I NEED IT.
+
 # Needing to go, said to nobody.
 [need_to_go 0.35]
                         | I NEED TO GO.
@@ -1545,8 +1595,14 @@ erratic                 | GULP. GULP. GULP.
 [learn_water 0.7]
                         | NEVER AGAIN. I STAY NEAR WATER.
                         | I'M NOT GOING FAR FROM WATER AGAIN.
-timid                   | I THOUGHT I'D DIE OF THIRST.
 brave                   | NEXT TIME I KEEP WATER CLOSE.
+
+# The first drink after thirst began to kill it, said to nobody.
+[quenched 0.8]
+                        | I'M ALIVE...
+                        | THAT WAS TOO CLOSE.
+timid                   | I THOUGHT I'D DIE OF THIRST.
+erratic                 | WET! WET!
 
 # Parched with no water to be had, drinking from a toilet, said to nobody.
 [toilet_drink 0.8]
@@ -1974,6 +2030,118 @@ generous                | IT'S MINE. ASK IF YOU NEED SOME.
 rude                    | I SAW YOU PUT IT THERE.
 rude                    | LIAR. I WATCHED YOU.
 timid                   | BUT... I SAW YOU.
+
+# ---- Parched and lost ------------------------------------------------------
+
+# Asked for water and knowing of none, said to whoever asked.
+[no_water]
+                        | NO. I'M DRY TOO.
+                        | NO IDEA. SORRY.
+                        | IF I KNEW, I'D BE THERE.
+thirsty                 | I WAS GOING TO ASK YOU.
+parched                 | NOTHING... I'M DYING TOO.
+rude                    | DO I LOOK LIKE I KNOW?
+friend warm             | I'M SORRY, {NAME}. NOTHING.
+
+# Parched, boxed in, lying or sitting by a locked door and calling through
+# it. Said to nobody, but it carries through the door to anyone close.
+[call_door]
+                        | IS ANYONE OUT THERE?
+                        | WATER... PLEASE... OPEN THE DOOR...
+                        | ANYONE WITH A KEY? WE NEED WATER!
+fear                    | HELP! THERE'S NO WATER IN HERE!
+parched                 | ...SOMEBODY... OPEN UP...
+timid                   | PLEASE... PLEASE, SOMEBODY...
+brave                   | HEY! OPEN THIS DOOR!
+hopeless                | ...IS ANYONE EVEN THERE?
+
+# Parched, leaving a companion who knows of no water either, said to them.
+[part_dry 0.8]
+                        | YOU'RE NO HELP. I'LL FIND IT MYSELF.
+                        | WE'LL DIE WAITING TOGETHER. I'M GOING.
+                        | I CAN'T JUST SIT HERE.
+loner                   | BETTER ON MY OWN.
+rude                    | YOU'RE USELESS.
+friend                  | I'M SORRY. I HAVE TO LOOK.
+
+# Erratic and parched, going for someone's bottle, full or not, said to them.
+[bottle_rage]
+                        | GIVE ME THAT BOTTLE!
+                        | THAT'S MINE NOW!
+threat                  | HAND IT OVER.
+erratic                 | WATER. MINE. MINE!
+erratic                 | I'LL WRING IT OUT OF YOU.
+
+
+# Leaving the one it kept with or followed, after hitting or robbing them,
+# said to nobody, about them. Never put what happened into words: it was
+# just seen.
+[part_wronged 0.7]
+                        | THEY WON'T TRUST ME NOW.
+                        | BETTER IF I GO.
+                        | NO GOING BACK FROM THAT.
+greedy                  | A CAKE'S A CAKE.
+timid                   | I DIDN'T MEAN... NEVER MIND.
+loner                   | NEVER NEEDED THEM ANYWAY.
+generous                | SORRY.
+starving                | I HAD TO.
+
+
+# Darted before, leaving a cake on a table alone, said to nobody.
+[wary_cake 0.7]
+                        | NOT THAT ONE. NOT AGAIN.
+                        | THAT CAKE COULD BE RIGGED.
+!hungry                 | I'M NOT THAT HUNGRY.
+hurt                    | ONE MORE DART AND I'M DONE.
+hungry                  | NOT YET. NOT HUNGRY ENOUGH TO RISK IT.
+timid                   | I'M NOT TOUCHING IT.
+
+# Shut in a slam room before, leaving a cake in a room with one door
+# alone, with no key to let itself out, said to nobody.
+[wary_slam 0.7]
+                        | ONE WAY IN. I KNOW THIS ROOM.
+                        | NOT WITHOUT A KEY.
+                        | THAT'S HOW THEY GET YOU.
+hungry                  | NOT WORTH BEING SHUT IN FOR.
+# Taking a fuller bottle for its own, its own water poured into it, or its
+# empty one left behind, said to nobody.
+[swap_bottle 0.4]
+                        | BETTER.
+                        | THAT'S MORE LIKE IT.
+                        | ONE IS ENOUGH TO CARRY.
+thirsty                 | AT LAST.
+greedy                  | MINE NOW.
+
+# With no bottle, finding one lying about, said to nobody.
+[see_bottle]
+                        | A BOTTLE.
+                        | A BOTTLE... FOR LATER.
+curious                 | WHO LEAVES A BOTTLE OUT HERE?
+timid                   | SOMEONE ELSE'S?
+thirsty                 | WATER. THANK GOD.
+
+# Coming back for the bottle it found, and it's gone, said to nobody.
+[bottle_gone 0.7]
+                        | IT WAS RIGHT HERE.
+                        | GONE.
+timid                   | I SHOULD HAVE TAKEN IT.
+thirsty                 | NO. NO, NO.
+
+# The same once it holds on hard: someone stole it, said to nobody, about
+# whom it blames.
+[bottle_stolen]
+                        | THIEVES.
+                        | SOMEONE TOOK IT.
+rude                    | {WHO}. IT WAS {WHO}.
+brave                   | WHOEVER HAS IT WILL GIVE IT BACK.
+
+# The first time its bottle runs dry or is filled: water is scarce, and it
+# keeps the bottle. Said to nobody.
+[scarce]
+                        | WATER IS SCARCE. I'M KEEPING THIS BOTTLE.
+                        | I'M NOT LETTING GO OF THIS.
+timid                   | I CAN'T LOSE THIS. I CAN'T.
+greedy                  | NOBODY GETS THIS BOTTLE.
 
 # ---- Going unwashed ---------------------------------------------------------
 

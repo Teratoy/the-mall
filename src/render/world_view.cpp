@@ -262,7 +262,7 @@ Pose poseOf(const Human& h) {
     case Human::State::Pouring: return Pose::Pour;
     case Human::State::Dead: return h.diedAsleep() ? Pose::DiedAsleep : Pose::Fall;
     case Human::State::Waking: return Pose::Wake;
-    case Human::State::Sitting: return Pose::Sit;
+    case Human::State::Sitting: return h.lyingDown() ? Pose::Lie : Pose::Sit;
     case Human::State::Rising: return h.rousing() ? Pose::WakeUp : Pose::Rise;
     case Human::State::Sleeping: return Pose::Sleep;
     case Human::State::Washing:
@@ -480,7 +480,7 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
     auto drawHuman = [&](const Human& h, Color tint) {
         Vector2 feet = feetOf(h);
         sprites(h).draw({feet.x - left, feet.y - top}, poseOf(h), h.animTime, h.facingLeft, 1,
-                        h.hurtTime > 0.0f ? HURT_TINT : tint, h.cakes > 0, h.shownBottle(), h.bottleInHand());
+                        h.hurtTime > 0.0f ? HURT_TINT : tint, h.cakes, h.shownBottle(), h.bottleInHand());
         // The cakes a body still holds lie in plain sight on it, and its
         // bottles on their side at its feet.
         bool lit = reveal || viewer.sight.sees(h.cell);

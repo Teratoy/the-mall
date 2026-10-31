@@ -26,7 +26,7 @@
 /// Sip drinks from a bottle held up to the mouth; Fill kneels with it in
 /// the water; Pour holds it out upside down, water running out of it;
 /// OfferBottle holds it out to someone.
-enum class Pose { Idle, Walk, Wave, Eat, Guard, Punch, Offer, Fall, Sit, Rise, Wash, Search, Feed, Wake, Point, PointUp, PointDown, Squat, Piss, Sleep, WakeUp, DiedAsleep, Sip, Fill, Pour, OfferBottle };
+enum class Pose { Idle, Walk, Wave, Eat, Guard, Punch, Offer, Fall, Sit, Rise, Wash, Search, Feed, Wake, Point, PointUp, PointDown, Squat, Piss, Sleep, WakeUp, DiedAsleep, Sip, Fill, Pour, OfferBottle, Lie };
 
 
 /// One human's frames as textures, made from its look.
@@ -39,12 +39,13 @@ public:
 
     /// Draws with the base pixel's bottom edge centred on feet; a body lying
     /// dead keeps its back on the ground across the feet's cell. tint
-    /// multiplies every pixel. Standing or walking, carrying shows a cake
-    /// in the back hand. A bottle shows in the back pocket, or in the hand
-    /// when inHand (and the pose holds it there), as full and dirty as it
-    /// is; lying down, it doesn't show.
+    /// multiplies every pixel. The cakes it carries pile up in the back hand
+    /// (seated, on the floor behind), the bottle standing on top of them; or
+    /// the bottle is in the front hand when inHand (and the pose holds it
+    /// there), as full and dirty as it is. Curled up, one cake shows, hugged
+    /// to the chest; lying down, nothing does.
     void draw(Vector2 feet, Pose pose, float animTime, bool flip, int scale = 1, Color tint = WHITE,
-              bool carrying = false, const Bottle* bottle = nullptr, bool inHand = false) const;
+              int cakes = 0, const Bottle* bottle = nullptr, bool inHand = false) const;
     /// Redraws every frame with this blood on the body, unless it already shows it.
     void bloody(const BodyBlood& blood);
     /// The same for the feces and the piss on it, painted over the blood.
@@ -59,15 +60,16 @@ public:
     void remains(float eaten, float decay, uint64_t seed, bool curled = false);
 
 private:
-    Texture2D idle_, idleCarry_, guard_, punch_, offer_, point_, pointUp_, pointDown_, kneel_, dead_, crouch_, crouchCarry_,
-        woken_, wokenCarry_, sip_, fill_, pour_, offerBottle_;
-    /// Where each texture's frame holds a bottle.
+    Texture2D idle_, guard_, punch_, offer_, point_, pointUp_, pointDown_, kneel_, dead_, crouch_, woken_, wokenCarry_,
+        sip_, fill_, pour_, offerBottle_;
+    /// Where each texture's frame holds what it carries, and a bottle in
+    /// the front hand.
     std::unordered_map<const Texture2D*, std::pair<BottleSpot, BottleSpot>> spots_;
-    std::array<Texture2D, WALK_FRAMES> walk_, walkCarry_;
+    std::array<Texture2D, WALK_FRAMES> walk_;
     std::array<Texture2D, WAVE_FRAMES> wave_;
     std::array<Texture2D, EAT_FRAMES> eat_;
-    std::array<Texture2D, SIT_FRAMES> sit_, sitCarry_;
-    std::array<Texture2D, DOZE_FRAMES> doze_, dozeCarry_;
+    std::array<Texture2D, SIT_FRAMES> sit_;
+    std::array<Texture2D, DOZE_FRAMES> doze_;
     std::array<Texture2D, CURL_FRAMES> curl_, curlCarry_;
     /// Curled up, the middle of the head in sprite pixels, and the empty
     /// columns ahead of the body, which turned onto its side lie under it.
