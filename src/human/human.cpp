@@ -55,6 +55,11 @@ void Human::update(World& world, float dt) {
         return;
     }
     if (state == State::Waking) {
+        // The body before the mind: a mutter with its eyes still shut.
+        if (!escape_.stirred && animTime >= WAKE_STIR_AT) {
+            escape_.stirred = true;
+            sayLater(talk::Moment::WakeStir);
+        }
         if (timer <= 0.0f) sitUp();
         return;
     }
@@ -356,6 +361,24 @@ bool Human::observe(const World& world) {
         remarked = true;
         if (sayLater(m, -1, about)) firstSights_ |= bit;
     };
+    // Still dazed, the room it woke in is remarked on too, a thing at a time,
+    // to fill a silence while it is alone: anyone about has its attention.
+    bool alone = std::none_of(world.humans().begin(), world.humans().end(), [&](const auto& o) {
+        return o.get() != this && !o->dead() && sight.sees(o->cell);
+    });
+    bool foggy = state != State::Waking && escape_.daze >= DAZE_REMARK_MIN &&
+                 world.time() - escape_.fogAt >= DAZE_REMARK_GAP && voice_.sayings.empty() && alone;
+    auto fogSight = [&](talk::Moment m, std::optional<Topic> topic = std::nullopt) {
+        unsigned bit = 1u << (int(m) - int(talk::Moment::FirstStatue));
+        if (remarked || !foggy || (escape_.fogSights & bit)) return false;
+        Saying s(m);
+        s.topic = std::move(topic);
+        if (!sayLater(std::move(s))) return false;
+        remarked = true;
+        escape_.fogSights |= bit;
+        escape_.fogAt = world.time();
+        return true;
+    };
     sight.forEach([&](Vec2i c) {
         Tile t = world.tile(c);
         if (t == Tile::DoorLocked || t == Tile::DoorOpen) firstSight(talk::Moment::FirstDoor);
@@ -364,6 +387,15 @@ bool Human::observe(const World& world) {
             seeWater(world, c);
         }
         if (world.toilet(c)) firstSight(talk::Moment::FirstToilet);
+        if (const Statue* st = world.statue(c)) {
+            // The statue as a thing in sight, so the line can name it.
+            Topic t{Topic::Kind::Here};
+            t.cell = st->at;
+            t.thing = Topic::Thing::Statue;
+            t.detail = int(st->kind) * 16 + int(st->material);
+            fogSight(talk::Moment::FirstStatue, t);
+        }
+        if (world.table(c)) fogSight(talk::Moment::FirstTable);
         if (const Machine* m = world.machine(c)) news |= seeMachine(*m, c);
         if (const AirlockDoor* a = world.airlock(c)) memory.airlocks[c] = a->in;
         if (t == Tile::Rack) seeServerRoom(world, c);
@@ -502,6 +534,14 @@ bool Human::observe(const World& world) {
         news |= judge(*o);
     }
     for (Vec2i c : checks) checkStash(c, world.pile(c));
+    // Up and still where it woke, it reaches back for anything from before.
+    if (!escape_.comingTo && escape_.daze <= BLANK_DAZE && escape_.chunksIn.size() <= 1 &&
+        fogSight(talk::Moment::Blank))
+        note("TRIED TO REMEMBER ANYTHING FROM BEFORE. NOTHING");
+    // Looked round long enough to be sure: nobody, anywhere it can see.
+    if (social_.lastSeen.empty() && !escape_.comingTo && escape_.daze <= EMPTY_ROOM_DAZE) fogSight(talk::Moment::EmptyRoom);
+    hearQuiet(alone);
+    callOut(world, alone);
     return news;
 }
 
@@ -607,6 +647,9 @@ void Human::choose(World& world) {
     if (hunger >= fleshBar()) want(Want::Flesh, drive + mind_.appetite);
     if (hunger >= huntBar()) want(Want::Hunt, drive + mind_.appetite);
     if (rescue_.rescuee >= 0) want(Want::Rescue);
+    // A voice from out of sight may be someone who knows the way out: as
+    // much a way to look as any, for the curious and the sociable more.
+    if (!needy && voiceToGo()) want(Want::Voice, OUT_EXPLORE * outDrive());
     if (keys > 0 && (urged_ || doorUrge())) want(Want::UrgedDoor);
     if (traits.brave >= TIMID &&
         std::any_of(deaths_.bodies.begin(), deaths_.bodies.end(), [&](const auto& b) { return worthLooting(b.first); }))
@@ -673,6 +716,8 @@ bool Human::pursue(World& world, Want w) {
         return social_.partner >= 0 && startMeet(world);
     case Want::Rescue:
         return startRescue(world);
+    case Want::Voice:
+        return startVoice(world);
     case Want::UrgedDoor: {
         // Frightened, never a door that lies toward whoever scared it.
         auto it = social_.lastSeen.find(fight_.feared);

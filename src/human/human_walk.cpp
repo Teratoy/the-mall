@@ -139,6 +139,8 @@ void Human::move(World& world, Vec2i next) {
     if (goal == Goal::FetchCake && !cakeInReach(target_)) rethink_ = true;
     // Seen empty, or its keys gone, the machine is no use.
     if (goal == Goal::Vend && (!canBuy() || memory.machines[vend_.at].stock <= 0)) rethink_ = true;
+    // The voice it was going to has come into sight, or gone stale.
+    if (goal == Goal::Voice && !voiceToGo()) rethink_ = true;
     // Making for a voice with a key, a gate seen near it is worth going to.
     if (goal == Goal::Rescue && keys > 0 && rescue_.rescuee >= 0) {
         auto it = rescue_.cries.find(rescue_.rescuee);
@@ -243,6 +245,9 @@ void Human::arrive(World& world) {
     case Goal::Rescue:
         if (rescue_.rescuee >= 0 && startRescue(world)) return;
         return choose(world);
+    case Goal::Voice:
+        if (startVoice(world)) return;
+        return choose(world);
     default:
         break;
     }
@@ -297,6 +302,11 @@ void Human::sitUp() {
 }
 
 void Human::startRising() {
+    // Up for the first time, steadying itself, the fog not yet gone.
+    if (escape_.comingTo) {
+        note("GOT UP, STILL IN A FOG");
+        sayLater(talk::Moment::WakeStand);
+    }
     escape_.comingTo = false;
     sleep_.roused = false;
     state = State::Rising;

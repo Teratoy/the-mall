@@ -598,7 +598,8 @@ bool Human::wouldLeadToDrink(const Human& o) const {
     // Parched, or thirsty and not already on the way to water, with nothing
     // to drink in a bottle.
     bool needs = (o.parched() || (o.thirsty() && o.goal != Goal::Drink)) && o.sippable() < 0;
-    if (!needs || o.state == State::Drinking) return false;
+    // Asleep, they can't be led: it waits until they wake.
+    if (!needs || o.state == State::Drinking || o.state == State::Sleeping) return false;
     return sight.sees(o.cell) && cheb(cell, o.cell) <= LEAD_REACH;
 }
 

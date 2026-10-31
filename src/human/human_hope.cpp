@@ -38,6 +38,14 @@ constexpr float HOPE_LOW = 0.35f;
 constexpr float HOPE_SETTLE = 0.15f;
 constexpr float HOPE_SETTLE_ERRATIC = 0.3f;
 constexpr float HOPE_UNSETTLE = 0.4f;
+/// Alone, silent and finding nothing new for QUIET_AFTER, it remarks on the
+/// quiet: in its first QUIET_EARLY of life no oftener than QUIET_AGAIN, and
+/// later only after QUIET_LONELY alone, no oftener than QUIET_LONELY_AGAIN.
+constexpr float QUIET_AFTER = 15.0f;
+constexpr float QUIET_EARLY = 180.0f;
+constexpr float QUIET_AGAIN = 60.0f;
+constexpr float QUIET_LONELY = 300.0f;
+constexpr float QUIET_LONELY_AGAIN = 240.0f;
 constexpr float HOPE_DRIVE_MAX = 1.3f;
 /// A home is a known floor cell beside water or a table, no farther than
 /// this walk; failing that, where it stands.
@@ -80,7 +88,17 @@ void Human::enterChunk(const World& world) {
     int c = world.chunkIdAt(cell);
     if (c < 0 || !escape_.chunksIn.insert(c).second || escape_.chunksIn.size() == 1) return;
     int later = int(escape_.chunksIn.size()) - 1 - HOPE_FRESH;
-    lift(std::max(HOPE_SAME_FLOOR, HOPE_NEW_CHUNK - HOPE_SAMEISH * float(std::max(0, later))));
+    float lifts = std::max(HOPE_SAME_FLOOR, HOPE_NEW_CHUNK - HOPE_SAMEISH * float(std::max(0, later)));
+    lift(lifts);
+    // Out of where it woke, there is more of it; and the first new place that
+    // lifts it no more, the sense that there is no end.
+    if (escape_.chunksIn.size() == 2) {
+        note("LEFT THE PLACE I WOKE IN. THERE'S MORE OF IT");
+        sayLater(talk::Moment::ItGoesOn);
+    } else if (later == int(std::lround(HOPE_NEW_CHUNK / HOPE_SAMEISH))) {
+        note("ANOTHER PLACE LIKE THE LAST. IT NEVER ENDS");
+        sayLater(talk::Moment::NeverEnds);
+    }
     // The first few new places stand out; later ones blur together.
     remember(Episode::What::NewPlace, later < 0 ? EPISODE_NEW_PLACE : EPISODE_NEW_PLACE * 0.5f, -1, -1, c);
 }
@@ -165,4 +183,19 @@ bool Human::guardHome(World& world) {
     fight_.grudge = grudgeFor(in->id);
     note("WENT FOR @ TO DRIVE THEM OFF", in->id);
     return startFight(world);
+}
+
+void Human::hearQuiet(bool alone) {
+    if (!alone) {
+        escape_.aloneSince = clock_;
+        return;
+    }
+    if (state == State::Waking || state == State::Sleeping || escape_.comingTo || talking()) return;
+    bool early = clock_ < QUIET_EARLY;
+    if (!early && clock_ - escape_.aloneSince < QUIET_LONELY) return;
+    if (clock_ - escape_.quietAt < (early ? QUIET_AGAIN : QUIET_LONELY_AGAIN)) return;
+    if (clock_ - escape_.lastFound < QUIET_AFTER || clock_ - escape_.aloneSince < QUIET_AFTER) return;
+    escape_.quietAt = clock_;
+    note("ALONE IN THE QUIET");
+    sayLater(talk::Moment::Quiet);
 }

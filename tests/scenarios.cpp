@@ -130,6 +130,27 @@ Check loggedBy(const Human& h, const std::string& line, bool said = true) {
             }};
 }
 
+/// h remarked on the room it woke in this way (a fog remark).
+Check remarked(const Human& h, talk::Moment m) {
+    return {std::string("#") + std::to_string(h.id) + " remarked " + std::to_string(int(m) - int(talk::Moment::FirstStatue)),
+            [&h, m](const Stage&) { return (P::fogSights(h) >> (int(m) - int(talk::Moment::FirstStatue))) & 1u; }};
+}
+
+/// h said something just before (after false) or within 4 s after this line in its log.
+Check saidAround(const Human& h, const std::string& line, bool after) {
+    return {std::string("#") + std::to_string(h.id) + " said something " + (after ? "after " : "before ") + line,
+            [&h, line, after](const Stage&) {
+                const auto& es = h.log.entries();
+                for (size_t i = 0; i < es.size(); i++) {
+                    if (es[i].what != line) continue;
+                    if (!after) return i > 0 && es[i - 1].what.rfind("SAID ", 0) == 0;
+                    return i + 1 < es.size() && es[i + 1].what.rfind("SAID ", 0) == 0 &&
+                           es[i + 1].time - es[i].time <= 4.0f;
+                }
+                return false;
+            }};
+}
+
 struct Scenario {
     const char* name;
     const char* what;
@@ -415,6 +436,73 @@ Checks askForWater(Stage& s, Checks expect, const std::function<void(Human& hold
     asker.cakes = 0;
     setUp(holder, asker);
     s.run(100);
+    return expect;
+}
+
+/// The first human comes to beside a locked door out of the spawn
+/// chunk, and a second, like `hearer`, beyond it in the next chunk, close
+/// enough to hear a call. Both calm, the first knowing its chunk, so its way
+/// out lies by that door.
+Checks callStage(Stage& s, const std::function<bool(const Traits&)>& hearer, uint64_t from,
+                 const std::function<Checks(Human& caller, Human& heard)>& expect) {
+    Human& caller = s.first();
+    Vec2i home = caller.cell;
+    Vec2i slot = World::slotOf(home);
+    std::optional<Vec2i> door;
+    for (int y = 0; y < CHUNK; y++)
+        for (int x = 0; x < CHUNK; x++) {
+            Vec2i c{slot.x * CHUNK + x, slot.y * CHUNK + y};
+            if (s.world.tile(c) == Tile::DoorLocked && (!door || cheb(c, home) < cheb(*door, home))) door = c;
+        }
+    if (!door) return {{"a locked door out of the spawn chunk", [](const Stage&) { return false; }}};
+    // Which way is in, and which beyond.
+    Vec2i in{0, 0};
+    for (Vec2i d : DIRS4)
+        if (s.world.tile(*door + d) == Tile::Floor) in = d;
+    P::place(s.world, caller, *door + in);
+    s.world.ensureGenerated(*door - in);
+    std::optional<Vec2i> beyond;
+    for (int r = 4; r <= 14 && !beyond; r++)
+        for (int y = -r; y <= r && !beyond; y++)
+            for (int x = -r; x <= r && !beyond; x++) {
+                Vec2i c = *door + Vec2i{x, y};
+                if (cheb(c, *door) == r && World::slotOf(c) != slot && s.world.tile(c) == Tile::Floor &&
+                    !s.world.occupant(c))
+                    beyond = c;
+            }
+    if (!beyond) return {{"floor beyond the door", [](const Stage&) { return false; }}};
+    Human& heard = P::addHuman(s.world, HumanLook::random(s.rng), *beyond, seedWhere(hearer, from));
+    heard.bottles = {Bottle{1.0f}};
+    s.humans.push_back(&heard);
+    calm(caller);
+    calm(heard);
+    P::knowChunk(s.world, caller);
+    s.run(60);
+    return expect(caller, heard);
+}
+
+/// Two friends come to: the first knows a basin near by and is calm, the
+/// other is parched with an empty bottle; if asleep, it drops asleep once
+/// both are up, with nobody asked to keep watch.
+Checks leadToDrink(Stage& s, bool asleep, Checks expect) {
+    Human& helper = s.first();
+    auto b = s.basin();
+    if (!b) return {{"a basin near the spawn", [](const Stage&) { return false; }}};
+    Human& friendly = s.add(seedWhere([](const Traits& t) { return t.sociable >= 0.5f; }, 19000), 2);
+    calm(helper);
+    calm(friendly);
+    P::setTrust(helper, friendly, 0.8f);
+    P::setTrust(friendly, helper, 0.8f);
+    s.run(10);
+    P::knowChunk(s.world, helper);
+    friendly.thirst = 0.9f;
+    friendly.bottles = {Bottle{}};
+    // Tired itself, the helper gives up any watch it would keep over them.
+    if (asleep) {
+        P::collapse(s.world, friendly);
+        helper.tiredness = 0.55f;
+    }
+    s.run(asleep ? 60 : 20);
     return expect;
 }
 
@@ -993,7 +1081,7 @@ const std::vector<Scenario> SCENARIOS = {
          });
      }},
     {"bottle-sell", "a grasping stranger asked for water sells it for a cake",
-     seedWhere([](const Traits& t) { return t.greedy >= 0.55f && t.sociable < 0.4f && t.brave < 0.4f; }, 13000),
+     seedWhere([](const Traits& t) { return t.greedy >= 0.55f && t.sociable < 0.4f && t.brave < 0.4f; }, 13014),
      [](Stage& s) {
          return askForWater(s, {logged({"SOLD @ SOME WATER FOR A CAKE"}), logged({"BOUGHT SOME WATER FROM @ FOR A CAKE"})},
                             [](Human&, Human& asker) { asker.cakes = 1; });
@@ -1005,7 +1093,7 @@ const std::vector<Scenario> SCENARIOS = {
                             [](Human&, Human&) {});
      }},
     {"bottle-refuse", "a stingy stranger won't give any of its water",
-     seedWhere([](const Traits& t) { return t.greedy < 0.35f && t.sociable < 0.4f && t.brave < 0.3f; }, 15000),
+     seedWhere([](const Traits& t) { return t.greedy < 0.35f && t.sociable < 0.4f && t.brave < 0.3f; }, 15119),
      [](Stage& s) {
          return askForWater(s, {logged({"WOULDN'T GIVE @ WATER"}), logged({"@ WOULDN'T GIVE ME WATER"})},
                             [](Human&, Human&) {});
@@ -1076,7 +1164,7 @@ const std::vector<Scenario> SCENARIOS = {
                             });
      }},
     {"hard-no-sell", "a grasping stranger who learnt the thirst lesson won't sell its water",
-     seedWhere([](const Traits& t) { return t.greedy >= 0.55f && t.sociable < 0.4f && t.brave < 0.4f; }, 13000),
+     seedWhere([](const Traits& t) { return t.greedy >= 0.55f && t.sociable < 0.4f && t.brave < 0.4f; }, 13014),
      [](Stage& s) {
          return askForWater(s, {logged({"ASKED @ FOR WATER"}), notLogged({"SOLD @ SOME WATER FOR A CAKE"})},
                             [](Human& holder, Human& asker) {
@@ -1213,7 +1301,7 @@ const std::vector<Scenario> SCENARIOS = {
          s.world.putDown(at, 6, {});
          P::ownStash(s.world, owner, at);
          P::place(s.world, owner, s.farFrom(at, 18));
-         Human& other = P::addHuman(s.world, HumanLook::random(s.rng), s.freeNear(at, 1), seedWhere(plain, 18000));
+         Human& other = P::addHuman(s.world, HumanLook::random(s.rng), s.freeNear(at, 1), seedWhere(plain, 18014));
          s.humans.push_back(&other);
          other.cakes = 0;
          other.hunger = 0.6f;
@@ -1420,7 +1508,7 @@ const std::vector<Scenario> SCENARIOS = {
                        unlogged("LEFT @. THEY KNOW NO MORE THAN I DO")};
      }},
     {"parched-door", "a caring human with a key, beyond the door the parched lie calling through, opens it",
-     seedWhere([](const Traits& t) { return t.sociable >= 0.75f && t.brave >= 0.3f; }, 17500),
+     seedWhere([](const Traits& t) { return t.sociable >= 0.75f && t.brave >= 0.3f; }, 17696),
      [](Stage& s) {
          Human& leader = s.first();
          Human& follower = s.add(seedWhere([](const Traits& t) { return t.sociable >= 0.75f; }, 17500), 2);
@@ -1693,6 +1781,86 @@ const std::vector<Scenario> SCENARIOS = {
          return Checks{own(nose, "SMELT DEATH"), own(nose, "FOLLOWED THE SMELL OF DEATH"),
                        logged({"ATE FROM @'S ROTTEN BODY", "ATE FROM @'S BODY"})};
      }},
+    {"waking-alone", "coming to alone, it mutters with its eyes shut, sits up, and steadies itself getting up",
+     seedWhere(plain, 9720),
+     [](Stage& s) {
+         s.run(40);
+         return Checks{saidAround(s.first(), "WOKE UP, REMEMBERING NOTHING", false),
+                       loggedBy(s.first(), "GOT UP, STILL IN A FOG"),
+                       saidAround(s.first(), "GOT UP, STILL IN A FOG", true),
+                       remarked(s.first(), talk::Moment::FirstTable), remarked(s.first(), talk::Moment::EmptyRoom),
+                       loggedBy(s.first(), "TRIED TO REMEMBER ANYTHING FROM BEFORE. NOTHING")};
+     },
+     nullptr, true},
+    {"quiet", "alone and finding nothing new for a while in its first minutes, it remarks on the quiet",
+     seedWhere(plain, 9850),
+     [](Stage& s) {
+         calm(s.first());
+         s.run(180);
+         return Checks{loggedBy(s.first(), "ALONE IN THE QUIET")};
+     },
+     nullptr, true},
+    {"it-goes-on", "leaving the place it woke in, it sees there is more", seedWhere(plain, 9850),
+     [](Stage& s) {
+         calm(s.first());
+         s.run(150);
+         return Checks{loggedBy(s.first(), "LEFT THE PLACE I WOKE IN. THERE'S MORE OF IT")};
+     },
+     nullptr, true},
+    {"never-ends", "five places on, the next one like the last lifts its hope no more", seedWhere(plain, 9850),
+     [](Stage& s) {
+         calm(s.first());
+         P::beenIn(s.first(), 5);
+         s.run(150);
+         return Checks{loggedBy(s.first(), "ANOTHER PLACE LIKE THE LAST. IT NEVER ENDS"),
+                       loggedBy(s.first(), "LEFT THE PLACE I WOKE IN. THERE'S MORE OF IT", false)};
+     },
+     nullptr, true},
+    {"call-answered", "stepping out alone, it calls; a sociable human out of sight calls back, and it hears",
+     seedWhere([](const Traits& t) { return t.brave >= 0.5f; }, 9950),
+     [](Stage& s) {
+         return callStage(s, [](const Traits& t) { return t.sociable >= 0.7f && t.brave >= 0.4f; }, 20000,
+                          [](Human& caller, Human& heard) {
+                              return Checks{loggedBy(caller, "CALLED OUT INTO THE MALL"),
+                                            loggedBy(heard, "CALLED BACK"),
+                                            loggedBy(caller, "MY CALL WAS ANSWERED")};
+                          });
+     }},
+    {"call-follow", "a curious, unsociable human hears a call from out of sight and goes toward the voice",
+     seedWhere([](const Traits& t) { return t.brave >= 0.5f; }, 9950),
+     [](Stage& s) {
+         return callStage(s, [](const Traits& t) { return t.curious >= 0.7f && t.sociable < 0.5f && t.brave >= 0.4f; },
+                          20000, [](Human&, Human& heard) {
+                              return Checks{loggedBy(heard, "HEARD SOMEONE CALL OUT"),
+                                            loggedBy(heard, "WENT TOWARD THE VOICE")};
+                          });
+     }},
+    {"call-timid", "a timid human hears a call from out of sight, hushes, and doesn't go to it",
+     seedWhere([](const Traits& t) { return t.brave >= 0.5f; }, 9950),
+     [](Stage& s) {
+         return callStage(s, [](const Traits& t) { return t.brave < 0.25f; }, 20000, [](Human&, Human& heard) {
+             return Checks{loggedBy(heard, "HEARD SOMEONE CALL OUT"), loggedBy(heard, "WENT TOWARD THE VOICE", false),
+                           loggedBy(heard, "CALLED BACK", false)};
+         });
+     }},
+    {"lead-drink", "a friend that knows water leads a parched friend with none there",
+     seedWhere([](const Traits& t) { return t.sociable >= 0.6f; }, 9900),
+     [](Stage& s) { return leadToDrink(s, false, {loggedBy(s.first(), "TOOK @ TO WATER TO DRINK")}); }, nullptr},
+    {"lead-sleeper", "a friend that knows water lets a parched friend sleep rather than lead it",
+     seedWhere([](const Traits& t) { return t.sociable >= 0.6f; }, 9900),
+     [](Stage& s) { return leadToDrink(s, true, {loggedBy(s.first(), "TOOK @ TO WATER TO DRINK", false)}); },
+     nullptr},
+    {"waking-statue", "still dazed, it remarks on a giant statue in the room it woke in", seedWhere(plain, 9800),
+     [](Stage& s) {
+         Human& h = s.first();
+         bool stood = false;
+         for (Vec2i d : {Vec2i{4, 0}, Vec2i{-4, 0}, Vec2i{0, 4}, Vec2i{0, -4}, Vec2i{4, 4}, Vec2i{-4, -4}})
+             if ((stood = P::placeStatue(s.world, h.cell + d, h, StatueKind::Clock))) break;
+         if (!stood) return Checks{{"room for a statue in the spawn", [](const Stage&) { return false; }}};
+         s.run(30);
+         return Checks{remarked(h, talk::Moment::FirstStatue)};
+     },
+     nullptr, true},
     {"hum-sleep", "tired with two keys and a server room it knows, it opens both doors and sleeps by the machines",
      seedWhere(plain, 20000), [](Stage& s) {
          Human& h = s.first();

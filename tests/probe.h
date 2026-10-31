@@ -85,6 +85,23 @@ struct SoakProbe {
     /// A basin with its top left corner at the cell, as the world sets
     /// them. False if it doesn't fit there.
     static bool placeBasin(World& w, Vec2i cell) { return w.placeBasin(*w.chunkAt(World::slotOf(cell)), cell); }
+    /// A statue of this kind about the cell, kept clear of the human; false if none fits.
+    static bool placeStatue(World& w, Vec2i cell, const Human& h, StatueKind kind) {
+        Chunk& c = *w.chunkAt(World::slotOf(cell));
+        return w.placeStatue(c, cell - c.origin(), h.cell - c.origin(), false, kind);
+    }
+    /// Which remarks on the room through the fog it has made, a bit each
+    /// from talk::Moment::FirstStatue.
+    static unsigned fogSights(const Human& h) { return h.escape_.fogSights; }
+    /// As if it had already set foot in n other places (ids no chunk has).
+    /// Drops asleep where it is, worn out, asking nobody to keep watch.
+    static void collapse(World& w, Human& h) {
+        h.tiredness = 0.95f;
+        h.startSleeping(w, true);
+    }
+    static void beenIn(Human& h, int n) {
+        for (int i = 0; i < n; i++) h.escape_.chunksIn.insert(-100 - i);
+    }
     /// A cake on the cell, as if the world had made it there.
     static void addCake(World& w, Vec2i cell) { w.cakes_.insert(cell); }
     /// Takes every key and cake off the chunk the cell is in.

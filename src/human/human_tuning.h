@@ -34,6 +34,17 @@ constexpr float SIT_GLANCE = 0.5f;
 /// this far and walks this much slower, both wearing off over DAZE_TIME.
 constexpr float WAKE_LIE_MIN = 3.0f, WAKE_LIE_MAX = 6.0f;
 constexpr float WAKE_SIT_MIN = 2.0f, WAKE_SIT_MAX = 4.0f;
+/// Lying there this long, eyes still shut, it stirs and mutters.
+constexpr float WAKE_STIR_AT = 1.0f;
+/// Still this dazed, the room it woke in is remarked on, a thing at a time,
+/// no sooner than DAZE_REMARK_GAP apart; once the daze is down to
+/// EMPTY_ROOM_DAZE with nobody ever seen, it says so.
+constexpr float DAZE_REMARK_MIN = 0.3f;
+constexpr float DAZE_REMARK_GAP = 6.0f;
+constexpr float EMPTY_ROOM_DAZE = 0.6f;
+/// Up and about with the daze down to this, still where it woke, it tries to
+/// remember anything from before.
+constexpr float BLANK_DAZE = 0.75f;
 constexpr float DAZE_TIME = 40.0f;
 constexpr int DAZE_SIGHT = 6;
 constexpr float DAZE_SLOW = 0.6f;
@@ -490,6 +501,7 @@ constexpr Wanting WANTING[] = {
     {0.85f, -0.3f, 0.0f, 0.0f, 0.0f}, // Wash
     {0.60f, 0.0f, 0.0f, -0.2f, 0.0f}, // Fill
     {0.30f, 0.0f, 0.0f, 0.0f, 0.6f}, // Meet
+    {0.15f, 0.0f, 0.0f, 0.4f, 0.5f}, // Voice
     {1.50f, 0.2f, 0.0f, 0.0f, 0.0f}, // Rescue
     {0.70f, 0.3f, 0.0f, 0.0f, 0.0f}, // UrgedDoor
     {0.40f, 0.2f, 0.45f, 0.0f, -0.15f}, // Loot

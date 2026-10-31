@@ -652,6 +652,20 @@ erratic craving         | NOTHING TASTES LIKE IT.
 
 # ---- Waking ----------------------------------------------------------------
 
+# Coming to, before it opens its eyes: said to nobody, still lying where
+# it woke. The body before the mind.
+[wake_stir 0.7]
+                        | MMH...
+                        | COLD...
+                        | NNGH.
+                        | WHAT...
+homebody                | FIVE MORE MINUTES...
+timid                   | NO... NOT YET...
+hungry                  | SO EMPTY...
+thirsty                 | MY MOUTH...
+loner                   | LEAVE ME...
+erratic                 | WHO'S THERE? WHO'S THERE?
+
 # Coming to somewhere it has never seen, remembering nothing: said to
 # nobody, sitting up.
 [wake 0.8]
@@ -669,6 +683,177 @@ brave                   | RIGHT. HOW DO I GET OUT OF HERE?
 hungry                  | SO HUNGRY... HOW LONG WAS I OUT?
 sociable                | HELLO? ANYBODY?
 loner                   | ...
+
+# Getting up for the first time, the fog not lifted yet: said to nobody,
+# steadying itself.
+[wake_stand 0.6]
+                        | OKAY. OKAY.
+                        | STEADY...
+                        | LEGS... STILL WORK.
+                        | WHOA. SLOWLY.
+brave                   | RIGHT. ONE STEP AT A TIME.
+timid                   | I DON'T WANT TO GO OUT THERE.
+curious                 | LET'S SEE, THEN.
+homebody                | I JUST WANT TO GO HOME.
+sociable                | SOMEONE MUST BE AROUND.
+loner                   | FINE. ON MY OWN, THEN.
+hungry                  | FOOD. FIRST, FOOD.
+thirsty                 | WATER. I NEED WATER.
+erratic                 | THEY PUT ME HERE. THEY DID.
+
+# Up, still dazed and still where it woke, it reaches back for anything
+# from before and finds nothing but its own name: said to nobody. Pure
+# blank: no hints at a life before, only the missing of one.
+[blank]
+                        | WHAT WAS I DOING?
+                        | WHAT DAY IS IT?
+                        | THINK. THINK...
+                        | {ME}. I'M {ME}. THAT'S ALL.
+                        | THERE'S NOTHING THERE.
+                        | WHERE WAS I BEFORE THIS?
+curious                 | THERE MUST BE SOMETHING. ANYTHING.
+timid                   | WHY CAN'T I REMEMBER?
+timid fear              | WHAT DID THEY DO TO MY HEAD?
+brave                   | DOESN'T MATTER. OUT FIRST.
+homebody                | I HAD A HOME. DIDN'T I?
+sociable                | DOES ANYONE MISS ME?
+loner                   | NOBODY TO REMEMBER, MAYBE.
+hungry                  | HOW LONG WAS I LYING THERE?
+erratic                 | {ME}? IS THAT EVEN ME?
+
+# Up, alone and finding nothing new for a while: in its first minutes, or
+# again once long alone. Said to nobody. Only silence, its own steps and
+# breath: nothing else is known to be there.
+[quiet]
+                        | IT'S SO QUIET.
+                        | IS ANYONE ELSE HERE?
+                        | HOW LONG HAS IT BEEN EMPTY?
+                        | I CAN HEAR MY OWN HEART.
+                        | JUST MY OWN FEET.
+                        | HELLO...? NO. NOTHING.
+timid                   | DON'T THINK ABOUT IT. KEEP WALKING.
+timid scared            | WHY IS IT SO QUIET?
+sociable                | SAY SOMETHING. ANYONE.
+loner                   | AT LEAST IT'S QUIET.
+curious                 | WHERE DID EVERYONE GO?
+brave                   | QUIET'S FINE. QUIET'S GOOD.
+homebody                | I MISS... SOMETHING.
+hopeless                | SAME WALLS. SAME QUIET.
+settled                 | JUST ME AND THE QUIET.
+erratic                 | SHH. IT'S LISTENING.
+
+# Setting foot outside the place it woke in for the first time: said to
+# nobody, as it sees there is more.
+[it_goes_on 0.8]
+                        | MORE OF IT.
+                        | HOW BIG IS THIS PLACE?
+                        | IT JUST KEEPS GOING.
+                        | WHERE DOES IT END?
+sure                    | THIS WAY. IT HAS TO BE THIS WAY.
+curious                 | WHAT ELSE IS OUT HERE?
+timid                   | I SHOULD HAVE STAYED PUT.
+brave                   | KEEP MOVING. THERE'S AN END SOMEWHERE.
+homebody                | I'M GETTING FARTHER FROM... WHERE?
+dazed                   | IT'S ALL SO... BIG.
+
+# The first new place that no longer lifts its hope, much like the ones
+# before: said to nobody.
+[never_ends 0.8]
+                        | IT NEVER ENDS, DOES IT?
+                        | ALL THE SAME. ALL OF IT.
+                        | HAVEN'T I BEEN HERE?
+                        | HOW FAR DOES IT GO?
+sure                    | IT HAS TO END. IT HAS TO.
+hopeless                | WHY DO I EVEN BOTHER?
+brave                   | THEN I KEEP GOING.
+timid                   | I'M SO FAR FROM WHERE I WOKE.
+curious                 | SOMEONE MADE ALL THIS. WHY?
+erratic                 | IT'S GROWING. I KNOW IT IS.
+
+# Stepping out of where it woke, alone, early on: called out into the
+# mall, to nobody, loud enough to carry through the walls. The timid keep
+# quiet and never say these.
+[call_out]
+                        | HELLO?
+                        | IS ANYBODY THERE?
+                        | HEY! ANYONE?
+                        | HELLO-O?
+sociable                | HELLO! ANYONE OUT THERE?
+brave                   | IF ANYONE'S THERE, SHOW YOURSELF!
+curious                 | HELLO? WHO ELSE IS HERE?
+loner                   | ...ANYONE?
+dazed                   | HELLO...? CAN ANYONE HEAR ME?
+
+# Hearing a call, or a call back, from someone out of sight: said to
+# nobody ({WHO} only if it knows whose voice). The timid hush.
+[heard_call]
+                        | DID YOU HEAR THAT?
+                        | SOMEONE ELSE IS HERE.
+                        | A VOICE...
+timid                   | STAY QUIET... STAY QUIET.
+timid                   | DON'T LET THEM HEAR YOU.
+curious                 | WHO'S THAT?
+brave                   | SOMEONE'S OUT THERE.
+loner                   | SO MUCH FOR THE QUIET.
+hopeless                | PROBABLY NOTHING.
+erratic                 | THEY'RE CALLING ME.
+
+# Answering a call from out of sight: shouted back, to nobody, so it
+# carries the same way.
+[call_answer]
+                        | HELLO? WHERE ARE YOU?
+                        | OVER HERE!
+                        | I HEAR YOU! KEEP TALKING!
+                        | HERE! I'M HERE!
+sociable                | HELLO! STAY WHERE YOU ARE!
+brave                   | THIS WAY! FOLLOW MY VOICE!
+dazed                   | WAIT! DON'T GO!
+
+# Its own call answered from out of sight: said to nobody.
+[call_answered]
+                        | THERE'S SOMEONE!
+                        | I'M NOT ALONE!
+                        | SOMEONE HEARD ME.
+loner                   | OH. SOMEONE.
+brave                   | GOOD. NOW WHERE ARE THEY?
+sociable                | YES! I'M COMING!
+hopeless                | MAYBE THEY KNOW THE WAY.
+
+# Still dazed, the room it woke in, a thing at a time, said to nobody. The
+# first giant statue it sees ({THING} is what it is, and statue.mug and the
+# rest which), the first table, and, once it has looked round a while and
+# seen nobody at all, the emptiness.
+[first_statue]
+                        | WHY IS IT SO BIG?
+                        | AM I... SMALL?
+                        | THAT CAN'T BE RIGHT.
+                        | A {THING}. A HUGE {THING}.
+curious                 | WHO MADE A {THING} THAT SIZE?
+timid                   | DON'T FALL ON ME...
+homebody                | I DON'T LIKE THIS ROOM.
+erratic                 | IT'S WATCHING ME.
+statue.clock            | IT ISN'T TICKING.
+statue.toilet           | WHO WOULD EVEN SIT ON THAT?
+statue.lamp             | IS IT ON?
+
+[first_table]
+                        | SOMEONE SET THIS OUT.
+                        | LIKE IT WAS WAITING FOR ME.
+                        | WHO WAS HERE?
+timid                   | IS SOMEONE COMING BACK?
+curious                 | FOR ME? OR FOR SOMEONE ELSE?
+homebody                | ALMOST LIKE HOME. ALMOST.
+hungry                  | ANYTHING TO EAT?
+
+[empty_room 0.8]
+                        | NOBODY. NOBODY AT ALL.
+                        | JUST ME, THEN.
+                        | NO WINDOWS. NOT ONE.
+sociable                | WHERE IS EVERYONE?
+loner                   | GOOD. QUIET.
+timid                   | I DON'T WANT TO BE ALONE HERE.
+brave                   | THEN I FIND MY OWN WAY.
+curious                 | SOMEONE BUILT THIS. FOR WHAT?
 
 
 # The first time it ever sees each of these, said to nobody, once each:
@@ -694,6 +879,8 @@ greedy                  | A CAKE! MINE.
 curious                 | WHO PUTS CAKES OUT HERE?
 timid                   | IS IT SAFE TO EAT?
 loner                   | AT LEAST THERE'S FOOD.
+dazed                   | CAKE? HERE?
+dazed hungry            | IS THAT... FOR ME?
 
 [first_door]
                         | A DOOR.
@@ -2120,6 +2307,9 @@ greedy                  | MINE NOW.
 curious                 | WHO LEAVES A BOTTLE OUT HERE?
 timid                   | SOMEONE ELSE'S?
 thirsty                 | WATER. THANK GOD.
+dazed                   | IS THIS MINE?
+dazed                   | WHO PUT THIS HERE?
+dazed thirsty           | SOMEONE LEFT ME WATER.
 
 # Coming back for the bottle it found, and it's gone, said to nobody.
 [bottle_gone 0.7]

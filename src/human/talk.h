@@ -160,6 +160,26 @@ enum class Moment {
     // bottle with keys, finding it empty (all to nobody); a machine at a
     // greeting, told or sold (to the one told).
     FirstVending, VendCake, VendBottle, VendEmpty, TellVending, SellVending,
+    // Coming to: stirring while it still lies with its eyes shut, and
+    // getting up out of the waking sit (both to nobody).
+    WakeStir, WakeStand,
+    // Still dazed, the first giant statue and the first table it sees, and
+    // finding nobody about once it has looked round (all to nobody).
+    FirstStatue, FirstTable, EmptyRoom,
+    // Still dazed, trying to remember anything from before and finding
+    // only its own name (to nobody).
+    Blank,
+    // Up, alone and finding nothing new for a while, the quiet of the place
+    // (to nobody).
+    Quiet,
+    // Setting foot outside the place it woke in for the first time, and the
+    // first new place that no longer lifts its hope (both to nobody).
+    ItGoesOn, NeverEnds,
+    // Calling out on its first door out of where it woke (shouted, to
+    // nobody); hearing a call from out of sight (to nobody, about the
+    // caller), and answering it (shouted); hearing its call answered (to
+    // nobody, about who answered).
+    CallOut, HeardCall, CallAnswer, CallAnswered,
     // Server rooms: the first one it ever sees; setting off, tired, with
     // keys to spend, to sleep in one it knows; lying down to sleep among
     // the humming machines (all to nobody).
