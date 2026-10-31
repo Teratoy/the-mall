@@ -3,11 +3,13 @@
 // pocket and in the hand, pointing, blood, feces and piss, and the remains
 // eaten and rotten. It all goes through HumanSprites::draw, as in the game,
 // so the sheet shows whether the dirty frames still line up with all of it.
-// Usage: build/dirty_sheet [out.png] [seed] [scale] [styles]   (make dirtysheet)
+// Usage: build/dirty_sheet [out.png] [seed] [scale] [styles|holster]   (make dirtysheet)
 // Each cell is the normal human on the left and the dirty one on the right,
 // with what it shows written above. With styles, the sheet is instead one
 // row for each hair style, in a few poses, each row a human of its own with
-// and without a beard in turn.
+// and without a beard in turn. With holster, it is two rows for each
+// bottom (trousers, shorts, skirt), a small body and a big one, each
+// wearing a holstered gun.
 #include "core/rng.h"
 #include "human/body_blood.h"
 #include "human/bottle.h"
@@ -108,6 +110,7 @@ int main(int argc, char** argv) {
     uint64_t seed = argc > 2 ? std::strtoull(argv[2], nullptr, 10) : 42;
     int scale = argc > 3 ? std::atoi(argv[3]) : 4;
     bool styles = argc > 4 && std::string(argv[4]) == "styles";
+    bool holster = argc > 4 && std::string(argv[4]) == "holster";
     const std::vector<Cell> stylePoses = {
         {"Idle", Pose::Idle},
         {"Walk 1", Pose::Walk, 0.13f},
@@ -118,7 +121,18 @@ int main(int argc, char** argv) {
         {"Fall down", Pose::Fall, 1.0f},
         {"Bloody", Pose::Idle, 0.0f, false, false, false, Coat::Bloody},
     };
-    const std::vector<Cell> cells = styles ? std::vector<Cell>{} : std::vector<Cell>{
+    const std::vector<Cell> holsterPoses = {
+        {"Idle", Pose::Idle},
+        {"Walk 1", Pose::Walk, 0.13f},
+        {"Run 1", Pose::Run, 0.0f},
+        {"Punch", Pose::Punch},
+        {"Winded", Pose::Winded, 0.0f},
+        {"Sit", Pose::Sit, 1.0f},
+        {"Sleep curl", Pose::Sleep, 3.0f},
+        {"Bloody", Pose::Idle, 0.0f, false, false, false, Coat::Bloody},
+    };
+    constexpr int BOTTOMS = int(Bottom::Skirt) + 1;
+    const std::vector<Cell> cells = styles || holster ? std::vector<Cell>{} : std::vector<Cell>{
         {"Idle", Pose::Idle},
         {"Walk 1", Pose::Walk, 0.13f},
         {"Walk 3", Pose::Walk, 0.38f},
@@ -180,7 +194,7 @@ int main(int argc, char** argv) {
     SetConfigFlags(FLAG_WINDOW_HIDDEN);
     InitWindow(64, 64, "dirty sheet");
     const int cellW = (2 * SLOT + PAIR_GAP) * scale, cellH = SLOT * scale + LABEL;
-    const int rows = styles ? HAIRS : (int(cells.size()) + COLUMNS - 1) / COLUMNS;
+    const int rows = styles ? HAIRS : holster ? 2 * BOTTOMS : (int(cells.size()) + COLUMNS - 1) / COLUMNS;
     RenderTexture2D rt = LoadRenderTexture(COLUMNS * cellW, rows * cellH);
     bool ok = false;
     {
@@ -219,6 +233,18 @@ int main(int argc, char** argv) {
                 look.hairStyle = Hair(h);
                 look.beard = h % 2 == 1;
                 drawCells(look, stylePoses, h * COLUMNS, TextFormat("%s%s", names[h], look.beard ? ", beard" : ""));
+            }
+        } else if (holster) {
+            const char* names[BOTTOMS] = {"Pants", "Shorts", "Skirt"};
+            for (int r = 0; r < 2 * BOTTOMS; r++) {
+                HumanLook look = HumanLook::random(rng);
+                look.holster = true;
+                look.bottomStyle = Bottom(r / 2);
+                bool big = r % 2 == 1;
+                look.torsoW = big ? 7 : 5;
+                look.torsoH = big ? 5 : 4;
+                look.legH = big ? 5 : 3;
+                drawCells(look, holsterPoses, r * COLUMNS, TextFormat("%s, %s", names[r / 2], big ? "big" : "small"));
             }
         } else {
             drawCells(HumanLook::random(rng), cells, 0, nullptr);
