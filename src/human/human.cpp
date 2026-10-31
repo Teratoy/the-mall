@@ -442,7 +442,7 @@ bool Human::observe(const World& world) {
             b.cell = o->cell;
             b.cakes = o->cakes;
             b.bottles = int(o->bottles.size());
-            b.water = o->bottleWater();
+            b.fullest = o->fullestBottle();
             b.meals = o->meals();
             b.spoiled = o->spoiled();
             seeRemains(*o);

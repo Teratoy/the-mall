@@ -115,6 +115,11 @@ float Human::bottleWater() const {
     return sum;
 }
 
+Bottle Human::fullestBottle() const {
+    int i = fullest(bottles);
+    return i < 0 ? Bottle{} : bottles[size_t(i)];
+}
+
 bool Human::bottleInHand() const {
     bool holds = state == State::Sipping || state == State::Filling || state == State::Pouring || givingWater();
     return holds && water_.inHand >= 0 && water_.inHand < int(bottles.size());

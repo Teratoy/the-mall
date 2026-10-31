@@ -538,9 +538,10 @@ bool Human::worthLooting(int id, bool cakesOnly) const {
     auto it = deaths_.bodies.find(id);
     if (it == deaths_.bodies.end()) return false;
     bool forCakes = it->second.cakes > 0 && cakes < carryMax();
-    // A bottle with water in it, or any bottle at all to one with none.
+    // A bottle it would take, as loot() does: water it would drink, or any
+    // bottle at all to one with none.
     const Body& b = it->second;
-    bool forBottle = b.bottles > 0 && roomForBottle() && (b.water > 0.0f || bottles.empty());
+    bool forBottle = b.bottles > 0 && wouldTakeBottle(b.fullest);
     return forCakes || (!cakesOnly && (!b.searched || forBottle));
 }
 
@@ -628,7 +629,7 @@ void Human::loot(World& world) {
     // Gone through in plain sight: picked over, and a poor thing to do.
     for (const auto& o : world.humans())
         if (!o->dead() && (o.get() == this || o->sight.sees(b.cell)))
-            o->deaths_.bodies[b.id] = {b.cell, b.cakes, true, b.meals(), b.spoiled(), int(b.bottles.size()), b.bottleWater()};
+            o->deaths_.bodies[b.id] = {b.cell, b.cakes, true, b.meals(), b.spoiled(), int(b.bottles.size()), b.fullestBottle()};
     witness(world, *this, b, TRUST_SAW_LOOT, 0.0f, Episode::What::Loot, EPISODE_SAW_LOOT);
     // Said aloud, and the nearest who saw it may say what they think of it.
     sayLater(talk::Moment::Loot, -1, b.id);

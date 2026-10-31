@@ -248,6 +248,8 @@ public:
     std::vector<Bottle> bottles;
     /// All the water in them, 0 to the number of bottles.
     float bottleWater() const;
+    /// Its fullest bottle, or an empty one if none holds water.
+    Bottle fullestBottle() const;
     /// The bottle it shows: the one in its hand while drinking, filling,
     /// pouring or handing water over, else the fullest; null if it has none.
     const Bottle* shownBottle() const;
@@ -702,9 +704,10 @@ private:
         bool searched = false;
         int meals = 0;
         bool spoiled = false;
-        /// The bottles last seen on it, and the water in them.
+        /// The bottles last seen on it, and the fullest of them as it looked,
+        /// so it knows whether there is one it would take.
         int bottles = 0;
-        float water = 0.0f;
+        Bottle fullest;
     };
     /// The dead: those it saw, the bodies it knows, and its own death.
     struct Deaths {
