@@ -391,6 +391,71 @@ rr.t..
 rrtt..
 rr....
 
+group Water dispenser
+
+sprite water dispenser
+# A water cooler seen from the front: an upturned jug on a stand, a red and a blue tap.
+# w is the jug's water: rows above how full it is are drawn as e, the empty jug. g glints either way.
+ink J 4f86b8 jug edge
+ink w 5cb4ec water
+ink e c8e2f070 empty jug
+ink g e0f4ff glint
+ink N 8e949c collar
+ink S e6e6e0 stand
+ink s b4b6b0 stand shade
+ink h d04848 hot tap
+ink c 3c7cd4 cold tap
+ink p 34343a spout
+ink d 4c4e54 recess
+ink t 8a8e94 drip tray
+.JJJJ.
+JwwwgJ
+JwwwgJ
+JwwwwJ
+JwwwwJ
+JwwwwJ
+JwwwwJ
+.JwwJ.
+..NN..
+SSSSSS
+ShSScS
+SpSSpS
+sddddS
+sdttdS
+SSSSSS
+SSSSSS
+ssssss
+
+sprite water dispenser side
+# Seen from the side against a west wall, its taps toward the right; mirrored against an east wall.
+# w is the jug's water: rows above how full it is are drawn as e, the empty jug. g glints either way.
+ink J 4f86b8 jug edge
+ink w 5cb4ec water
+ink e c8e2f070 empty jug
+ink g e0f4ff glint
+ink N 8e949c collar
+ink S e6e6e0 stand
+ink s b4b6b0 stand shade
+ink c 3c7cd4 tap
+ink p 34343a spout
+.JJJ..
+JwwgJ.
+JwwgJ.
+JwwwJ.
+JwwwJ.
+JwwwJ.
+JwwwJ.
+.JwJ..
+.NNN..
+SSSSS.
+SSSSSc
+SSSSSp
+SSSSs.
+SSSSs.
+SSSSs.
+SSSSs.
+sssss.
+
 group Map
 
 sprite map you
@@ -455,6 +520,15 @@ ink # 78dcc8 symbol
 #...#
 #####
 ##.##
+
+sprite map dispenser
+# A water dispenser known of. One colour, ink #, drawn on a dark outline.
+ink # 7cc8f4 symbol
+..#..
+.###.
+#####
+#####
+.###.
 
 sprite map heard of
 # Over places only heard of, and beside what was only told. One colour, ink #, drawn on a dark outline.

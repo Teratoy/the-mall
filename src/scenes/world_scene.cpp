@@ -153,10 +153,10 @@ std::string doing(const Human& h) {
     switch (h.state) {
     case Human::State::Greeting: return (h.gossiping ? "GOSSIPING WITH " : "GREETING ") + who;
     case Human::State::Eating: return "EATING";
-    case Human::State::Drinking: return "DRINKING";
+    case Human::State::Drinking: return h.atTap() ? "DRINKING AT THE COOLER" : "DRINKING";
     case Human::State::Sipping: return "DRINKING FROM THE BOTTLE";
-    case Human::State::Filling: return "FILLING THE BOTTLE";
-    case Human::State::Pouring: return "POURING THE BOTTLE OUT";
+    case Human::State::Filling: return h.atTap() ? "FILLING UP AT THE COOLER" : "FILLING THE BOTTLE";
+    case Human::State::Pouring: return h.refilling() ? "POURING INTO THE COOLER" : "POURING THE BOTTLE OUT";
     case Human::State::Stashing: return h.putting() ? "STASHING THINGS" : "PICKING THINGS UP";
     case Human::State::Vending: return "BUYING FROM A MACHINE";
     case Human::State::Relieving: return h.shitting() ? "SHITTING" : "PISSING";

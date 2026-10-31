@@ -264,7 +264,9 @@ void Human::sip(World& world) {
     timer = SIP_TIME;
 }
 
+// Never from the dispenser it keeps its water in: that is for drinking.
 bool Human::wantsFill(const World& world, Vec2i water) const {
+    if (keptDispenser() == water) return false;
     return emptiest(bottles, FILL_TOPUP) >= 0 || toPour(world, water) >= 0;
 }
 
@@ -294,12 +296,15 @@ bool Human::startFilling(World& world, Vec2i water) {
                           id, uint32_t(rng_.next()), b.foul, b.red);
         note(b.foul >= b.red ? "POURED OUT MY BOTTLE. IT WAS FOUL" : "POURED OUT MY BOTTLE. IT WAS BLOODY");
         sayLater(talk::Moment::PourOut);
+        dispense_.refilling = false;
         state = State::Pouring;
         timer = POUR_TIME;
         return true;
     }
     if (fresh) {
-        note(toilet ? "FILLED MY BOTTLE AT A TOILET" : "FILLED MY BOTTLE");
+        note(toilet                            ? "FILLED MY BOTTLE AT A TOILET"
+             : world.dispenser(water) != nullptr ? "FILLED MY BOTTLE AT A WATER DISPENSER"
+                                                 : "FILLED MY BOTTLE");
         if (!sawScarcity()) sayLater(talk::Moment::FillBottle);
     }
     state = State::Filling;
@@ -308,6 +313,7 @@ bool Human::startFilling(World& world, Vec2i water) {
 }
 
 void Human::pourOut(World& world) {
+    if (dispense_.refilling) return endRefill(world);
     int i = water_.inHand;
     if (i >= 0 && i < int(bottles.size())) bottles[size_t(i)] = {};
     if (startFilling(world, water_.drinkAt)) return;
@@ -324,9 +330,15 @@ void Human::fill(World& world) {
         water_.inHand = -1;
         return choose(world);
     }
-    float foul, red;
+    float foul, red, share = FILL_SHARE;
     waterHere(world, w, foul, red);
-    bottles[size_t(i)].add(FILL_SHARE, foul, red);
+    // At a dispenser, a share is what the tap still gives.
+    if (world.dispenser(w)) share = drawFrom(world, w, std::min(FILL_SHARE, 1.0f - bottles[size_t(i)].water));
+    if (share <= 0.0f) {
+        water_.inHand = -1;
+        return choose(world);
+    }
+    bottles[size_t(i)].add(share, foul, red);
     if (observe(world)) rethink_ = true;
     if (rethink_ || fight_.fear > 0.0f || fight_.foe >= 0) {
         water_.inHand = -1;

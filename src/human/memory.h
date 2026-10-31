@@ -84,6 +84,10 @@ public:
     /// The server rooms it has seen the machines of, by their inner door:
     /// where the warm hum is, kept for later uses (user).
     std::unordered_map<Vec2i, ServerRoom, Vec2iHash> serverRooms;
+    /// The water dispensers it knows, by cell, and how much water it saw in
+    /// each through the jug (or was told of): one only heard of, with no
+    /// level, is taken to hold some.
+    std::unordered_map<Vec2i, float, Vec2iHash> dispensers;
     /// What it saw lying put down on the floor, as it was then; and, of
     /// those, the ones it knows are someone's stash, and whose: seen being
     /// stashed, or told of.

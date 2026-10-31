@@ -282,6 +282,25 @@ struct SoakProbe {
         h.server_.keyWise = times >= 2;
     }
     static bool keyWise(const Human& h) { return h.server_.keyWise; }
+    /// The water dispenser grown in the server room, set to hold this much
+    /// water. Aborts if the room grew none.
+    static const Dispenser& fillDispenser(World& w, const ServerRoom& r, float water) {
+        for (Dispenser& d : w.dispensers_)
+            if (r.contains(d.at)) {
+                d.water = water;
+                return d;
+            }
+        std::fprintf(stderr, "probe: no dispenser in the server room at %d,%d\n", r.x, r.y);
+        std::abort();
+    }
+    /// h knows the dispenser and how full it is, as if it had seen it.
+    static void knowDispenser(Human& h, const Dispenser& d) {
+        h.memory.dispensers[d.at] = d.water;
+        h.memory.see(d.at, Tile::Dispenser);
+        h.dispense_.seen = true;
+    }
+    /// h has run a bottle dry once and learnt that water is scarce.
+    static void sawScarce(Human& h) { h.water_.scarce = true; }
     /// Given up on a way out, at home on home.
     static void settle(Human& h, Vec2i home) {
         h.escape_.settled = true;

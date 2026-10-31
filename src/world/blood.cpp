@@ -63,7 +63,7 @@ void Blood::drop(const World& world, float x, float y, float radius, int who, Rn
             int lx = px - cell.x * CELL_PX, ly = py - cell.y * CELL_PX;
             int ink = int((DROP_INK + (EDGE_INK - DROP_INK) * edge) * thin);
             Tile t = world.tile(cell);
-            if (drinkable(t)) {
+            if (pooled(t)) {
                 tintWater(cell, ink / 255.0f * TINT_PER_PIXEL);
                 continue;
             }

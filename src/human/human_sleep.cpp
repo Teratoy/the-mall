@@ -339,6 +339,7 @@ void Human::startSleeping(World& world, bool collapsed) {
     const bool hum = !collapsed && humShare(cell) < 1.0f;
     if (hum) note("THE MACHINES HUMMED IT TO SLEEP");
     if (hum) sayLater(talk::Moment::SleepHum);
+    if (hum) keepWaterHere();
     else if (!collapsed && !askToWatch(world)) sayLater(talk::Moment::SleepNow);
     server_.seeking = false;
     server_.staying = false;

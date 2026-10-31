@@ -400,6 +400,7 @@ bool Human::observe(const World& world) {
         }
         if (world.table(c)) fogSight(talk::Moment::FirstTable);
         if (const Machine* m = world.machine(c)) news |= seeMachine(*m, c);
+        if (const Dispenser* d = world.dispenser(c)) news |= seeDispenser(*d);
         if (const AirlockDoor* a = world.airlock(c)) memory.airlocks[c] = a->in;
         if (t == Tile::Rack) seeServerRoom(world, c);
         if (t != Tile::Void) {
@@ -644,7 +645,7 @@ void Human::choose(World& world) {
         // Guilt keeps it to itself.
         want(Want::Escort, -GUILT_ALONE * mind_.guilt + parchedToLead(world));
         want(Want::Wash, wantsWashing() ? FILTH_WASH * (0.5f + modesty()) : wantsScrub() ? GRIME_WASH * modesty() : 0.0f);
-        if (float fill = fillDrive(); fill >= 0.0f) want(Want::Fill, fill);
+        if (float fill = std::max(fillDrive(), refillDrive()); fill >= 0.0f) want(Want::Fill, fill);
         // The cunning go out of their way to lie to a foe.
         if (social_.partner >= 0)
             want(Want::Meet, OUT_ASK * outDrive() - GUILT_ALONE * mind_.guilt + (isFoe(social_.partner) ? LIE_URGE : 0.0f));
@@ -722,7 +723,7 @@ bool Human::pursue(World& world, Want w) {
     case Want::Wash:
         return startWash(world);
     case Want::Fill:
-        return seekFill(world) || buyBottle(world);
+        return seekRefill(world) || seekFill(world) || buyBottle(world);
     case Want::Stash:
         return seekStash(world);
     case Want::Meet:

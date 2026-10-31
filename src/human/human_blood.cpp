@@ -353,7 +353,7 @@ bool Human::startWash(World& world) {
     if (!bloody && !filthy && !wantsScrub()) return false;
     auto water = [&](Vec2i c) -> std::optional<Vec2i> {
         for (Vec2i d : DIRS4)
-            if (drinkable(memory.tile(c + d))) return c + d;
+            if (pooled(memory.tile(c + d))) return c + d;
         return std::nullopt;
     };
     // Not where someone else stands: that one may be washing there, or
@@ -392,7 +392,7 @@ void Human::wash(World& world) {
     float tint = off / 255.0f * WASH_TINT_PER_PIXEL;
     world.blood().tintWater(gore_.washAt, tint);
     for (Vec2i d : DIRS4)
-        if (drinkable(world.tile(gore_.washAt + d))) world.blood().tintWater(gore_.washAt + d, tint / 2.0f);
+        if (pooled(world.tile(gore_.washAt + d))) world.blood().tintWater(gore_.washAt + d, tint / 2.0f);
     // Feces once the blood is off, fouling the water (human_relief.cpp),
     // then the grime of going unwashed (human_grime.cpp).
     bool filthy = !stains.any() && washDirt(world, gore_.washAt);
@@ -649,7 +649,7 @@ bool Human::offerEscort(World& world) {
     if (!o) return false;
     auto beside = [&](Vec2i c) {
         for (Vec2i d : DIRS4)
-            if (drinkable(memory.tile(c + d)) || drinkable(o->memory.tile(c + d))) return true;
+            if (pooled(memory.tile(c + d)) || pooled(o->memory.tile(c + d))) return true;
         return false;
     };
     auto mine = search(world, beside);
@@ -660,7 +660,7 @@ bool Human::offerEscort(World& world) {
         Vec2i end = theirs->empty() ? o->cell : theirs->back();
         memory.hear(end, o->memory.tile(end));
         for (Vec2i d : DIRS4)
-            if (drinkable(o->memory.tile(end + d))) memory.hear(end + d, o->memory.tile(end + d));
+            if (pooled(o->memory.tile(end + d))) memory.hear(end + d, o->memory.tile(end + d));
         escorting_.to = end;
     } else {
         escorting_.to = mine->empty() ? cell : mine->back();

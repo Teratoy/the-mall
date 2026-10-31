@@ -193,6 +193,10 @@ enum class Moment {
     // they cost (to them); feeling the hum inside one the first time, and
     // drowsy, lying down there rather than leave (to nobody).
     AirlockSurprise, AirlockLesson, SpareKeys, DareAirlock, TellAirlock, HumLesson, StayHum,
+    // Water dispensers: the first one it ever sees; drinking at one's tap;
+    // finding one dry it came for or keeps; pouring its bottle into the one
+    // it keeps (all to nobody).
+    FirstDispenser, DispenserDrink, DispenserDry, RefillDispenser,
     Count
 };
 

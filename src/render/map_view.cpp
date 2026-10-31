@@ -67,7 +67,8 @@ Color tileColor(Tile t) {
     case Tile::Statue:
     case Tile::Vending:
     case Tile::Rack:
-    case Tile::Console: return STATUE;
+    case Tile::Console:
+    case Tile::Dispenser: return STATUE;
     case Tile::Void: break;
     }
     return BLANK;
@@ -136,7 +137,7 @@ struct LegendItem {
 constexpr LegendItem LEGEND[] = {
     {"YOU", "map you", {}},       {"KEY", "map key", {}},         {"CAKE", "map cake", {}},
     {"TRAP", "map trap", {}},     {"BODY", "map body", {}},       {"TOILET", "map toilet", {}},
-    {"MACHINE", "map machine", {}},
+    {"MACHINE", "map machine", {}}, {"COOLER", "map dispenser", {}},
     {"BLOOD", nullptr, BLOOD},    {"MESS", nullptr, MESS},        {"LOCKED", nullptr, DOOR_LOCKED},
     {"WATER", nullptr, WATER},    {"HEARD OF", "map heard of", {}},
 };
@@ -236,13 +237,14 @@ void drawMap(const World& world, const Human& viewer, Rectangle area, int cellPx
     auto told = [&](Vec2i c) { return memory.toldBy.count(c) > 0; };
     const Glyph &toilet = symbol("map toilet"), &trap = symbol("map trap"), &body = symbol("map body");
     const Glyph &key = symbol("map key"), &cake = symbol("map cake"), &you = symbol("map you");
-    const Glyph& machine = symbol("map machine");
+    const Glyph &machine = symbol("map machine"), &cooler = symbol("map dispenser");
     for (Vec2i c : toilets) f.glyph(c, toilet, inkOf(toilet));
     for (const auto& [c, kind] : memory.traps) f.item(c, trap, inkOf(trap), told(c));
     for (Vec2i c : viewer.bodyCells()) f.glyph(c, body, inkOf(body));
     for (Vec2i c : memory.keys) f.item(c, key, inkOf(key), told(c));
     for (Vec2i c : memory.cakes) f.item(c, cake, inkOf(cake), told(c));
     for (const auto& [c, seen] : memory.machines) f.item(c, machine, inkOf(machine), told(c));
+    for (const auto& [c, water] : memory.dispensers) f.item(c, cooler, inkOf(cooler), told(c));
     f.glyph(viewer.cell, you, inkOf(you));
     if (std::fmod(time, 2 * BLINK) < BLINK) {
         Vector2 p = f.at(viewer.cell);

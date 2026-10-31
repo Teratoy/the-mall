@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
         for (int y = 0; y < c.h; y++)
             for (int x = 0; x < c.w; x++) {
                 Tile t = c.get({x, y});
-                water += drinkable(t);
+                water += pooled(t);
                 locked += t == Tile::DoorLocked;
                 toilets += t == Tile::Toilet;
                 floor += t == Tile::Floor;
@@ -69,7 +69,7 @@ int main(int argc, char** argv) {
                 case Tile::Console: col = {160, 230, 120, 255}; break;
                 case Tile::Table: col = {140, 90, 50, 255}; break;
                 case Tile::Toilet: col = {250, 250, 250, 255}; break;
-                default: if (drinkable(c.get({x, y}))) col = {60, 120, 200, 255}; break;
+                default: if (pooled(c.get({x, y}))) col = {60, 120, 200, 255}; break;
                 }
                 if (w.hasKey(c.origin() + Vec2i{x, y})) col = {250, 230, 0, 255};
                 ImageDrawPixel(&img, x, y, col);

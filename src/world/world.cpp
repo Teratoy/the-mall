@@ -941,7 +941,7 @@ void World::gatherSmells() {
     }
     std::vector<Smell> water;
     for (const auto& [c, f] : mess_.fouled())
-        if (f >= WATER_SMELL_FOUL && drinkable(tile(c)))
+        if (f >= WATER_SMELL_FOUL && pooled(tile(c)))
             water.push_back({SmellKind::Water, c, std::min(1.0f, WATER_SMELL_MIN + (f - WATER_SMELL_FOUL) / WATER_SMELL_FOUL), -1});
     std::sort(water.begin(), water.end(), [](const Smell& a, const Smell& b) {
         return a.cell.y != b.cell.y ? a.cell.y < b.cell.y : a.cell.x < b.cell.x;
@@ -958,7 +958,7 @@ void World::update(float dt) {
     updateAirlocks(dt);
     blood_.update(dt);
     for (const auto& [c, f] : blood_.takeFoul()) mess_.foulWater(c, f, true);
-    mess_.update(dt, [&](Vec2i c) { return drinkable(tile(c)); });
+    mess_.update(dt, [&](Vec2i c) { return pooled(tile(c)); });
     if ((smellIn_ -= dt) <= 0.0f) {
         smellIn_ += SMELL_EVERY;
         gatherSmells();

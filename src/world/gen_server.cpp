@@ -224,6 +224,7 @@ void World::furnishServerRoom(Chunk& c, Rng& dice, const ServerRoom& r, Vec2i ke
         }
         cables_[w] = uint8_t(links | dice.range(0, CABLE_VARIANTS - 1) << 4);
     }
+    placeDispenser(c, r, keep, laid);
 }
 
 void World::standPiece(Chunk& c, Rig kind, Vec2i at, uint32_t seed) {

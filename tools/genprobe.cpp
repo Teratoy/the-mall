@@ -140,6 +140,7 @@ void save(const Chunk& c, const std::string& path, const World* w = nullptr) {
             case Tile::Vending: col = {120, 220, 200, 255}; break;
             case Tile::Rack: col = {40, 200, 80, 255}; break;
             case Tile::Console: col = {160, 230, 120, 255}; break;
+            case Tile::Dispenser: col = {110, 200, 250, 255}; break;
             default: break;
             }
             if (w && w->hasCake(c.origin() + Vec2i{x, y})) col = {250, 80, 160, 255};
