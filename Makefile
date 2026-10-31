@@ -119,7 +119,7 @@ $(LIFELOG): tools/lifelog.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
 clean:
 	rm -rf build
 
--include $(OBJ:.o=.d) $(PG_OBJ:.o=.d)
+-include $(OBJ:.o=.d)
 
 # The sim's own time on one soak seed, without the soak watching it
 # (tools/sim_profile.cpp): build/sim_profile [seed] [minutes] [crowd].
@@ -136,6 +136,7 @@ simprofile: $(SIMPROFILE)
 # from here, as data/ is looked for beside the build folder.
 PG_SRC := $(filter-out src/main.cpp src/render/% src/scenes/% src/ui/%,$(SRC))
 PG_OBJ := $(PG_SRC:src/%.cpp=build/pg/%.o)
+-include $(PG_OBJ:.o=.d)
 build/pg/%.o: src/%.cpp
 	@mkdir -p $(@D)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -pg -c $< -o $@

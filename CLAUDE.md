@@ -36,6 +36,7 @@ toolbox run -c claude-build make check        # soak vs golden output (~75 s)
 | `make feralsheet` | Draws one human beside itself feral in every pose, with cake, bottle, blood and remains, to `build/feral-sheet.png` |
 | `make genprobe` | Grows chunk interiors on every footprint (L, T, S, boxes) and checks they keep to it. `GENPROBE_ARGS="20 png"` also saves pictures to `build/genprobe-png/` |
 | `make apk` (on the host, not the toolbox) | Builds `build/TheMall-debug.apk` for the phone with the Android NDK. See `android/apk.mk` and [AI/android_plan.md](AI/android_plan.md) |
+| `make simprofile` / `make gprof` | Times the sim alone on one soak seed (`SIMPROFILE_ARGS="seed minutes crowd"`); `gprof` writes a profile to `build/gprof.txt`. See [AI/sim_speed_plan.md](AI/sim_speed_plan.md) |
 | `make shot SHOT_ARGS="..."` | Saves `build/shot.png` without a visible window. See `tools/shot.cpp` for the options (`--scene`, `--seconds`, `--seed`, `--zoom`, `--stats`, `--log`, `--reveal`, `--wide`) |
 
 **The sim is deterministic.** Same seeds, same output, byte for byte. So:
