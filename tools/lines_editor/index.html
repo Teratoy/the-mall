@@ -67,6 +67,7 @@ details.gdoc pre { white-space: pre-wrap; margin: 4px 0 0; font: inherit; }
 .draft .note { color: var(--dim); font-style: italic; }
 .draft .acts { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
 .draft .acts button { white-space: nowrap; }
+.lineacts { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
 .editor { grid-column: 1 / -1; display: grid; gap: 7px; padding: 8px; background: var(--panel); border-radius: 4px; }
 .editor .fields { display: grid; grid-template-columns: 70px 1fr; gap: 6px; align-items: center; }
 .editor input.w { font-size: 14px; text-transform: uppercase; }
@@ -383,7 +384,13 @@ function renderMain() {
 function renderItem(it, i) {
   const el = document.createElement("div");
   el.className = "item" + (i === sel ? " on" : "");
-  el.onclick = e => { if (sel !== i && !el.contains(document.activeElement)) { sel = i; if (!editing) renderMain(); } };
+  el.onclick = e => {
+    if (el.contains(document.activeElement)) return;
+    // Out of the search or chance box, so the keys work on the line again.
+    if (document.activeElement && document.activeElement.tagName === "INPUT") document.activeElement.blur();
+    if (sel !== i) { sel = i; if (!editing) renderMain(); }
+  };
+  if (it.line) el.ondblclick = e => { if (!editing) { e.preventDefault(); sel = i; editLine(it); } };
   if (it.adding || editing && editing.item === itemId(it)) { el.appendChild(renderEditor()); return el; }
   if (it.line) {
     const l = it.line, rev = reviewed(l);
@@ -396,7 +403,15 @@ function renderItem(it, i) {
       ${rows > 3 ? `<span class="flag">${rows} rows</span>` : ""}
       ${probs.map(p => `<span class="flag bad">${esc(p)}</span>`).join("")}
       ${l.comment ? `<span class="stats">${esc(l.comment)}</span>` : ""}</div>
-      ${i === sel || filt.explain ? explain(l.conds, l.tone) : ""}`;
+      ${i === sel || filt.explain ? explain(l.conds, l.tone) : ""}
+      ${i === sel ? `<div class="acts lineacts"><button data-a="edit" class="primary">Edit (Enter)</button>
+        <button data-a="review">${rev ? "Not reviewed" : "Reviewed"} (r)</button><button data-a="delete">Delete (d)</button></div>` : ""}`;
+    right.onclick = e => {
+      const a = e.target.dataset && e.target.dataset.a;
+      if (a === "edit") editLine(it);
+      if (a === "review") toggleReview(it);
+      if (a === "delete") deleteLine(it);
+    };
     if (it.draft) right.appendChild(renderDraft(it.draft, l));
     el.appendChild(right);
   } else {
@@ -568,6 +583,14 @@ function renderEditor() {
   setTimeout(() => { words.focus(); words.setSelectionRange(words.value.length, words.value.length); }, 0);
   return ed;
 }
+function editLine(it) { startEdit("edit", it.line, it.line.conds, it.line.tone, it.line.text); }
+async function toggleReview(it) {
+  await op({ op: "review", keys: [it.line.key], on: !reviewed(it.line) });
+  sel = Math.min(items.length - 1, sel + 1); renderMain();
+}
+function deleteLine(it) {
+  if (confirm("Delete this line?\n\n" + it.line.text)) op({ op: "delete", moment: it.m.name, row: it.line.row, raw: it.line.raw });
+}
 function cancel() { editing = null; load(); }
 async function save() {
   const e = editing;
@@ -636,12 +659,12 @@ document.addEventListener("keydown", e => {
   else if (k === "k" || k === "ArrowUp") go(() => { sel = Math.max(0, sel - 1); renderMain(); });
   else if (k === "J" || k === "]" || k === "PageDown") go(() => nextMoment(1));
   else if (k === "K" || k === "[" || k === "PageUp") go(() => nextMoment(-1));
-  else if ((k === "Enter" || k === "e") && it && it.line) go(() => startEdit("edit", it.line, it.line.conds, it.line.tone, it.line.text));
+  else if ((k === "Enter" || k === "e") && it && it.line) go(() => editLine(it));
   else if (k === "a") go(startAdd);
-  else if (k === "r" && it && it.line) go(async () => { await op({ op: "review", keys: [it.line.key], on: !reviewed(it.line) }); sel = Math.min(items.length - 1, sel + 1); renderMain(); });
+  else if (k === "r" && it && it.line) go(() => toggleReview(it));
   else if (k === "R") go(reviewAll);
   else if (k === "n") go(nextUnreviewed);
-  else if ((k === "d" || k === "Delete") && it && it.line) go(() => { if (confirm("Delete this line?\n\n" + it.line.text)) op({ op: "delete", moment: it.m.name, row: it.line.row, raw: it.line.raw }); });
+  else if ((k === "d" || k === "Delete") && it && it.line) go(() => deleteLine(it));
   else if (k === "y" && it && it.draft && (!it.draft.old || it.draft.found)) go(() => {
     const w = draftWords(it.draft); acceptDraft(it.draft, w ? splitWords(w) : it.line ? { conds: it.line.conds, tone: it.line.tone } : { conds: [], tone: "" });
   });
@@ -659,7 +682,7 @@ function showHelp() {
   $("help").innerHTML = `<h2>Keys</h2><div class="keys">
     <kbd>j</kbd> <kbd>k</kbd><span>next, previous line (or the arrows)</span>
     <kbd>]</kbd> <kbd>[</kbd><span>next, previous moment (or J K, Page Down/Up)</span>
-    <kbd>Enter</kbd> <kbd>e</kbd><span>edit the line. Enter saves, Esc cancels. In conditions, Tab or Enter takes the highlighted suggestion, arrows move it</span>
+    <kbd>Enter</kbd> <kbd>e</kbd><span>edit the line (or double-click it, or its Edit button). Enter saves, Esc cancels. In conditions, Tab or Enter takes the highlighted suggestion, arrows move it</span>
     <kbd>a</kbd><span>add a line to this moment</span>
     <kbd>r</kbd><span>mark the line reviewed (or not) and go to the next; editing a line marks it reviewed too</span>
     <kbd>R</kbd><span>mark the whole moment reviewed (or not)</span>
