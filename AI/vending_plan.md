@@ -132,3 +132,47 @@ out of scope: guns have no gameplay yet, and none are placed.
   loops or blocks. One new target flip (a human with no keys between
   exploring and a far cake), from the worlds drifting apart, not from vending.
 
+
+## Machines in data centres
+
+A data centre (see [server_rooms_plan.md](server_rooms_plan.md)) is a grid
+of 4-wide corridors between server rooms and washrooms. Its corridors get
+vending machines too: the night shift's snack corner.
+
+### User's decisions (2026-10-31)
+
+- **Commoner than elsewhere**: about one spot a slot, where room networks
+  and plazas get one chance in three.
+- **Even odds**, cake or bottle, and sometimes both side by side.
+- **Usually a pair** (three in four), where elsewhere it's one in four.
+- **In alcoves**: a niche one cell deep is cut into the corridor wall and
+  the machine stands in it, flush with the wall, so the corridor keeps its
+  full width.
+
+### How
+
+- `placeMachines` (`gen_vending.cpp`) keeps its per-chunk dice; a data
+  centre takes its own branch there. Nothing else in the mall rolls them,
+  so every other chunk comes out as before.
+- An alcove: the machine's cells are corridor wall, with solid wall behind
+  them three deep (where its body rises) and at both ends, so the niche
+  opens on nothing but the corridor. In front, corridor floor two deep and
+  past both ends: the chunk's own floor, never a server room's or a
+  washroom's. North, west and east walls only, as elsewhere, and 3 cells
+  from any door or airlock door.
+
+### Built (2026-10-31)
+
+- `placeMachines` has a data-centre branch: one spot a slot, a pair three
+  times in four, each kind at even odds (so a pair is a cake and a bottle
+  machine half the time). The alcove is carved just before the machine
+  stands in it. Only data centres roll anything new, so the rest of the
+  mall is laid out as before.
+- `make genprobe` counts data centres' machines (about 4.3 each over 90
+  grown) and fails one not in its alcove; `make shot SHOT_ARGS="--centre-vending"`
+  shows one.
+- Soak: only seed 2 moved (its spawn's neighbour is a data centre): 5
+  machines there, seen 8 times, none bought from. Two fewer target flips,
+  one more brief mutual block (at a washroom doorway, under 5 s). No new
+  scenario: buying from an alcove machine is the same as from any other
+  (the vend-* scenarios), and genprobe checks each can be reached.

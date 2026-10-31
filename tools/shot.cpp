@@ -16,6 +16,7 @@
 //   --server       grow the mall round the spawn until a server room
 //                  stands in it, and put the followed human inside it
 //   --washroom     the same for a data centre's washroom, the human at its doorway
+//   --centre-vending  the same for a machine in a data centre's corridor alcove
 //   --pile         put a heap of cakes and bottles down near the human at
 //                  the start, to see how piles look
 //   --smells       leave a big and a small pile of fresh feces near the
@@ -128,6 +129,27 @@ struct ShotProbe {
         }
     }
 
+    /// Grows the mall round the spawn until a data centre stands in it with
+    /// a machine facing the viewer in a corridor alcove, and puts the
+    /// followed human in the corridor a little in front of it.
+    static void centreVending(WorldScene& s) {
+        World& w = s.world_;
+        // Only a data centre's machines stand in alcoves, with wall past their ends.
+        auto inCentre = [&](const Machine& m) { return !m.side() && w.tile(m.at - m.along()) == Tile::Wall; };
+        auto found = [&] { return std::any_of(w.machines().begin(), w.machines().end(), inCentre); };
+        for (int r = 1; r <= 6 && !found(); r++)
+            for (int y = -r; y <= r; y++)
+                for (int x = -r; x <= r; x++) w.ensureGenerated(Vec2i{x, y} * CHUNK + Vec2i{CHUNK / 2, CHUNK / 2});
+        auto it = std::find_if(w.machines().begin(), w.machines().end(), inCentre);
+        if (it == w.machines().end()) return;
+        Human& h = w.human(s.follow_);
+        Vec2i to = it->at + it->facing * 3 - it->along();
+        if (w.tile(to) != Tile::Floor || w.occupant(to)) return;
+        w.moveOccupant(h.cell, to, &h);
+        h.cell = h.prev = to;
+        h.observe(w);
+    }
+
     /// Grows the mall round the spawn until a data centre stands in it, and
     /// puts the followed human in a doorway of one of its washrooms: the
     /// floor cell walled on both sides two in front of a toilet.
@@ -176,7 +198,7 @@ int main(int argc, char** argv) {
     uint64_t seed = 7;
     int zoom = 2;
     bool stats = false, log = false, reveal = false, wide = false, pile = false, smelly = false, vending = false,
-         map = false, server = false, washroom = false;
+         map = false, server = false, washroom = false, centreVending = false;
     for (int i = 2; i < argc; i++) {
         auto value = [&]() -> const char* {
             if (i + 1 >= argc) {
@@ -199,6 +221,7 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(argv[i], "--vending")) vending = true;
         else if (!std::strcmp(argv[i], "--server")) server = true;
         else if (!std::strcmp(argv[i], "--washroom")) washroom = true;
+        else if (!std::strcmp(argv[i], "--centre-vending")) centreVending = true;
         else {
             std::fprintf(stderr, "unknown option %s\n", argv[i]);
             return 1;
@@ -222,6 +245,7 @@ int main(int argc, char** argv) {
             if (vending) ShotProbe::vending(*w);
             if (server) ShotProbe::server(*w);
             if (washroom) ShotProbe::washroom(*w);
+            if (centreVending) ShotProbe::centreVending(*w);
             world = w.get();
             s = std::move(w);
         } else if (scene == "menu") {
