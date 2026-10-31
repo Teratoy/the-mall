@@ -156,6 +156,10 @@ enum class Moment {
     // Smell: starting to smell itself, smelling death it can't see, setting
     // off after that smell, walking off from a smell to eat (all to nobody).
     Stink, SmellDeath, FollowStench, PutOff,
+    // Vending machines: the first one it ever sees, buying a cake or a
+    // bottle with keys, finding it empty (all to nobody); a machine at a
+    // greeting, told or sold (to the one told).
+    FirstVending, VendCake, VendBottle, VendEmpty, TellVending, SellVending,
     Count
 };
 

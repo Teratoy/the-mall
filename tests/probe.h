@@ -4,6 +4,8 @@
 #include <optional>
 #include "human/human.h"
 #include "world/world.h"
+#include <cstdio>
+#include <cstdlib>
 #include <deque>
 
 struct SoakProbe {
@@ -201,6 +203,28 @@ struct SoakProbe {
     static void setWary(Human& h, float darts, float slam) {
         h.wary_.darts = darts;
         h.wary_.slam = slam;
+    }
+    /// A vending machine of the kind with its first cell at the cell,
+    /// facing away from a short wall put up behind it, holding stock items.
+    static const Machine& standMachine(World& w, Vend kind, Vec2i at, Vec2i facing, int stock) {
+        Machine shape{kind, at, facing};
+        for (int i = -1; i <= 2; i++) w.setTile(at + shape.along() * i - facing, Tile::Wall);
+        if (!w.standMachine(*w.chunkAt(World::slotOf(at)), kind, at, facing, stock)) {
+            std::fprintf(stderr, "probe: no floor for a machine at %d,%d\n", at.x, at.y);
+            std::abort();
+        }
+        return w.machines_.back();
+    }
+    /// h knows the machine and what is in it, as if it had seen it.
+    static void knowMachine(Human& h, const Machine& m) {
+        h.memory.machines[m.at] = {m.kind, m.stock};
+        h.memory.see(m.at, Tile::Vending);
+        h.memory.see(m.at + m.along(), Tile::Vending);
+    }
+    /// Standing in front of a machine of the kind it knows, h starts working it.
+    static bool startVending(World& w, Human& h, Vend kind) {
+        h.vend_.kind = kind;
+        return h.startVending(w);
     }
     /// Given up on a way out, at home on home.
     static void settle(Human& h, Vec2i home) {

@@ -135,6 +135,8 @@ void Human::move(World& world, Vec2i next) {
     if (goal == Goal::CheckDoor && !lockedDoorBeside(target_)) rethink_ = true;
     if (goal == Goal::Explore && !isFrontier(target_) && !openDoorBeside(target_)) rethink_ = true;
     if (goal == Goal::FetchCake && !cakeInReach(target_)) rethink_ = true;
+    // Seen empty, or its keys gone, the machine is no use.
+    if (goal == Goal::Vend && (!canBuy() || memory.machines[vend_.at].stock <= 0)) rethink_ = true;
     // Making for a voice with a key, a gate seen near it is worth going to.
     if (goal == Goal::Rescue && keys > 0 && rescue_.rescuee >= 0) {
         auto it = rescue_.cries.find(rescue_.rescuee);
@@ -196,6 +198,9 @@ void Human::arrive(World& world) {
         return choose(world);
     case Goal::Stash:
         if (stashHere()) return;
+        return choose(world);
+    case Goal::Vend:
+        if (startVending(world)) return;
         return choose(world);
     case Goal::Relieve:
         if (seekRelief(world)) return;

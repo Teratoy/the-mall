@@ -8,8 +8,11 @@
 //   --zoom Z       world zoom level 0-3 (2)
 //   --stats        open the followed human's stats
 //   --log          open the followed human's log
+//   --map          open the followed human's map
 //   --reveal       show the whole world, not just what the human knows
 //   --wide         a wide window, so the world takes the PC layout
+//   --vending      grow the mall round the spawn until a vending machine
+//                  stands in it, and put the followed human in front of it
 //   --pile         put a heap of cakes and bottles down near the human at
 //                  the start, to see how piles look
 //   --smells       leave a big and a small pile of fresh feces near the
@@ -31,15 +34,17 @@
 #include <raylib.h>
 #include "human/human.h"
 #include <rlgl.h>
+#include <algorithm>
 #include <string>
 
 /// Sets up the world scene the way the options ask; a friend of WorldScene.
 struct ShotProbe {
     static void neverRecord(WorldScene& s) { s.recorded_ = true; }
-    static void set(WorldScene& s, int zoom, bool stats, bool log, bool reveal) {
+    static void set(WorldScene& s, int zoom, bool stats, bool log, bool reveal, bool map) {
         s.zoom_ = zoom;
         s.statsOpen_ = stats;
         s.logOpen_ = log && !stats;
+        s.mapOpen_ = map && !stats && !log;
         s.reveal_ = reveal;
     }
     /// Fresh feces, a full pile and a small one, a few cells either side of
@@ -70,12 +75,38 @@ struct ShotProbe {
                     return;
                 }
     }
+    /// Grows slots round the spawn, nearest first, until one holds a
+    /// machine, then moves the followed human two cells out from one, to its side,
+    /// facing the viewer if any does.
+    static void vending(WorldScene& s) {
+        World& w = s.world_;
+        auto facingUs = [&] { return std::any_of(w.machines().begin(), w.machines().end(), [](const Machine& m) { return !m.side(); }); };
+        for (int r = 1; r <= 6 && !facingUs(); r++)
+            for (int y = -r; y <= r; y++)
+                for (int x = -r; x <= r; x++) w.ensureGenerated(Vec2i{x, y} * CHUNK + Vec2i{CHUNK / 2, CHUNK / 2});
+        if (w.machines().empty()) return;
+        // One facing the viewer, if any, so its stock shows.
+        const Machine* pick = &w.machines().front();
+        for (const Machine& m : w.machines())
+            if (!m.side()) {
+                pick = &m;
+                break;
+            }
+        const Machine& m = *pick;
+        Human& h = w.human(s.follow_);
+        Vec2i to = m.at + m.facing * 2 - m.along() * 2;
+        if (w.tile(to) != Tile::Floor || w.occupant(to)) return;
+        w.moveOccupant(h.cell, to, &h);
+        h.cell = h.prev = to;
+        h.observe(w);
+    }
 };
 
 int main(int argc, char** argv) {
     if (argc < 2 || argv[1][0] == '-') {
         std::fprintf(stderr, "usage: %s out.png [--scene world|menu|create|obituary] [--seconds S] [--seed N] "
-                             "[--zoom 0-3] [--stats] [--log] [--reveal] [--wide] [--pile] [--smells]\n", argv[0]);
+                             "[--zoom 0-3] [--stats] [--log] [--map] [--reveal] [--wide] [--pile] [--smells] "
+                             "[--vending]\n", argv[0]);
         return 1;
     }
     const char* out = argv[1];
@@ -83,7 +114,8 @@ int main(int argc, char** argv) {
     float seconds = 8.0f;
     uint64_t seed = 7;
     int zoom = 2;
-    bool stats = false, log = false, reveal = false, wide = false, pile = false, smelly = false;
+    bool stats = false, log = false, reveal = false, wide = false, pile = false, smelly = false, vending = false,
+         map = false;
     for (int i = 2; i < argc; i++) {
         auto value = [&]() -> const char* {
             if (i + 1 >= argc) {
@@ -98,10 +130,12 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(argv[i], "--zoom")) zoom = std::atoi(value());
         else if (!std::strcmp(argv[i], "--stats")) stats = true;
         else if (!std::strcmp(argv[i], "--log")) log = true;
+        else if (!std::strcmp(argv[i], "--map")) map = true;
         else if (!std::strcmp(argv[i], "--reveal")) reveal = true;
         else if (!std::strcmp(argv[i], "--wide")) wide = true;
         else if (!std::strcmp(argv[i], "--pile")) pile = true;
         else if (!std::strcmp(argv[i], "--smells")) smelly = true;
+        else if (!std::strcmp(argv[i], "--vending")) vending = true;
         else {
             std::fprintf(stderr, "unknown option %s\n", argv[i]);
             return 1;
@@ -122,6 +156,7 @@ int main(int argc, char** argv) {
             ShotProbe::neverRecord(*w);
             if (pile) ShotProbe::pile(*w);
             if (smelly) ShotProbe::smells(*w);
+            if (vending) ShotProbe::vending(*w);
             world = w.get();
             s = std::move(w);
         } else if (scene == "menu") {
@@ -136,7 +171,7 @@ int main(int argc, char** argv) {
         if (s) {
             canvas.fit(s->canBeWide());
             for (int f = 0; f < int(seconds * 60.0f); f++) s->update(1.0f / 60.0f, canvas);
-            if (world) ShotProbe::set(*world, zoom, stats, log, reveal);
+            if (world) ShotProbe::set(*world, zoom, stats, log, reveal, map);
             canvas.begin();
             s->draw(canvas);
             canvas.end();

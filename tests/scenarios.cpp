@@ -1540,6 +1540,85 @@ const std::vector<Scenario> SCENARIOS = {
          return Checks{loggedBy(dying, "DRANK, AFTER NEARLY DYING OF THIRST"), loggedBy(dry, "DRANK WATER"),
                        loggedBy(dry, "DRANK, AFTER NEARLY DYING OF THIRST", false)};
      }},
+    {"vend-cake", "hungry with three keys and no cake about, it buys one from a machine and eats it",
+     seedWhere(plain, 14000), [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         P::standMachine(s.world, Vend::Cake, h.cell + Vec2i{4, -3}, {0, 1}, 3);
+         h.hunger = 0.6f;
+         h.thirst = h.tiredness = 0.1f;
+         h.keys = MACHINE_PRICE;
+         s.run(30);
+         return Checks{loggedBy(h, "PAID 3 KEYS FOR A CAKE FROM A MACHINE"), loggedBy(h, "ATE A CAKE"),
+                       {"its keys spent", [&h](const Stage&) { return h.keys == 0; }}};
+     }},
+    {"vend-bottle", "thirsty with no bottle and three keys, it buys an empty one from a machine side on",
+     seedWhere(plain, 15000), [](Stage& s) {
+         Human& h = s.first();
+         P::standMachine(s.world, Vend::Bottle, h.cell + Vec2i{5, -1}, {-1, 0}, 2);
+         h.bottles.clear();
+         P::setDrankYet(h);
+         h.thirst = 0.6f;
+         h.hunger = h.tiredness = 0.1f;
+         h.keys = MACHINE_PRICE;
+         s.run(30);
+         return Checks{loggedBy(h, "PAID 3 KEYS FOR A BOTTLE FROM A MACHINE"),
+                       {"a bottle in hand", [&h](const Stage&) { return h.bottles.size() == 1; }}};
+     }},
+    {"vend-empty", "two humans work one machine with one cake left at once: one gets it, one finds it empty",
+     seedWhere(plain, 18000), [](Stage& s) {
+         Human& a = s.first();
+         P::clearChunk(s.world, a.cell);
+         const Machine& m = P::standMachine(s.world, Vend::Cake, a.cell + Vec2i{4, -3}, {0, 1}, 1);
+         Human& b = s.add(seedWhere(plain, 19000), 3);
+         for (Human* h : {&a, &b}) calm(*h);
+         s.run(8);
+         P::place(s.world, a, m.at + m.facing);
+         P::place(s.world, b, m.at + m.along() + m.facing);
+         for (Human* h : {&a, &b}) {
+             h->keys = MACHINE_PRICE;
+             P::knowMachine(*h, m);
+         }
+         bool started = P::startVending(s.world, a, Vend::Cake) && P::startVending(s.world, b, Vend::Cake);
+         s.run(5);
+         return Checks{{"both started", [started](const Stage&) { return started; }},
+                       logged({"PAID 3 KEYS FOR A CAKE FROM A MACHINE"}), logged({"THE MACHINE WAS EMPTY"})};
+     }},
+    {"sell-vending", "a grasping stranger sells word of a bottle machine to one with no bottle and cakes to spare",
+     seedWhere([](const Traits& t) { return t.greedy >= 0.55f && t.brave < 0.35f; }, 20000), [](Stage& s) {
+         Human& seller = s.first();
+         P::clearChunk(s.world, seller.cell);
+         const Machine& m = P::standMachine(s.world, Vend::Bottle, seller.cell + Vec2i{0, -24}, {0, 1}, 4);
+         Human& buyer = s.add(seedWhere([](const Traits& t) { return t.greedy < 0.6f && t.sociable >= 0.4f; }, 21000), 3);
+         P::knowChunk(s.world, seller);
+         P::knowMachine(seller, m);
+         calm(seller);
+         buyer.hunger = buyer.thirst = buyer.tiredness = 0.1f;
+         buyer.bottles.clear();
+         P::setDrankYet(buyer);
+         buyer.keys = MACHINE_PRICE;
+         buyer.cakes = 3;
+         s.run(60);
+         return Checks{loggedBy(seller, "TOLD @ WHERE A MACHINE IS"), loggedBy(buyer, "PAID @ A CAKE FOR NEWS")};
+     }},
+    {"tell-vending", "a friend tells a hungry friend with keys of a machine out of sight, who goes and buys",
+     seedWhere(kindly, 16000), [](Stage& s) {
+         Human& teller = s.first();
+         P::clearChunk(s.world, teller.cell);
+         const Machine& m = P::standMachine(s.world, Vend::Cake, teller.cell + Vec2i{0, -24}, {0, 1}, 4);
+         Human& hungry = s.add(seedWhere(kindly, 17000), 3);
+         P::knowChunk(s.world, teller);
+         P::knowMachine(teller, m);
+         P::setTrust(teller, hungry, 0.6f);
+         P::setTrust(hungry, teller, 0.6f);
+         calm(teller);
+         hungry.hunger = 0.6f;
+         hungry.thirst = hungry.tiredness = 0.1f;
+         hungry.keys = MACHINE_PRICE;
+         s.run(90);
+         return Checks{loggedBy(teller, "TOLD @ WHERE A MACHINE IS"), loggedBy(hungry, "@ TOLD ME WHERE A MACHINE IS"),
+                       loggedBy(hungry, "PAID 3 KEYS FOR A CAKE FROM A MACHINE")};
+     }},
     {"dirty-wash", "turning dirty, the modest wash it off and the shameless don't", seedWhere(modest, 12500),
      [](Stage& s) {
          return washOrNot(s, [](Human& h) { P::setGrime(h, 0.97f); }, [](const Human& prim, const Human& slob) {

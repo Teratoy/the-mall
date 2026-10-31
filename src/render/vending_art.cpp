@@ -167,14 +167,16 @@ char inPicture(const char* const* pic, int w, int h, int x, int y, int gx, int g
     return dx >= 0 && dy >= 0 && dx < w && dy < h ? pic[dy][dx] : 0;
 }
 
-/// Draws a glyph's pixels from px() with its bottom-left at x, y, dimmed unless lit.
-template <typename F> void drawGlyph(int x, int y, int w, bool lit, F px) {
+/// Draws a glyph's pixels from px() with its bottom-left at x, y, dimmed
+/// unless lit, and mirrored left to right when flipped.
+template <typename F> void drawGlyph(int x, int y, int w, bool lit, F px, bool flip = false) {
     float k = lit ? 1.0f : MEMORY_DIM;
     for (int gy = 0; gy < VENDING_H; gy++)
         for (int gx = 0; gx < w; gx++) {
             Rgba c = px(gx, gy);
             if (!c.solid()) continue;
-            DrawPixel(x + gx, y - VENDING_H + gy, {uint8_t(c.r * k), uint8_t(c.g * k), uint8_t(c.b * k), c.a});
+            DrawPixel(x + (flip ? w - 1 - gx : gx), y - VENDING_H + gy,
+                      {uint8_t(c.r * k), uint8_t(c.g * k), uint8_t(c.b * k), c.a});
         }
 }
 
@@ -219,7 +221,7 @@ void drawVendingMachine(Vend kind, int x, int y, uint8_t stock, bool lit, float 
     drawGlyph(x, y, VENDING_W, lit, [&](int gx, int gy) { return vendingPixel(kind, gx, gy, stock, blink); });
 }
 
-void drawVendingMachineSide(Vend kind, int x, int y, bool lit, float seconds) {
+void drawVendingMachineSide(Vend kind, int x, int y, bool lit, float seconds, bool flip) {
     int blink = blinkAt(lit, seconds);
-    drawGlyph(x, y, VENDING_DEPTH, lit, [&](int gx, int gy) { return vendingSidePixel(kind, gx, gy, blink); });
+    drawGlyph(x, y, VENDING_DEPTH, lit, [&](int gx, int gy) { return vendingSidePixel(kind, gx, gy, blink); }, flip);
 }

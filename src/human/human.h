@@ -12,6 +12,7 @@
 #include "human/topic.h"
 #include "human/traits.h"
 #include "human/wound.h"
+#include "world/vending.h"
 #include <deque>
 #include <functional>
 #include <initializer_list>
@@ -88,12 +89,12 @@ class Human {
 public:
     /// Waking is the first thing every human does: lying where it came to,
     /// knowing nothing, until it sits up (Sitting) and looks round.
-    enum class State { Waking, Idle, Sitting, Rising, Walking, Greeting, Eating, Drinking, Relieving, Punching, Giving, Washing, Looting, Feeding, Sleeping, Sipping, Filling, Pouring, Stashing, Dead };
+    enum class State { Waking, Idle, Sitting, Rising, Walking, Greeting, Eating, Drinking, Relieving, Punching, Giving, Washing, Looting, Feeding, Sleeping, Sipping, Filling, Pouring, Stashing, Vending, Dead };
     /// Why the human is walking: what it does on arrival.
-    enum class Goal { Explore, FetchKey, OpenDoor, PassDoor, Wander, Meet, Follow, Company, FetchCake, Drink, Relieve, Fight, Flee, Share, CheckDoor, Wash, Avoid, Escort, Escorted, Track, GiveWay, Loot, Feed, Sleep, Rob, Watch, Rescue, Fill, Ask, Pick, Stash };
+    enum class Goal { Explore, FetchKey, OpenDoor, PassDoor, Wander, Meet, Follow, Company, FetchCake, Drink, Relieve, Fight, Flee, Share, CheckDoor, Wash, Avoid, Escort, Escorted, Track, GiveWay, Loot, Feed, Sleep, Rob, Watch, Rescue, Fill, Ask, Pick, Stash, Vend };
     /// What the human is doing, as far as hunger, thirst and tiredness go:
     /// each costs its own of all three.
-    enum class Action { Rest, Sit, Walk, Run, Greet, Eat, Drink, Relieve, Punch, Give, Wash, Loot, Feed, Sleep, Watch, Fill, Pour, Stash, Count };
+    enum class Action { Rest, Sit, Walk, Run, Greet, Eat, Drink, Relieve, Punch, Give, Wash, Loot, Feed, Sleep, Watch, Fill, Pour, Stash, Vend, Count };
     /// What a human may set out to do once nothing presses. How much it
     /// wants each, by its traits and hunger, is weighed in choose(), which
     /// tries them from the most wanted down; the table of wants is in
@@ -334,7 +335,7 @@ public:
     /// and what the teller thinks of them, a warning off a foe or a pointer
     /// to an ally, which the listener believes as far as it trusts them.
     struct Tell {
-        enum class Kind { Cake, Key, Trap, Route, People, Way, Water, ShutIn, Stash };
+        enum class Kind { Cake, Key, Trap, Route, People, Way, Water, ShutIn, Stash, Machine };
         Tell(Kind kind, Vec2i cell, TrapKind trap = TrapKind::Spikes) : kind(kind), cell(cell), trap(trap) {}
         Kind kind;
         Vec2i cell;
@@ -1423,6 +1424,40 @@ private:
     /// The way to the nearest pile it remembers with what it wants: cakes
     /// (food), water (water); its own stashes only as wantsFromPile allows.
     std::optional<std::vector<Vec2i>> pilePath(const World& world, bool food, bool water) const;
+    /// Buying cakes and bottles from vending machines for keys
+    /// (human_vending.cpp).
+    struct Vending {
+        /// The machine it is going to or working, by its first cell, and
+        /// what it wants out of it.
+        Vec2i at;
+        Vend kind = Vend::Cake;
+        /// Has seen a machine before: the first is remarked on.
+        bool seen = false;
+    };
+    Vending vend_;
+    /// Keys enough in hand to buy from a machine.
+    bool canBuy() const { return keys >= MACHINE_PRICE; }
+    /// The way to the front of the nearest machine of the kind it knows of
+    /// with something left in it, as it last saw it. Nothing if none.
+    std::optional<std::vector<Vec2i>> machinePath(const World& world, Vend kind) const;
+    /// Hungry with keys enough, the way to a cake machine when it would
+    /// sooner buy a cake than go for whatever food it knows nearest steps
+    /// off: when that is farther, or a bit nearer while it starves. The
+    /// curious keep their keys for doors unless starving or with nothing else.
+    std::optional<std::vector<Vec2i>> buyCakePath(const World& world, size_t nearest) const;
+    /// Greedy, with keys enough and room in its pockets: buys cakes to hoard.
+    bool hoardBuys() const;
+    /// With no bottle and needing one, keys enough: off to a bottle machine.
+    bool buyBottle(World& world);
+    /// Walks the path to a machine of the kind, or works it if already there.
+    bool goBuy(World& world, const std::vector<Vec2i>& path, Vend kind);
+    /// In front of a machine of the kind it wants, with something in it as
+    /// far as it knows and keys enough: feeds them in.
+    bool startVending(World& world);
+    /// Done: pays and takes what dropped, or finds the machine empty.
+    void takeVended(World& world);
+    /// Sees a machine at the cell, one of its two: remembers what is in it.
+    bool seeMachine(const Machine& m, Vec2i c);
     /// Sleep, robbing sleepers and keeping watch (human_sleep.cpp).
     struct Sleep {
         /// The sleeper it is robbing, or going to; -1 none.

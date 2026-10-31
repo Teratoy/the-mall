@@ -30,6 +30,7 @@ constexpr Color CAKE = {236, 150, 176, 255};
 constexpr Color TRAP = {230, 60, 60, 255};
 constexpr Color BODY = {200, 200, 190, 255};
 constexpr Color TOILET = {220, 236, 240, 255};
+constexpr Color MACHINE = {120, 220, 200, 255};
 /// What it only has on someone's word: places dimmed to this share of
 /// their colour, with question marks over them and beside told symbols.
 constexpr float HEARD_SHADE = 0.45f;
@@ -50,11 +51,12 @@ constexpr Glyph CAKE_GLYPH = {"..#..", ".....", "#####", "#####", "#####"};
 constexpr Glyph TRAP_GLYPH = {"#...#", ".#.#.", "..#..", ".#.#.", "#...#"};
 constexpr Glyph BODY_GLYPH = {"..#..", "#####", "..#..", "..#..", "..#.."};
 constexpr Glyph TOILET_GLYPH = {"##...", "##...", "#####", ".###.", "..#.."};
+constexpr Glyph MACHINE_GLYPH = {"#####", "#...#", "#...#", "#####", "##.##"};
 constexpr Glyph QUESTION_GLYPH = {".###.", "...#.", "..##.", ".....", "..#.."};
 
 /// The legend: a symbol or swatch, a gap, its name; items ITEM_GAP apart,
 /// on as many rows as they need.
-constexpr int LEGEND_ROWS = 3, LEGEND_PAD = 3, LEGEND_ICON_GAP = 2, ITEM_GAP = 7;
+constexpr int LEGEND_PAD = 3, LEGEND_ICON_GAP = 2, ITEM_GAP = 7;
 /// The YOU symbol's centre blinks this often.
 constexpr float BLINK = 0.4f;
 
@@ -68,7 +70,8 @@ Color tileColor(Tile t) {
     case Tile::Water: return WATER;
     case Tile::Basin: return BASIN;
     case Tile::Table: return TABLE;
-    case Tile::Statue: return STATUE;
+    case Tile::Statue:
+    case Tile::Vending: return STATUE;
     case Tile::Void: break;
     }
     return BLANK;
@@ -133,36 +136,41 @@ struct LegendItem {
 constexpr LegendItem LEGEND[] = {
     {"YOU", &YOU_GLYPH, YOU},     {"KEY", &KEY_GLYPH, KEY},       {"CAKE", &CAKE_GLYPH, CAKE},
     {"TRAP", &TRAP_GLYPH, TRAP},  {"BODY", &BODY_GLYPH, BODY},    {"TOILET", &TOILET_GLYPH, TOILET},
+    {"MACHINE", &MACHINE_GLYPH, MACHINE},
     {"BLOOD", nullptr, BLOOD},    {"MESS", nullptr, MESS},        {"LOCKED", nullptr, DOOR_LOCKED},
     {"WATER", nullptr, WATER},    {"HEARD OF", &QUESTION_GLYPH, QUESTION},
 };
 
-// Items flow left to right and wrap onto the next row.
-void drawLegend(Rectangle area) {
+// Items flow left to right and wrap onto the next row. Laid out without
+// drawing, it gives how many rows they take.
+int layLegend(Rectangle area, bool draw) {
     int left = int(area.x) + LEGEND_PAD, right = int(area.x + area.width) - LEGEND_PAD;
-    int x = left, y = int(area.y + area.height) - mapLegendHeight() + LEGEND_PAD;
-    DrawRectangle(int(area.x), y - LEGEND_PAD, int(area.width), 1, ui::GROUND);
+    int x = left, y = draw ? int(area.y + area.height) - mapLegendHeight(area.width) + LEGEND_PAD : 0, rows = 1;
+    if (draw) DrawRectangle(int(area.x), y - LEGEND_PAD, int(area.width), 1, ui::GROUND);
     for (const LegendItem& item : LEGEND) {
         int w = GLYPH + LEGEND_ICON_GAP + ui::textWidth(item.label);
-        if (x + w > right && x > left) x = left, y += ui::ROW;
-        if (item.glyph)
-            drawGlyph(*item.glyph, x, y + 2, item.color);
-        else
-            DrawRectangle(x, y + 2, GLYPH, GLYPH, item.color);
-        ui::text(item.label, x + GLYPH + LEGEND_ICON_GAP, y, ui::DIM);
+        if (x + w > right && x > left) x = left, y += ui::ROW, rows++;
+        if (draw) {
+            if (item.glyph)
+                drawGlyph(*item.glyph, x, y + 2, item.color);
+            else
+                DrawRectangle(x, y + 2, GLYPH, GLYPH, item.color);
+            ui::text(item.label, x + GLYPH + LEGEND_ICON_GAP, y, ui::DIM);
+        }
         x += w + ITEM_GAP;
     }
+    return rows;
 }
 
 } // namespace
 
-int mapLegendHeight() { return LEGEND_ROWS * ui::ROW + 2 * LEGEND_PAD; }
+int mapLegendHeight(float width) { return layLegend({0, 0, width, 0}, false) * ui::ROW + 2 * LEGEND_PAD; }
 
 // Tiles go down as runs of one colour along each row, so a big map stays
 // a few thousand rectangles; then tints, then symbols on top, the viewer last.
 void drawMap(const World& world, const Human& viewer, Rectangle area, int cellPx, Vector2 centre, float time) {
     DrawRectangleRec(area, BACKDROP);
-    Frame f{{area.x, area.y, area.width, area.height - float(mapLegendHeight())}, cellPx, centre};
+    Frame f{{area.x, area.y, area.width, area.height - float(mapLegendHeight(area.width))}, cellPx, centre};
     const Memory& memory = viewer.memory;
     int cols = int(f.map.width) / cellPx + 2, rows = int(f.map.height) / cellPx + 2;
     int x0 = int(std::floor(centre.x)) - cols / 2 - 1, y0 = int(std::floor(centre.y)) - rows / 2 - 1;
@@ -229,11 +237,12 @@ void drawMap(const World& world, const Human& viewer, Rectangle area, int cellPx
     for (Vec2i c : viewer.bodyCells()) f.glyph(c, BODY_GLYPH, BODY);
     for (Vec2i c : memory.keys) f.item(c, KEY_GLYPH, KEY, told(c));
     for (Vec2i c : memory.cakes) f.item(c, CAKE_GLYPH, CAKE, told(c));
+    for (const auto& [c, seen] : memory.machines) f.item(c, MACHINE_GLYPH, MACHINE, told(c));
     f.glyph(viewer.cell, YOU_GLYPH, YOU);
     if (std::fmod(time, 2 * BLINK) < BLINK) {
         Vector2 p = f.at(viewer.cell);
         int x = int(p.x) + cellPx / 2 - 1, y = int(p.y) + cellPx / 2 - 1;
         if (x >= clipL && y >= clipT && x + 3 <= clipR && y + 3 <= clipB) DrawRectangle(x, y, 3, 3, YOU);
     }
-    drawLegend(area);
+    layLegend(area, true);
 }

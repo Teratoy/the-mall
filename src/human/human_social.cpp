@@ -198,6 +198,9 @@ void Human::exchange(World& world, Human& o) {
     askAboutStash(o);
     if (!news) return;
     if (news->kind == Tell::Kind::ShutIn) news->route = wayToShutIn(world, *news);
+    // A machine comes with the way to its front, as water does.
+    if (const Machine* m = news->kind == Tell::Kind::Machine ? world.machine(news->cell) : nullptr)
+        if (auto p = search(world, [&](Vec2i c) { return m->usedFrom(c); })) news->route = *p;
     news->sold = forPay;
     tell(o, *news);
 }
@@ -230,6 +233,19 @@ std::optional<Human::Tell> Human::newsFor(const Human& o, bool& forPay) const {
             return Tell{Tell::Kind::Cake, *c};
     }
     bool selling = traits.greedy >= CUNNING_GREEDY && !friendly;
+    // A machine to buy from, for one with the keys and the need: free to
+    // friends, sold by the grasping to those with a cake to spare, and kept
+    // from rivals by the cunning.
+    if (o.canBuy() && (!selling || o.cakes > o.spareFrom()) && !(cunning() && !friendly)) {
+        std::vector<Vec2i> machines;
+        for (const auto& [at, seen] : memory.machines)
+            if (seen.stock > 0 && (seen.kind == Vend::Cake ? o.hungry() && o.cakes == 0 : o.needsBottle()))
+                machines.push_back(at);
+        if (auto c = nearest(machines, [&](Vec2i c) { return !o.memory.machines.count(c); })) {
+            forPay = selling;
+            return Tell{Tell::Kind::Machine, *c};
+        }
+    }
     if (!selling || o.cakes > o.spareFrom()) {
         std::vector<Vec2i> traps;
         for (const auto& [c, kind] : memory.traps) traps.push_back(c);
@@ -449,6 +465,7 @@ void Human::tell(Human& o, const Tell& t) {
         s.moment = t.lie ? Moment::LieStash : t.sold ? Moment::SellStash : Moment::TellStash;
         s.about = t.owner;
         break;
+    case Tell::Kind::Machine: s.moment = t.sold ? Moment::SellVending : Moment::TellVending; break;
     case Tell::Kind::People: {
         auto w = std::find_if(t.people.begin(), t.people.end(),
                               [&](const Tell::Word& w) { return w.opinion && w.about != o.id; });
@@ -544,6 +561,21 @@ void Human::deliver(Human& o, const Tell& t) {
         }
         if (o.memory.tile(t.cell) == Tile::Void) o.memory.hear(t.cell, Tile::Floor);
         break;
+    case Tell::Kind::Machine: {
+        // What it sells and what the teller last saw in it, with the way
+        // there and the cells round it.
+        auto it = memory.machines.find(t.cell);
+        if (it == memory.machines.end() || o.memory.machines.count(t.cell)) break;
+        learnRoute();
+        news = true;
+        o.memory.machines[t.cell] = it->second;
+        o.memory.toldBy[t.cell] = id;
+        for (Vec2i d : DIRS8)
+            for (Vec2i m : {t.cell, t.cell + d})
+                if (Tile tile = memory.tile(m); tile != Tile::Void && o.memory.tile(m) == Tile::Void)
+                    o.memory.hear(m, tile);
+        break;
+    }
     case Tell::Kind::Way: {
         // Believed as far as the teller is trusted, and as sure as it sounds.
         float w = std::clamp(o.trust(id) + WAY_STRANGER, 0.0f, 1.0f);
@@ -576,8 +608,8 @@ void Human::deliver(Human& o, const Tell& t) {
     // Word of people is in the listener's log a piece at a time, above.
     static const char* const WHAT[] = {"WHERE A CAKE IS", "WHERE A KEY IS", "WHERE A TRAP IS", "THE WAY TO A DOOR",
                                        "ABOUT OTHERS", "THE WAY OUT", "THE WAY TO WATER", "SOMEONE IS SHUT IN",
-                                       "WHERE A STASH IS"};
-    static_assert(std::size(WHAT) == size_t(Tell::Kind::Stash) + 1);
+                                       "WHERE A STASH IS", "WHERE A MACHINE IS"};
+    static_assert(std::size(WHAT) == size_t(Tell::Kind::Machine) + 1);
     std::string what = WHAT[size_t(t.kind)];
     if (t.kind != Tell::Kind::People) o.note("@ TOLD ME " + what, id);
     std::string over = std::string(" OVER ") + trapWord(t.trap);

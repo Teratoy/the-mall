@@ -126,7 +126,7 @@ TableMaterial randomMaterial(Rng& rng) { return TableMaterial(rng.weighted(TABLE
 
 } // namespace
 
-World::World(uint64_t seed) : rng_(seed) {}
+World::World(uint64_t seed) : rng_(seed), seed_(seed) {}
 
 World::~World() = default;
 
@@ -363,6 +363,8 @@ void World::generate(Vec2i slot, Vec2i entry) {
         cakes_.insert(plate);
     }
     placeSpikes(c, slams);
+    // Last but for the bottle, so no key or cake lies where one stands.
+    placeMachines(c, slams);
     // Last, so its bottle lies clear of every table and trap.
     if (waker) layBottle(*waker);
 }
@@ -850,6 +852,22 @@ void World::updateTraps(float dt) {
     });
 }
 
+void World::updateMachines(float dt) {
+    for (Machine& m : machines_) {
+        if (m.stock >= MACHINE_SLOTS || (m.restock -= dt) > 0.0f) continue;
+        m.stock++;
+        m.restock = MACHINE_DAY;
+    }
+}
+
+// The bottom of what it holds goes first, so the rest stays shelved from the top.
+bool World::vend(Vec2i cell) {
+    auto it = machineCells_.find(cell);
+    if (it == machineCells_.end() || machines_[size_t(it->second)].stock <= 0) return false;
+    machines_[size_t(it->second)].stock--;
+    return true;
+}
+
 // Humans in the order they came, feces in the order they were left, then
 // water by its cell, so the same world gathers them the same way.
 void World::gatherSmells() {
@@ -878,6 +896,7 @@ void World::update(float dt) {
     time_ += dt;
     for (auto& c : chunks_) c->simulate(dt);
     updateTraps(dt);
+    updateMachines(dt);
     blood_.update(dt);
     for (const auto& [c, f] : blood_.takeFoul()) mess_.foulWater(c, f, true);
     mess_.update(dt, [&](Vec2i c) { return drinkable(tile(c)); });

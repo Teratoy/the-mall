@@ -30,10 +30,10 @@
 using P = SoakProbe;
 
 static const char* GOAL[] = {"Explore", "FetchKey", "OpenDoor", "PassDoor", "Wander", "Meet", "Follow", "Company", "FetchCake", "Drink", "Relieve", "Fight",
-                             "Flee", "Share", "CheckDoor", "Wash", "Avoid", "Escort", "Escorted", "Track", "GiveWay", "Loot", "Feed", "Sleep", "Rob", "Watch", "Rescue", "Fill", "Ask", "Pick", "Stash"};
-static const char* STATE[] = {"Waking", "Idle", "Sitting", "Rising", "Walking", "Greeting", "Eating", "Drinking", "Relieving", "Punching", "Giving", "Washing", "Looting", "Feeding", "Sleeping", "Sipping", "Filling", "Pouring", "Stashing", "Dead"};
+                             "Flee", "Share", "CheckDoor", "Wash", "Avoid", "Escort", "Escorted", "Track", "GiveWay", "Loot", "Feed", "Sleep", "Rob", "Watch", "Rescue", "Fill", "Ask", "Pick", "Stash", "Vend"};
+static const char* STATE[] = {"Waking", "Idle", "Sitting", "Rising", "Walking", "Greeting", "Eating", "Drinking", "Relieving", "Punching", "Giving", "Washing", "Looting", "Feeding", "Sleeping", "Sipping", "Filling", "Pouring", "Stashing", "Vending", "Dead"};
 // A goal or state added to Human needs its name here too.
-static_assert(std::size(GOAL) == size_t(Human::Goal::Stash) + 1);
+static_assert(std::size(GOAL) == size_t(Human::Goal::Vend) + 1);
 static_assert(std::size(STATE) == size_t(Human::State::Dead) + 1);
 
 struct Track {
@@ -248,7 +248,7 @@ int main(int argc, char** argv) {
                            h.state != Human::State::Washing && h.state != Human::State::Drinking && h.state != Human::State::Relieving &&
                            h.state != Human::State::Looting && h.state != Human::State::Sipping &&
                            h.state != Human::State::Filling && h.state != Human::State::Pouring &&
-                           h.state != Human::State::Stashing &&
+                           h.state != Human::State::Stashing && h.state != Human::State::Vending &&
                            h.state != Human::State::Feeding && h.state != Human::State::Sleeping) {
                     k.stillFor += dt;
                 } else {
@@ -329,6 +329,7 @@ int main(int argc, char** argv) {
         // Smell: started to smell, smelt death unseen, followed it, walked off to eat.
         int stank = 0, smeltDeath = 0, followedStench = 0, putOff = 0;
         int pisses = 0, shits = 0, stepped = 0, filthy = 0, washedShit = 0, foulSick = 0, foulGulps = 0, toiletUses = 0, toiletMisses = 0, toiletWaits = 0;
+        int vendFound = 0, vendCakes = 0, vendBottles = 0, vendEmpty = 0, vendTold = 0;
         // Accidents (bursting, fright), going seen, going in water seen, and mocking.
         // Guarded water: let drink free, for a cake, turned away, paid, cheated.
         // Water tips: told, over spikes, asked of the group.
@@ -410,6 +411,11 @@ int main(int argc, char** argv) {
                 toiletUses += e.what == "USED A TOILET" ? e.times : 0;
                 toiletMisses += e.what == "MISSED THE TOILET" ? e.times : 0;
                 toiletWaits += e.what == "WAITED FOR THE TOILET" ? e.times : 0;
+                vendFound += e.what == "FOUND A MACHINE THAT TAKES KEYS" ? e.times : 0;
+                vendCakes += e.what == "PAID 3 KEYS FOR A CAKE FROM A MACHINE" ? e.times : 0;
+                vendBottles += e.what == "PAID 3 KEYS FOR A BOTTLE FROM A MACHINE" ? e.times : 0;
+                vendEmpty += e.what == "THE MACHINE WAS EMPTY" ? e.times : 0;
+                vendTold += e.what == "TOLD @ WHERE A MACHINE IS" ? e.times : 0;
                 wet += e.what == "WET MYSELF" ? e.times : 0;
                 waterFree += e.what == "LET @ DRINK MY WATER" ? e.times : 0;
                 waterTold += e.what == "TOLD @ THE WAY TO WATER" ? e.times : 0;
@@ -494,6 +500,11 @@ int main(int argc, char** argv) {
                         toiletMisses, dirtiest, toiletWaits);
             std::printf("   water: %d cells foul, %d >= 0.3, %d >= 0.5, worst %.2f; %d foul gulps\n", any, refuse, sick,
                         most, foulGulps);
+            int stocked = 0;
+            for (const Machine& m : w.machines()) stocked += m.stock;
+            std::printf("   machines: %zu, %d items left, %d found, %d cakes and %d bottles bought, %d found empty, "
+                        "%d told of\n",
+                        w.machines().size(), stocked, vendFound, vendCakes, vendBottles, vendEmpty, vendTold);
         }
         pool.finish(T);
     }
