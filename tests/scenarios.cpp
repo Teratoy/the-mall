@@ -1441,7 +1441,7 @@ const std::vector<Scenario> SCENARIOS = {
                        unlogged("LEFT @. THEY KNOW NO MORE THAN I DO")};
      }},
     {"parched-door", "a caring human with a key, beyond the door the parched lie calling through, opens it",
-     seedWhere([](const Traits& t) { return t.sociable >= 0.75f && t.brave >= 0.3f; }, 17626),
+     seedWhere([](const Traits& t) { return t.sociable >= 0.75f && t.brave >= 0.3f; }, 17696),
      [](Stage& s) {
          Human& leader = s.first();
          Human& follower = s.add(seedWhere([](const Traits& t) { return t.sociable >= 0.75f; }, 17500), 2);
@@ -1721,7 +1721,8 @@ const std::vector<Scenario> SCENARIOS = {
          return Checks{saidAround(s.first(), "WOKE UP, REMEMBERING NOTHING", false),
                        loggedBy(s.first(), "GOT UP, STILL IN A FOG"),
                        saidAround(s.first(), "GOT UP, STILL IN A FOG", true),
-                       remarked(s.first(), talk::Moment::FirstTable), remarked(s.first(), talk::Moment::EmptyRoom)};
+                       remarked(s.first(), talk::Moment::FirstTable), remarked(s.first(), talk::Moment::EmptyRoom),
+                       loggedBy(s.first(), "TRIED TO REMEMBER ANYTHING FROM BEFORE. NOTHING")};
      },
      nullptr, true},
     {"waking-statue", "still dazed, it remarks on a giant statue in the room it woke in", seedWhere(plain, 9800),

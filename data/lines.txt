@@ -701,6 +701,26 @@ hungry                  | FOOD. FIRST, FOOD.
 thirsty                 | WATER. I NEED WATER.
 erratic                 | THEY PUT ME HERE. THEY DID.
 
+# Up, still dazed and still where it woke, it reaches back for anything
+# from before and finds nothing but its own name: said to nobody. Pure
+# blank: no hints at a life before, only the missing of one.
+[blank]
+                        | WHAT WAS I DOING?
+                        | WHAT DAY IS IT?
+                        | THINK. THINK...
+                        | {ME}. I'M {ME}. THAT'S ALL.
+                        | THERE'S NOTHING THERE.
+                        | WHERE WAS I BEFORE THIS?
+curious                 | THERE MUST BE SOMETHING. ANYTHING.
+timid                   | WHY CAN'T I REMEMBER?
+timid fear              | WHAT DID THEY DO TO MY HEAD?
+brave                   | DOESN'T MATTER. OUT FIRST.
+homebody                | I HAD A HOME. DIDN'T I?
+sociable                | DOES ANYONE MISS ME?
+loner                   | NOBODY TO REMEMBER, MAYBE.
+hungry                  | HOW LONG WAS I LYING THERE?
+erratic                 | {ME}? IS THAT EVEN ME?
+
 # Still dazed, the room it woke in, a thing at a time, said to nobody. The
 # first giant statue it sees ({THING} is what it is, and statue.mug and the
 # rest which), the first table, and, once it has looked round a while and

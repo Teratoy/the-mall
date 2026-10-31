@@ -370,13 +370,14 @@ bool Human::observe(const World& world) {
                  });
     auto fogSight = [&](talk::Moment m, std::optional<Topic> topic = std::nullopt) {
         unsigned bit = 1u << (int(m) - int(talk::Moment::FirstStatue));
-        if (remarked || !foggy || (escape_.fogSights & bit)) return;
+        if (remarked || !foggy || (escape_.fogSights & bit)) return false;
         Saying s(m);
         s.topic = std::move(topic);
-        if (!sayLater(std::move(s))) return;
+        if (!sayLater(std::move(s))) return false;
         remarked = true;
         escape_.fogSights |= bit;
         escape_.fogAt = world.time();
+        return true;
     };
     sight.forEach([&](Vec2i c) {
         Tile t = world.tile(c);
@@ -531,6 +532,10 @@ bool Human::observe(const World& world) {
         news |= judge(*o);
     }
     for (Vec2i c : checks) checkStash(c, world.pile(c));
+    // Up and still where it woke, it reaches back for anything from before.
+    if (!escape_.comingTo && escape_.daze <= BLANK_DAZE && escape_.chunksIn.size() <= 1 &&
+        fogSight(talk::Moment::Blank))
+        note("TRIED TO REMEMBER ANYTHING FROM BEFORE. NOTHING");
     // Looked round long enough to be sure: nobody, anywhere it can see.
     if (social_.lastSeen.empty() && !escape_.comingTo && escape_.daze <= EMPTY_ROOM_DAZE) fogSight(talk::Moment::EmptyRoom);
     return news;

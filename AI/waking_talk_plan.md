@@ -96,6 +96,18 @@ it tries to remember and can't: `[blank]`.
   before (a kitchen, a child, a job)? Hints would be the same for no two
   humans and true for none: nothing in the world backs them.
 
+### Built (2026-10-31)
+
+Moment `Blank`, `[blank]` in lines.txt after `[wake_stand]`, always said.
+A fog remark (step 3's rules: dazed, alone, silent, 6 s after the last),
+once it is up (`!comingTo`), the daze down to BLANK_DAZE (0.75, about 10 s
+in) and still in the chunk it woke in (`chunksIn` of one). Log: "TRIED TO
+REMEMBER ANYTHING FROM BEFORE. NOTHING". Lines miss a life before without
+hinting at one ("I HAD A HOME. DIDN'T I?", "{ME}. I'M {ME}. THAT'S ALL.").
+`waking-alone` checks the log line; parched-door moved to seed 17696.
+The soak's unmoved-30 s count went 2 → 5, all in the crowded spawn's group
+greeting and keeping company, which fog remarks don't touch.
+
 ### 3. Seeing the room through the fog
 
 While dazed, the first sight of each thing in the spawn room gets a

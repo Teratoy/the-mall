@@ -166,6 +166,9 @@ enum class Moment {
     // Still dazed, the first giant statue and the first table it sees, and
     // finding nobody about once it has looked round (all to nobody).
     FirstStatue, FirstTable, EmptyRoom,
+    // Still dazed, trying to remember anything from before and finding
+    // only its own name (to nobody).
+    Blank,
     Count
 };
 

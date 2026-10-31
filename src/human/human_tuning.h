@@ -42,6 +42,9 @@ constexpr float WAKE_STIR_AT = 1.0f;
 constexpr float DAZE_REMARK_MIN = 0.3f;
 constexpr float DAZE_REMARK_GAP = 6.0f;
 constexpr float EMPTY_ROOM_DAZE = 0.6f;
+/// Up and about with the daze down to this, still where it woke, it tries to
+/// remember anything from before.
+constexpr float BLANK_DAZE = 0.75f;
 constexpr float DAZE_TIME = 40.0f;
 constexpr int DAZE_SIGHT = 6;
 constexpr float DAZE_SLOW = 0.6f;
