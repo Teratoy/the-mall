@@ -199,6 +199,9 @@ enum class Moment {
     FirstDispenser, DispenserDrink, DispenserDry, RefillDispenser,
     // Looking at the first hidden trap it ever spots (to nobody).
     SpotTrap,
+    // Toilets: seeing one fouled by someone else, and the first time it uses
+    // one and finds no flush (both to nobody).
+    ToiletFoul, NoFlush,
     Count
 };
 

@@ -17,6 +17,10 @@
 //                  stands in it, and put the followed human inside it
 //   --washroom     the same for a data centre's washroom, the human at its doorway
 //   --centre-vending  the same for a machine in a data centre's corridor alcove
+//   --pissed       grow the mall round the spawn until a toilet stands in it,
+//                  put the followed human out in front of it, and just before the
+//                  shot piss in the toilets more and more, left to right, to
+//                  see their water yellow
 //   --pile         put a heap of cakes and bottles down near the human at
 //                  the start, to see how piles look
 //   --smells       leave a big and a small pile of fresh feces near the
@@ -183,13 +187,57 @@ struct ShotProbe {
         h.cell = h.prev = to;
         h.observe(w);
     }
+
+    /// Grows the mall round the spawn until a toilet stands in it, and puts
+    /// the followed human a little way out in front of the one nearest the
+    /// spawn.
+    static void toilet(WorldScene& s) {
+        World& w = s.world_;
+        for (int r = 1; r <= 6 && w.toilets().empty(); r++)
+            for (int y = -r; y <= r; y++)
+                for (int x = -r; x <= r; x++) w.ensureGenerated(Vec2i{x, y} * CHUNK + Vec2i{CHUNK / 2, CHUNK / 2});
+        Human& h = w.human(s.follow_);
+        const Toilet* best = nullptr;
+        Vec2i bestAt;
+        for (const auto& [at, t] : w.toilets())
+            if (!best || cheb(t.front, h.cell) < cheb(best->front, h.cell) ||
+                (cheb(t.front, h.cell) == cheb(best->front, h.cell) &&
+                 (t.front.y != best->front.y ? t.front.y < best->front.y : t.front.x < best->front.x)))
+                best = &t, bestAt = at;
+        if (!best) return;
+        // Two steps out from it, so its map symbol shows, else at it.
+        Vec2i to = best->front + (best->front - bestAt) * 2;
+        if (w.tile(to) != Tile::Floor || w.occupant(to)) to = best->front;
+        if (w.occupant(to)) return;
+        w.moveOccupant(h.cell, to, &h);
+        h.cell = h.prev = to;
+        h.observe(w);
+    }
+
+    /// Pisses in every toilet, most in the one nearest the followed human and
+    /// less in each further off: yellow through, then paler, then none. The
+    /// human sees what it can of them.
+    static void pissed(WorldScene& s) {
+        World& w = s.world_;
+        Vec2i from = w.human(s.follow_).cell;
+        std::vector<Vec2i> at;
+        for (const auto& [c, t] : w.toilets()) at.push_back(c);
+        std::sort(at.begin(), at.end(), [&](Vec2i a, Vec2i b) {
+            if (cheb(a, from) != cheb(b, from)) return cheb(a, from) < cheb(b, from);
+            return a.y != b.y ? a.y < b.y : a.x < b.x;
+        });
+        constexpr float PISS[] = {0.35f, 0.2f, 0.1f, 0.04f};
+        for (size_t i = 0; i < at.size() && i < std::size(PISS); i++) w.soilToilet(at[i], PISS[i], true);
+        // So it knows, for its map.
+        w.human(s.follow_).observe(w);
+    }
 };
 
 int main(int argc, char** argv) {
     if (argc < 2 || argv[1][0] == '-') {
         std::fprintf(stderr, "usage: %s out.png [--scene world|menu|create|obituary] [--seconds S] [--seed N] "
                              "[--zoom 0-3] [--stats] [--log] [--map] [--reveal] [--wide] [--pile] [--smells] "
-                             "[--vending] [--server] [--washroom]\n", argv[0]);
+                             "[--vending] [--server] [--washroom] [--pissed]\n", argv[0]);
         return 1;
     }
     const char* out = argv[1];
@@ -198,7 +246,7 @@ int main(int argc, char** argv) {
     uint64_t seed = 7;
     int zoom = 2;
     bool stats = false, log = false, reveal = false, wide = false, pile = false, smelly = false, vending = false,
-         map = false, server = false, washroom = false, centreVending = false;
+         map = false, server = false, washroom = false, centreVending = false, pissed = false;
     for (int i = 2; i < argc; i++) {
         auto value = [&]() -> const char* {
             if (i + 1 >= argc) {
@@ -222,6 +270,7 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(argv[i], "--server")) server = true;
         else if (!std::strcmp(argv[i], "--washroom")) washroom = true;
         else if (!std::strcmp(argv[i], "--centre-vending")) centreVending = true;
+        else if (!std::strcmp(argv[i], "--pissed")) pissed = true;
         else {
             std::fprintf(stderr, "unknown option %s\n", argv[i]);
             return 1;
@@ -246,6 +295,7 @@ int main(int argc, char** argv) {
             if (server) ShotProbe::server(*w);
             if (washroom) ShotProbe::washroom(*w);
             if (centreVending) ShotProbe::centreVending(*w);
+            if (pissed) ShotProbe::toilet(*w);
             world = w.get();
             s = std::move(w);
         } else if (scene == "menu") {
@@ -260,6 +310,7 @@ int main(int argc, char** argv) {
         if (s) {
             canvas.fit(s->canBeWide());
             for (int f = 0; f < int(seconds * 60.0f); f++) s->update(1.0f / 60.0f, canvas);
+            if (world && pissed) ShotProbe::pissed(*world);
             if (world) ShotProbe::set(*world, zoom, stats, log, reveal, map);
             canvas.begin();
             s->draw(canvas);

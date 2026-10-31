@@ -395,7 +395,10 @@ bool Human::observe(const World& world) {
             firstSight(talk::Moment::FirstWater, c);
             seeWater(world, c);
         }
-        if (world.toilet(c)) firstSight(talk::Moment::FirstToilet, c);
+        if (const Toilet* toilet = world.toilet(c)) {
+            firstSight(talk::Moment::FirstToilet, c);
+            seeToilet(*toilet, c);
+        }
         if (const Statue* st = world.statue(c)) {
             // The statue as a thing in sight, so the line can name it.
             Topic t{Topic::Kind::Here};

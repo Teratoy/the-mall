@@ -25,6 +25,7 @@
 #include <vector>
 
 class World;
+struct Toilet;
 
 /// One human. Its cell is its base cell, the only one that collides, and
 /// no two living humans share a cell. Nobody controls it: it explores on its
@@ -481,6 +482,20 @@ public:
         std::vector<Vec2i> cells;
         for (const auto& [id, b] : deaths_.bodies) cells.push_back(b.cell);
         return cells;
+    }
+    /// A toilet as it last saw it: how dirty, and how much of that is piss.
+    struct SeenToilet {
+        float dirt = 0.0f, piss = 0.0f;
+    };
+    /// The toilet on that cell as it last saw it; nothing if never seen.
+    const SeenToilet* seenToilet(Vec2i at) const {
+        auto it = relief_.toilets.find(at);
+        return it == relief_.toilets.end() ? nullptr : &it->second;
+    }
+    /// How dirty it last saw the toilet on that cell: none if never seen.
+    float seenToiletDirt(Vec2i at) const {
+        const SeenToilet* t = seenToilet(at);
+        return t ? t->dirt : 0.0f;
     }
     float decay() const;
     bool spoiled() const;
@@ -1787,6 +1802,9 @@ private:
     void tasteFoul(const World& world);
     /// Seeing water it remembers foul, it knows how foul it is now.
     void seeWater(const World& world, Vec2i water);
+    /// Seeing a toilet, it knows how dirty it is now; first seeing it
+    /// fouled by someone else, it is disgusted.
+    void seeToilet(const Toilet& toilet, Vec2i at);
     /// Setting off for water it can't see, someone it walks with who knows
     /// it foul and sees it go warns it, and it believes them. True if so.
     bool warnedOfFoul(World& world, Vec2i water);
@@ -1853,6 +1871,10 @@ private:
         int messSteps = 0;
         bool ignoreMess = false;
         std::unordered_set<int> filthNoted;
+        /// Toilets it has seen, by cell, as dirty as it last saw them.
+        std::unordered_map<Vec2i, SeenToilet, Vec2iHash> toilets;
+        /// It has used a toilet and found there is no flush.
+        bool noFlush = false;
     };
     Relief relief_;
     /// Going unwashed (human_grime.cpp).

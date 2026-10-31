@@ -1807,6 +1807,29 @@ rude                    | ENJOY YOUR DRINK.
 rude                    | THAT'S DISGUSTING.
 foe rude                | SUITS YOU.
 
+# Seeing a toilet someone else has fouled, said to nobody.
+[toilet_foul 0.6]
+                        | UGH.
+                        | WHO DOES THAT?
+                        | PEOPLE ARE ANIMALS.
+                        | I'M NOT USING THAT ONE.
+need.to.go              | I'LL HOLD IT A BIT LONGER.
+timid                   | DON'T LOOK. DON'T LOOK.
+greedy rude             | PIGS.
+parched                 | DON'T THINK ABOUT DRINKING THAT.
+
+# The first time it uses a toilet, finding there is no flush, said to
+# nobody.
+[no_flush 1.0]
+                        | WHERE'S THE HANDLE?
+                        | NO CHAIN? NO BUTTON?
+                        | SO IT JUST... STAYS THERE?
+                        | WHO BUILDS A TOILET LIKE THIS?
+generous                | SORRY, WHOEVER'S NEXT.
+timid                   | I'LL PRETEND THAT WASN'T ME.
+rude                    | NOT MY PROBLEM.
+erratic                 | A LITTLE GIFT FOR LATER.
+
 
 # ---- Sleep -----------------------------------------------------------------
 

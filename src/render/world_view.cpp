@@ -248,8 +248,12 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
                 Floor f = world.floor(c);
                 floorTiles.draw(x * CELL_PX - left, y * CELL_PX - top, c, f.pattern,
                                 dim(toColor(FLOOR_PALETTES[f.palette].ink), lit));
-                if (const Toilet* t = world.toilet(c))
-                    drawToilet(x * CELL_PX - left, y * CELL_PX - top, c - t->front, t->dirt, t->seed, lit);
+                // Out of sight, as dirty as the viewer last saw it.
+                if (const Toilet* t = world.toilet(c)) {
+                    Human::SeenToilet seen{t->dirt, t->piss};
+                    if (!lit) seen = viewer.seenToilet(c) ? *viewer.seenToilet(c) : Human::SeenToilet{};
+                    drawToilet(x * CELL_PX - left, y * CELL_PX - top, c - t->front, seen.dirt, seen.piss, t->seed, lit);
+                }
                 continue;
             }
             if (tile == Tile::Basin) {

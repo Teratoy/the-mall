@@ -328,6 +328,46 @@ Stain: per-cell pixels, wet → dry, permanent until something clears it.
   latrine, but still beats going in the open for the modest.
 - A toilet is private enough by itself only if nobody's in sight.
 
+### Yellow water and seen dirt (user, 2026-10-31)
+
+"Toilet water should turn yellowish when someone pisses in it, so it's
+visibly foul from piss." Decisions:
+
+1. The bowl's water yellows with each piss, yellow through after about
+   three. Piss no longer browns the water; only feces do (the rim still
+   streaks with all dirt).
+2. Nothing ever cleans a toilet: the yellow never clears. There is no
+   flush. The first time a human uses a toilet, it finds there is none
+   and says so (once per human).
+3. Sight teaches: humans remember each toilet as dirty as they last saw
+   it, and that, not the toilet's true dirt, is what they go by: choosing
+   a toilet to go in, and, parched, choosing a toilet to drink from (the
+   cleanest they saw, within reason; the erratic don't mind).
+4. First seeing a toilet fouled by someone else (one remembered clean, or
+   new): log "SAW A FOUL TOILET" and sometimes a disgusted line, never a
+   description. What it left there itself is no news to it.
+5. The map's toilet symbol is brown once the viewer has seen it pissed or
+   shat in.
+
+### Built (2026-10-31)
+
+- `Toilet::piss`: how much of its dirt is piss (`World::soilToilet` takes
+  whether it is). `Toilet::FOULED` (0.05, about one piss) is the dirt from
+  which it looks fouled.
+- `toilet_art.cpp`: the water (H) blends to `PISS_WATER` by piss /
+  `PISS_FULL` (0.3); brown pixels come from the dirt that isn't piss.
+- `Human::relief_.toilets`: per toilet cell, the dirt and piss it last saw
+  (`seeToilet`, from `observe`), set after its own use in
+  `startRelieving`. `seenToilet` / `seenToiletDirt` are public for the
+  map and world view. Relief's toilet cost and `seekToilet`'s goal cost
+  (`TOILET_DRINK_DIRT_COST`) use it.
+- Moments `ToiletFoul` ([toilet_foul]) and `NoFlush` ([no_flush]), notes
+  "SAW A FOUL TOILET" and "FOUND NO FLUSH".
+- Out of sight, the world view draws a toilet as the viewer last saw it.
+  The map draws `map toilet fouled` (brown) from `Toilet::FOULED`.
+- Scenarios `toilet-foul` and `toilet-parched`. `make shot SHOT_ARGS=
+  "--pissed"` shows toilets at several levels of piss.
+
 ## 4. Accidents
 
 - At 1.0 it goes where it stands, standing up, mid-walk: the mess lands

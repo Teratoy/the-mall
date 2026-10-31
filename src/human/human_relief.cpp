@@ -200,7 +200,7 @@ bool Human::seekRelief(World& world) {
     // Unknown ground may as well be open: only walls and the like hide it.
     auto cost = [&](Vec2i c) {
         if (auto t = toiletBefore(world, c); t && !isErratic())
-            return 1 + int(world.toilet(*t)->dirt * TOILET_DIRT_COST * (1.5f - modesty()));
+            return 1 + int(seenToiletDirt(*t) * TOILET_DIRT_COST * (1.5f - modesty()));
         int open = 0;
         for (Vec2i d : DIRS8) {
             Tile t = memory.tile(c + d);
@@ -254,6 +254,17 @@ bool Human::waitForToilet(World& world, int reach, float urgent) {
     return true;
 }
 
+// Its own doing it knew already (startRelieving keeps it), so only someone
+// else's fouling is news; the erratic don't mind.
+void Human::seeToilet(const Toilet& toilet, Vec2i at) {
+    auto [it, fresh] = relief_.toilets.try_emplace(at);
+    bool knewFoul = !fresh && it->second.dirt >= Toilet::FOULED;
+    it->second = {toilet.dirt, toilet.piss};
+    if (knewFoul || toilet.dirt < Toilet::FOULED || isErratic()) return;
+    note("SAW A FOUL TOILET");
+    sayLater(talk::Moment::ToiletFoul);
+}
+
 std::optional<Vec2i> Human::toiletBefore(const World& world, Vec2i c) const {
     for (Vec2i d : DIRS4)
         if (memory.tile(c + d) == Tile::Toilet)
@@ -298,7 +309,8 @@ void Human::startRelieving(World& world) {
     bool intoWater = false;
     auto drop = [&](MessKind kind, float x, float y, float size) {
         if (toilet && !missed)
-            return world.soilToilet(*toilet, size * (kind == MessKind::Feces ? TOILET_FECES : TOILET_PISS));
+            return world.soilToilet(*toilet, size * (kind == MessKind::Feces ? TOILET_FECES : TOILET_PISS),
+                                    kind == MessKind::Piss);
         Vec2i at{floorDiv(int(std::floor(x)), CELL_PX), floorDiv(int(std::floor(y)), CELL_PX)};
         if (!passable(world.tile(at))) at = cell, x = fx, y = fy;
         if (pooled(world.tile(at))) {
@@ -321,6 +333,16 @@ void Human::startRelieving(World& world) {
         note("PISSED");
     }
     if (toilet) note(missed ? "MISSED THE TOILET" : "USED A TOILET");
+    if (toilet && !missed) {
+        // What it left there it knows of, so seeing it after is no news.
+        const Toilet* t = world.toilet(*toilet);
+        relief_.toilets[*toilet] = {t->dirt, t->piss};
+        if (!relief_.noFlush) {
+            relief_.noFlush = true;
+            note("FOUND NO FLUSH");
+            sayLater(talk::Moment::NoFlush);
+        }
+    }
     beSeenGoing(world, false, intoWater);
 }
 
