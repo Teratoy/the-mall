@@ -64,10 +64,14 @@ struct SoakProbe {
         h.cell = h.prev = h.target_ = cell;
         h.path_.clear();
     }
+    /// Which chunk the cell is in; a chunk may cover several slots.
+    static int chunkOf(const World& w, Vec2i cell) { return w.chunkAt(World::slotOf(cell))->id; }
     /// h knows every tile of the chunk it stands in, doors and all, and
     /// with items the keys and cakes lying there.
-    static void knowChunk(const World& w, Human& h, bool items = false) {
-        Vec2i slot = World::slotOf(h.cell);
+    static void knowChunk(const World& w, Human& h, bool items = false) { knowChunkOf(w, h, h.cell, items); }
+    /// The same for the chunk the cell is in.
+    static void knowChunkOf(const World& w, Human& h, Vec2i cell, bool items = false) {
+        Vec2i slot = World::slotOf(cell);
         for (int y = 0; y < CHUNK; y++)
             for (int x = 0; x < CHUNK; x++) {
                 Vec2i c{slot.x * CHUNK + x, slot.y * CHUNK + y};
@@ -188,6 +192,8 @@ struct SoakProbe {
     }
     /// Turns the cell into a basin's worth of water.
     static void addWater(World& w, Vec2i cell) { w.setTile(cell, Tile::Basin); }
+    /// Wall on the cell, as if the chunk had been dug that way.
+    static void addWall(World& w, Vec2i cell) { w.setTile(cell, Tile::Wall); }
     /// h tasted the water at the cell this foul (with feces and piss) before.
     static void tastedFoul(Human& h, Vec2i water, float filth) { h.water_.foul[water] = {filth, 0.0f}; }
     /// Wary of cakes on tables after darts, and of rooms with one door
