@@ -35,6 +35,7 @@ Status as of 2026-10-30.
 | [feral_plan.md](feral_plan.md) | The feral human's look: a flag that repaints every frame ragged (dirty, torn clothes, messed-up hair) on the same skeleton | Art built; never set in play | When it turns feral and what changes (not asked yet); questions 1–3 on the look |
 | [lines_editor_plan.md](lines_editor_plan.md) | `make lines`: a local web page for rewriting data/lines.txt, with bubble previews, review marks and Claude's drafts | Built | — |
 | [machine_room_art_plan.md](machine_room_art_plan.md) | Old computers as art: server rack, CRT terminal, console desk, cable floor decals | Art built | Where they stand in the world; any use |
+| [server_rooms_plan.md](server_rooms_plan.md) | Server rooms in the world: grown in room networks and a data-centre chunk, two locked doors in a row (2 keys in, free out, relocking), racks block sight, first sight remembered, a good place to sleep | Planned | Build after the vending branch merges |
 | [human_split_plan.md](human_split_plan.md) | Splitting Human into per-system classes | Not started | Advised against for now; if done, only system by system, when that system is being reworked anyway |
 
 ## Known gaps found by the tests
