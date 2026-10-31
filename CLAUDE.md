@@ -37,6 +37,8 @@ toolbox run -c claude-build make check        # soak vs golden output (~75 s)
 | `make genprobe` | Grows chunk interiors on every footprint (L, T, S, boxes) and checks they keep to it. `GENPROBE_ARGS="20 png"` also saves pictures to `build/genprobe-png/` |
 | `make apk` (on the host, not the toolbox) | Builds `build/TheMall-debug.apk` for the phone with the Android NDK. See `android/apk.mk` and [AI/android_plan.md](AI/android_plan.md) |
 | `make lines` (host or toolbox), or `./lines.sh` (the "The Mall Lines" desktop shortcut) | The lines editor: a local web page at http://localhost:8765 for rewriting `data/lines.txt`, with the game's bubble drawn beside each line. See [AI/lines_editor_plan.md](AI/lines_editor_plan.md) |
+| `make sprites` (host or toolbox), or `./sprites.sh` | The sprite editor: a local web page at http://localhost:8766 for redrawing `data/sprites.txt`. See [AI/sprite_editor_plan.md](AI/sprite_editor_plan.md) |
+| `make spritesheet` | Draws every sprite from `data/sprites.txt` in all the ways the game does, at 1x, to `build/sprite-sheet.png`: `cmp` it before and after an art refactor. `make spriteref` remakes the sprite editor's human and machine slots |
 | `make shot SHOT_ARGS="..."` | Saves `build/shot.png` without a visible window. See `tools/shot.cpp` for the options (`--scene`, `--seconds`, `--seed`, `--zoom`, `--stats`, `--log`, `--reveal`, `--wide`) |
 
 **The sim is deterministic.** Same seeds, same output, byte for byte. So:
@@ -89,6 +91,11 @@ lost, and several useful probes already have been.
 - `data/lines.txt`: everything humans say. The user edits it, and F5
   reloads it in game. Its header explains the format.
 - `data/names.txt`: what names are grown from.
+- `data/sprites.txt`: the glyph sprites (items, traps, toilet, vending
+  machines, map symbols, icon, the sleeper's Z), read by `render/sprites.cpp`;
+  F5 reloads it. The sprite editor writes it. Art drawn from letters goes
+  here, not in a glyph array in code; humans and other procedural art stay
+  in code.
 - `data/lines_review.json` and `data/lines_drafts.json`: the lines editor's
   review marks, and rewrites Claude drafts for the user to accept or reject
   there (format at the top of `tools/lines_editor.py`). Draft rewrites go in

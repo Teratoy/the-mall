@@ -65,3 +65,56 @@ mapped to a colour by an `ink()`:
    full and empty with its goods behind the glass.
 
 A `make sprites` target and a `sprites.sh` launcher, like the lines editor.
+
+## How it works (built 2026-10-31)
+
+- `data/sprites.txt`: every glyph sprite as a block, grouped (Items,
+  Traps, Toilets, Vending machines, Map, Other). Its header explains the
+  format: `sprite NAME`, `# comments`, `ink L RRGGBB[AA] what`, `blink A B`,
+  then the rows, `.` see-through.
+- `src/render/sprites.{h,cpp}`: `sprites::get(name, w, h)` returns the
+  sprite, reading the file the first time; `sprites::reload()` reads it
+  again on F5. A sprite that is missing or the wrong size is reported on
+  stderr and drawn as a magenta box; one broken by a later edit is kept as
+  it was. References stay good across reloads.
+- What the code still decides: each sprite's size, where it goes, what
+  some letters mean (the toilet's H browns with dirt, its R and t streak;
+  the map symbols draw every letter in their ink `#`, on a dark outline),
+  and the goods' slots in each machine, since those are gameplay.
+- The machines were three shared glyphs coloured per kind; each kind now
+  has its own front, side and goods, with the sign, the flank picture and
+  the coils drawn in, so each can be redrawn alone. Their LEDs blink as `o`
+  and `O` (`blink o O`), swapped on odd blinks, as the checkerboard did.
+- Key, cake and trap drawing moved from `world_view.cpp` to
+  `render/item_art.cpp`.
+- `tools/sprite_editor.py` (`make sprites`, `./sprites.sh`, port 8766)
+  and `tools/sprite_editor/index.html`: the list of sprites by group, the
+  drawing in the middle, the previews and inks on the right. Every stroke
+  is saved straight away, one block at a time, refused if the block
+  changed underneath; the page checks the file every two seconds.
+- Keys: P pen, E eraser, G fill, I eyedropper (or right-click, or
+  Alt-click), L line, O rectangle (Shift fills it), Ctrl+Z / Ctrl+Shift+Z
+  or Ctrl+Y, `;` grid, + and - zoom (or Ctrl+wheel), 1-9 pick inks, up and
+  down step through the sprites. Inks: click the swatch to draw with it,
+  type a colour (double-click it for a picker), name it, `+ ink` adds one
+  with a free letter, `×` removes one no pixel uses.
+- Onion skin: any sprite of the same size, faintly under the drawing;
+  "spikes" starts with "spikes up" under it, "plate" with "plate down".
+- Previews, on a floor, black or light: 1x and 3x; at 3x beside a human
+  (`tools/sprite_editor/human.png`); for a machine's front, side or goods,
+  the machine full and empty with its goods in their slots
+  (`tools/sprite_editor/ref.json`), its LEDs blinking 4 times a second.
+  Both come from `make spriteref` (`build/sprite_sheet --ref`), so remake
+  them when the machines' slots or the human's look change.
+- Checking art stays the same: `make spritesheet` draws every sprite in
+  every way the game does to `build/sprite-sheet.png`, to `cmp` before and
+  after; `tools/art_snapshots.sh DIR` saves many shots (water glints follow
+  the wall clock, so water pixels can differ between any two runs).
+
+### Not done
+
+- Humans: still procedural (`human_look.cpp`). A template with colour
+  roles is the likely way, if wanted.
+- Procedural art (floors, walls, statues, tables, blood, mess, the
+  bottle, the cake held in the hand) has no glyph to edit.
+- Sizes are fixed; making a sprite bigger needs the code changed with it.

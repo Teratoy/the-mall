@@ -91,8 +91,9 @@ std::map<std::string, Sprite> read(std::istream& in, const std::string& file) {
         std::istringstream words(line);
         std::string word;
         words >> word;
+        // One complaint a sprite: the rest of a bad one tends to follow from the first.
         auto complain = [&](const char* what) {
-            std::fprintf(stderr, "%s:%d: %s: %s\n", file.c_str(), lineNo, what, line.c_str());
+            if (!bad) std::fprintf(stderr, "%s:%d: %s: %s\n", file.c_str(), lineNo, what, line.c_str());
             bad = true;
         };
         // A row is one word; everything else is a keyword and what follows it.
