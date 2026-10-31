@@ -8,6 +8,7 @@
 //   for tools/coverage.py.
 // Exits non-zero if any scenario fails. Deterministic, like the soak.
 #include "probe.h"
+#include "human/human_tuning.h"
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
@@ -886,6 +887,24 @@ const std::vector<Scenario> SCENARIOS = {
                        loggedBy(h, "PICKED UP A BOTTLE LYING THERE"), loggedBy(h, "DRANK FROM MY BOTTLE")};
      },
      nullptr, true},
+    {"wake-first", "waking as in play, it says where it is before the bottle it finds", 99,
+     [](Stage& s) {
+         Human& h = s.first();
+         s.run(20);
+         // Its first line, on waking, shows its full time before the next,
+         // for the bottle found beside it, is said.
+         return Checks{loggedBy(h, "WOKE UP, REMEMBERING NOTHING"), loggedBy(h, "FOUND A BOTTLE LYING THERE"),
+                       {"the waking line is read before the bottle line", [&h](const Stage&) {
+                            std::vector<float> said;
+                            bool wokeFirst = false;
+                            for (const auto& e : h.log.entries()) {
+                                if (e.what == "FOUND A BOTTLE LYING THERE") wokeFirst = said.size() == 1;
+                                if (e.what.rfind("SAID ", 0) == 0) said.push_back(e.time);
+                            }
+                            return wokeFirst && said.size() >= 2 && said[1] - said[0] >= SPEECH_TIME;
+                        }}};
+     },
+     nullptr, true},
     {"bottle-gone", "a stranger takes the bottle a human found and left; it finds it gone, a loss", 99,
      [](Stage& s) { return bottleTaken(s, false); }, nullptr, true},
     {"bottle-stolen", "the same, once it has learnt the thirst lesson: stolen, and it blames the stranger", 99,
@@ -1295,7 +1314,7 @@ const std::vector<Scenario> SCENARIOS = {
          P::setTrust(keeper, leader, 0.6f);
          // Given up on a way out, it has no use of its own for the door.
          P::settle(keeper, keeper.cell);
-         s.run(100);
+         s.run(160);
          return Checks{logged({"NO WATER ANYWHERE. LYING BY A LOCKED DOOR, CALLING FOR HELP"}),
                        logged({"OPENED THE DOOR @ WAS CALLING THROUGH"}), logged({"@ LET ME OUT"})};
      }},

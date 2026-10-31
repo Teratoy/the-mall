@@ -15,22 +15,27 @@ void Human::note(std::string what, int who, int whom) { log.add(born + clock_, s
 bool Human::sayLater(talk::Moment m, int to, int about) { return sayLater(Saying{m, to, about}); }
 
 bool Human::sayLater(Saying s) {
-    // Blows and cries only ever fill a silence, but for a trap's cry and the
-    // shout of who killed, which cut in ahead of whatever was still to be said. Word to pass on (a
-    // tip, a lie, a name) goes ahead of small talk still to be said, after
-    // the hello, so it is said while the greeting lasts.
-    if (s.moment == talk::Moment::Darted || s.moment == talk::Moment::Spiked ||
-        s.moment == talk::Moment::Slammed || s.moment == talk::Moment::Blame) {
+    // An emergency (a blow, a cry, the shout of who killed) goes first, and
+    // the newest wins: the ordinary lines still to be said are dropped, and
+    // so is an older blow not yet said. Other urgent ones keep their place.
+    if (talk::isUrgent(s.moment)) {
+        std::erase_if(voice_.sayings, [&](const Saying& q) {
+            bool drop = !talk::isUrgent(q.moment) || (talk::isCry(q.moment) && talk::isCry(s.moment));
+            if (drop && q.awaited) awaiting_ = false;
+            return drop;
+        });
         voice_.sayings.insert(voice_.sayings.begin(), std::move(s));
         return true;
     }
-    bool cry = talk::isCry(s.moment);
+    // Word to pass on (a tip, a lie, a name) goes ahead of small talk still
+    // to be said, after the hello, so it is said while the greeting lasts.
     bool word = s.tell || s.intro;
-    if (!(cry ? voice_.sayings.empty() : word || voice_.sayings.size() <= SPEECH_QUEUE)) return false;
+    if (!word && voice_.sayings.size() > SPEECH_QUEUE) return false;
     auto at = voice_.sayings.end();
     if (word)
         at = std::find_if(voice_.sayings.begin(), voice_.sayings.end(), [](const Saying& q) {
-            return !q.tell && !q.intro && q.moment != talk::Moment::Meet && q.moment != talk::Moment::CatchUp;
+            return !talk::isUrgent(q.moment) && !q.tell && !q.intro && q.moment != talk::Moment::Meet &&
+                   q.moment != talk::Moment::CatchUp;
         });
     voice_.sayings.insert(at, std::move(s));
     return true;
@@ -48,31 +53,34 @@ void Human::awaitLine() {
 }
 
 void Human::speak(World& world, float dt) {
-    using talk::Moment;
     if (!voice_.speech.empty() && (voice_.speech.front().shown += dt) >= voice_.speech.front().time) {
         voice_.speech.pop_front();
         voice_.quietSince = world.time();
     }
     while (!voice_.sayings.empty()) {
         Saying& s = voice_.sayings.front();
-        // Blows and cries only fill a silence, and go unsaid if they can't
-        // at once; a line to someone gone out of earshot goes unsaid.
-        bool cry = talk::isCry(s.moment);
+        // A line to someone gone out of earshot goes unsaid.
+        bool urgent = talk::isUrgent(s.moment);
         const Human* to = s.to >= 0 ? &world.human(s.to) : nullptr;
         bool gone = to && (to->dead() || cheb(cell, to->cell) > HEAR_RADIUS || !sight.sees(to->cell));
-        // Asking for a drink waits as long as word does: it is waited on.
-        bool word = s.tell || s.intro || s.moment == talk::Moment::AskDrink;
-        float patience = cry ? CRY_PATIENCE : word ? WORD_PATIENCE : SPEECH_PATIENCE;
-        if (gone || s.waited > patience) {
+        if (gone || s.waited > SPEECH_STUCK) {
             if (s.awaited) awaiting_ = false;
             voice_.sayings.erase(voice_.sayings.begin());
             continue;
         }
+        // The line showing is read to its end, but an emergency cuts in once
+        // it has shown long enough to read.
         if (!voice_.speech.empty()) {
-            if (cry) s.waited += dt;
+            if (!urgent || voice_.speech.front().shown < SPEECH_MIN) return;
+            Saying due = std::move(s);
+            voice_.sayings.erase(voice_.sayings.begin());
+            size_t before = voice_.speech.size();
+            say(world, due);
+            // Worded, it takes the old line's place.
+            if (voice_.speech.size() > before) voice_.speech.pop_front();
             return;
         }
-        if (!cry) {
+        if (!urgent) {
             float now = world.time();
             if (now - voice_.quietSince < SPEECH_PAUSE) return;
             // Its turn: not over the one it talks to, nor over anyone talking

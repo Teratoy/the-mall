@@ -127,7 +127,7 @@ constexpr int HAIL_RADIUS = 4;
 constexpr float BUSY_WAIT = 8.0f;
 constexpr float GREET_TIME = 1.5f;
 /// Greeters still talking stay together until done, up to this long.
-constexpr float GREET_LONGEST = 10.0f;
+constexpr float GREET_LONGEST = 20.0f;
 /// Someone greeted this long ago is greeted again, when either has news
 /// for the other: that is when tips, trades and lies change hands.
 constexpr float CATCH_UP_TIME = 60.0f;
@@ -417,16 +417,17 @@ constexpr float GOSSIP_NEWS = 0.15f;
 constexpr float GOSSIP_WEIGHT = 0.6f;
 /// Talking: a line is heard this far off, in cells, by anyone who can see
 /// the speaker. It shows over the head this long, and a little longer per
-/// letter; this many at most wait their turn, the rest go unsaid. Between
-/// lines, one's own or the other's, comes this pause; a line kept waiting
-/// this long by others talking goes unsaid (a cry, this long).
+/// letter, so it can be read; an urgent line may cut in once it has shown
+/// SPEECH_MIN. This many at most wait their turn, the rest go unsaid.
+/// Between lines, one's own or the other's, comes this pause. A line waits
+/// its turn until said, but for SPEECH_STUCK, so nobody stands forever
+/// waiting on others.
 constexpr int HEAR_RADIUS = 6;
-constexpr float SPEECH_TIME = 1.2f, SPEECH_PER_LETTER = 0.05f;
+constexpr float SPEECH_TIME = 2.5f, SPEECH_PER_LETTER = 0.06f;
+constexpr float SPEECH_MIN = 1.5f;
 constexpr size_t SPEECH_QUEUE = 3;
 constexpr float SPEECH_PAUSE = 0.35f;
-constexpr float SPEECH_PATIENCE = 5.0f, CRY_PATIENCE = 0.5f;
-// Word to pass on (a tell, a name) waits as long as a greeting can last.
-constexpr float WORD_PATIENCE = GREET_LONGEST;
+constexpr float SPEECH_STUCK = 30.0f;
 /// What a warm or a rude line does to the trust of whoever it is said to,
 /// and how much a frightened line scares a listener who neither trusts nor
 /// distrusts the speaker (up to twice that for a full friend).
