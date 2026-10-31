@@ -1,0 +1,735 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sprite Editor</title>
+<style>
+:root {
+  --bg: #181818; --panel: #202020; --raise: #2a2a2a; --line: #333; --ink: #b9b9b9; --bright: #f0f0f0;
+  --dim: #787878; --sel: #34404c; --accent: #e0c060; --bad: #e1463c; --good: #78c878;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
+  font: 13px/1.4 ui-monospace, "DejaVu Sans Mono", Menlo, monospace; }
+button, input, select { font: inherit; color: var(--bright); background: var(--raise); border: 1px solid var(--line);
+  border-radius: 3px; padding: 3px 7px; }
+button { cursor: pointer; }
+button:hover { border-color: var(--dim); }
+button.on { border-color: var(--accent); color: var(--accent); }
+button:disabled { color: var(--dim); cursor: default; }
+input:focus, select:focus, button:focus-visible { outline: 1px solid var(--accent); }
+canvas { image-rendering: pixelated; display: block; }
+#app { display: grid; grid-template-columns: 230px 1fr 300px; height: 100vh; }
+
+/* The sprites, by group. */
+#side { border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; background: var(--panel); }
+#side .top { padding: 10px; border-bottom: 1px solid var(--line); display: grid; gap: 7px; }
+#side h2 { margin: 0; font-size: 14px; font-weight: normal; color: var(--bright); }
+#search { width: 100%; }
+#list { overflow-y: auto; flex: 1; padding: 4px 0 20px; }
+.grp { padding: 10px 10px 3px; color: var(--accent); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+.spr { display: flex; align-items: center; gap: 8px; padding: 3px 10px 3px 14px; cursor: pointer; }
+.spr:hover { background: var(--raise); }
+.spr.on { background: var(--sel); color: var(--bright); }
+.spr .th { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; flex: none; }
+.spr .n { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.spr .sz { color: var(--dim); font-size: 11px; }
+
+/* The drawing. */
+#main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+#head { padding: 10px 16px 8px; border-bottom: 1px solid var(--line); }
+#head h1 { margin: 0; font-size: 18px; color: var(--bright); font-weight: normal; display: flex; gap: 12px; align-items: baseline; }
+#head h1 .g { color: var(--dim); font-size: 12px; }
+#head .doc { margin-top: 3px; white-space: pre-wrap; }
+#tools { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; padding: 8px 16px; border-bottom: 1px solid var(--line); }
+#tools .sep { width: 1px; align-self: stretch; background: var(--line); margin: 0 4px; }
+#tools label { display: inline-flex; gap: 5px; align-items: center; color: var(--dim); }
+#tools kbd { color: var(--dim); font-size: 10px; margin-left: 3px; }
+#stage { flex: 1; overflow: auto; display: flex; align-items: center; justify-content: center; padding: 20px; min-height: 0; }
+#draw { cursor: crosshair; box-shadow: 0 0 0 1px var(--line); }
+#status { padding: 5px 16px; border-top: 1px solid var(--line); color: var(--dim); min-height: 28px; }
+#status.bad { color: var(--bad); }
+#status.good { color: var(--good); }
+
+/* Inks and previews. */
+#right { border-left: 1px solid var(--line); background: var(--panel); overflow-y: auto; min-height: 0; }
+#right section { padding: 10px 12px; border-bottom: 1px solid var(--line); }
+#right h3 { margin: 0 0 8px; font-size: 11px; font-weight: normal; text-transform: uppercase; letter-spacing: .05em; color: var(--accent);
+  display: flex; justify-content: space-between; align-items: center; }
+.ink { display: grid; grid-template-columns: 26px 14px 1fr 78px 22px; gap: 5px; align-items: center; padding: 2px 3px; border-radius: 3px;
+  border: 1px solid transparent; }
+.ink.on { border-color: var(--accent); background: #262626; }
+.ink .sw { width: 26px; height: 22px; border-radius: 3px; border: 1px solid var(--line); cursor: pointer; position: relative; overflow: hidden; }
+.ink .sw i { position: absolute; inset: 0; }
+.ink .ch { color: var(--bright); text-align: center; }
+.ink input { padding: 2px 4px; width: 100%; min-width: 0; }
+.ink .x { padding: 0; height: 22px; color: var(--dim); }
+.ink .uses { color: var(--dim); font-size: 11px; }
+.note { color: var(--dim); font-size: 12px; margin-top: 6px; }
+.check { background-color: #555; background-image: linear-gradient(45deg, #777 25%, transparent 25%, transparent 75%, #777 75%),
+  linear-gradient(45deg, #777 25%, transparent 25%, transparent 75%, #777 75%); background-size: 8px 8px; background-position: 0 0, 4px 4px; }
+.pv { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 8px; }
+.pv figure { margin: 0; }
+.pv figcaption { color: var(--dim); font-size: 11px; margin-top: 3px; }
+#pvbg { padding: 1px 4px; font-size: 11px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="side">
+    <div class="top">
+      <h2>Sprites</h2>
+      <input id="search" placeholder="Find a sprite…" autocomplete="off">
+    </div>
+    <div id="list"></div>
+  </aside>
+
+  <main id="main">
+    <div id="head"><h1 id="title">…</h1><div class="doc" id="doc"></div></div>
+    <div id="tools">
+      <button data-tool="pen" title="Pen (P)">Pen<kbd>P</kbd></button>
+      <button data-tool="eraser" title="Eraser (E)">Eraser<kbd>E</kbd></button>
+      <button data-tool="fill" title="Fill (G)">Fill<kbd>G</kbd></button>
+      <button data-tool="picker" title="Eyedropper (I, or right-click while drawing)">Pick<kbd>I</kbd></button>
+      <button data-tool="line" title="Line (L)">Line<kbd>L</kbd></button>
+      <button data-tool="rect" title="Rectangle (O); Shift fills it">Rect<kbd>O</kbd></button>
+      <span class="sep"></span>
+      <button id="undo" title="Undo (Ctrl+Z)">Undo</button>
+      <button id="redo" title="Redo (Ctrl+Shift+Z or Ctrl+Y)">Redo</button>
+      <span class="sep"></span>
+      <button id="zoomOut" title="Zoom out (-)">−</button>
+      <button id="zoomIn" title="Zoom in (+)">+</button>
+      <label><input type="checkbox" id="grid" checked> grid<kbd>;</kbd></label>
+      <label>onion <select id="onion"></select></label>
+    </div>
+    <div id="stage"><canvas id="draw"></canvas></div>
+    <div id="status">Loading…</div>
+  </main>
+
+  <aside id="right">
+    <section>
+      <h3>Preview <select id="pvbg" title="What the previews stand on">
+        <option value="#3c3a36">floor</option><option value="#000000">black</option><option value="#d8d4cc">light</option>
+      </select></h3>
+      <div id="previews"></div>
+      <div class="note">Every change is saved straight away. Press F5 in the game to see it there.</div>
+    </section>
+    <section>
+      <h3>Inks <button id="addInk" title="Add an ink with a new letter">+ ink</button></h3>
+      <div id="inks"></div>
+      <div class="note" id="blinkNote"></div>
+    </section>
+  </aside>
+</div>
+
+<script>
+"use strict";
+// The LEDs swap this many times a second, as LED_BLINKS in vending_art.cpp.
+const BLINKS_PER_SECOND = 4;
+// Letters a new ink may take, in the order they are offered.
+const SPARE_LETTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#*+=%&@$";
+const $ = id => document.getElementById(id);
+
+const state = {
+  sheet: null,          // what the server last sent: {version, sprites}
+  ref: { machines: {} },
+  human: null,          // an Image of a human standing, for size
+  name: null,           // the sprite being drawn
+  work: null,           // its inks and rows (arrays of letters) as drawn here
+  ink: null,            // the letter the pen draws with
+  tool: "pen",
+  zoom: 24,
+  history: new Map(),   // name -> {undo: [], redo: []}
+  onion: new Map(),     // name -> the sprite shown faintly under it
+  blink: 0,
+  saving: false,
+};
+
+// ---- the server ----
+
+async function loadSheet() {
+  const r = await fetch("/api/sprites");
+  setSheet(await r.json());
+}
+
+function setSheet(sheet) {
+  const was = state.sheet && state.name ? spriteNamed(state.name) : null;
+  state.sheet = sheet;
+  if (!state.name || !spriteNamed(state.name)) state.name = sheet.sprites[0]?.name;
+  const now = spriteNamed(state.name);
+  if (!state.work || !was || was.raw !== now.raw && !state.saving) select(state.name, true);
+  else renderList();
+}
+
+function spriteNamed(name) { return state.sheet.sprites.find(s => s.name === name); }
+
+async function save() {
+  const s = spriteNamed(state.name);
+  const body = { name: s.name, raw: s.raw, inks: state.work.inks, rows: state.work.rows.map(r => r.join("")) };
+  state.saving = true;
+  try {
+    const r = await fetch("/api/save", { method: "POST", body: JSON.stringify(body) });
+    const j = await r.json();
+    if (r.ok) {
+      state.sheet = j;
+      renderList();
+      status("Saved " + s.name + ".", "good");
+    } else {
+      status(j.error + ": reloaded from the file.", "bad");
+      state.history.delete(s.name);
+      state.sheet = null;
+      state.work = null;
+      await loadSheet();
+    }
+  } catch (e) {
+    status("Couldn't reach the editor's server: is it running?", "bad");
+  } finally {
+    state.saving = false;
+  }
+}
+
+// Checks the file every two seconds, and reloads when another hand changed it.
+async function poll() {
+  try {
+    const r = await fetch("/api/version");
+    const { version } = await r.json();
+    if (state.sheet && version !== state.sheet.version && !state.saving) {
+      const before = spriteNamed(state.name)?.raw;
+      await loadSheet();
+      if (spriteNamed(state.name)?.raw !== before) {
+        state.history.delete(state.name);
+        status(state.name + " was changed in the file: reloaded.", "");
+      }
+    }
+  } catch (e) { /* the server is down; the next poll tries again */ }
+}
+
+function status(text, kind) {
+  const el = $("status");
+  el.textContent = text;
+  el.className = kind || "";
+}
+
+// ---- colours ----
+
+function rgba(hex) {
+  const n = parseInt(hex.slice(0, 6), 16);
+  const a = hex.length === 8 ? parseInt(hex.slice(6), 16) / 255 : 1;
+  return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`;
+}
+
+function inkMap(inks) { return Object.fromEntries(inks.map(i => [i.ch, i.hex])); }
+
+/// The colour of letter ch, the blinking pair swapped on odd blinks; null when see-through.
+function colourOf(sprite, inks, ch, blink) {
+  if (blink % 2 && sprite.blink) {
+    const [a, b] = sprite.blink;
+    ch = ch === a ? b : ch === b ? a : ch;
+  }
+  return ch === "." ? null : inks[ch] || null;
+}
+
+/// Paints a sprite's letters, each one size pixels, at x, y on ctx.
+function paint(ctx, sprite, rows, inks, x, y, size, blink, alpha = 1) {
+  const map = inkMap(inks);
+  ctx.globalAlpha = alpha;
+  rows.forEach((row, gy) => [...row].forEach((ch, gx) => {
+    const hex = colourOf(sprite, map, ch, blink);
+    if (!hex) return;
+    ctx.fillStyle = rgba(hex);
+    ctx.fillRect(x + gx * size, y + gy * size, size, size);
+  }));
+  ctx.globalAlpha = 1;
+}
+
+function rowsOf(s) { return s.name === state.name ? state.work.rows.map(r => r.join("")) : s.rows; }
+function inksOf(s) { return s.name === state.name ? state.work.inks : s.inks; }
+
+// ---- the list ----
+
+function renderList() {
+  const q = $("search").value.trim().toLowerCase();
+  const list = $("list");
+  list.innerHTML = "";
+  let group = null;
+  for (const s of state.sheet.sprites) {
+    if (q && !s.name.toLowerCase().includes(q) && !s.group.toLowerCase().includes(q)) continue;
+    if (s.group !== group) {
+      group = s.group;
+      const g = document.createElement("div");
+      g.className = "grp";
+      g.textContent = group || "Sprites";
+      list.append(g);
+    }
+    const row = document.createElement("div");
+    row.className = "spr" + (s.name === state.name ? " on" : "");
+    row.dataset.name = s.name;
+    const w = s.rows[0].length, h = s.rows.length;
+    const scale = Math.max(1, Math.floor(28 / Math.max(w, h)));
+    const c = document.createElement("canvas");
+    c.width = w * scale;
+    c.height = h * scale;
+    paint(c.getContext("2d"), s, rowsOf(s), inksOf(s), 0, 0, scale, 0);
+    const th = document.createElement("span");
+    th.className = "th";
+    th.append(c);
+    const n = document.createElement("span");
+    n.className = "n";
+    n.textContent = s.name;
+    const sz = document.createElement("span");
+    sz.className = "sz";
+    sz.textContent = `${w}×${h}`;
+    row.append(th, n, sz);
+    list.append(row);
+  }
+}
+
+// ---- choosing a sprite ----
+
+function select(name, keepZoom) {
+  const s = spriteNamed(name);
+  if (!s) return;
+  const changed = name !== state.name;
+  state.name = name;
+  state.work = { inks: s.inks.map(i => ({ ...i })), rows: s.rows.map(r => [...r]) };
+  if (!state.work.inks.some(i => i.ch === state.ink)) state.ink = state.work.inks[0]?.ch ?? null;
+  $("title").innerHTML = "";
+  $("title").append(s.name, Object.assign(document.createElement("span"),
+    { className: "g", textContent: `${s.group} · ${s.rows[0].length}×${s.rows.length}` }));
+  $("doc").textContent = s.comments.join("\n");
+  if (changed || !keepZoom) fitZoom();
+  fillOnion();
+  renderAll();
+  renderList();
+}
+
+function fitZoom() {
+  const stage = $("stage");
+  const w = state.work.rows[0].length, h = state.work.rows.length;
+  const z = Math.floor(Math.min((stage.clientWidth - 40) / w, (stage.clientHeight - 40) / h));
+  state.zoom = Math.max(4, Math.min(48, z));
+}
+
+/// A sprite of the same size whose name is this one's with " up" or " down" on or off.
+function partner(s) {
+  const base = s.name.replace(/ (up|down)$/, "");
+  const names = [base, base + " up", base + " down"].filter(n => n !== s.name);
+  return names.find(n => spriteNamed(n)) || "";
+}
+
+function fillOnion() {
+  const s = spriteNamed(state.name);
+  const sel = $("onion");
+  const w = s.rows[0].length, h = s.rows.length;
+  if (!state.onion.has(s.name)) state.onion.set(s.name, partner(s));
+  sel.innerHTML = "";
+  sel.append(new Option("none", ""));
+  for (const o of state.sheet.sprites)
+    if (o.name !== s.name && o.rows.length === h && o.rows[0].length === w) sel.append(new Option(o.name, o.name));
+  sel.value = state.onion.get(s.name);
+}
+
+// ---- drawing ----
+
+function renderAll() {
+  renderCanvas();
+  renderInks();
+  renderPreviews();
+  renderTools();
+}
+
+function renderTools() {
+  document.querySelectorAll("[data-tool]").forEach(b => b.classList.toggle("on", b.dataset.tool === state.tool));
+  const h = history();
+  $("undo").disabled = !h.undo.length;
+  $("redo").disabled = !h.redo.length;
+}
+
+let preview = null;   // a line or rectangle being dragged: the cells it would set
+
+function renderCanvas() {
+  const s = spriteNamed(state.name);
+  const rows = state.work.rows, w = rows[0].length, h = rows.length, z = state.zoom;
+  const c = $("draw");
+  c.width = w * z;
+  c.height = h * z;
+  const ctx = c.getContext("2d");
+  // See-through shows as a checkerboard, two squares to a pixel.
+  for (let y = 0; y < h * 2; y++)
+    for (let x = 0; x < w * 2; x++) {
+      ctx.fillStyle = (x + y) % 2 ? "#4a4a4a" : "#5c5c5c";
+      ctx.fillRect(x * z / 2, y * z / 2, z / 2, z / 2);
+    }
+  const onion = spriteNamed($("onion").value);
+  if (onion) paint(ctx, onion, onion.rows, onion.inks, 0, 0, z, 0, 0.3);
+  paint(ctx, s, rows.map(r => r.join("")), state.work.inks, 0, 0, z, 0);
+  if (preview) {
+    const hex = state.tool === "eraser" ? null : inkMap(state.work.inks)[state.ink];
+    for (const [x, y] of preview) {
+      ctx.fillStyle = hex ? rgba(hex) : "rgba(255,255,255,0.35)";
+      ctx.fillRect(x * z, y * z, z, z);
+    }
+  }
+  if ($("grid").checked && z >= 6) {
+    ctx.fillStyle = "rgba(0,0,0,0.35)";
+    for (let x = 1; x < w; x++) ctx.fillRect(x * z, 0, 1, h * z);
+    for (let y = 1; y < h; y++) ctx.fillRect(0, y * z, w * z, 1);
+  }
+}
+
+function history() {
+  if (!state.history.has(state.name)) state.history.set(state.name, { undo: [], redo: [] });
+  return state.history.get(state.name);
+}
+
+function snapshot() {
+  return JSON.stringify({ inks: state.work.inks, rows: state.work.rows.map(r => r.join("")) });
+}
+
+function restore(snap) {
+  const j = JSON.parse(snap);
+  state.work = { inks: j.inks, rows: j.rows.map(r => [...r]) };
+  if (!state.work.inks.some(i => i.ch === state.ink)) state.ink = state.work.inks[0]?.ch ?? null;
+}
+
+/// Keeps how the sprite was before a change, so it can be undone, then saves it.
+function commit(before) {
+  if (before === snapshot()) return;
+  const h = history();
+  h.undo.push(before);
+  if (h.undo.length > 200) h.undo.shift();
+  h.redo = [];
+  renderAll();
+  renderList();
+  save();
+}
+
+function undo(redo) {
+  const h = history();
+  const from = redo ? h.redo : h.undo, to = redo ? h.undo : h.redo;
+  if (!from.length) return;
+  to.push(snapshot());
+  restore(from.pop());
+  renderAll();
+  renderList();
+  save();
+}
+
+function cellAt(e) {
+  const r = $("draw").getBoundingClientRect();
+  const x = Math.floor((e.clientX - r.left) / state.zoom), y = Math.floor((e.clientY - r.top) / state.zoom);
+  const rows = state.work.rows;
+  return x >= 0 && y >= 0 && y < rows.length && x < rows[0].length ? [x, y] : null;
+}
+
+function lineCells(a, b) {
+  const cells = [];
+  let [x0, y0] = a;
+  const [x1, y1] = b, dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
+  let err = dx + dy;
+  for (;;) {
+    cells.push([x0, y0]);
+    if (x0 === x1 && y0 === y1) return cells;
+    const e2 = 2 * err;
+    if (e2 >= dy) err += dy, x0 += sx;
+    if (e2 <= dx) err += dx, y0 += sy;
+  }
+}
+
+function rectCells(a, b, filled) {
+  const cells = [];
+  const [xa, xb] = [Math.min(a[0], b[0]), Math.max(a[0], b[0])], [ya, yb] = [Math.min(a[1], b[1]), Math.max(a[1], b[1])];
+  for (let y = ya; y <= yb; y++)
+    for (let x = xa; x <= xb; x++)
+      if (filled || x === xa || x === xb || y === ya || y === yb) cells.push([x, y]);
+  return cells;
+}
+
+function fillFrom([x, y], ch) {
+  const rows = state.work.rows, from = rows[y][x];
+  if (from === ch) return;
+  const todo = [[x, y]];
+  while (todo.length) {
+    const [cx, cy] = todo.pop();
+    if (cy < 0 || cy >= rows.length || cx < 0 || cx >= rows[0].length || rows[cy][cx] !== from) continue;
+    rows[cy][cx] = ch;
+    todo.push([cx + 1, cy], [cx - 1, cy], [cx, cy + 1], [cx, cy - 1]);
+  }
+}
+
+function pick([x, y]) {
+  const ch = state.work.rows[y][x];
+  if (ch === ".") {
+    state.tool = "eraser";
+  } else {
+    state.ink = ch;
+    if (state.tool === "picker" || state.tool === "eraser") state.tool = "pen";
+  }
+  renderAll();
+}
+
+let drag = null;   // {start, last, before, button}
+
+function letter() { return state.tool === "eraser" ? "." : state.ink; }
+
+function onDown(e) {
+  e.preventDefault();
+  const cell = cellAt(e);
+  if (!cell || !state.work) return;
+  if (e.button === 2 || e.altKey || state.tool === "picker") return pick(cell);
+  if (e.button !== 0) return;
+  if (state.tool !== "eraser" && !state.ink) return status("Add an ink first.", "bad");
+  const before = snapshot();
+  if (state.tool === "fill") {
+    fillFrom(cell, letter());
+    return commit(before);
+  }
+  drag = { start: cell, last: cell, before };
+  $("draw").setPointerCapture(e.pointerId);
+  onMove(e);
+}
+
+function onMove(e) {
+  if (!drag) return;
+  const cell = cellAt(e);
+  if (!cell) return;
+  const rows = state.work.rows;
+  if (state.tool === "pen" || state.tool === "eraser") {
+    for (const [x, y] of lineCells(drag.last, cell)) rows[y][x] = letter();
+  } else if (state.tool === "line") {
+    preview = lineCells(drag.start, cell);
+  } else if (state.tool === "rect") {
+    preview = rectCells(drag.start, cell, e.shiftKey);
+  }
+  drag.last = cell;
+  renderCanvas();
+}
+
+function onUp() {
+  if (!drag) return;
+  if (preview) for (const [x, y] of preview) state.work.rows[y][x] = letter();
+  preview = null;
+  const before = drag.before;
+  drag = null;
+  commit(before);
+}
+
+// ---- inks ----
+
+function uses(ch) { return state.work.rows.reduce((n, r) => n + r.filter(c => c === ch).length, 0); }
+
+function renderInks() {
+  const box = $("inks");
+  box.innerHTML = "";
+  for (const ink of state.work.inks) {
+    const row = document.createElement("div");
+    row.className = "ink" + (ink.ch === state.ink && state.tool !== "eraser" ? " on" : "");
+    const sw = document.createElement("div");
+    sw.className = "sw check";
+    sw.title = "Draw with this ink";
+    sw.innerHTML = `<i style="background:${rgba(ink.hex)}"></i>`;
+    sw.onclick = () => { state.ink = ink.ch; if (state.tool === "eraser" || state.tool === "picker") state.tool = "pen"; renderAll(); };
+    const ch = Object.assign(document.createElement("span"), { className: "ch", textContent: ink.ch });
+    const name = Object.assign(document.createElement("input"), { value: ink.name, placeholder: "what it is" });
+    name.title = "What this ink is, a note in the file";
+    name.onchange = () => { const before = snapshot(); ink.name = name.value.trim(); commit(before); };
+    const hex = Object.assign(document.createElement("input"), { value: ink.hex });
+    hex.title = "Its colour: rrggbb, or rrggbbaa to see through it. Double-click to pick one.";
+    hex.onchange = () => {
+      const v = hex.value.trim().replace(/^#/, "").toLowerCase();
+      if (!/^[0-9a-f]{6}([0-9a-f]{2})?$/.test(v)) return status("A colour is rrggbb or rrggbbaa.", "bad"), hex.value = ink.hex;
+      const before = snapshot();
+      ink.hex = v;
+      commit(before);
+    };
+    // A colour picker for the rrggbb part, keeping any see-through.
+    hex.ondblclick = () => {
+      const p = Object.assign(document.createElement("input"), { type: "color", value: "#" + ink.hex.slice(0, 6) });
+      p.oninput = () => { sw.firstChild.style.background = rgba(p.value.slice(1) + ink.hex.slice(6)); };
+      p.onchange = () => { const before = snapshot(); ink.hex = p.value.slice(1) + ink.hex.slice(6); commit(before); };
+      p.click();
+    };
+    const n = uses(ink.ch);
+    const x = Object.assign(document.createElement("button"), { className: "x", textContent: n ? "" : "×" });
+    x.title = n ? `${n} pixels use it` : "Remove this ink";
+    x.disabled = n > 0;
+    if (n) x.innerHTML = `<span class="uses">${n}</span>`;
+    x.onclick = () => {
+      const before = snapshot();
+      state.work.inks = state.work.inks.filter(i => i !== ink);
+      if (state.ink === ink.ch) state.ink = state.work.inks[0]?.ch ?? null;
+      commit(before);
+    };
+    row.append(sw, ch, name, hex, x);
+    box.append(row);
+  }
+  const s = spriteNamed(state.name);
+  $("blinkNote").textContent = s.blink ? `${s.blink[0]} and ${s.blink[1]} trade colours as they blink.` : "";
+}
+
+function addInk() {
+  const taken = new Set(state.work.inks.map(i => i.ch));
+  const ch = [...SPARE_LETTERS].find(c => !taken.has(c));
+  if (!ch) return status("No letters left for another ink.", "bad");
+  const before = snapshot();
+  const from = state.work.inks.find(i => i.ch === state.ink);
+  state.work.inks.push({ ch, hex: from ? from.hex : "ffffff", name: "" });
+  state.ink = ch;
+  state.tool = state.tool === "eraser" || state.tool === "picker" ? "pen" : state.tool;
+  commit(before);
+}
+
+// ---- previews ----
+
+function figure(caption, w, h, draw) {
+  const f = document.createElement("figure");
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  const ctx = c.getContext("2d");
+  ctx.fillStyle = $("pvbg").value;
+  ctx.fillRect(0, 0, w, h);
+  draw(ctx);
+  f.append(c, Object.assign(document.createElement("figcaption"), { textContent: caption }));
+  return f;
+}
+
+/// The machine this sprite belongs to, as "cake machine", if it is one's front, side or goods.
+function machineOf(name) {
+  const m = name.match(/^(.* machine)( side| goods)?$/);
+  return m && state.ref.machines[m[1]] ? m[1] : null;
+}
+
+/// A machine's front with its goods in the stocked slots, as vendingPixel draws it.
+function paintMachine(ctx, machine, full, x, y, size, blink) {
+  const front = spriteNamed(machine), goods = spriteNamed(machine + " goods");
+  if (!front) return;
+  paint(ctx, front, rowsOf(front), inksOf(front), x, y, size, blink);
+  if (!goods || !full) return;
+  for (const [sx, sy] of state.ref.machines[machine])
+    paint(ctx, goods, rowsOf(goods), inksOf(goods), x + sx * size, y + sy * size, size, 0);
+}
+
+function renderPreviews() {
+  const s = spriteNamed(state.name);
+  const rows = rowsOf(s), w = rows[0].length, h = rows.length, b = state.blink;
+  const box = $("previews");
+  box.innerHTML = "";
+  const pad = 4;
+  const line1 = document.createElement("div");
+  line1.className = "pv";
+  for (const size of [1, 3])
+    line1.append(figure(size + "×", w * size + 2 * pad, h * size + 2 * pad,
+      ctx => paint(ctx, s, rows, s.name === state.name ? state.work.inks : s.inks, pad, pad, size, b)));
+  box.append(line1);
+
+  // Beside a human, their feet on one line, at 3x.
+  if (state.human) {
+    const hw = state.human.width, hh = state.human.height, size = 3;
+    const tall = Math.max(hh, h);
+    const line2 = document.createElement("div");
+    line2.className = "pv";
+    line2.append(figure("beside a human", (hw + w + 2) * size + 2 * pad, tall * size + 2 * pad, ctx => {
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(state.human, pad, pad + (tall - hh) * size, hw * size, hh * size);
+      paint(ctx, s, rows, inksOf(s), pad + (hw + 2) * size, pad + (tall - h) * size, size, b);
+    }));
+    box.append(line2);
+  }
+
+  // A machine full and empty, blinking as in the game.
+  const machine = machineOf(s.name);
+  if (machine && spriteNamed(machine)) {
+    const f = spriteNamed(machine), fw = f.rows[0].length, fh = f.rows.length, size = 3;
+    const line3 = document.createElement("div");
+    line3.className = "pv";
+    for (const full of [true, false])
+      line3.append(figure(machine + (full ? ", full" : ", empty"), fw * size + 2 * pad, fh * size + 2 * pad,
+        ctx => paintMachine(ctx, machine, full, pad, pad, size, b)));
+    box.append(line3);
+  }
+}
+
+// ---- wiring ----
+
+function setTool(t) { state.tool = t; renderAll(); }
+
+function zoomBy(step) {
+  state.zoom = Math.max(2, Math.min(64, state.zoom + step * Math.max(1, Math.round(state.zoom / 6))));
+  renderCanvas();
+}
+
+document.querySelectorAll("[data-tool]").forEach(b => b.onclick = () => setTool(b.dataset.tool));
+$("undo").onclick = () => undo(false);
+$("redo").onclick = () => undo(true);
+$("zoomIn").onclick = () => zoomBy(1);
+$("zoomOut").onclick = () => zoomBy(-1);
+$("grid").onchange = renderCanvas;
+$("onion").onchange = () => { state.onion.set(state.name, $("onion").value); renderCanvas(); };
+$("addInk").onclick = addInk;
+$("pvbg").onchange = renderPreviews;
+$("search").oninput = renderList;
+// On press, not click: the list is redrawn after every save, which can swallow a click.
+$("list").addEventListener("pointerdown", e => {
+  const row = e.target.closest(".spr");
+  if (row && e.button === 0) select(row.dataset.name);
+});
+const canvas = $("draw");
+canvas.addEventListener("pointerdown", onDown);
+canvas.addEventListener("pointermove", onMove);
+canvas.addEventListener("pointerup", onUp);
+canvas.addEventListener("pointercancel", onUp);
+canvas.addEventListener("contextmenu", e => e.preventDefault());
+$("stage").addEventListener("wheel", e => {
+  if (!e.ctrlKey) return;
+  e.preventDefault();
+  zoomBy(e.deltaY < 0 ? 1 : -1);
+}, { passive: false });
+
+document.addEventListener("keydown", e => {
+  if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+  const k = e.key.toLowerCase();
+  if ((e.ctrlKey || e.metaKey) && k === "z") return e.preventDefault(), undo(e.shiftKey);
+  if ((e.ctrlKey || e.metaKey) && k === "y") return e.preventDefault(), undo(true);
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  const tools = { p: "pen", e: "eraser", g: "fill", i: "picker", l: "line", o: "rect" };
+  if (tools[k]) return setTool(tools[k]);
+  if (k === ";") return $("grid").checked = !$("grid").checked, renderCanvas();
+  if (k === "+" || k === "=") return zoomBy(1);
+  if (k === "-") return zoomBy(-1);
+  // 1-9 pick the inks in order.
+  if (/^[1-9]$/.test(k) && state.work.inks[+k - 1]) {
+    state.ink = state.work.inks[+k - 1].ch;
+    if (state.tool === "eraser" || state.tool === "picker") state.tool = "pen";
+    renderAll();
+  }
+  // Up and down step through the sprites.
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+    const all = state.sheet.sprites, at = all.findIndex(s => s.name === state.name);
+    const next = all[at + (e.key === "ArrowDown" ? 1 : -1)];
+    if (next) e.preventDefault(), select(next.name);
+  }
+});
+
+window.addEventListener("resize", () => { if (state.work) { fitZoom(); renderCanvas(); } });
+
+// The LEDs blink in the previews, as in the game.
+setInterval(() => {
+  state.blink++;
+  const s = state.work && spriteNamed(state.name);
+  if (s && (s.blink || machineOf(s.name))) renderPreviews();
+}, 1000 / BLINKS_PER_SECOND);
+
+(async () => {
+  try { state.ref = await (await fetch("/ref.json")).json(); } catch (e) { /* previews go without the machines */ }
+  const img = new Image();
+  img.onload = () => { state.human = img; if (state.work) renderPreviews(); };
+  img.src = "/human.png";
+  await loadSheet();
+  status("Ready. Every change is saved to data/sprites.txt as you draw; F5 in the game shows it.", "");
+  setInterval(poll, 2000);
+})();
+</script>
+</body>
+</html>

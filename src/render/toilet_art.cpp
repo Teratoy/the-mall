@@ -1,25 +1,16 @@
 #include "render/toilet_art.h"
 #include "render/mess_art.h"
+#include "render/sprites.h"
 #include "world/chunk.h"
 #include <algorithm>
 #include <raylib.h>
 
 namespace {
 
-/// Seen from above with the tank at the top: T tank, t its shaded edge,
-/// R the seat's rim, H the bowl's water.
-constexpr const char* TOILET_GLYPH[CELL_PX] = {
-    ".TTTT.",
-    ".tttt.",
-    ".RRRR.",
-    "RHHHHR",
-    "RHHHHR",
-    ".RRRR.",
-};
-constexpr Color PORCELAIN = {228, 228, 222, 255};
-constexpr Color PORCELAIN_SHADE = {168, 168, 162, 255};
-constexpr Color RIM = {206, 204, 198, 255};
-constexpr Color BOWL_WATER = {118, 146, 164, 255};
+/// The toilet's sprite is seen from above with its tank at the top. The
+/// code knows its letters: H the bowl's water browns with dirt, R the rim
+/// and t the tank's shaded edge streak.
+
 /// Streaks on the porcelain, yellowed.
 constexpr Color STREAK = {150, 128, 70, 255};
 constexpr float REMEMBERED = 0.45f;
@@ -46,11 +37,13 @@ Color shade(Color c, bool lit) {
 // The glyph is turned so its top lies toward back.
 void drawToilet(int x, int y, Vec2i back, float dirt, uint32_t seed, bool lit) {
     float bowl = std::min(1.0f, dirt / BOWL_FULL), rim = std::min(0.5f, dirt / RIM_FULL);
+    const Sprite& toilet = sprites::get("toilet", CELL_PX, CELL_PX);
     for (int gy = 0; gy < CELL_PX; gy++)
         for (int gx = 0; gx < CELL_PX; gx++) {
-            char g = TOILET_GLYPH[gy][gx];
-            if (g == '.') continue;
-            Color c = g == 'T' ? PORCELAIN : g == 't' ? PORCELAIN_SHADE : g == 'R' ? RIM : BOWL_WATER;
+            char g = toilet.letter(gx, gy);
+            Rgba ink = toilet.ink(g);
+            if (!ink.solid()) continue;
+            Color c = {ink.r, ink.g, ink.b, ink.a};
             float r = unit(hash(seed, gx, gy));
             if (g == 'H' && r < bowl) c = fecesColor(1.0f - r);
             else if ((g == 'R' || g == 't') && r < rim) c = STREAK;

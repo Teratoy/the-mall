@@ -31,7 +31,7 @@ BOTTLESHEET := build/bottle_sheet
 # A human beside itself gone dirty, in every pose, with all that rides on it.
 DIRTYSHEET := build/dirty_sheet
 
-.PHONY: all run clean stuck check golden coverage shot scenarios genprobe hidef bottlesheet dirtysheet fontdump lines trapprobe icon apk install-apk logcat
+.PHONY: all run clean stuck check golden coverage shot scenarios genprobe hidef bottlesheet dirtysheet spritesheet spriteref fontdump lines sprites trapprobe icon apk install-apk logcat
 
 all: $(BIN)
 
@@ -111,6 +111,24 @@ $(DIRTYSHEET): tools/dirty_sheet.cpp $(filter-out build/main.o,$(OBJ))
 dirtysheet: $(DIRTYSHEET)
 	./$(DIRTYSHEET) build/dirty-sheet.png $(DIRTYSHEET_ARGS)
 
+# Every sprite from data/sprites.txt at 1x, in all the ways the game draws it (tools/sprite_sheet.cpp).
+SPRITESHEET := build/sprite_sheet
+
+$(SPRITESHEET): tools/sprite_sheet.cpp $(filter-out build/main.o,$(OBJ))
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@ $(LDLIBS)
+
+spritesheet: $(SPRITESHEET)
+	./$(SPRITESHEET) build/sprite-sheet.png
+
+# What the sprite editor's previews need: a human for size, and where the machines hold their goods.
+spriteref: $(SPRITESHEET)
+	./$(SPRITESHEET) --ref tools/sprite_editor
+
+# The sprite editor: a local web page for data/sprites.txt, at http://localhost:8766.
+# Python only, so it runs on the host too.
+sprites:
+	python3 tools/sprite_editor.py
+
 # raylib's default font, saved for the lines editor (tools/font_dump.cpp).
 FONTDUMP := build/font_dump
 
@@ -147,7 +165,7 @@ trapprobe: $(TRAPPROBE)
 
 # The icon, written where the desktop shortcut and the APK find it (tools/icon.cpp).
 ICON := build/icon
-$(ICON): tools/icon.cpp build/render/icon_art.o
+$(ICON): tools/icon.cpp build/render/icon_art.o build/render/sprites.o build/core/files.o
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@ $(LDLIBS)
 
 icon: $(ICON)
