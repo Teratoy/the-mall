@@ -186,6 +186,8 @@ enum class Moment {
     FirstServerRoom, SeekHum, SleepHum,
     // Running out of breath, bent over winded (to nobody).
     Winded,
+    // Looking at the first hidden trap it ever spots (to nobody).
+    SpotTrap,
     Count
 };
 

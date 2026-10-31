@@ -2487,3 +2487,12 @@ timid                   | NOBODY GETS IN HERE.
 sociable                | AT LEAST SOMETHING'S AWAKE.
 erratic                 | THEY'RE SINGING TO ME.
 settled                 | HOME HUMS.
+
+[spot_trap]
+                        | THAT WAS MEANT FOR SOMEONE.
+                        | WHO WOULD SET THAT?
+                        | CLOSE. TOO CLOSE.
+timid                   | I'M NOT GOING NEAR THAT.
+curious                 | HOW DOES IT WORK?
+brave                   | NICE TRY.
+erratic                 | IT'S WAITING FOR ME.

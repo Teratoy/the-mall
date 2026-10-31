@@ -355,12 +355,18 @@ bool Human::observe(const World& world) {
     bool news = false;
     // The first key, cake, door, water, human, someone else's footprints and
     // toilet it ever sees are remarked on, one a look so they don't all come out
-    // at once, and not before it has come to.
+    // at once, and not before it has come to. Free to, it goes and looks at
+    // all but the human first, and remarks on it there (human_inspect.cpp).
     bool remarked = state == State::Waking;
     std::vector<Vec2i> checks;
-    auto firstSight = [&](talk::Moment m, int about = -1) {
+    auto firstSight = [&](talk::Moment m, Vec2i at, int about = -1) {
         unsigned bit = 1u << (int(m) - int(talk::Moment::FirstKey));
-        if (remarked || (firstSights_ & bit)) return;
+        if (firstSights_ & bit) return;
+        if (m != talk::Moment::FirstHuman && discover({m, at, 1, about})) {
+            firstSights_ |= bit;
+            return;
+        }
+        if (remarked) return;
         remarked = true;
         if (sayLater(m, -1, about)) firstSights_ |= bit;
     };
@@ -384,19 +390,24 @@ bool Human::observe(const World& world) {
     };
     sight.forEach([&](Vec2i c) {
         Tile t = world.tile(c);
-        if (t == Tile::DoorLocked || t == Tile::DoorOpen) firstSight(talk::Moment::FirstDoor);
+        if (t == Tile::DoorLocked || t == Tile::DoorOpen) firstSight(talk::Moment::FirstDoor, c);
         if (drinkable(t)) {
-            firstSight(talk::Moment::FirstWater);
+            firstSight(talk::Moment::FirstWater, c);
             seeWater(world, c);
         }
-        if (world.toilet(c)) firstSight(talk::Moment::FirstToilet);
+        if (world.toilet(c)) firstSight(talk::Moment::FirstToilet, c);
         if (const Statue* st = world.statue(c)) {
             // The statue as a thing in sight, so the line can name it.
             Topic t{Topic::Kind::Here};
             t.cell = st->at;
             t.thing = Topic::Thing::Statue;
             t.detail = int(st->kind) * 16 + int(st->material);
-            fogSight(talk::Moment::FirstStatue, t);
+            // The first statue, dazed or not, is worth going up to.
+            unsigned bit = 1u << (int(talk::Moment::FirstStatue) - int(talk::Moment::FirstStatue));
+            if (!(escape_.fogSights & bit) && discover({talk::Moment::FirstStatue, c, 1, -1, t}))
+                escape_.fogSights |= bit;
+            else
+                fogSight(talk::Moment::FirstStatue, t);
         }
         if (world.table(c)) fogSight(talk::Moment::FirstTable);
         if (const Machine* m = world.machine(c)) news |= seeMachine(*m, c);
@@ -415,7 +426,7 @@ bool Human::observe(const World& world) {
         if (const std::vector<int>* m = world.mess().at(c))
             for (int i : *m) {
                 const Dropping& d = world.mess().all()[size_t(i)];
-                if (d.kind == MessKind::Print && d.who != id) firstSight(talk::Moment::FirstPrints, d.who);
+                if (d.kind == MessKind::Print && d.who != id) firstSight(talk::Moment::FirstPrints, c, d.who);
                 if (memory.mess.insert(i).second && !isErratic() && d.who != id)
                     scare(DISGUST_DREAD * modesty() * Mess::disgust(d, world.time()));
             }
@@ -445,14 +456,14 @@ bool Human::observe(const World& world) {
             spotBottle(c, Pile{});
         }
         if (world.hasKey(c)) {
-            firstSight(talk::Moment::FirstKey);
+            firstSight(talk::Moment::FirstKey, c);
             news |= memory.keys.insert(c).second;
             checkTold(c, true);
         } else if (memory.keys.erase(c)) {
             checkTold(c, false);
         }
         if (world.hasCake(c)) {
-            firstSight(talk::Moment::FirstCake);
+            firstSight(talk::Moment::FirstCake, c);
             news |= memory.cakes.insert(c).second && (hungry() || cakes < carryMax());
             checkTold(c, true);
         } else if (memory.cakes.erase(c)) {
@@ -475,7 +486,7 @@ bool Human::observe(const World& world) {
     for (const auto& o : world.humans()) {
         if (o.get() == this || !sight.sees(o->cell)) continue;
         if (!o->dead()) inSight_.push_back(o->id);
-        if (!o->dead()) firstSight(talk::Moment::FirstHuman, o->id);
+        if (!o->dead()) firstSight(talk::Moment::FirstHuman, o->cell, o->id);
         if (!o->dead()) noticeFilth(*o);
         // Died asleep, from farther off it still looks asleep.
         if (o->dead() && o->sleep_.diedAsleep && !deaths_.seenDead.count(o->id) && cheb(cell, o->cell) > STILL_SEEN) continue;
@@ -511,7 +522,11 @@ bool Human::observe(const World& world) {
                     }
                     rememberAt(o->cell, Episode::What::Body, friendDead ? EPISODE_FRIEND_BODY : EPISODE_BODY, -1,
                                known ? o->id : -1);
-                    sayLater(talk::Moment::FoundBody, -1, o->id);
+                    // The first body it ever finds it looks at before anything.
+                    bool firstBody = !inspect_.body;
+                    inspect_.body = true;
+                    if (!firstBody || !discover({talk::Moment::FoundBody, o->cell, 1, o->id, std::nullopt, true}))
+                        sayLater(talk::Moment::FoundBody, -1, o->id);
                     if (!o->bones() && !o->spoiled()) foundFresh(*o);
                 }
                 news = true;
@@ -565,6 +580,7 @@ void Human::choose(World& world) {
     if (fight_.foe >= 0 && fight_.grudge > 0.0f && startFight(world)) return;
     // Worn out: drops asleep where it stands, once the fight is over.
     if (tiredness >= 1.0f) return startSleeping(world, true);
+    settleFinds();
     // Killed to eat: eats.
     if (mind_.prey >= 0 && fight_.foe != mind_.prey) {
         if (world.human(mind_.prey).dead() && startFeed(world, mind_.prey)) return;
@@ -594,6 +610,8 @@ void Human::choose(World& world) {
     if (fight_.foe >= 0 && startFight(world)) return;
     // Erratic and parched, any bottle it sees is worth a fight (human_bottle.cpp).
     if (bottleRage(world)) return;
+    // A body or blood first found it stares at, before backing off from it.
+    if (inspectNext(world, true)) return;
     if (keepAway(world)) return;
     if (leadEscort(world) || followEscort(world)) return;
     if (plead(world)) return;
@@ -601,6 +619,8 @@ void Human::choose(World& world) {
     if (givePrivacy(world)) return;
     if (keepWatch(world)) return;
     if (!hungry() && !thirsty() && !needsToGo() && waitForCompany(world)) return;
+    // Something seen for the first time it goes and looks at.
+    if (inspectNext(world, false)) return;
 
     // Someone new to greet, unless hungry or thirsty, when nobody is.
     bool needy = hungry() || thirsty() || needsToGo();

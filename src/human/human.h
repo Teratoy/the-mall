@@ -91,7 +91,7 @@ public:
     /// knowing nothing, until it sits up (Sitting) and looks round.
     enum class State { Waking, Idle, Sitting, Rising, Walking, Greeting, Eating, Drinking, Relieving, Punching, Giving, Washing, Looting, Feeding, Sleeping, Sipping, Filling, Pouring, Stashing, Vending, Dead };
     /// Why the human is walking: what it does on arrival.
-    enum class Goal { Explore, FetchKey, OpenDoor, PassDoor, Wander, Meet, Follow, Company, FetchCake, Drink, Relieve, Fight, Flee, Share, CheckDoor, Wash, Avoid, Escort, Escorted, Track, GiveWay, Loot, Feed, Sleep, Rob, Watch, Rescue, Fill, Ask, Pick, Stash, Vend, Voice };
+    enum class Goal { Explore, FetchKey, OpenDoor, PassDoor, Wander, Meet, Follow, Company, FetchCake, Drink, Relieve, Fight, Flee, Share, CheckDoor, Wash, Avoid, Escort, Escorted, Track, GiveWay, Loot, Feed, Sleep, Rob, Watch, Rescue, Fill, Ask, Pick, Stash, Vend, Voice, Inspect };
     /// What the human is doing, as far as hunger, thirst and tiredness go:
     /// each costs its own of all three.
     enum class Action { Rest, Sit, Walk, Run, Greet, Eat, Drink, Relieve, Punch, Give, Wash, Loot, Feed, Sleep, Watch, Fill, Pour, Stash, Vend, Count };
@@ -1539,6 +1539,57 @@ private:
         bool seeking = false;
     };
     ServerRooms server_;
+
+    /// Discoveries (human_inspect.cpp): exploring or wandering with nothing
+    /// pressing, the first of a kind of thing it sees it walks up to, stands
+    /// and looks at, and remarks on there, then goes on (user).
+    struct Find {
+        Find(talk::Moment moment, Vec2i at, int near = 1, int about = -1, std::optional<Topic> topic = std::nullopt,
+             bool grim = false)
+            : moment(moment), at(at), near(near), about(about), topic(std::move(topic)), grim(grim) {}
+        talk::Moment moment;
+        /// Where the thing is, and how near it walks: beside it, or a step
+        /// farther for a pool of blood, whose ring it keeps off.
+        Vec2i at;
+        int near;
+        int about;
+        std::optional<Topic> topic;
+        /// A body, blood or a trap: only the brave and the curious walk up;
+        /// the rest look from where they stand.
+        bool grim;
+    };
+    struct Inspect {
+        /// What it means to look at, in the order seen; the nearest goes first.
+        std::vector<Find> queue;
+        /// The one it is walking up to, and the clock when it set off.
+        std::optional<Find> going;
+        float since = 0.0f;
+        /// Has seen a body, a fresh pool of blood, a hidden trap and a bottle
+        /// lying: only the first of each is worth a look.
+        bool body = false, pool = false, trap = false, bottle = false;
+    };
+    Inspect inspect_;
+    /// Free to go and look at something: exploring or wandering, and neither
+    /// in need, tired, running, fighting, afraid nor leading anyone. A grim
+    /// find is looked at however the sight of it scared it.
+    bool freeToInspect(bool grim) const;
+    /// A thing seen for the first time: kept to be looked at, if it is free
+    /// to. False when it isn't, and the line is to be said at once instead.
+    bool discover(Find f);
+    /// Walks up to the nearest find kept, or looks at it from here; one too
+    /// far, or out of reach, is remarked on where it stands. With grimOnly,
+    /// only a grim one, before the scare of it sends it off.
+    bool inspectNext(World& world, bool grimOnly);
+    /// Taken up with something else, or too long on its way: the finds kept
+    /// are remarked on now. Called as it thinks again.
+    void settleFinds();
+    /// Faces the find, stands and says its line there.
+    void lookAt(const Find& f, bool walked);
+    bool sayFind(const Find& f);
+    /// A key or cake found that it has seen taken since.
+    bool gone(const Find& f) const;
+    /// On its way to a find it should give up on.
+    bool inspectStale() const;
     /// A rack in sight: remembers its room, and remarks on the first.
     void seeServerRoom(const World& world, Vec2i c);
     /// Tired, it makes for a server room it knows and opens its way in with

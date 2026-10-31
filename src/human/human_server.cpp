@@ -24,7 +24,7 @@ void Human::seeServerRoom(const World& world, Vec2i c) {
     if (!server_.seen && state != State::Waking) {
         server_.seen = true;
         note("FOUND A ROOM OF HUMMING MACHINES");
-        sayLater(talk::Moment::FirstServerRoom);
+        if (!discover({talk::Moment::FirstServerRoom, c})) sayLater(talk::Moment::FirstServerRoom);
     }
     memory.serverRooms[r->inner] = *r;
 }

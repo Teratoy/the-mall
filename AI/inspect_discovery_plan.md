@@ -102,3 +102,39 @@ reaction of their own:
    to the usual wants.
 7. The first statue ever seen, dazed or not, is inspected and remarked on
    once per life.
+
+## What was built
+
+- `src/human/human_inspect.cpp`, state in `Human::inspect_` (a queue of
+  `Find`s, the one being walked to, and once-flags for the first body, pool,
+  trap and bottle). New `Goal::Inspect`; the standing is `State::Idle`
+  (`Action::Rest`), so no new Action or tuning rows.
+- `discover()` keeps a find when `freeToInspect()`: goal Explore, Wander or
+  Inspect; not hungry, thirsty, tired, needing to go or running; no foe, no
+  fear of anyone, not leading or led to water; and, unless grim, not scared
+  by blood. Otherwise the line is said at once, as before.
+- `choose()`: `settleFinds()` first (taken up with something else, or 15 s
+  on its way: the kept finds are remarked on where it stands); then
+  `inspectNext(grimOnly)` just before `keepAway`, so it stares at a pool
+  before backing off; then `inspectNext` for the rest after the company
+  wait. Nearest first. Reach is 8 steps, 4 to 12 by curiosity; a find
+  farther or unreachable is remarked on at once.
+- `lookAt()`: faces it, logs `WENT CLOSER TO LOOK AT <THING>` (walked) or
+  `STOPPED TO LOOK AT <THING>` (already there, or grim and neither brave
+  nor curious, 0.6), stands 0.6 s to 4 s by curiosity after its line, which
+  goes to the front of what it still meant to say.
+- On the last step up to a find, it doesn't take what is in reach until it
+  has looked (`choose()` takes it right after). A key or cake seen taken
+  before it gets there is remarked on, not looked at.
+- New moment `SpotTrap` (`[spot_trap]` in lines.txt), the first hidden trap
+  spotted. The first statue is now a once-per-life find, dazed or not.
+- Back on its way is a fresh `choose()`: each find is looked at once or
+  remarked on, so it can't loop.
+- Scenarios `inspect`, `inspect-hungry`, `inspect-body-timid`,
+  `inspect-body-brave`. Scenarios about other things whose humans got
+  pulled aside (the water deals, `lie-water`, `waking-alone`) start with
+  `SoakProbe::seenItAll`. `saidAround` now finds a line within 4 s even with
+  a log line between.
+- Soak after it: 21 humans still 30 s (was 16), most of them long
+  greetings; one loop, a human keeping company torn between a fresh pool it
+  shuns and its company (pool fear vs company, not inspecting).
