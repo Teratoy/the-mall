@@ -388,9 +388,9 @@ void Human::learnTrap(Vec2i cell, TrapKind kind, bool mine) {
         note("SHUT IN A SLAM ROOM");
         sayLater(talk::Moment::Slammed);
     }
-    // Caught itself: wary of the next one like it.
-    if (mine && kind == TrapKind::Darts) {
-        wary_.darts = std::min(1.0f, wary_.darts + WARY_HIT);
+    // Caught itself, or saw someone else darted: wary of the next one like it.
+    if (kind == TrapKind::Darts) {
+        wary_.darts = std::min(1.0f, wary_.darts + (mine ? WARY_HIT : WARY_SAW));
         wary_.notedDarts = false;
     } else if (mine && kind == TrapKind::Slam) {
         wary_.slam = std::min(1.0f, wary_.slam + WARY_HIT);

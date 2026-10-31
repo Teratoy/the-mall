@@ -31,7 +31,7 @@ Status as of 2026-10-31.
 | [pc_layout_plan.md](pc_layout_plan.md) | A wide 1014x468 canvas for PC windows: stats, log, square world, HUD over map, all always open | Built | Q1: scale on 1080p (smooth below 2x for now) |
 | [shut_in_plan.md](shut_in_plan.md) | Remembering a cry from a slam room: going later with a key, fetching one, calling back, telling others | Built | — |
 | [lessons_plan.md](lessons_plan.md) | Self-lessons announced once, again, or for good; a slower fade; a line for surviving thirst | Built | — |
-| [trap_wary_plan.md](trap_wary_plan.md) | Wary of the next trap like one that caught it: table cakes after darts, one-door rooms after a slam | Built | Should seeing someone else caught make it wary too? |
+| [trap_wary_plan.md](trap_wary_plan.md) | Wary of the next trap like one that caught it: table cakes after darts, one-door rooms after a slam | Built | For later: should seeing a slam shut on someone else make it wary too? |
 | [lines_editor_plan.md](lines_editor_plan.md) | `make lines`: a local web page for rewriting data/lines.txt, with bubble previews, review marks and Claude's drafts | Built | — |
 | [dirty_plan.md](dirty_plan.md) | Going unwashed: grime, turning dirty (a ragged look on the same skeleton), washing for it by modesty, dried blood only washed by the modest; smell from the dirty, bodies, feces and foul water, sniffed through walls, flies | Built | Hunched/claws on the look; tuning from play |
 | [waking_talk_plan.md](waking_talk_plan.md) | More muttering in the first minutes: stirring, standing, reaching for memory, the room through the fog, the quiet, calling out, it goes on | Built | Dread from the quiet; longer waking; the mall's sound; the timid steering away from a voice |

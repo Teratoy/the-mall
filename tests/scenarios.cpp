@@ -121,6 +121,19 @@ Check logged(std::vector<std::string> anyOf) {
 Check unlogged(std::string line) {
     return {"no " + line, [line](const Stage& s) { return !s.logged(line); }};
 }
+/// The first line, then nothing of the second for at least gap seconds.
+Check heldOff(std::string first, std::string then, float gap) {
+    return {first + ", then " + then + " no sooner than " + std::to_string(int(gap)) + " s on",
+            [=](const Stage& s) {
+                float at = -1.0f, later = 1e9f;
+                for (const auto& h : s.world.humans())
+                    for (const auto& e : h->log.entries()) {
+                        if (e.what == first && at < 0.0f) at = e.time;
+                        if (e.what == then) later = std::min(later, e.time);
+                    }
+                return at >= 0.0f && later - at >= gap;
+            }};
+}
 using Checks = std::vector<Check>;
 /// This line in h's log, or (said false) not in it.
 Check loggedBy(const Human& h, const std::string& line, bool said = true) {
@@ -539,9 +552,10 @@ Checks bottleTaken(Stage& s, bool hard) {
 }
 
 /// One human, knowing its chunk, with one cake on a table in it, darted
-/// once before (wary 0.5) and as hungry as asked. A second human, whom it
-/// trusts as asked, told it of the cake if tipped.
-Checks wareCake(Stage& s, float hunger, Checks expect, bool tipped = false) {
+/// once before (wary 0.5), or having seen someone else darted, and as
+/// hungry as asked. A second human, whom it trusts, told it of the cake
+/// if tipped.
+Checks wareCake(Stage& s, float hunger, Checks expect, bool tipped = false, bool saw = false) {
     Human& h = s.first();
     std::optional<Vec2i> cake;
     for (Vec2i c : s.world.cakes())
@@ -553,7 +567,9 @@ Checks wareCake(Stage& s, float hunger, Checks expect, bool tipped = false) {
     P::clearChunk(s.world, h.cell);
     P::addCake(s.world, *cake);
     P::knowChunk(s.world, h, true);
-    P::setWary(h, 0.5f, 0.0f);
+    P::setWary(h, saw ? 0.0f : 0.5f, 0.0f);
+    // A volley seen going off far down the chunk, as the world tells it.
+    if (saw) h.learnTrap(s.farFrom(*cake, 12), TrapKind::Darts);
     h.hunger = hunger;
     h.thirst = 0.1f;
     h.cakes = 0;
@@ -616,6 +632,12 @@ const std::vector<Scenario> SCENARIOS = {
      }},
     {"wary-starving", "darted once, a starving human still risks the table cake", seedWhere(plain, 9000),
      [](Stage& s) { return wareCake(s, 0.85f, {logged({"PICKED UP A CAKE"})}); }},
+    {"wary-saw", "having seen someone darted, a human not yet hungry leaves a table cake alone a while", seedWhere(plain, 9000),
+     [](Stage& s) {
+         // Less wary than if darted itself: it gives way sooner to hunger.
+         return wareCake(s, 0.25f, {heldOff("LEFT A CAKE ALONE. IT COULD BE RIGGED", "PICKED UP A CAKE", 30.0f)}, false,
+                         true);
+     }},
     {"wary-tip", "darted once, it takes a cake a friend told it of on their word", seedWhere(plain, 9000),
      [](Stage& s) { return wareCake(s, 0.3f, {logged({"PICKED UP A CAKE"})}, true); }},
     {"wary-slam", "shut in once, with no key it leaves the bait in a room with one door", seedWhere(plain, 9000),

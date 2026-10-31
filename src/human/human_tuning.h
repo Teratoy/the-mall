@@ -279,8 +279,10 @@ constexpr float LESSON_FETCH = 0.6f;
 /// minutes; slams fade like lessons); the hunger it takes to risk a table
 /// cake is wariness times WARY_DARTS_BASE, plus WARY_DARTS_HURT for each
 /// bit of health gone, so one volley leaves it fetching only when hungry,
-/// and hurt or darted twice only when starving.
+/// and hurt or darted twice only when starving. Seeing someone else
+/// darted adds WARY_SAW, a little less than being hit.
 constexpr float WARY_HIT = 0.5f;
+constexpr float WARY_SAW = 0.35f;
 constexpr float WARY_DARTS_FADE = 1.0f / 600.0f;
 constexpr float WARY_DARTS_BASE = 1.0f;
 constexpr float WARY_DARTS_HURT = 0.8f;

@@ -48,6 +48,8 @@ behind one door may be slam bait.
    plate they know of.
 4. **A trusted tip is safe**: a cake that someone it trusts told it of
    skips the wariness, so a rigged tip from a "friend" hurts more.
+5. **Seeing someone else darted** makes it wary too, a little less than
+   being hit itself (user, 2026-10-31).
 
 ## Steps
 
@@ -92,10 +94,18 @@ All five steps, in one go.
 - Scenarios: `wary-darts`, `wary-starving`, `wary-tip`, `wary-slam`,
   `wary-slam-key`. `SoakProbe::setWary` sets wariness directly.
 - Soak: seeds 4 and 6 changed; stuck, loop and block counts the same.
+- 2026-10-31: a volley seen going off adds `WARY_SAW` (0.35) to darts
+  wariness, against 0.5 for its own; one seen leaves it fetching table
+  cakes from hunger 0.35 at full health. Scenario `wary-saw`.
 
 ## Open questions
 
-- Should seeing someone else darted (not only being darted) make it wary?
-  For now only its own hits count.
+- **For later (user, 2026-10-31):** should seeing a slam room shut on
+  someone else make a human wary of one-door rooms too, as seeing darts
+  does? Not decided; for now only its own slams count. If built: in
+  `learnTrap`, a seen slam (`!mine`) would raise `wary_.slam` too, but
+  `slam` is an on/off wariness (any amount above 0 asks for a key), so
+  "a little less" would have to mean it fades sooner, not that it is
+  weaker.
 - Wariness doesn't touch the cakes humans fight over or loot from bodies,
   only cakes on tables.
