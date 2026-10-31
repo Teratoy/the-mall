@@ -23,7 +23,7 @@ Status as of 2026-10-30.
 | [lies_plan.md](lies_plan.md) | Lies out of spite (bait that re-arms, rigged cakes, false tips, slander) and for gain (keeping a cake, selling made-up traps); fixes to greeting so news gets told | Steps 1, 2a, 2c, 3, 4 and gain built | Still rare in normal play (foes come from fights, so liar and foe are seldom calm together); 2b set aside; questions 1, 3–5 unanswered |
 | [android_plan.md](android_plan.md) | A debug APK: `make apk` with the NDK, data files as assets, obituary in app storage, touch and the back button | Planned | The NDK isn't installed yet |
 | [pc_layout_plan.md](pc_layout_plan.md) | A wide 1014x468 canvas for PC windows: stats, log, square world, HUD over map, all always open | Built | Q1: scale on 1080p (smooth below 2x for now) |
-| [trap_wary_plan.md](trap_wary_plan.md) | Wary of the next trap like one that caught it: table cakes after darts, one-door rooms after a slam | Built | Seeing a slam shut on someone else: no wariness yet |
+| [trap_wary_plan.md](trap_wary_plan.md) | Wary of the next trap like one that caught it: table cakes after darts, one-door rooms after a slam | Built | For later: should seeing a slam shut on someone else make it wary too? |
 | [human_split_plan.md](human_split_plan.md) | Splitting Human into per-system classes | Not started | Advised against for now; if done, only system by system, when that system is being reworked anyway |
 
 ## Known gaps found by the tests

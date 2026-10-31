@@ -100,7 +100,12 @@ All five steps, in one go.
 
 ## Open questions
 
-- Seeing a slam room shut on someone else doesn't make it wary of slam
-  rooms (only darts seen count, as asked).
+- **For later (user, 2026-10-31):** should seeing a slam room shut on
+  someone else make a human wary of one-door rooms too, as seeing darts
+  does? Not decided; for now only its own slams count. If built: in
+  `learnTrap`, a seen slam (`!mine`) would raise `wary_.slam` too, but
+  `slam` is an on/off wariness (any amount above 0 asks for a key), so
+  "a little less" would have to mean it fades sooner, not that it is
+  weaker.
 - Wariness doesn't touch the cakes humans fight over or loot from bodies,
   only cakes on tables.
