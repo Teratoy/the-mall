@@ -83,6 +83,8 @@ constexpr StatueKind NICHE_KINDS[] = {StatueKind::Spoon, StatueKind::Bulb, Statu
                                       StatueKind::Clock};
 
 constexpr int STATUES_PER_SLOT_MAX = 3;
+/// Cells per side of the spawn room: 30% of the floor the whole chunk once gave.
+constexpr int SPAWN_ROOM = 54;
 /// The spawn room gets a statue this often, at least this far from its middle.
 constexpr float SPAWN_STATUE_CHANCE = 0.6f;
 constexpr int SPAWN_STATUE_GAP = 14;
@@ -165,13 +167,13 @@ Chunk& World::addChunk(ChunkKind kind, Vec2i slot, const Footprint& parts) {
 Human& World::makeSpawn(const HumanLook& look, uint64_t seed, const std::string& name) {
     Chunk& c = addChunk(ChunkKind::Spawn, {0, 0}, boxFootprint({1, 1}));
     c.paint = gen::randomFloor(rng_);
-    gen::squareRoom(c);
+    gen::squareRoom(c, SPAWN_ROOM);
     Vec2i centre{c.w / 2, c.h / 2};
+    const int lo = (c.w - SPAWN_ROOM) / 2, hi = lo + SPAWN_ROOM - 1;
     placeDoors(c, centre, 0.0f, 1, 1);
     if (rng_.chance(SPAWN_STATUE_CHANCE))
         for (int t = 0; t < 40; t++) {
-            Vec2i at{rng_.range(SPAWN_STATUE_GAP, c.w - SPAWN_STATUE_GAP),
-                     rng_.range(SPAWN_STATUE_GAP, c.h - SPAWN_STATUE_GAP)};
+            Vec2i at{rng_.range(lo, hi), rng_.range(lo, hi)};
             if (cheb(at, centre) >= SPAWN_STATUE_GAP && placeStatue(c, at, centre)) break;
         }
     std::vector<Vec2i> spots = deepSpots(c, centre);

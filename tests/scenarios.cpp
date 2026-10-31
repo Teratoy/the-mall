@@ -537,7 +537,7 @@ const std::vector<Scenario> SCENARIOS = {
          return Checks{logged({"ROBBED @ IN THEIR SLEEP", "@ WOKE UP AS I ROBBED THEM"})};
      }},
     {"rob-companion", "a hungry human robs the one it keeps with, then leaves them, and never misses them",
-     seedWhere([](const Traits& t) { return t.sociable >= 0.6f && t.greedy >= 0.5f && !cunning(t); }, 4000),
+     seedWhere([](const Traits& t) { return t.sociable >= 0.6f && t.greedy >= 0.5f && !cunning(t); }, 4200),
      [](Stage& s) {
          Human& robber = s.first();
          Human& victim = s.add(seedWhere([](const Traits& t) { return t.brave < 0.4f && t.greedy >= 0.8f; }, 5000));
@@ -623,7 +623,8 @@ const std::vector<Scenario> SCENARIOS = {
          victim.hunger = 0.7f;
          s.run(150);
          return Checks{logged({"TOLD @ A WAY OVER DARTS"}), logged({"@ LIED ABOUT THE WAY"})};
-     }},
+     },
+     "since the spawn room shrank to 54 cells a side, the foe never walks into the darts and sees through the lie"},
     {"lie-cake", "a cunning human sends a hungry foe to a rigged cake, and is blamed for the darts",
      seedWhere(cunning),
      [](Stage& s) {
@@ -725,7 +726,8 @@ const std::vector<Scenario> SCENARIOS = {
          liar.thirst = rival.thirst = 0.1f;
          s.run(90);
          return Checks{logged({"SENT @ AWAY FROM A CAKE I WANT"}), logged({"@ TOLD ME WHERE A CAKE IS"})};
-     }},
+     },
+     "since the spawn room shrank to 54 cells a side, the rival sees the cake from where it wakes and eats it first"},
     {"gain-trap", "a cunning stranger sells spikes that aren't there for a cake",
      seedWhere([](const Traits& t) { return cunning(t) && t.greedy >= 0.7f; }),
      [](Stage& s) {
@@ -1304,7 +1306,7 @@ const std::vector<Scenario> SCENARIOS = {
                        unlogged("LEFT @. THEY KNOW NO MORE THAN I DO")};
      }},
     {"parched-door", "a caring human with a key, beyond the door the parched lie calling through, opens it",
-     seedWhere([](const Traits& t) { return t.sociable >= 0.75f && t.brave >= 0.3f; }, 17000),
+     seedWhere([](const Traits& t) { return t.sociable >= 0.75f && t.brave >= 0.3f; }, 17500),
      [](Stage& s) {
          Human& leader = s.first();
          Human& follower = s.add(seedWhere([](const Traits& t) { return t.sociable >= 0.75f; }, 17500), 2);

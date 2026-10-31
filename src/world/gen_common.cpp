@@ -170,8 +170,8 @@ std::vector<int> sides(const Chunk& c) {
     return side;
 }
 
-void squareRoom(Chunk& c) {
-    carveRect(c, 1, 1, c.w - 2, c.h - 2);
+void squareRoom(Chunk& c, int side) {
+    carveRect(c, (c.w - side) / 2, (c.h - side) / 2, side, side);
 }
 
 } // namespace gen
