@@ -40,6 +40,7 @@ Status as of 2026-10-31.
 | [server_rooms_plan.md](server_rooms_plan.md) | Server rooms in the world: grown in room networks and a data-centre chunk, two locked doors in a row (2 keys in, free out, relocking), racks block sight, first sight remembered, a good place to sleep | Built | Defaults to confirm (a key per room; slipping through behind someone); telling of them |
 | [running_plan.md](running_plan.md) | Running beyond fights: urgent needs, fear, chasing, racing for cake and water; breath and being winded; run and winded poses; traits, wounds and load | Steps 1–3 built (running, breath and winded, run and winded poses, breath in stats) | Steps 4–9: who runs and how fast, needs, fear, chases and dropping, races, scenarios |
 | [sprite_editor_plan.md](sprite_editor_plan.md) | `make sprites`: a local web page for redrawing the glyph sprites, moved to data/sprites.txt (F5 reloads), with game-scale, human and machine previews | Built | — |
+| [sim_speed_plan.md](sim_speed_plan.md) | Where the sim spends its time; faster search with the same results; `make simprofile`, `make gprof` | Search speedups built (seed 4: 84.7 s to 8.1 s, `make check` unchanged) | A1, A2 (exact); B1, B2 change behaviour: questions 1–3 |
 | [human_split_plan.md](human_split_plan.md) | Splitting Human into per-system classes | Not started | Advised against for now; if done, only system by system, when that system is being reworked anyway |
 
 ## Known gaps found by the tests

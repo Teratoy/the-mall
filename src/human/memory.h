@@ -5,8 +5,9 @@
 #include "world/server_room.h"
 #include "world/smell.h"
 #include "world/trap.h"
-#include <algorithm>
 #include "world/vending.h"
+#include <algorithm>
+#include <array>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -20,14 +21,23 @@ class Memory {
 public:
     /// Void where the human has never looked.
     Tile tile(Vec2i cell) const {
-        auto it = slots_.find(slotOf(cell));
-        return it == slots_.end() ? Tile::Void : it->second[index(cell)];
+        Vec2i slot = slotOf(cell);
+        if (slot != last_.slot || !last_.tiles) {
+            auto it = slots_.find(slot);
+            if (it == slots_.end()) return Tile::Void;
+            last_.slot = slot;
+            last_.tiles = it->second.data();
+        }
+        return last_.tiles[index(cell)];
     }
 
     void see(Vec2i cell, Tile t) {
         auto& slot = slots_[slotOf(cell)];
         if (slot.empty()) slot.assign(CHUNK * CHUNK, Tile::Void);
-        slot[index(cell)] = t;
+        Tile& was = slot[index(cell)];
+        known_[size_t(was)]--;
+        known_[size_t(t)]++;
+        was = t;
         if (!hearsay.empty()) hearsay.erase(cell);
     }
     /// Learns a cell's tile from someone else: it is planned on all the
@@ -37,6 +47,10 @@ public:
         see(cell, t);
         if (unseen) hearsay.insert(cell);
     }
+
+    /// How many cells it knows to be of this tile: none, and nothing it
+    /// looks for of that tile can be found.
+    int known(Tile t) const { return known_[size_t(t)]; }
 
     /// Cells whose tiles it only has on someone's word: the way they told
     /// it, or the way they led it. Shown as hearsay on its map.
@@ -123,6 +137,22 @@ public:
 
 private:
     std::unordered_map<Vec2i, std::vector<Tile>, Vec2iHash> slots_;
+    /// Cells by the tile it knows them to be (Void's count runs negative).
+    std::array<int, 256> known_{};
+    /// The slot last looked up, kept at hand since searches ask for cell
+    /// after cell in one slot. Only slots it holds are kept, and a slot's
+    /// tiles never move once made; a copy starts with nothing at hand.
+    struct LastSlot {
+        Vec2i slot{};
+        const Tile* tiles = nullptr;
+        LastSlot() = default;
+        LastSlot(const LastSlot&) {}
+        LastSlot& operator=(const LastSlot& o) {
+            if (this != &o) tiles = nullptr;
+            return *this;
+        }
+    };
+    mutable LastSlot last_;
 
     static Vec2i slotOf(Vec2i c) { return {floorDiv(c.x, CHUNK), floorDiv(c.y, CHUNK)}; }
     static size_t index(Vec2i c) {

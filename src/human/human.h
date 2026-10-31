@@ -1905,6 +1905,12 @@ private:
     std::optional<std::vector<Vec2i>> search(const World& world, const std::function<bool(Vec2i)>& done,
                                              bool avoidCrowd = false,
                                              const std::function<int(Vec2i)>& goalCost = {}) const;
+    /// A search for what it knows of nowhere: it comes to nothing without
+    /// looking, but draws the die a search draws, so all after goes as before.
+    std::nullopt_t searchedNothing() const {
+        rng_.next();
+        return std::nullopt;
+    }
     /// The same walk from any cell, which need not be passable itself.
     std::optional<std::vector<Vec2i>> searchFrom(const World& world, Vec2i start,
                                                  const std::function<bool(Vec2i)>& done, bool avoidCrowd,
