@@ -1458,6 +1458,23 @@ private:
     void takeVended(World& world);
     /// Sees a machine at the cell, one of its two: remembers what is in it.
     bool seeMachine(const Machine& m, Vec2i c);
+
+    /// Server rooms (human_server.cpp): seen and remembered, and slept in
+    /// for the warm hum of the machines behind their locked doors (user).
+    struct ServerRooms {
+        /// Has seen one before: the first is remarked on.
+        bool seen = false;
+        /// Making for one to sleep in: said once a trip.
+        bool seeking = false;
+    };
+    ServerRooms server_;
+    /// A rack in sight: remembers its room, and remarks on the first.
+    void seeServerRoom(const World& world, Vec2i c);
+    /// Tired, it makes for a server room it knows and opens its way in with
+    /// its keys, a door at a time. False if it knows none it can get into.
+    bool seekHum(World& world);
+    /// How much better a cell is to sleep on: inside a server room it knows, a lot.
+    float humShare(Vec2i c) const;
     /// Sleep, robbing sleepers and keeping watch (human_sleep.cpp).
     struct Sleep {
         /// The sleeper it is robbing, or going to; -1 none.

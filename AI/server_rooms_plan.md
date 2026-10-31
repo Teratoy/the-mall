@@ -7,8 +7,8 @@ decals (straights, corners, Ts, cross). `tools/server_rooms.cpp` lays out
 three rooms by hand: a 6x5 closet, a 12x9 room and a 20x14 hall. This plan
 puts server rooms into the generated mall.
 
-Status: planned, questions answered (2026-10-31). Not started: build it
-after the vending-machines branch is merged (see below).
+Status: built (2026-10-31), on top of the merged vending machines. See
+"Built" at the end, and the defaults taken there for the user to check.
 
 ## User's decisions (2026-10-31)
 
@@ -152,7 +152,61 @@ Defaults taken where nothing was said (change them if wrong):
   with 2 keys, being let out freely, the doors relocking, first sight,
   sleeping by the servers.
 
+## Built (2026-10-31)
+
+World (`src/world/server_room.h`, `src/world/gen_server.cpp`):
+- `Tile::Rack` (blocks walking and sight) and `Tile::Console` (terminals
+  and the desk's top and wings, walking only). `World::pieces()`,
+  `piece(cell)`, `serverRooms()`, `serverRoom(cell)`, `airlock(cell)`,
+  `cable(cell)`.
+- Server rooms are carved into solid wall after the slam rooms, with
+  dice of their own (`serverDice`, seeded per chunk), so a chunk without
+  one comes out as before. Sizes: closet 6-8 x 5-6, room 10-13 x 8-10,
+  hall 15-20 x 12-14. The airlock is on the south, east or west side.
+- Inside: a back row of racks against the north wall, more rows every 6
+  rows with both end columns free (and a 2-cell gap in rows of 12 or
+  more), the desk at one end of the back wall in rooms 8x7 or bigger,
+  away from a side door; a terminal per 90 cells of floor, clear of the
+  cables and the door; cables in front of each row joined by a trunk down
+  the side away from the desk, out through the front wall.
+- `ChunkKind::DataCentre`: a grid of 4-wide corridors 28 x 24 apart, up
+  to 8 server rooms a slot carved between them, and 2-3 basins a slot at
+  the crossings, as it has no other water (the soak found the spawn's
+  neighbour turned data centre left everyone to die of thirst).
+- Airlock doors: a key opens one from outside (`World::unlock`); from
+  inside `World::pushOpen` opens it free. Each shuts and locks 1 s after
+  nobody stands in it (`updateAirlocks`).
+
+Humans:
+- `Memory::airlocks` (which way each seen airlock door pushes) and
+  `Memory::serverRooms` (each seen room, by its inner door).
+- Walking: a search may step through a door that pushes from its side;
+  stepping into it pushes it open. Such a door counts as open for
+  exploring and is never taken for a locked door to check or spend keys
+  on.
+- First sight of a rack: `FOUND A ROOM OF HUMMING MACHINES` and
+  `talk::Moment::FirstServerRoom` (`[first_server_room]`).
+- Sleep (`human_server.cpp`, `seekSleep`): tired but not exhausted, with
+  two keys (one in the lobby), it makes for the nearest server room it
+  knows within 60 cells (`WENT TO SLEEP AMONG THE HUMMING MACHINES`,
+  `[seek_hum]`), opens each door with a key (`UNLOCKED A DOOR TO THE
+  HUMMING MACHINES`), and sleeps inside, where a spot costs 0.3 of what it
+  would elsewhere (`THE MACHINES HUMMED IT TO SLEEP`, `[sleep_hum]`, in
+  place of the usual lying-down line and asking for a watch).
+
+Tools and tests: `make genprobe` checks no server room floor is walled
+off; `make shot SHOT_ARGS="--server"`; `tools/server_probe.cpp`;
+scenarios `hum-sleep`, `hum-out`, `hum-lobby`.
+
+Defaults taken, for the user to confirm or change:
+- **Each server room brings one key** to its chunk, though getting in
+  takes two.
+- The desk's chair cells stay walkable.
+- A door shuts 1 s after nobody stands in it, so someone close behind
+  can slip through on the same key.
+- Humans don't tell each other of server rooms yet.
+
 ## Open questions
 
-None now. Asked and answered above; new ones go here as the build turns
-them up.
+- The defaults above.
+

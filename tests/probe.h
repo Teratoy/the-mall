@@ -226,6 +226,37 @@ struct SoakProbe {
         h.vend_.kind = kind;
         return h.startVending(w);
     }
+    /// A server room of rw x rh floor with its top-left at at, walled, its
+    /// airlock below it in the middle (inner door, two cells of lobby,
+    /// outer door) and grown inside as generation grows them. The cell
+    /// below the outer door must be floor.
+    static const ServerRoom& buildServerRoom(World& w, Vec2i at, int rw, int rh) {
+        const int cx = at.x + rw / 2;
+        for (int y = -1; y <= rh + 3; y++)
+            for (int x = -1; x <= rw; x++) w.setTile(at + Vec2i{x, y}, Tile::Wall);
+        for (int y = 0; y < rh; y++)
+            for (int x = 0; x < rw; x++) w.setTile(at + Vec2i{x, y}, Tile::Floor);
+        const Vec2i inner{cx, at.y + rh}, outer{cx, at.y + rh + 3}, in{0, -1};
+        for (Vec2i c : {inner - in, inner - in * 2}) w.setTile(c, Tile::Floor);
+        for (Vec2i door : {inner, outer}) {
+            w.setTile(door, Tile::DoorLocked);
+            w.airlocks_[door] = {in};
+        }
+        w.serverRooms_.push_back({at.x, at.y, rw, rh, outer, inner});
+        Rng dice(1);
+        const ServerRoom r = w.serverRooms_.back();
+        w.furnishServerRoom(*w.chunkAt(World::slotOf(at)), dice, r, inner + in);
+        return w.serverRooms_.back();
+    }
+    /// h knows the server room and its doors, as if it had seen them.
+    static void knowServerRoom(Human& h, const ServerRoom& r) {
+        h.memory.serverRooms[r.inner] = r;
+        for (Vec2i door : {r.inner, r.outer}) {
+            h.memory.airlocks[door] = {0, -1};
+            h.memory.see(door, Tile::DoorLocked);
+        }
+        h.server_.seen = true;
+    }
     /// Given up on a way out, at home on home.
     static void settle(Human& h, Vec2i home) {
         h.escape_.settled = true;

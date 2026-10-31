@@ -259,6 +259,8 @@ void Human::tire(float dt) {
 // others need to get by, whose open neighbours fall into more than one
 // bunch round it (a corridor, a gap), nor one beside a door or water.
 bool Human::seekSleep(World& world) {
+    // Worn through, anywhere near will do; tired, a server room it knows first.
+    if (!exhausted() && seekHum(world)) return true;
     float worn = std::clamp((tiredness - TIRED) / (EXHAUSTED - TIRED), 0.0f, 1.0f);
     int range = int(std::lround(SLEEP_REACH - (SLEEP_REACH - SLEEP_REACH_EXHAUSTED) * worn));
     auto base = sleepBase();
@@ -308,7 +310,7 @@ bool Human::seekSleep(World& world) {
         if (loner && near(anyone, c)) k += LONER_CROWD;
         if (!loner && !company.empty() && !near(company, c)) k += SLEEP_COMPANY * traits.sociable;
         if (base && !atBase(c)) k += SLEEP_UNFAMILIAR;
-        return int(k * CELL_COST);
+        return int(k * humShare(c) * CELL_COST);
     };
     auto p = search(world, done, true, cost);
     if (!p) return false;
@@ -331,7 +333,12 @@ void Human::startSleeping(World& world, bool collapsed) {
     sleep_.watchee = -1;
     sleep_.askedWatch = -1;
     sleep_.watchedBy = -1;
-    if (!collapsed && !askToWatch(world)) sayLater(talk::Moment::SleepNow);
+    // Among the humming machines it needs no watch.
+    const bool hum = !collapsed && humShare(cell) < 1.0f;
+    if (hum) note("THE MACHINES HUMMED IT TO SLEEP");
+    if (hum) sayLater(talk::Moment::SleepHum);
+    else if (!collapsed && !askToWatch(world)) sayLater(talk::Moment::SleepNow);
+    server_.seeking = false;
     auto base = sleepBase();
     sleep_.atSleepSpot = !collapsed && base && cheb(cell, *base) <= BASE_NEAR;
     // What it holds, and who is about, as it shuts its eyes.

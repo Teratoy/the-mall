@@ -37,7 +37,7 @@ Status as of 2026-10-31.
 | [waking_talk_plan.md](waking_talk_plan.md) | More muttering in the first minutes: stirring, standing, reaching for memory, the room through the fog, the quiet, calling out, it goes on | Planned | Dread from the quiet; longer waking; the mall's sound |
 | [vending_plan.md](vending_plan.md) | Cake and empty-bottle vending machines: paid in 3 keys, restock one a day, in rooms and plazas against north or side walls, remembered and told of like cakes | Built | Tuning from play; gun machines wait for guns |
 | [machine_room_art_plan.md](machine_room_art_plan.md) | Old computers as art: server rack, CRT terminal, console desk, cable floor decals | Art built | Where they stand in the world; any use |
-| [server_rooms_plan.md](server_rooms_plan.md) | Server rooms in the world: grown in room networks and a data-centre chunk, two locked doors in a row (2 keys in, free out, relocking), racks block sight, first sight remembered, a good place to sleep | Planned | Building |
+| [server_rooms_plan.md](server_rooms_plan.md) | Server rooms in the world: grown in room networks and a data-centre chunk, two locked doors in a row (2 keys in, free out, relocking), racks block sight, first sight remembered, a good place to sleep | Built | Defaults to confirm (a key per room; slipping through behind someone); telling of them |
 | [human_split_plan.md](human_split_plan.md) | Splitting Human into per-system classes | Not started | Advised against for now; if done, only system by system, when that system is being reworked anyway |
 
 ## Known gaps found by the tests

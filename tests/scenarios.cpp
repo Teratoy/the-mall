@@ -1693,6 +1693,66 @@ const std::vector<Scenario> SCENARIOS = {
          return Checks{own(nose, "SMELT DEATH"), own(nose, "FOLLOWED THE SMELL OF DEATH"),
                        logged({"ATE FROM @'S ROTTEN BODY", "ATE FROM @'S BODY"})};
      }},
+    {"hum-sleep", "tired with two keys and a server room it knows, it opens both doors and sleeps by the machines",
+     seedWhere(plain, 20000), [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         const ServerRoom& r = P::buildServerRoom(s.world, h.cell + Vec2i{-5, -17}, 10, 8);
+         P::knowServerRoom(h, r);
+         h.tiredness = 0.6f;
+         h.hunger = h.thirst = 0.1f;
+         h.keys = 2;
+         s.run(60);
+         return Checks{loggedBy(h, "WENT TO SLEEP AMONG THE HUMMING MACHINES"),
+                       loggedBy(h, "UNLOCKED A DOOR TO THE HUMMING MACHINES"),
+                       loggedBy(h, "THE MACHINES HUMMED IT TO SLEEP"),
+                       {"both keys spent", [&h](const Stage&) { return h.keys == 0; }},
+                       {"asleep inside", [&h, &r](const Stage&) {
+                            return h.state == Human::State::Sleeping && r.contains(h.cell);
+                        }}};
+     }},
+    {"hum-out", "inside a server room with no keys, it remarks on the machines, pushes its way out to drink, "
+                "and the doors lock behind it",
+     seedWhere(plain, 21000), [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         const Vec2i outside = h.cell;
+         const ServerRoom& r = P::buildServerRoom(s.world, h.cell + Vec2i{-5, -17}, 10, 8);
+         calm(h);
+         s.run(8);
+         P::place(s.world, h, r.inner + Vec2i{0, -1});
+         P::addWater(s.world, outside);
+         h.memory.see(outside, Tile::Basin);
+         h.bottles.clear();
+         h.keys = 0;
+         h.thirst = 0.6f;
+         h.hunger = h.tiredness = 0.1f;
+         s.run(60);
+         return Checks{loggedBy(h, "FOUND A ROOM OF HUMMING MACHINES"), loggedBy(h, "DRANK WATER"),
+                       {"out of the room", [&h, &r](const Stage&) { return !r.encloses(h.cell); }},
+                       {"both doors locked again", [&r](const Stage& st) {
+                            return st.world.tile(r.inner) == Tile::DoorLocked &&
+                                   st.world.tile(r.outer) == Tile::DoorLocked;
+                        }}};
+     }},
+    {"hum-lobby", "with one key it gets through the outer door, finds the inner one locked, and pushes back out",
+     seedWhere(plain, 22000), [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         const ServerRoom& r = P::buildServerRoom(s.world, h.cell + Vec2i{-5, -17}, 10, 8);
+         calm(h);
+         s.run(8);
+         P::place(s.world, h, r.outer + Vec2i{0, 1});
+         h.keys = 1;
+         h.memory.see(r.outer, Tile::DoorLocked);
+         h.memory.airlocks[r.outer] = {0, -1};
+         bool opened = s.world.unlock(r.outer);
+         h.hunger = h.thirst = h.tiredness = 0.1f;
+         s.run(60);
+         return Checks{{"the outer door opened", [opened](const Stage&) { return opened; }},
+                       {"never inside the room", [&h, &r](const Stage&) { return !r.contains(h.cell); }},
+                       {"not stuck in the lobby", [&h, &r](const Stage&) { return !r.encloses(h.cell); }}};
+     }},
 };
 
 } // namespace

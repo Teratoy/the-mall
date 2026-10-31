@@ -2255,3 +2255,35 @@ curious                 | SOMEONE STILL FILLS THE MACHINES.
                         | A CAKE, AND I'LL TELL YOU WHERE TO SPEND THOSE KEYS.
 greedy                  | THE MACHINE'S WORTH A CAKE TO KNOW.
                         | YOUR KEYS ARE NO GOOD WITHOUT ME.
+
+# The first server room it ever sees, racks blinking in the warm dark,
+# said to nobody.
+[first_server_room]
+                        | IT'S WARM IN HERE.
+                        | THEY'RE ALL STILL RUNNING.
+                        | LISTEN TO THEM HUM.
+curious                 | WHAT ARE THEY ALL THINKING ABOUT?
+timid                   | ALL THOSE LITTLE LIGHTS. LIKE EYES.
+hopeless                | EVEN THE MACHINES HAVE SOMEWHERE TO BE.
+tired                   | I COULD SLEEP RIGHT HERE.
+erratic                 | THEY'RE TALKING ABOUT ME.
+
+# Tired, setting off with keys to spend to sleep in a server room it
+# knows, said to nobody.
+[seek_hum 0.6]
+                        | SOMEWHERE WARM.
+                        | I KNOW WHERE TO SLEEP.
+                        | THE HUMMING ROOM.
+timid                   | BEHIND A LOCKED DOOR. YES.
+greedy                  | WORTH EVERY KEY.
+curious                 | THEY'LL STILL BE RUNNING.
+
+# Lying down to sleep among the humming machines, said to nobody.
+[sleep_hum 0.6]
+                        | LIKE RAIN ON A ROOF.
+                        | WARM. FINALLY WARM.
+                        | HUSH NOW.
+timid                   | NOBODY GETS IN HERE.
+sociable                | AT LEAST SOMETHING'S AWAKE.
+erratic                 | THEY'RE SINGING TO ME.
+settled                 | HOME HUMS.

@@ -2,6 +2,7 @@
 #include "world/blood.h"
 #include "world/chunk.h"
 #include "world/pile.h"
+#include "world/server_room.h"
 #include "world/smell.h"
 #include "world/trap.h"
 #include <algorithm>
@@ -66,6 +67,9 @@ public:
     /// into the room through each: from that side a door opens at a push,
     /// from the other only with a key.
     std::unordered_map<Vec2i, Vec2i, Vec2iHash> airlocks;
+    /// The server rooms it has seen the machines of, by their inner door:
+    /// where the warm hum is, kept for later uses (user).
+    std::unordered_map<Vec2i, ServerRoom, Vec2iHash> serverRooms;
     /// What it saw lying put down on the floor, as it was then; and, of
     /// those, the ones it knows are someone's stash, and whose: seen being
     /// stashed, or told of.

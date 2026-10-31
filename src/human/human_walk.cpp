@@ -403,17 +403,21 @@ int Human::hunchCost(Vec2i c, int most) const {
     return int(float(most) * escape_.out * (1.0f - along) / 2.0f);
 }
 
+// An airlock door that gives at a push from here is no locked door.
 std::optional<Vec2i> Human::lockedDoorBeside(Vec2i c) const {
     if (memory.tile(c) != Tile::Floor) return std::nullopt;
     for (Vec2i d : DIRS4)
-        if (memory.tile(c + d) == Tile::DoorLocked) return c + d;
+        if (memory.tile(c + d) == Tile::DoorLocked && !pushesOpen(c, c + d)) return c + d;
     return std::nullopt;
 }
 
+// An airlock door that gives at a push from here is as good as open.
 std::optional<Vec2i> Human::openDoorBeside(Vec2i c) const {
     if (memory.tile(c) != Tile::Floor) return std::nullopt;
-    for (Vec2i d : DIRS4)
-        if (memory.tile(c + d) == Tile::DoorOpen && memory.tile(c + d * 2) == Tile::Void) return c + d;
+    for (Vec2i d : DIRS4) {
+        bool open = memory.tile(c + d) == Tile::DoorOpen || (memory.tile(c + d) == Tile::DoorLocked && pushesOpen(c, c + d));
+        if (open && memory.tile(c + d * 2) == Tile::Void) return c + d;
+    }
     return std::nullopt;
 }
 

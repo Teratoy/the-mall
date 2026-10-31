@@ -160,6 +160,10 @@ enum class Moment {
     // bottle with keys, finding it empty (all to nobody); a machine at a
     // greeting, told or sold (to the one told).
     FirstVending, VendCake, VendBottle, VendEmpty, TellVending, SellVending,
+    // Server rooms: the first one it ever sees; setting off, tired, with
+    // keys to spend, to sleep in one it knows; lying down to sleep among
+    // the humming machines (all to nobody).
+    FirstServerRoom, SeekHum, SleepHum,
     Count
 };
 

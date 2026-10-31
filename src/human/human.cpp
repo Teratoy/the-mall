@@ -366,6 +366,7 @@ bool Human::observe(const World& world) {
         if (world.toilet(c)) firstSight(talk::Moment::FirstToilet);
         if (const Machine* m = world.machine(c)) news |= seeMachine(*m, c);
         if (const AirlockDoor* a = world.airlock(c)) memory.airlocks[c] = a->in;
+        if (t == Tile::Rack) seeServerRoom(world, c);
         if (t != Tile::Void) {
             if (memory.tile(c) == Tile::Void) {
                 escape_.lastFound = clock_;
