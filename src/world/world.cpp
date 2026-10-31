@@ -26,6 +26,9 @@ constexpr int JOIN_WIDTH = 3;
 /// Keys and the chunk's human start at least this far into the chunk from
 /// where it was entered, as a fraction of the way to the farthest floor.
 constexpr float KEY_DEPTH = 0.4f;
+/// A chunk makes one spare key for every this many locks it brings, to the
+/// nearest: 1 lock gets 1 key, 2 get 3, 3 get 4, 4 get 5, 5 get 7 (user).
+constexpr int LOCKS_PER_SPARE_KEY = 3;
 /// Cakes per slot a chunk is made with. They never come back once eaten.
 constexpr int CAKES_MIN = 2, CAKES_MAX = 5;
 /// Each human wakes BOTTLE_STEPS_MIN to BOTTLE_STEPS_MAX steps from a bottle
@@ -240,8 +243,8 @@ void World::ensureGenerated(Vec2i cell) {
 // any chunk, fills it with a maze or a room network, then doors, keys and a
 // human, and cakes, each key and cake on a table, then traps. A water maze is dug as a plain one and its
 // walls turned to water once everything is joined up. Each new door gets a
-// key, and so does each slam room, so there are as many keys as locked
-// doors and gates that can be.
+// key, and so does each slam room, and a third more are added as spares, so
+// there are a few more keys than locked doors and gates that can be.
 void World::generate(Vec2i slot, Vec2i entry) {
     // Each slot of each footprint in turn is tried on the one entered.
     std::vector<std::pair<Vec2i, const Footprint*>> options;
@@ -318,6 +321,7 @@ void World::generate(Vec2i slot, Vec2i entry) {
     TableMaterial house = randomMaterial(rng_);
     size_t next = 0, nextKiosk = 0;
     int keys = fresh + int(slams.size());
+    keys += (keys + LOCKS_PER_SPARE_KEY / 2) / LOCKS_PER_SPARE_KEY;
     for (int i = 0; i < keys; i++)
         if (auto s = tableSpot(c, spots, next, house, true)) keys_.insert(*s);
     // Tables took some spots, and their room round them is best left clear.
