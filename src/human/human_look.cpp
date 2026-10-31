@@ -37,6 +37,8 @@ constexpr float DIRTY_FRAY_DARK = 0.75f;
 constexpr int DIRTY_HEM_TORN = 45, DIRTY_TORN = 6, DIRTY_FRAYED = 12;
 /// A gun tucked into the waistband: its grip, and the back of its slide.
 constexpr Rgba GRIP = hex(0x7a6048), SLIDE = hex(0x8a8e98);
+/// The far arm, shooting from behind the body, is in this much shade.
+constexpr float FAR_ARM_SHADE = 0.8f;
 /// How far a pixel may be from a colour in shade and still count as it.
 constexpr int SHADE_SLACK = 4;
 
@@ -235,8 +237,9 @@ SpriteFrame HumanLook::pour() const { return draw({.front = Arm::Pour}); }
 SpriteFrame HumanLook::offerBottle() const { return draw({.front = Arm::OfferBottle}); }
 
 // Going off, the kick jolts the head back a pixel.
-SpriteFrame HumanLook::shoot(int aim, bool fire) const {
-    return draw({.front = Arm::Aim, .lean = fire ? -1 : 0, .aim = std::clamp(aim, -2, 2), .fire = fire});
+SpriteFrame HumanLook::shoot(int aim, bool fire, bool far) const {
+    aim = std::clamp(aim, -2, 2);
+    return draw({.front = Arm::Aim, .lean = fire ? -1 : 0, .aim = aim, .fire = fire, .farGun = far && aim > -2 && aim < 2});
 }
 SpriteFrame HumanLook::type(int frame) const { return draw({.front = frame == 0 ? Arm::TypeUp : Arm::TypeDown}); }
 
@@ -385,11 +388,12 @@ SpriteFrame HumanLook::drawBody(const Stance& s) const {
     };
     // An arm pixel i from the shoulder, or its hand, on the back arm (side
     // 0) or the front one, mapped to the arm hanging straight down.
-    auto armPx = [&](int side, int x, int y, int i, bool hand) {
+    // The far arm, reaching out behind the body, is in shade.
+    auto armPx = [&](int side, int x, int y, int i, bool hand, float k = 1.0f) {
         int rx = side == 0 ? tl - 1 : tr + 1;
         int ry = hand ? restHand : std::min(restShoulder + i, restHand - 1);
         p.body(side == 0 ? BodyPart::BackArm : BodyPart::FrontArm, [rx, ry](int, int) { return Vec2i{rx, ry}; });
-        p.set(x, y, hand ? skin : arm(i));
+        p.set(x, y, shade(hand ? skin : arm(i), k));
     };
     auto cake = [&](int x, int y) {
         p.off();
@@ -401,10 +405,12 @@ SpriteFrame HumanLook::drawBody(const Stance& s) const {
     // The front arm may be busy instead: waving beside the face, the hand
     // rocking out and back; up in a guard or thrown in a punch; or bringing
     // a cake to the mouth.
+    // Shooting with the far hand, the back arm aims and the front one swings.
+    const int busy = s.front == Arm::Aim && s.farGun ? 0 : 1;
     for (int side = 0; side < 2; side++) {
         int x = side == 0 ? tl - 1 : tr + 1;
         int shoulder = torsoTop + 1;
-        if (side == 1 && s.front != Arm::Swing) {
+        if (side == busy && s.front != Arm::Swing) {
             switch (s.front) {
             case Arm::WaveIn:
             case Arm::WaveOut: {
@@ -504,11 +510,20 @@ SpriteFrame HumanLook::drawBody(const Stance& s) const {
                     break;
                 }
                 // Otherwise straight out from the shoulder the way it aims, a
-                // step at a time; the kick pulls the hand back a step.
+                // step at a time; the kick pulls the hand back a step. The
+                // far arm shows its shoulder behind, then comes out past
+                // the near one, the same reach ahead, in shade.
                 static constexpr Vec2i STEP[SHOOT_AIMS - 1] = {{0, -1}, {1, -1}, {1, 0}, {1, 1}};
                 Vec2i d = STEP[s.aim + 2];
                 int reach = s.fire ? 1 : 2;
-                for (int i = 0; i <= reach; i++) armPx(side, x + d.x * i, shoulder + d.y * i, i, i == reach);
+                float k = 1.0f;
+                if (s.farGun) {
+                    armPx(side, x, shoulder, 0, false);
+                    x = tr + 1;
+                    k = FAR_ARM_SHADE;
+                }
+                for (int i = s.farGun ? 1 : 0; i <= reach; i++)
+                    armPx(side, x + d.x * i, shoulder + d.y * i, i, i == reach, k);
                 p.f.gun = {int8_t(x + d.x * reach), int8_t(shoulder + d.y * reach), int8_t(s.aim), s.fire};
                 break;
             }

@@ -169,8 +169,11 @@ struct HumanLook {
     /// the SHOOT_AIMS ways (GunSpot::aim); aimed south it is held out at
     /// the one looking on. fire is the kick as it goes off: the hand
     /// knocked back a pixel, the muzzle tipped up, the head jolted back.
-    /// The gun is out of the waistband.
-    SpriteFrame shoot(int aim, bool fire) const;
+    /// The gun is out of the waistband. far shoots with the far hand
+    /// instead, its arm reaching out from behind the body: facing left
+    /// (drawn flipped), it is the same hand as facing right. Aimed straight
+    /// up or south there is no far hand: those face no way to flip.
+    SpriteFrame shoot(int aim, bool fire, bool far = false) const;
     /// At the keys of a computer, the front forearm out level ahead at the
     /// waist: 0 the hand lifted, 1 down on a key.
     SpriteFrame type(int frame) const;
@@ -205,6 +208,8 @@ private:
         /// With Arm::Aim, which way (GunSpot::aim), and whether it fires.
         int aim = 0;
         bool fire = false;
+        /// Aiming with the back arm, the far one, rather than the front.
+        bool farGun = false;
     };
     /// The shade the tucked gun is drawn in: dulled with dirt when dirty.
     float gunDirt_ = 1.0f;

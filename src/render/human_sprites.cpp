@@ -103,7 +103,10 @@ template <class F> void HumanSprites::eachFrame(const HumanLook& look, F&& add) 
     add(pour_, look.pour());
     add(offerBottle_, look.offerBottle());
     for (int a = 0; a < SHOOT_AIMS; a++)
-        for (int fire = 0; fire < 2; fire++) add(shoot_[size_t(a)][size_t(fire)], look.shoot(a - 2, fire == 1));
+        for (int fire = 0; fire < 2; fire++) {
+            add(shoot_[size_t(a)][size_t(fire)], look.shoot(a - 2, fire == 1));
+            if (a >= 1 && a <= 3) add(shootFar_[size_t(a - 1)][size_t(fire)], look.shoot(a - 2, fire == 1, true));
+        }
     for (int i = 0; i < TYPE_FRAMES; i++) add(type_[size_t(i)], look.type(i));
 }
 
@@ -213,6 +216,9 @@ void HumanSprites::paint(Texture2D& t, const SpriteFrame& f) {
 void HumanSprites::draw(Vector2 feet, Pose pose, float animTime, bool flip, int scale, Color tint,
                         int cakes, const Bottle* bottle, bool inHand) const {
     bool carrying = cakes > 0;
+    // Shooting straight up or south faces no way, and mirrored it would
+    // shoot with the other hand.
+    if (pose == Pose::ShootUp || pose == Pose::ShootDown) flip = false;
     // Mirroring keeps the base pixel in place: it is the middle column.
     Rectangle src{0, 0, flip ? -float(SPRITE_W) : float(SPRITE_W), float(SPRITE_H)};
     bool lying = (pose == Pose::Fall && animTime >= FALL_DOWN) || pose == Pose::Wake || pose == Pose::Lie;
@@ -266,7 +272,8 @@ void HumanSprites::draw(Vector2 feet, Pose pose, float animTime, bool flip, int 
                            : pose == Pose::Fill  ? fill_
                            : pose == Pose::Pour  ? pour_
                            : pose == Pose::OfferBottle ? offerBottle_
-                           : shooting  ? shoot_[size_t(aim + 2)][animTime < SHOT_TIME ? 1 : 0]
+                           : shooting  ? (flip ? shootFar_[size_t(aim + 1)] : shoot_[size_t(aim + 2)])
+                                                 [animTime < SHOT_TIME ? 1 : 0]
                            : pose == Pose::Fall  ? (animTime < FALL_KNEEL ? idle_ : kneel_)
                            : pose == Pose::Sit   ? (animTime < SIT_DOWN_TIME ? crouch_ : seated)
                            : pose == Pose::Rise && animTime < STAND_UP_TIME ? crouch_
