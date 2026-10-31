@@ -955,6 +955,57 @@ const std::vector<Scenario> SCENARIOS = {
              },
              shamelessMeek);
      }},
+    {"stink", "dirty long enough, a human starts to smell", seedWhere(shameless, 12000),
+     [](Stage& s) {
+         Human& h = s.first();
+         calm(h);
+         P::setGrime(h, 1.45f);
+         s.run(60);
+         return Checks{own(h, "TURNED DIRTY"), own(h, "STARTED TO SMELL")};
+     }},
+    {"put-off", "hungry beside someone who smells, a human walks off to eat", seedWhere(modest, 12500),
+     [](Stage& s) {
+         Human& eater = s.first();
+         Human& smelly = s.add(seedWhere(shameless, 12000), 1);
+         calm(eater);
+         calm(smelly);
+         eater.hunger = 0.75f;
+         eater.cakes = 1;
+         P::setGrime(smelly, 2.8f);
+         s.run(40);
+         return Checks{own(smelly, "STARTED TO SMELL"), own(eater, "MOVED AWAY FROM A SMELL TO EAT"),
+                       own(eater, "ATE A CAKE")};
+     }},
+    {"smell-death", "a body walled in out of sight is smelt through the wall", 1,
+     [](Stage& s) {
+         Human& nose = s.first();
+         Human& victim = s.add(seedWhere(plain, 9900));
+         calm(nose);
+         Vec2i at = nose.cell + Vec2i{3, 0};
+         P::wallIn(s.world, at);
+         P::place(s.world, victim, at);
+         P::kill(s.world, victim, 1200.0f);
+         s.run(20);
+         return Checks{own(nose, "SMELT DEATH"), unlogged("FOUND @ DEAD")};
+     }},
+    {"follow-stench", "an erratic human hungry for flesh follows a smell of death to the body",
+     seedWhere([](const Traits& t) { return t.brave >= 0.6f; }, 13000),
+     [](Stage& s) {
+         Human& nose = s.first();
+         Human& victim = s.add(seedWhere(plain, 9900));
+         calm(nose);
+         Vec2i at = nose.cell + Vec2i{3, 0};
+         // A way in on the far side.
+         P::wallIn(s.world, at, Vec2i{2, 0});
+         P::place(s.world, victim, at);
+         P::kill(s.world, victim, 1200.0f);
+         P::craze(nose, 1.0f);
+         nose.hunger = 0.8f;
+         nose.cakes = 0;
+         s.run(60);
+         return Checks{own(nose, "SMELT DEATH"), own(nose, "FOLLOWED THE SMELL OF DEATH"),
+                       logged({"ATE FROM @'S ROTTEN BODY", "ATE FROM @'S BODY"})};
+     }},
 };
 
 } // namespace

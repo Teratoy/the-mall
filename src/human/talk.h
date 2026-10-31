@@ -127,6 +127,9 @@ enum class Moment {
     // Turning dirty from going unwashed, and washed clean of it again (both
     // to nobody).
     GotDirty, WashedClean,
+    // Smell: starting to smell itself, smelling death it can't see, setting
+    // off after that smell, walking off from a smell to eat (all to nobody).
+    Stink, SmellDeath, FollowStench, PutOff,
     Count
 };
 

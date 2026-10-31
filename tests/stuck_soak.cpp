@@ -206,6 +206,8 @@ int main(int argc, char** argv) {
         // Going: pisses, shits, and how many of them anyone else could see.
         // Going unwashed: turned dirty, washed for it, washed clean, dirty at the end.
         int turnedDirty = 0, washedDirt = 0, washedClean = 0, dirtyEnd = 0;
+        // Smell: started to smell, smelt death unseen, followed it, walked off to eat.
+        int stank = 0, smeltDeath = 0, followedStench = 0, putOff = 0;
         int pisses = 0, shits = 0, stepped = 0, filthy = 0, washedShit = 0, foulSick = 0, foulGulps = 0, toiletUses = 0, toiletMisses = 0, toiletWaits = 0;
         // Accidents (bursting, fright), going seen, going in water seen, and mocking.
         // Guarded water: let drink free, for a cake, turned away, paid, cheated.
@@ -279,6 +281,10 @@ int main(int argc, char** argv) {
                 turnedDirty += e.what == "TURNED DIRTY" ? e.times : 0;
                 washedDirt += e.what == "WASHED OFF DIRT" ? e.times : 0;
                 washedClean += e.what == "WASHED CLEAN" ? e.times : 0;
+                stank += e.what == "STARTED TO SMELL" ? e.times : 0;
+                smeltDeath += e.what == "SMELT DEATH" ? e.times : 0;
+                followedStench += e.what == "FOLLOWED THE SMELL OF DEATH" ? e.times : 0;
+                putOff += e.what == "MOVED AWAY FROM A SMELL TO EAT" ? e.times : 0;
                 foulSick += e.what == "THE FOUL WATER MADE ME SICK" ? e.times : 0;
                 foulGulps += e.what == "DRANK FOUL WATER" ? e.times : 0;
                 toiletUses += e.what == "USED A TOILET" ? e.times : 0;
@@ -343,6 +349,8 @@ int main(int argc, char** argv) {
                     pisses, shits, w.mess().all().size(), stepped, filthy, washedShit, foulSick);
         std::printf("   dirty: %d turned dirty, %d washed for it, %d washed clean, %d dirty at the end\n", turnedDirty,
                     washedDirt, washedClean, dirtyEnd);
+        std::printf("   smell: %d started to smell, %d smelt death unseen, %d followed it, %d walked off to eat\n", stank,
+                    smeltDeath, followedStench, putOff);
         {
             // How foul the water got: cells foul at all, past refusing, past sickness, and the worst.
             std::map<Vec2i, float, bool (*)(Vec2i, Vec2i)> f([](Vec2i a, Vec2i b) { return a.x != b.x ? a.x < b.x : a.y < b.y; });

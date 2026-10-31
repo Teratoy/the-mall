@@ -1,6 +1,7 @@
 #pragma once
 // What the tests may see and set of humans and the world that the game
 // keeps to itself. SoakProbe is a friend of Human and World.
+#include <optional>
 #include "human/human.h"
 #include "world/world.h"
 #include <deque>
@@ -97,6 +98,19 @@ struct SoakProbe {
         w.gates_.insert(gate);
         h.shutIn(gate);
         return gate;
+    }
+    /// A walled box round a cell, five across, floor inside; no way in,
+    /// unless a gap in its wall at at + gap.
+    static void wallIn(World& w, Vec2i at, std::optional<Vec2i> gap = std::nullopt) {
+        for (int y = -2; y <= 2; y++)
+            for (int x = -2; x <= 2; x++)
+                w.setTile(at + Vec2i{x, y}, std::max(std::abs(x), std::abs(y)) == 2 ? Tile::Wall : Tile::Floor);
+        if (gap) w.setTile(at + *gap, Tile::Floor);
+    }
+    /// Gone erratic, with this taste for flesh.
+    static void craze(Human& h, float appetite) {
+        h.mind_.erratic = 1.0f;
+        h.mind_.appetite = appetite;
     }
     /// Shut in, h cries for help on its next update.
     static void cryNow(Human& h) { h.rescue_.helpTimer = 0.0f; }

@@ -9,6 +9,15 @@
 
 namespace {
 
+/// Smells are gathered this often, in seconds.
+constexpr float SMELL_EVERY = 1.0f;
+/// Feces smell until this fresh (Mess::freshness), as dry as no longer to
+/// stick to a foot; the fresher and the bigger, the stronger.
+constexpr float FECES_SMELL_DRY = 0.4f;
+/// Water this foul smells, as foul as to sicken (the user), at least this
+/// strongly, fouler water more.
+constexpr float WATER_SMELL_FOUL = 0.5f, WATER_SMELL_MIN = 0.2f;
+
 /// Chance each free stretch of border gets an exit door, beyond the one
 /// every chunk with an empty neighbour is sure to have.
 constexpr float NEW_DOOR_CHANCE = 0.35f;
@@ -808,6 +817,29 @@ void World::updateTraps(float dt) {
     });
 }
 
+// Humans in the order they came, feces in the order they were left, then
+// water by its cell, so the same world gathers them the same way.
+void World::gatherSmells() {
+    smells_.clear();
+    for (const auto& h : humans_)
+        if (float s = h->smellStrength(); s > 0.0f)
+            smells_.push_back({h->dead() ? SmellKind::Body : SmellKind::Human, h->cell, s, h->id});
+    for (const Dropping& d : mess_.all()) {
+        if (d.kind != MessKind::Feces) continue;
+        float fresh = Mess::freshness(d, time_);
+        if (fresh > FECES_SMELL_DRY)
+            smells_.push_back({SmellKind::Feces, d.cell, std::min(1.0f, d.size * (fresh - FECES_SMELL_DRY) / (1.0f - FECES_SMELL_DRY)), d.who});
+    }
+    std::vector<Smell> water;
+    for (const auto& [c, f] : mess_.fouled())
+        if (f >= WATER_SMELL_FOUL && drinkable(tile(c)))
+            water.push_back({SmellKind::Water, c, std::min(1.0f, WATER_SMELL_MIN + (f - WATER_SMELL_FOUL) / WATER_SMELL_FOUL), -1});
+    std::sort(water.begin(), water.end(), [](const Smell& a, const Smell& b) {
+        return a.cell.y != b.cell.y ? a.cell.y < b.cell.y : a.cell.x < b.cell.x;
+    });
+    smells_.insert(smells_.end(), water.begin(), water.end());
+}
+
 // By index: a human stepping into an empty slot adds a chunk and a human.
 void World::update(float dt) {
     time_ += dt;
@@ -816,5 +848,9 @@ void World::update(float dt) {
     blood_.update(dt);
     for (const auto& [c, f] : blood_.takeFoul()) mess_.foulWater(c, f);
     mess_.update(dt, [&](Vec2i c) { return drinkable(tile(c)); });
+    if ((smellIn_ -= dt) <= 0.0f) {
+        smellIn_ += SMELL_EVERY;
+        gatherSmells();
+    }
     for (size_t i = 0; i < humans_.size(); i++) humans_[i]->update(*this, dt);
 }

@@ -85,7 +85,7 @@ feces and piss, and as remains. It draws through `HumanSprites::draw` as
 the game does. `DIRTYSHEET_ARGS="seed scale"` picks another human;
 `DIRTYSHEET_ARGS="seed scale styles"` draws one row per hair style.
 
-## Next: smell (annotated, not built)
+## Smell (built 2026-10-31)
 
 What the user asked for (2026-10-31):
 
@@ -121,16 +121,41 @@ What the user asked for (2026-10-31):
 
 Also as asked before: feces smell until they dry; feces footprints don't.
 
-### To settle while building (suggested defaults)
+### How it works
 
-- Smell strength 0 to 1 per source: a smelly human by how far past the
-  mark its grime is, feces by freshness, a body by rot (and blood), water
-  by foulness past 0.5. Flies = 1 + 4 x strength.
-- "Close by": smelled within 3 cells, through walls, for the strongest;
-  less for faint smells. Remembered in `Memory` as a smell at a cell, with
-  when.
-- Keeping away: a path cost on cells next to a smell it knows (like
-  `messCost`), more for the modest; nobody keeps away from its own smell.
+- **Sources** (`World::gatherSmells`, every second, `world/smell.h`):
+  humans by `Human::smellStrength()`: alive once dirty to grime 1.5
+  (`SMELL_GRIME`), 0.3 then stronger to grime 3; dead, at once if bloody
+  (0.5), and once spoiled (300 s) from 0.5 up with rot, until bare bones.
+  Fresh feces until they dry as far as no longer sticking (freshness 0.4),
+  by size and freshness. Water from foulness 0.5, 0.2 then stronger.
+  Footprints, piss and poured water don't smell.
+- **Reach**: 1 cell for the faintest to 3 for the strongest, walls or no
+  walls (`smellReach`).
+- **Sniffing** (`Human::sniff`, `human_smell.cpp`): every second, awake,
+  each human learns the smells within reach into `Memory::smells` (kind,
+  strength, whose, when), not its own; forgets one where it would smell it
+  and doesn't, or after 120 s. `Memory::reek` holds the cells on and next
+  to them.
+- **Keeping away**: walking on or next to a smell costs up to 6 cells more
+  (`SMELL_STEP_COST` 60 tenths, by strength, times 0.5 + modesty). The
+  erratic don't care.
+- **Appetite**: hungry with a cake by a smell, it walks up to 8 cells off
+  to eat (`leaveStench`), not again for 30 s; starving, it eats where it
+  is. It never sits down by a smell. A body it smells is not eaten but by
+  the erratic and the starving.
+- **Smelling death**: a body smelt and not seen: note `SMELT DEATH`. Hungry
+  enough for flesh with no body it knows to eat, it follows the strongest
+  such smell (`followStench`); there it sees the body as usual.
+- **Starting to smell**: note `STARTED TO SMELL`. Washed clean, it stops.
+- **Flies** (`world_view.cpp`): over every smell in sight, 1 to 5 by
+  strength, dark one-pixel dots each looping at its own speed; over a
+  standing human's head (moving with it), a body, or a cell.
+- **Talk**: moments `stink`, `smell_death`, `follow_stench`, `put_off`.
+- **Tests**: scenarios `stink`, `put-off`, `smell-death` (a walled-in body
+  smelt through the wall), `follow-stench`; a smell line in the soak;
+  `make shot SHOT_ARGS="--smells"` leaves fresh feces by the human for the
+  flies.
 
 ## Open questions on the look
 

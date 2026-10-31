@@ -209,6 +209,7 @@ void Human::live(World& world, float dt) {
     tire(dt);
     press(dt);
     soil(dt);
+    sniff(world, dt);
     if (hunger >= 1.0f) health -= STARVE_RATE * dt;
     if (thirst >= 1.0f) health -= PARCH_RATE * dt;
     if (!hungry() && !thirsty() && wounds.empty() && mind_.sick <= 0.0f)
@@ -504,7 +505,11 @@ void Human::choose(World& world) {
         if (isErratic()) return startRelieving(world);
         accident(world, false);
     }
-    if (hungry() && cakes > 0) return startEating();
+    // Not by a smell, unless starving: it walks off to eat first.
+    if (hungry() && cakes > 0) {
+        if (!starving() && stinksHere() && leaveStench(world)) return;
+        return startEating();
+    }
     if (thirsty())
         if (auto w = waterBeside(cell); w && wouldDrink(world, cell, *w)) return startDrinking(*w);
     // Beside water it would drink with a bottle to fill, it fills it.

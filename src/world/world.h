@@ -6,6 +6,7 @@
 #include "world/gen.h"
 #include "world/mess.h"
 #include "world/pile.h"
+#include "world/smell.h"
 #include "world/statue.h"
 #include "world/table.h"
 #include "world/toilet.h"
@@ -120,6 +121,9 @@ public:
     const Mess& mess() const { return mess_; }
     /// How foul the water at a cell is, from feces, piss and blood in it.
     float foul(Vec2i cell) const { return mess_.foul(cell); }
+    /// Everything that smells, as it was when last gathered: every
+    /// SMELL_EVERY seconds.
+    const std::vector<Smell>& smells() const { return smells_; }
 
     /// Simulates every chunk and every human, seen or not.
     void update(float dt);
@@ -176,6 +180,11 @@ private:
     Blood blood_;
     Mess mess_;
     float time_ = 0.0f;
+    std::vector<Smell> smells_;
+    /// Seconds until the smells are gathered again.
+    float smellIn_ = 0.0f;
+    /// Gathers what smells now: humans and bodies, fresh feces, foul water.
+    void gatherSmells();
 
     const Chunk* chunkAt(Vec2i slot) const;
     Chunk* chunkAt(Vec2i slot);

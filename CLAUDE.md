@@ -80,7 +80,7 @@ lost, and several useful probes already have been.
   - social: trust, greeting, tells, lies, names
   - fight: cakes, fights, hits, looting
   - speech: lines and the log
-  - blood, thirst, bottle, relief, grime, sleep, flesh, hope, rescue, company, chat, topic, episode
+  - blood, thirst, bottle, relief, grime, smell, sleep, flesh, hope, rescue, company, chat, topic, episode
 - `src/world/`: chunks and generation (`gen_*.cpp`), blood, mess, traps,
   tables, statues, toilets.
 - `src/render/`: pixel art drawn in code; `src/scenes/`: menu, create,

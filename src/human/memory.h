@@ -2,7 +2,9 @@
 #include "world/blood.h"
 #include "world/chunk.h"
 #include "world/pile.h"
+#include "world/smell.h"
 #include "world/trap.h"
+#include <algorithm>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -79,6 +81,28 @@ public:
     /// off when it can.
     std::unordered_set<Vec2i, Vec2iHash> pools;
     std::unordered_set<Vec2i, Vec2iHash> shunned;
+    /// A smell it smelt, seen or not, as strong as it was, and the clock
+    /// time it last smelt it there.
+    struct Whiff {
+        SmellKind kind;
+        float strength;
+        int who;
+        float at;
+    };
+    /// The smells it knows of, by cell (Human::sniff).
+    std::unordered_map<Vec2i, Whiff, Vec2iHash> smells;
+    /// The cells on and next to the smells it knows of, and the strongest
+    /// smell there: what walking or stopping there is like.
+    std::unordered_map<Vec2i, float, Vec2iHash> reek;
+    void rebuildReek() {
+        reek.clear();
+        for (const auto& [c, w] : smells)
+            for (int y = -1; y <= 1; y++)
+                for (int x = -1; x <= 1; x++) {
+                    float& r = reek[c + Vec2i{x, y}];
+                    r = std::max(r, w.strength);
+                }
+    }
 
 private:
     std::unordered_map<Vec2i, std::vector<Tile>, Vec2iHash> slots_;
