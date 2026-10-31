@@ -526,7 +526,8 @@ private:
     /// next, not only that plate. A trusted tip, or starving, overrides it.
     struct Wary {
         /// Darted: how wary of cakes on tables, 0 to 1, raised by each
-        /// volley it set off and fading with time. Hunger weighs against
+        /// volley it set off, a little less by each it saw, and fading
+        /// with time. Hunger weighs against
         /// it, and being hurt for it.
         float darts = 0.0f;
         /// Shut in: while above 0, it takes no cake from a room with one
