@@ -10,13 +10,14 @@ does anything yet.
   machine, with a side view. No door, so the lights show.
 - **CRT terminal**: one cell, standing on its own pedestal, front-on from
   its foot, a little shorter than a human.
-- **Console desk**: 6 cells wide and 3 deep, against a wall, set up for
-  one human: a row of six screens across the back (the outer two turned in
-  towards the seat), and a swivel chair in front. No function for now; the
-  look should say "one operator's station".
-- **Cable decals**: 1-cell floor tiles, a bundle of 2-3 cables. Pieces: 3
-  straight looks that meet seamlessly so a run can mix them, each turned
-  either way; a cross; 4 corners; 4 T-joins. No end pieces.
+- **Console desk**: 6 cells wide and 4 deep (first 3 deep, then made
+  bigger), against a wall, set up for one human, with a swivel chair. No
+  function for now; the look should say "one operator's station". Not
+  geometric: realistic and lively, not a row of the same box.
+- **Cable decals**: 1-cell floor tiles. Pieces: 3 straight looks that meet
+  seamlessly so a run can mix them, each turned either way; a cross; 4
+  corners; 4 T-joins. No end pieces. First a bundle of 2-3 cables; then
+  only the black cable, with the ties scaled down to it.
 
 ## Built (2026-10-31)
 
@@ -25,13 +26,16 @@ does anything yet.
   drives, a scrolling green screen, keyboard, power unit.
 - `src/render/computer_art.h/.cpp`: `drawTerminal` (6x13, bottom-left of
   its foot) and `drawConsoleDesk` (36 px wide, its footprint's top-left;
-  the screens rise `CONSOLE_RISE` px above). The desk carries a mug, a
-  switch panel each side of the keyboard, and a stack of green-bar printout.
+  the screens rise `CONSOLE_RISE` px above). The desk has a wing coming
+  forward each side, inner edges slanting in; a small screen turned in, a
+  big main screen, an instrument box with a sweeping round scope on a lamp
+  panel, a printer with green-bar paper curling out, a mug, a keyboard set
+  askew, a switch panel, a floppy, a red phone, loose sheets, a chair
+  turned a little, and a cable falling off the left wing to the floor.
 - `src/render/cable_art.h/.cpp`: `drawCable(x, y, links, variant, lit)`,
-  `links` a mask of `CABLE_N/E/S/W`. The bundle is a thin putty cable each
-  side of a thick black one, symmetric so corners keep the lanes. Straights
-  are plain, sagging, or tied. A T or cross lays the branch over the run's
-  last two pixels, so the thick cables meet.
+  `links` a mask of `CABLE_N/E/S/W`. A 2 px black cable; straights are
+  plain, sagging, or tied. A T or cross lays the branch over the run's
+  last two pixels, so the cables meet.
 - Previews: `tools/server_rack.cpp` (`build/server_rack.png`) and
   `tools/computers.cpp` (`build/computers.png`, with a small room wired up).
   Built by hand; see their header comments.

@@ -5,24 +5,23 @@
 namespace {
 
 /// The straight runs, lying across the cell from west to east; a run from
-/// north to south is the same turned. The lanes keep to rows 1 to 4 at
-/// both ends, so any look meets any other. a a thin cable, k the thick
-/// one, K a shine on it, w a tie.
+/// north to south is the same turned. The cable keeps to rows 2 and 3 at
+/// both ends, so any look meets any other. k the cable, K a shine on it, w
+/// a tie.
 constexpr const char* STRAIGHT[CABLE_VARIANTS][CELL_PX] = {
-    {"......", "aaaaaa", "kkKkkk", "kkkkkk", "aaaaaa", "......"},
-    {"..aa..", "aa..aa", "kkkkkK", "kkkkkk", "a...aa", ".aaa.."},
-    {"..w...", "aawaaa", "kkwkkk", "kkwkkk", "aawaaa", "......"},
+    {"......", "......", "kkKkkk", "kkkkkk", "......", "......"},
+    {"......", "......", "kk..kk", "kkkkkK", "..kk..", "......"},
+    {"......", "..w...", "kkwkkk", "kkwkkk", "......", "......"},
 };
 
-/// The corner from west to south; the other three are it flipped. Each
-/// lane leaves by the same rows and columns as a straight run, the outer
-/// thin cable going round the outside.
-constexpr const char* CORNER[CELL_PX] = {"......", "aaaa..", "kkkka.", "kkkka.", "aakka.", ".akka."};
+/// The corner from west to south; the other three are it flipped. The
+/// cable leaves by the same rows and columns as a straight run, its
+/// outside corner rounded off.
+constexpr const char* CORNER[CELL_PX] = {"......", "......", "kkk...", "kkkk..", "..kk..", "..kk.."};
 /// A branch joining a run lies over it only this far from its own edge,
-/// so its thick cable meets the run's and its thin ones part the run's.
+/// so the two cables meet.
 constexpr int BRANCH_REACH = 2;
 
-constexpr Rgba THIN = hex(0xd8ccaa);
 constexpr Rgba THICK = hex(0x1e1e22);
 constexpr Rgba SHINE = hex(0x4a4c54);
 constexpr Rgba TIE = hex(0xe8e8e0);
@@ -31,7 +30,6 @@ constexpr float MEMORY_DIM = 0.45f;
 
 Rgba ink(char g) {
     switch (g) {
-    case 'a': return THIN;
     case 'k': return THICK;
     case 'K': return SHINE;
     case 'w': return TIE;

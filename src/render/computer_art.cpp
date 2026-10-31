@@ -1,4 +1,5 @@
 #include "render/computer_art.h"
+#include <cmath>
 #include <cstdint>
 #include <raylib.h>
 
@@ -24,44 +25,63 @@ constexpr const char* TERMINAL_GLYPH[TERMINAL_H] = {
 };
 static_assert(sizeof TERMINAL_GLYPH / sizeof TERMINAL_GLYPH[0] == TERMINAL_H);
 
-/// The console desk, its six screens on top and its footprint from row
-/// CONSOLE_RISE down. The screens as the terminal's, d the side of a case
-/// turned in towards the seat, n their necks. T the desk's top, t its
-/// shade under the screens, h its lit front rim, E its front, e the drawer
+/// The console desk, the screens and the instrument box on top and its
+/// footprint from row CONSOLE_RISE down: a desk along the wall with a wing
+/// coming forward each side, its inner edges slanting in towards the chair.
+/// The screens as the terminal's, d the side of the small one, turned in,
+/// n their necks. V the instrument box, v its shade, R its round scope with
+/// the sweep going round, r the scope's rim. T the desk's top, t its shade
+/// against the wall, h its lit front rim, E its front, e the drawer
 /// handles, K the dark under it where the knees go. On the top: P the
-/// switch panels, l their lamps, x their toggles, k the keyboard and j its
-/// lip, M the mug and m the coffee, G the printout, g its green bars, p
-/// its edge. The chair: s its seat, B its back, b the back's shade, a the
-/// arms, n the stem, w the wheels.
+/// switch panels, l their lamps, x their toggles, k the keyboard set
+/// askew and j its lip, M the mug and m the coffee, G the printout curling
+/// out of the printer and g its green bars, the printer in the screens'
+/// colours with its slot in K, F a floppy and f its label, Q the phone and
+/// q its dial, W loose sheets. The chair, turned a little to the left: s
+/// its seat, B its back, b the back's shade, a the arms, n the stem, w the
+/// wheels. L a cable falling off the left wing and trailing on the floor.
 constexpr const char* CONSOLE_GLYPH[CONSOLE_H] = {
-    ".CCCC..CCCC..CCCC..CCCC..CCCC..CCCC.",
-    "ddSSSCCSSSScCSSSScCSSSScCSSSScCSSSdd",
-    "ddSSSCCSSSScCSSSScCSSSScCSSSScCSSSdd",
-    "ddSSSCCSSSScCSSSScCSSSScCSSSScCSSSdd",
-    "ddCCoCCCCoCcCCCoCcCCCoCcCCCoCcCoCCdd",
-    ".cccc..cccc..cccc..cccc..cccc..cccc.",
-    "ttnnttttnnttttnnttttnnttttnnttttnntt",
+    ".............CCCCCCCCC.....VVVVVV...",
+    "............CCCCCCCCCCC...VVrRRrVv..",
+    "...........CCSSSSSSSSSCc..VrRRRRrv..",
+    "...........CCSSSSSSSSSCc..VrRRRRrv..",
+    "..CCCCC....CCSSSSSSSSSCc..VVrRRrVv..",
+    ".dCSSSSc...CCSSSSSSSSSCc..VVVVoVVv..",
+    ".dCSSSSc...CCSSSSSSSSSCc...vvvvvv...",
+    ".dCSSSSc...CCSSSSSSSSSCc.PPPPPPPPP..",
+    ".dCCCoCc...CCCCCCCCoCCCc.PlPlPlPxP..",
+    "..cccc......cccccccccc...PPPPPPPPP..",
+    "...nn..........nnnn......PxPxPlPlP..",
+    "tttttttttttttttttttttttttPPPPPPPPPtt",
+    "tttttttttttttttttttttttttttttttttttt",
     "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
-    "TTTTTTTPPPPTTTTTTTTTTTTTTPPPPTTGGGGT",
-    "TMmMTTTllllTTTTTTTTTTTTTTllllTTggggT",
-    "TMMMMTTPPPPTTkkkkkkkkkkTTPPPPTTGGGGT",
-    "TMMMTTTxxxxTTkkkkkkkkkkTTxxxxTTggggT",
-    "TTTTTTTPPPPTTjjjjjjjjjjTTPPPPTTGGGGT",
-    "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTppppT",
-    "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
-    "hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",
-    "EEeeEEEEeeEEKKKKKKKKKKKKEEeeEEEEeeEE",
-    "EEEEEEEEEEEEKKKKKKKKKKKKEEEEEEEEEEEE",
-    "................ssss................",
-    "...............aBBBBa...............",
-    "................BBBB................",
-    "................bbbb................",
-    ".................nn.................",
-    "...............ww..ww...............",
+    "TTTTTTTTTTTTTTTTTTTTTTTTTTPPPPPPPFFT",
+    "TTTTTTTTTMmMTTkkkkkkkkkkkTPxPxPxPFfT",
+    "TTTGgGTTTMMMMTkkkkkkkkkkkTPPPPPPPTTT",
+    "TTGgGgTTTMMMTkkkkkkkkkkkTTTTTTTTTTTT",
+    "TTgGgGTTTTTTTjjjjjjjjjjjTTTTTTTTTTTT",
+    "TCCCCCCCcTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+    "TCKKKKKCcTTTThhhhhhhhhhhTTTTTTTTTTTT",
+    "TCCCCCoCcTTTTEEEEEEEEEEETTTTQQQTTWWT",
+    "TccccccccTTTTKKKKKKKKKKKTTTQqqqQWWWT",
+    "TTTTTTTTTTTT.....sss.....TTQQQQQWWWT",
+    "TTTTTTTTTTTT....sssss.....TTTTTTWWTT",
+    "TTTTTTTTTTT....aBBBBsa....hhhhhhhhhh",
+    "hhhhhhhhhhh...aBBBBBBa....EEEEeeEEEE",
+    "EEEEeeELEEE....BBBBBb.....EEEEEEEEEE",
+    "EEEEEEELEEE....bbbbb................",
+    ".......L..........n.................",
+    "........L.......w.n.w..........WW...",
+    "........L......w..w..w........WWW...",
+    ".........LL...................WW....",
+    "...........LL.......................",
+    ".............L......................",
 };
 static_assert(sizeof CONSOLE_GLYPH / sizeof CONSOLE_GLYPH[0] == CONSOLE_H);
-/// Each screen is this many rows tall, from the row under its case's top.
-constexpr int SCREEN_TOP = 1, SCREEN_ROWS = 3;
+/// The scope's middle, in pixels from the glyph's top-left.
+constexpr float SCOPE_X = 30.0f, SCOPE_Y = 3.0f;
+/// Where the scope shows blips, in pixels from its middle, each lit as the sweep passes and fading after.
+constexpr float BLIP_X[] = {-1.5f, 1.5f, 0.5f}, BLIP_Y[] = {-0.5f, 0.5f, -1.5f};
 
 constexpr Rgba PUTTY = hex(0xc8bc9c);
 constexpr Rgba PUTTY_SHADE = hex(0xa89c7e);
@@ -88,6 +108,16 @@ constexpr Rgba COFFEE = hex(0x4a2a18);
 constexpr Rgba PAPER = hex(0xf0ece0);
 constexpr Rgba PAPER_BAR = hex(0xb8e0b0);
 constexpr Rgba PAPER_EDGE = hex(0xc8c4b8);
+constexpr Rgba INSTRUMENT = hex(0x5e6a5a);
+constexpr Rgba INSTRUMENT_SHADE = hex(0x444e42);
+constexpr Rgba SCOPE_RIM = hex(0x1e4a26);
+constexpr Rgba PHOSPHOR_DIM = hex(0x2e8a44);
+constexpr Rgba FLOPPY = hex(0x2a3450);
+constexpr Rgba FLOPPY_LABEL = hex(0xe8e0d0);
+constexpr Rgba PHONE = hex(0xc0302c);
+constexpr Rgba PHONE_DIAL = hex(0x7a1c1a);
+constexpr Rgba SHEET = hex(0xf4f2ec);
+constexpr Rgba CABLE = hex(0x1e1e22);
 constexpr Rgba SEAT = hex(0x3a4a6a);
 constexpr Rgba SEAT_BACK = hex(0x2e3c58);
 constexpr Rgba SEAT_SHADE = hex(0x222c40);
@@ -103,6 +133,8 @@ constexpr float TICKS = 8.0f;
 constexpr int SCREEN_SCROLL = 12, CURSOR_BLINK = 4;
 /// A lamp holds for between LAMP_MIN and LAMP_MIN + LAMP_SPREAD - 1 ticks.
 constexpr int LAMP_MIN = 3, LAMP_SPREAD = 6;
+/// The sweep goes round once in this many ticks, and leaves a trail this many ticks long.
+constexpr int SWEEP_TICKS = 16, SWEEP_TRAIL = 4;
 /// Remembered but out of sight: drawn at this brightness, as the rest of the world.
 constexpr float MEMORY_DIM = 0.45f;
 
@@ -115,24 +147,45 @@ uint32_t stir(int a, int b, int c) {
     return h;
 }
 
-/// A screen w wide, at sx, sy of it: lines of text scrolling up, the last
-/// still being typed by a blinking cursor. Each screen goes by its own
-/// which, so no two say the same.
-Rgba screen(int sx, int sy, int w, int which, int tick) {
+/// A screen w wide and h tall, at sx, sy of it: lines of text scrolling
+/// up, the last still being typed by a blinking cursor. Each screen goes
+/// by its own which, so no two say the same.
+Rgba screen(int sx, int sy, int w, int h, int which, int tick) {
     int t = tick + int(stir(which, 5, 6) % SCREEN_SCROLL);
     int line = t / SCREEN_SCROLL + sy;
     int len = 1 + int(stir(line, which, 2) % uint32_t(w - 1));
-    if (sy == SCREEN_ROWS - 1 && sx == len) return t / CURSOR_BLINK % 2 ? PHOSPHOR : PHOSPHOR_DARK;
+    if (sy == h - 1 && sx == len) return t / CURSOR_BLINK % 2 ? PHOSPHOR : PHOSPHOR_DARK;
     bool ink = sx < len && stir(sx, line, which * 7 + 3) % 4 != 0;
     return ink ? PHOSPHOR : PHOSPHOR_DARK;
 }
 
-/// The screen pixel at gx, gy of a glyph, found by where its screen begins on that row.
-Rgba screenAt(const char* const* glyph, int gx, int gy, int which, int tick) {
-    int left = gx, right = gx;
+/// The screen pixel at gx, gy of a glyph rows tall, found by where its screen begins and ends.
+Rgba screenAt(const char* const* glyph, int rows, int gx, int gy, int tick) {
+    int left = gx, right = gx, top = gy, bottom = gy;
     while (left > 0 && glyph[gy][left - 1] == 'S') left--;
     while (glyph[gy][right + 1] == 'S') right++;
-    return screen(gx - left, gy - SCREEN_TOP, right - left + 1, which, tick);
+    while (top > 0 && glyph[top - 1][gx] == 'S') top--;
+    while (bottom + 1 < rows && glyph[bottom + 1][gx] == 'S') bottom++;
+    return screen(gx - left, gy - top, right - left + 1, bottom - top + 1, left * 31 + top, tick);
+}
+
+/// How many ticks ago the sweep last passed the angle of dx, dy from the scope's middle.
+int sinceSweep(float dx, float dy, int tick) {
+    constexpr float TURN = 6.2831853f;
+    float a = std::atan2(dy, dx) / TURN;
+    a -= std::floor(a);
+    int at = int(a * SWEEP_TICKS);
+    return ((tick - at) % SWEEP_TICKS + SWEEP_TICKS) % SWEEP_TICKS;
+}
+
+/// The scope: a sweep going round, its trail fading, and blips lighting up as it passes.
+Rgba scope(int gx, int gy, int tick) {
+    float dx = gx + 0.5f - SCOPE_X, dy = gy + 0.5f - SCOPE_Y;
+    int since = sinceSweep(dx, dy, tick);
+    for (size_t i = 0; i < sizeof BLIP_X / sizeof BLIP_X[0]; i++)
+        if (dx == BLIP_X[i] && dy == BLIP_Y[i]) return since < SWEEP_TRAIL * 2 ? PHOSPHOR : PHOSPHOR_DARK;
+    if (since == 0) return PHOSPHOR;
+    return since < SWEEP_TRAIL ? PHOSPHOR_DIM : PHOSPHOR_DARK;
 }
 
 /// A panel's lamp: its colour fixed by where it sits, lit or dark for spells of its own length.
@@ -166,7 +219,7 @@ Rgba terminalPixel(int gx, int gy, int tick) {
     switch (TERMINAL_GLYPH[gy][gx]) {
     case 'C': return PUTTY;
     case 'c': return PUTTY_SHADE;
-    case 'S': return screenAt(TERMINAL_GLYPH, gx, gy, 0, tick);
+    case 'S': return screenAt(TERMINAL_GLYPH, TERMINAL_H, gx, gy, tick);
     case 'o': return POWER;
     case 'k': return gx % 2 ? KEY_GAP : KEY;
     case 'j': return PUTTY_SHADE;
@@ -182,9 +235,19 @@ Rgba consoleDeskPixel(int gx, int gy, int tick) {
     case 'C': return PUTTY;
     case 'c': return PUTTY_SHADE;
     case 'd': return PUTTY_TURNED;
-    case 'S': return screenAt(CONSOLE_GLYPH, gx, gy, gx / 6 + 1, tick);
+    case 'S': return screenAt(CONSOLE_GLYPH, CONSOLE_H, gx, gy, tick);
     case 'o': return POWER;
-    case 'n': return gy < CONSOLE_RISE + 2 ? STEEL_SHADE : STEEL;
+    case 'n': return gy < CONSOLE_RISE ? STEEL_SHADE : STEEL;
+    case 'V': return INSTRUMENT;
+    case 'v': return INSTRUMENT_SHADE;
+    case 'R': return scope(gx, gy, tick);
+    case 'r': return SCOPE_RIM;
+    case 'F': return FLOPPY;
+    case 'f': return FLOPPY_LABEL;
+    case 'Q': return PHONE;
+    case 'q': return PHONE_DIAL;
+    case 'W': return SHEET;
+    case 'L': return CABLE;
     case 'T': return DESK_TOP;
     case 't': return DESK_SHADE;
     case 'h': return DESK_RIM;

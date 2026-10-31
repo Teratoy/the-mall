@@ -2,15 +2,13 @@
 #include "core/color.h"
 #include <cstdint>
 
-/// A bundle of cables lies flat on the floor of a cell, one thick black
-/// cable between two thin putty ones. Which edges of the cell it leaves by
-/// says what piece it is: two opposite a straight run, two side by side a
+/// A thick black cable lies flat on the floor of a cell. Which edges of
+/// the cell it leaves by says what piece it is: two opposite a straight run, two side by side a
 /// corner, three a T where a branch joins, all four a cross.
 enum CableLink : uint8_t { CABLE_N = 1, CABLE_E = 2, CABLE_S = 4, CABLE_W = 8 };
 
 /// Straight runs come in this many looks, which all meet seamlessly, so a
-/// long run can mix them: plain, with the thin cables sagging out, and with
-/// a tie round the bundle.
+/// long run can mix them: plain, sagging a little, and with a tie round it.
 inline constexpr int CABLE_VARIANTS = 3;
 
 /// The cable's pixel at gx, gy of its cell, for the edges it leaves by;

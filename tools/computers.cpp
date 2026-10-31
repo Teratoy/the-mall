@@ -29,13 +29,15 @@ constexpr Rgba FLOOR = hex(0x8a8478), FLOOR_LINE = hex(0x7e786c), WALL = hex(0x4
 /// The ticks the terminal is shown at.
 constexpr int TICKS[] = {0, 7, 15};
 
-/// The room, a letter a cell: M a machine's footprint or the chair, # cable, the top row the wall.
+/// The room, a letter a cell: M a machine's footprint, # cable, W the wall.
+constexpr int WALL_ROWS = 2;
 constexpr const char* ROOM[] = {
+    "WWWWWWWWWWWWWW",
     "WWWWWWWWWWWWWW",
     ".MMMMMM.......",
     ".MMMMMM.......",
-    "..MM.#...MM.M.",
-    ".....#...#..#.",
+    ".MMMMMM..MM.M.",
+    ".MMMMMM..#..#.",
     ".....#...#..#.",
     ".....####+####",
     ".........#....",
@@ -79,7 +81,7 @@ std::vector<Rgba> room(const SpriteFrame& human, int tick) {
         if (c.solid() && x >= 0 && y >= 0 && x < w && y < h) px[size_t(y * w + x)] = c;
     };
     for (int y = 0; y < h; y++)
-        for (int x = 0; x < w; x++) put(x, y, y < CELL_PX ? WALL : floorPx(x, y));
+        for (int x = 0; x < w; x++) put(x, y, y < WALL_ROWS * CELL_PX ? WALL : floorPx(x, y));
     for (int cy = 0; cy < int(ROOM_H); cy++)
         for (int cx = 0; cx < ROOM_W; cx++) {
             char c = ROOM[cy][cx];
@@ -93,12 +95,12 @@ std::vector<Rgba> room(const SpriteFrame& human, int tick) {
         for (int j = 0; j < gh; j++)
             for (int i = 0; i < gw; i++) put(left + i, foot - gh + j, pixel(i, j));
     };
-    stand(CELL_PX, CELL_PX + CONSOLE_H - CONSOLE_RISE, CONSOLE_W, CONSOLE_H,
+    stand(CELL_PX, WALL_ROWS * CELL_PX + CONSOLE_H - CONSOLE_RISE, CONSOLE_W, CONSOLE_H,
           [&](int i, int j) { return consoleDeskPixel(i, j, tick); });
-    stand(9 * CELL_PX, 4 * CELL_PX, SERVER_RACK_W, SERVER_RACK_H,
+    stand(9 * CELL_PX, 5 * CELL_PX, SERVER_RACK_W, SERVER_RACK_H,
           [&](int i, int j) { return serverRackPixel(i, j, tick); });
-    stand(12 * CELL_PX, 4 * CELL_PX, TERMINAL_W, TERMINAL_H, [&](int i, int j) { return terminalPixel(i, j, tick); });
-    stand(10 * CELL_PX - 4, 9 * CELL_PX, SPRITE_W, SPRITE_H,
+    stand(12 * CELL_PX, 5 * CELL_PX, TERMINAL_W, TERMINAL_H, [&](int i, int j) { return terminalPixel(i, j, tick); });
+    stand(10 * CELL_PX - 4, 10 * CELL_PX, SPRITE_W, SPRITE_H,
           [&](int i, int j) { return human.px[size_t(j * SPRITE_W + i)]; });
     return px;
 }
