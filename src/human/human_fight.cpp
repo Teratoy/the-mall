@@ -27,6 +27,9 @@ bool Human::seekFood(World& world) {
     // And cakes put down on the floor.
     auto r = cakes < carryMax() ? pilePath(world, true, false) : std::nullopt;
     size_t nearest = std::min({p ? p->size() : SIZE_MAX, q ? q->size() : SIZE_MAX, r ? r->size() : SIZE_MAX});
+    // Or a cake bought from a machine, for keys.
+    auto v = buyCakePath(world, nearest);
+    if (v) nearest = v->size();
     const Human* h = nearestHolder(world);
     if (h && (nearest == SIZE_MAX || cheb(cell, social_.lastSeen[h->id]) < int(nearest))) {
         // Not angry at them, only after their cakes.
@@ -34,6 +37,7 @@ bool Human::seekFood(World& world) {
         fight_.grudge = 0.0f;
         if (startFight(world)) return true;
     }
+    if (v) return goBuy(world, *v, Vend::Cake);
     if (r && r->size() == nearest) {
         if (r->empty()) return takeFromPiles(world);
         startWalking(Goal::Pick, *r);

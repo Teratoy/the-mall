@@ -40,3 +40,14 @@ comfortably: `make lines`, then open http://localhost:8765.
 ### Built (2026-10-31)
 
 All of the above.
+
+### Conditions in plain words (built 2026-10-31)
+
+The user asked for help knowing exactly what each condition means.
+`tools/lines_editor/conditions.txt` says it for every condition and tone,
+written from what `talk.cpp` checks, in groups. The editor shows it on
+hover over a chip, read out under the selected line (or under every line
+with "meanings" ticked), beside each suggestion while typing conditions,
+and in a searchable list (`c`, or "All conditions…" in the editor, where
+a click adds one). A condition the game gains without a description is
+flagged in the sidebar, so the file is kept up with new features.

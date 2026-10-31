@@ -373,12 +373,16 @@ bool Human::seekFill(World& world) {
 
 float Human::fillDrive() const {
     if (thirsty()) return -1.0f;
-    // No bottle at all is as good as an empty one, if it knows one to fetch.
-    if (bottles.empty())
-        return needsBottle() && std::any_of(memory.piles.begin(), memory.piles.end(),
-                                            [&](const auto& p) { return bottleToFetch(p.first, p.second); })
+    // No bottle at all is as good as an empty one, if it knows one to fetch,
+    // or one to buy with keys enough.
+    if (bottles.empty()) {
+        auto toBuy = [&](const auto& m) { return m.second.kind == Vend::Bottle && m.second.stock > 0; };
+        return needsBottle() && (std::any_of(memory.piles.begin(), memory.piles.end(),
+                                             [&](const auto& p) { return bottleToFetch(p.first, p.second); }) ||
+                                 (canBuy() && std::any_of(memory.machines.begin(), memory.machines.end(), toBuy)))
                    ? FILL_DRIVE
                    : -1.0f;
+    }
     float most = 0.0f;
     for (const Bottle& b : bottles) most = std::max(most, b.water);
     if (most >= BOTTLE_LOW) return -1.0f;

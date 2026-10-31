@@ -43,6 +43,7 @@ constexpr float TIRED_PER_SECOND[] = {
     1.0f / 3600.0f, // Fill
     1.0f / 3600.0f, // Pour
     1.0f / 3600.0f, // Stash
+    1.0f / 3600.0f, // Vend
 };
 static_assert(std::size(TIRED_PER_SECOND) == size_t(Human::Action::Count));
 /// Bleeding tires it this much more per unit of blood lost a second, and

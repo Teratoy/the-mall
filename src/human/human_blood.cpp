@@ -343,8 +343,11 @@ bool Human::startWash(World& world) {
     // The brave put up with more blood on them before bothering.
     float put = 0.5f + traits.brave;
     if (hungry() || thirsty() || fight_.fear > 0.0f || fight_.foe >= 0) return false;
-    bool bloody = stains.total(false) >= WASH_MIN * put || stains.feet() >= WASH_FEET_MIN * put;
-    if (!bloody && !wantsWashing()) return false;
+    // Only the modest bother with blood once it has dried.
+    bool bloody = (stains.total(false) >= WASH_MIN * put || stains.feet() >= WASH_FEET_MIN * put) &&
+                  (stains.wetAny() || washesForLooks());
+    bool filthy = wantsWashing();
+    if (!bloody && !filthy && !wantsScrub()) return false;
     auto water = [&](Vec2i c) -> std::optional<Vec2i> {
         for (Vec2i d : DIRS4)
             if (drinkable(memory.tile(c + d))) return c + d;
@@ -367,7 +370,7 @@ bool Human::startWash(World& world) {
     moving = false;
     path_.clear();
     timer = WASH_STEP;
-    note(bloody ? "WASHED OFF BLOOD" : "WASHED OFF SHIT");
+    note(bloody ? "WASHED OFF BLOOD" : filthy ? "WASHED OFF SHIT" : "WASHED OFF DIRT");
     offendDrinkers(world, gore_.washAt);
     return true;
 }
@@ -387,9 +390,11 @@ void Human::wash(World& world) {
     world.blood().tintWater(gore_.washAt, tint);
     for (Vec2i d : DIRS4)
         if (drinkable(world.tile(gore_.washAt + d))) world.blood().tintWater(gore_.washAt + d, tint / 2.0f);
-    // Feces once the blood is off, fouling the water (human_relief.cpp).
-    bool dirty = !stains.any() && washDirt(world, gore_.washAt);
-    if (!stains.any() && !dirty) return choose(world);
+    // Feces once the blood is off, fouling the water (human_relief.cpp),
+    // then the grime of going unwashed (human_grime.cpp).
+    bool filthy = !stains.any() && washDirt(world, gore_.washAt);
+    bool grimy = !stains.any() && !filthy && scrub();
+    if (!stains.any() && !filthy && !grimy) return choose(world);
     timer = WASH_STEP;
 }
 

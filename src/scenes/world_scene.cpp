@@ -157,6 +157,7 @@ std::string doing(const Human& h) {
     case Human::State::Filling: return "FILLING THE BOTTLE";
     case Human::State::Pouring: return "POURING THE BOTTLE OUT";
     case Human::State::Stashing: return h.putting() ? "STASHING THINGS" : "PICKING THINGS UP";
+    case Human::State::Vending: return "BUYING FROM A MACHINE";
     case Human::State::Relieving: return h.shitting() ? "SHITTING" : "PISSING";
     case Human::State::Punching: return (h.hunting() ? "ATTACKING " : "FIGHTING ") + who;
     case Human::State::Giving: return (h.givingWater() ? "SHARING WATER WITH " : "SHARING A CAKE WITH ") + who;
@@ -208,6 +209,7 @@ std::string doing(const Human& h) {
     case Human::Goal::Ask: return "GOING TO ASK " + who + " FOR WATER";
     case Human::Goal::Pick: return "GOING TO PICK THINGS UP";
     case Human::Goal::Stash: return "TAKING THINGS TO A STASH";
+    case Human::Goal::Vend: return "GOING TO A MACHINE";
     case Human::Goal::Feed: return "GOING TO " + who + "'S BODY";
     case Human::Goal::Rob: return "SNEAKING UP ON " + who;
     case Human::Goal::Watch: return "GOING TO KEEP WATCH OVER " + who;
@@ -300,6 +302,7 @@ const HumanSprites& WorldScene::spritesFor(const Human& h) {
     if (!s) s = std::make_unique<HumanSprites>(h.look);
     s->bloody(h.stains);
     s->dirty(h.dirt, h.soaked);
+    s->setDirty(h.dirty());
     if (h.dead()) s->remains(1.0f - float(h.flesh) / Human::FLESH_MEALS, h.decay(), uint64_t(h.id) * 2654435761ULL + 1, h.diedAsleep());
     return *s;
 }
@@ -521,10 +524,11 @@ void WorldScene::drawStats(const Human& viewer, Rectangle area) {
     y = pipRow("ERRATIC", viewer.erratic(), x, right, y, viewer.isErratic() ? ERRATIC_INK : ui::INK);
     y = pipRow("GUILT", viewer.guilt(), x, right, y);
     y = pipRow("CRAVE", viewer.appetite(), x, right, y);
-    // How badly they need to go.
+    // How badly they need to go, and how long they have gone unwashed.
     y = section("BODY", x, y + SECTION_GAP);
     y = pipRow("BLADDER", viewer.bladder, x, right, y);
     y = pipRow("BOWELS", viewer.bowels, x, right, y);
+    y = pipRow("GRIME", viewer.grime(), x, right, y);
     y = section("LESSONS", x, y + SECTION_GAP);
     y = pipRow("HOARDS", viewer.lessons.hoard, x, right, y);
     y = pipRow("KEYS FIRST", viewer.lessons.keysFirst, x, right, y);

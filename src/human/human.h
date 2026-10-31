@@ -12,6 +12,7 @@
 #include "human/topic.h"
 #include "human/traits.h"
 #include "human/wound.h"
+#include "world/vending.h"
 #include <deque>
 #include <functional>
 #include <initializer_list>
@@ -88,12 +89,12 @@ class Human {
 public:
     /// Waking is the first thing every human does: lying where it came to,
     /// knowing nothing, until it sits up (Sitting) and looks round.
-    enum class State { Waking, Idle, Sitting, Rising, Walking, Greeting, Eating, Drinking, Relieving, Punching, Giving, Washing, Looting, Feeding, Sleeping, Sipping, Filling, Pouring, Stashing, Dead };
+    enum class State { Waking, Idle, Sitting, Rising, Walking, Greeting, Eating, Drinking, Relieving, Punching, Giving, Washing, Looting, Feeding, Sleeping, Sipping, Filling, Pouring, Stashing, Vending, Dead };
     /// Why the human is walking: what it does on arrival.
-    enum class Goal { Explore, FetchKey, OpenDoor, PassDoor, Wander, Meet, Follow, Company, FetchCake, Drink, Relieve, Fight, Flee, Share, CheckDoor, Wash, Avoid, Escort, Escorted, Track, GiveWay, Loot, Feed, Sleep, Rob, Watch, Rescue, Fill, Ask, Pick, Stash };
+    enum class Goal { Explore, FetchKey, OpenDoor, PassDoor, Wander, Meet, Follow, Company, FetchCake, Drink, Relieve, Fight, Flee, Share, CheckDoor, Wash, Avoid, Escort, Escorted, Track, GiveWay, Loot, Feed, Sleep, Rob, Watch, Rescue, Fill, Ask, Pick, Stash, Vend };
     /// What the human is doing, as far as hunger, thirst and tiredness go:
     /// each costs its own of all three.
-    enum class Action { Rest, Sit, Walk, Run, Greet, Eat, Drink, Relieve, Punch, Give, Wash, Loot, Feed, Sleep, Watch, Fill, Pour, Stash, Count };
+    enum class Action { Rest, Sit, Walk, Run, Greet, Eat, Drink, Relieve, Punch, Give, Wash, Loot, Feed, Sleep, Watch, Fill, Pour, Stash, Vend, Count };
     /// What a human may set out to do once nothing presses. How much it
     /// wants each, by its traits and hunger, is weighed in choose(), which
     /// tries them from the most wanted down; the table of wants is in
@@ -235,6 +236,17 @@ public:
     /// How filthy it looks: the feces on its feet and legs and the piss
     /// on it, 0 to 1.
     float filth() const;
+    /// Gone unwashed so long it looks it: ragged, smudged, its hair a mess
+    /// (human_grime.cpp). Until it washes it all off.
+    bool dirty() const { return grime_.dirty; }
+    /// How long it has gone unwashed, 1 being long enough to turn dirty.
+    float grime() const { return grime_.level; }
+    /// How strongly it smells, 0 to 1: alive, from going dirty too long;
+    /// dead, from rotting, or at once if bloody, until it is bare bones
+    /// (human_smell.cpp).
+    float smellStrength() const;
+    /// Gone unwashed long enough to smell.
+    bool smelly() const { return grime_.smelly; }
     /// While Punching: the fist is out and the blow has landed.
     bool punchLanded = false;
     int keys = 0;
@@ -323,7 +335,7 @@ public:
     /// and what the teller thinks of them, a warning off a foe or a pointer
     /// to an ally, which the listener believes as far as it trusts them.
     struct Tell {
-        enum class Kind { Cake, Key, Trap, Route, People, Way, Water, ShutIn, Stash };
+        enum class Kind { Cake, Key, Trap, Route, People, Way, Water, ShutIn, Stash, Machine };
         Tell(Kind kind, Vec2i cell, TrapKind trap = TrapKind::Spikes) : kind(kind), cell(cell), trap(trap) {}
         Kind kind;
         Vec2i cell;
@@ -1412,6 +1424,40 @@ private:
     /// The way to the nearest pile it remembers with what it wants: cakes
     /// (food), water (water); its own stashes only as wantsFromPile allows.
     std::optional<std::vector<Vec2i>> pilePath(const World& world, bool food, bool water) const;
+    /// Buying cakes and bottles from vending machines for keys
+    /// (human_vending.cpp).
+    struct Vending {
+        /// The machine it is going to or working, by its first cell, and
+        /// what it wants out of it.
+        Vec2i at;
+        Vend kind = Vend::Cake;
+        /// Has seen a machine before: the first is remarked on.
+        bool seen = false;
+    };
+    Vending vend_;
+    /// Keys enough in hand to buy from a machine.
+    bool canBuy() const { return keys >= MACHINE_PRICE; }
+    /// The way to the front of the nearest machine of the kind it knows of
+    /// with something left in it, as it last saw it. Nothing if none.
+    std::optional<std::vector<Vec2i>> machinePath(const World& world, Vend kind) const;
+    /// Hungry with keys enough, the way to a cake machine when it would
+    /// sooner buy a cake than go for whatever food it knows nearest steps
+    /// off: when that is farther, or a bit nearer while it starves. The
+    /// curious keep their keys for doors unless starving or with nothing else.
+    std::optional<std::vector<Vec2i>> buyCakePath(const World& world, size_t nearest) const;
+    /// Greedy, with keys enough and room in its pockets: buys cakes to hoard.
+    bool hoardBuys() const;
+    /// With no bottle and needing one, keys enough: off to a bottle machine.
+    bool buyBottle(World& world);
+    /// Walks the path to a machine of the kind, or works it if already there.
+    bool goBuy(World& world, const std::vector<Vec2i>& path, Vend kind);
+    /// In front of a machine of the kind it wants, with something in it as
+    /// far as it knows and keys enough: feeds them in.
+    bool startVending(World& world);
+    /// Done: pays and takes what dropped, or finds the machine empty.
+    void takeVended(World& world);
+    /// Sees a machine at the cell, one of its two: remembers what is in it.
+    bool seeMachine(const Machine& m, Vec2i c);
     /// Sleep, robbing sleepers and keeping watch (human_sleep.cpp).
     struct Sleep {
         /// The sleeper it is robbing, or going to; -1 none.
@@ -1594,6 +1640,53 @@ private:
         std::unordered_set<int> filthNoted;
     };
     Relief relief_;
+    /// Going unwashed (human_grime.cpp).
+    struct Grime {
+        /// 0 just washed; grows by 1 every GRIME_TIME, up to GRIME_MAX.
+        float level = 0.0f;
+        /// Turned dirty at level 1; clean again only once washed to 0.
+        bool dirty = false;
+        /// Dirty long enough to smell (SMELL_GRIME), until washed clean.
+        bool smelly = false;
+    };
+    Grime grime_;
+    /// Smelling (human_smell.cpp).
+    struct Nose {
+        /// Seconds until it next sniffs.
+        float sniffIn = 0.0f;
+        /// Clock time it last moved away from a smell to eat.
+        float putOffAt = -1e9f;
+        /// Bodies it has smelt unseen, and those whose smell it set off after.
+        std::unordered_set<int> smeltDead, followed;
+    };
+    Nose nose_;
+    /// Every SNIFF_EVERY, learns the smells within their reach of it, walls
+    /// or no walls, and forgets those it can no longer smell where it would.
+    /// Its own smell it doesn't notice. Asleep it smells nothing.
+    void sniff(const World& world, float dt);
+    /// What a cell next to a smell it knows adds to walking there: the
+    /// modest keep further off, the erratic don't care.
+    int smellCost(Vec2i c) const;
+    /// There is a smell it knows on or next to where it stands, and it minds.
+    bool stinksHere() const;
+    /// Hungry with a cake by a smell: walks off to eat away from it, unless it
+    /// did so lately. False if it won't, or there is nowhere.
+    bool leaveStench(World& world);
+    /// Knows a rotting or bloody body by its smell at the cell.
+    bool smellsOfDeath(Vec2i c) const;
+    /// Hungry enough for flesh with no body it knows to eat: sets off after
+    /// the strongest smell of death it has smelt but not seen. False if none.
+    bool followStench(World& world);
+    /// Grime building over dt, faster with blood, feces or piss on it.
+    void soil(float dt);
+    /// Modest enough to wash for grime and dried blood at all: the
+    /// shameless wash only fresh blood and feces off.
+    bool washesForLooks() const;
+    /// Dirty, and modest enough to wash for it now: the most modest as
+    /// soon as it turns dirty, the less modest only once far grimier.
+    bool wantsScrub() const;
+    /// Scrubs a little more grime off at the water. False once it is clean.
+    bool scrub();
     /// Bladder and bowels filling over dt; human_relief.cpp, like the rest
     /// of going.
     void press(float dt);

@@ -159,6 +159,7 @@ constexpr float HUNGER_PER_SECOND[] = {
     1.0f / 750.0f, // Fill
     1.0f / 750.0f, // Pour
     1.0f / 750.0f, // Stash
+    1.0f / 750.0f, // Vend
 };
 static_assert(std::size(HUNGER_PER_SECOND) == size_t(Human::Action::Count));
 /// Thirst gained per second by each action, the same rule: a new action
@@ -183,6 +184,7 @@ constexpr float THIRST_PER_SECOND[] = {
     1.0f / 600.0f, // Fill
     1.0f / 600.0f, // Pour
     1.0f / 600.0f, // Stash
+    1.0f / 600.0f, // Vend
 };
 static_assert(std::size(THIRST_PER_SECOND) == size_t(Human::Action::Count));
 /// Hungry from here on: food comes first. Starving from STARVING, and
@@ -202,6 +204,9 @@ constexpr float FRIGHT_WET = 0.3f;
 /// Feces on its feet add up to this much more to wanting to wash, at
 /// middling modesty.
 constexpr float FILTH_WASH = 1.0f;
+/// Gone dirty, wanting to wash adds up to this much more, by modesty
+/// (human_grime.cpp).
+constexpr float GRIME_WASH = 0.5f;
 /// Seeing a fresh pile of someone else's feces frightens the most modest
 /// this much, by how disgusting it is.
 constexpr float DISGUST_DREAD = 0.05f;

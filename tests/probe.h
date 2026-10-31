@@ -1,8 +1,11 @@
 #pragma once
 // What the tests may see and set of humans and the world that the game
 // keeps to itself. SoakProbe is a friend of Human and World.
+#include <optional>
 #include "human/human.h"
 #include "world/world.h"
+#include <cstdio>
+#include <cstdlib>
 #include <deque>
 
 struct SoakProbe {
@@ -63,10 +66,14 @@ struct SoakProbe {
         h.cell = h.prev = h.target_ = cell;
         h.path_.clear();
     }
+    /// Which chunk the cell is in; a chunk may cover several slots.
+    static int chunkOf(const World& w, Vec2i cell) { return w.chunkAt(World::slotOf(cell))->id; }
     /// h knows every tile of the chunk it stands in, doors and all, and
     /// with items the keys and cakes lying there.
-    static void knowChunk(const World& w, Human& h, bool items = false) {
-        Vec2i slot = World::slotOf(h.cell);
+    static void knowChunk(const World& w, Human& h, bool items = false) { knowChunkOf(w, h, h.cell, items); }
+    /// The same for the chunk the cell is in.
+    static void knowChunkOf(const World& w, Human& h, Vec2i cell, bool items = false) {
+        Vec2i slot = World::slotOf(cell);
         for (int y = 0; y < CHUNK; y++)
             for (int x = 0; x < CHUNK; x++) {
                 Vec2i c{slot.x * CHUNK + x, slot.y * CHUNK + y};
@@ -92,6 +99,13 @@ struct SoakProbe {
     }
     /// Fresh blood on h's face and hands, as if from someone else.
     static void bloody(Human& h) { h.stain({BodyPart::Head, BodyPart::FrontArm, BodyPart::BackArm}, 40, 200); }
+    /// Gone unwashed this long, 1 being long enough to turn dirty.
+    static void setGrime(Human& h, float level) { h.grime_.level = level; }
+    /// The blood on h dried.
+    static void dry(Human& h) {
+        h.stains.wet.fill(0.0f);
+        h.stains.version++;
+    }
     /// Washed clean all at once.
     static void clean(Human& h) {
         h.stains.amount.fill(0);
@@ -121,6 +135,19 @@ struct SoakProbe {
     static void keepWith(Human& h, const Human& o) { h.social_.companion = o.id; }
     /// h's mind has snapped.
     static void unhinge(Human& h) { h.mind_.erratic = 1.0f; }
+    /// A walled box round a cell, five across, floor inside; no way in,
+    /// unless a gap in its wall at at + gap.
+    static void wallIn(World& w, Vec2i at, std::optional<Vec2i> gap = std::nullopt) {
+        for (int y = -2; y <= 2; y++)
+            for (int x = -2; x <= 2; x++)
+                w.setTile(at + Vec2i{x, y}, std::max(std::abs(x), std::abs(y)) == 2 ? Tile::Wall : Tile::Floor);
+        if (gap) w.setTile(at + *gap, Tile::Floor);
+    }
+    /// Gone erratic, with this taste for flesh.
+    static void craze(Human& h, float appetite) {
+        h.mind_.erratic = 1.0f;
+        h.mind_.appetite = appetite;
+    }
     /// Shut in, h cries for help on its next update.
     static void cryNow(Human& h) { h.rescue_.helpTimer = 0.0f; }
     /// Nothing lies put down anywhere, and h knows of nothing lying: the
@@ -167,6 +194,8 @@ struct SoakProbe {
     }
     /// Turns the cell into a basin's worth of water.
     static void addWater(World& w, Vec2i cell) { w.setTile(cell, Tile::Basin); }
+    /// Wall on the cell, as if the chunk had been dug that way.
+    static void addWall(World& w, Vec2i cell) { w.setTile(cell, Tile::Wall); }
     /// h tasted the water at the cell this foul (with feces and piss) before.
     static void tastedFoul(Human& h, Vec2i water, float filth) { h.water_.foul[water] = {filth, 0.0f}; }
     /// Wary of cakes on tables after darts, and of rooms with one door
@@ -174,6 +203,28 @@ struct SoakProbe {
     static void setWary(Human& h, float darts, float slam) {
         h.wary_.darts = darts;
         h.wary_.slam = slam;
+    }
+    /// A vending machine of the kind with its first cell at the cell,
+    /// facing away from a short wall put up behind it, holding stock items.
+    static const Machine& standMachine(World& w, Vend kind, Vec2i at, Vec2i facing, int stock) {
+        Machine shape{kind, at, facing};
+        for (int i = -1; i <= 2; i++) w.setTile(at + shape.along() * i - facing, Tile::Wall);
+        if (!w.standMachine(*w.chunkAt(World::slotOf(at)), kind, at, facing, stock)) {
+            std::fprintf(stderr, "probe: no floor for a machine at %d,%d\n", at.x, at.y);
+            std::abort();
+        }
+        return w.machines_.back();
+    }
+    /// h knows the machine and what is in it, as if it had seen it.
+    static void knowMachine(Human& h, const Machine& m) {
+        h.memory.machines[m.at] = {m.kind, m.stock};
+        h.memory.see(m.at, Tile::Vending);
+        h.memory.see(m.at + m.along(), Tile::Vending);
+    }
+    /// Standing in front of a machine of the kind it knows, h starts working it.
+    static bool startVending(World& w, Human& h, Vend kind) {
+        h.vend_.kind = kind;
+        return h.startVending(w);
     }
     /// Given up on a way out, at home on home.
     static void settle(Human& h, Vec2i home) {

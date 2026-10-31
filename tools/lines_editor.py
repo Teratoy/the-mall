@@ -35,6 +35,7 @@ REVIEW = os.path.join(ROOT, "data", "lines_review.json")
 DRAFTS = os.path.join(ROOT, "data", "lines_drafts.json")
 TALK = os.path.join(ROOT, "src", "human", "talk.cpp")
 PAGE = os.path.join(ROOT, "tools", "lines_editor")
+MEANINGS = os.path.join(PAGE, "conditions.txt")
 
 # Conditions and tone stand in a column this wide before the bar, as in the file.
 COLUMN = 24
@@ -179,6 +180,19 @@ def groups_of(rows):
     return out
 
 
+def meanings():
+    """What each condition and tone means, in groups, from conditions.txt."""
+    groups = []
+    for raw in open(MEANINGS, encoding="utf-8"):
+        row = raw.strip()
+        if row.startswith("##"):
+            groups.append({"title": row[2:].strip(), "items": []})
+        elif row and not row.startswith("#") and "|" in row and groups:
+            name, text = row.split("|", 1)
+            groups[-1]["items"].append([name.strip(), text.strip()])
+    return groups
+
+
 def stamp(path):
     try:
         return os.stat(path).st_mtime_ns
@@ -187,7 +201,7 @@ def stamp(path):
 
 
 def version():
-    return f"{stamp(LINES)}-{stamp(REVIEW)}-{stamp(DRAFTS)}-{stamp(TALK)}"
+    return f"{stamp(LINES)}-{stamp(REVIEW)}-{stamp(DRAFTS)}-{stamp(TALK)}-{stamp(MEANINGS)}"
 
 
 def book():
@@ -208,6 +222,7 @@ def book():
         "unknown": [m["name"] for m in moments if m["name"] not in code],
         "conds": names("CONDS"),
         "tones": tones,
+        "meanings": meanings(),
         "review": read_json(REVIEW, {}),
         "drafts": drafts,
     }

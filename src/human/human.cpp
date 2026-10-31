@@ -92,6 +92,8 @@ void Human::update(World& world, float dt) {
         return pourOut(world);
     case State::Stashing:
         return finishStash(world);
+    case State::Vending:
+        return takeVended(world);
     case State::Relieving:
         endRelieving();
         return choose(world);
@@ -155,6 +157,8 @@ Human::Action Human::action() const {
         return Action::Pour;
     case State::Stashing:
         return Action::Stash;
+    case State::Vending:
+        return Action::Vend;
     case State::Relieving:
         return Action::Relieve;
     case State::Punching:
@@ -207,6 +211,8 @@ void Human::live(World& world, float dt) {
     thirst = std::min(1.0f, thirst + THIRST_PER_SECOND[size_t(action())] * dt);
     tire(dt);
     press(dt);
+    soil(dt);
+    sniff(world, dt);
     if (hunger >= 1.0f) health -= STARVE_RATE * dt;
     if (thirst >= 1.0f) {
         health -= PARCH_RATE * dt;
@@ -358,6 +364,7 @@ bool Human::observe(const World& world) {
             seeWater(world, c);
         }
         if (world.toilet(c)) firstSight(talk::Moment::FirstToilet);
+        if (const Machine* m = world.machine(c)) news |= seeMachine(*m, c);
         if (t != Tile::Void) {
             if (memory.tile(c) == Tile::Void) {
                 escape_.lastFound = clock_;
@@ -524,7 +531,11 @@ void Human::choose(World& world) {
         if (isErratic()) return startRelieving(world);
         accident(world, false);
     }
-    if (hungry() && cakes > 0) return startEating();
+    // Not by a smell, unless starving: it walks off to eat first.
+    if (hungry() && cakes > 0) {
+        if (!starving() && stinksHere() && leaveStench(world)) return;
+        return startEating();
+    }
     if (thirsty())
         if (auto w = waterBeside(cell); w && wouldDrink(world, cell, *w)) return startDrinking(*w);
     // Beside water it would drink with a bottle to fill, it fills it.
@@ -585,7 +596,7 @@ void Human::choose(World& world) {
     if (!needy) {
         // Guilt keeps it to itself.
         want(Want::Escort, -GUILT_ALONE * mind_.guilt + parchedToLead(world));
-        want(Want::Wash, wantsWashing() ? FILTH_WASH * (0.5f + modesty()) : 0.0f);
+        want(Want::Wash, wantsWashing() ? FILTH_WASH * (0.5f + modesty()) : wantsScrub() ? GRIME_WASH * modesty() : 0.0f);
         if (float fill = fillDrive(); fill >= 0.0f) want(Want::Fill, fill);
         // The cunning go out of their way to lie to a foe.
         if (social_.partner >= 0)
@@ -600,7 +611,7 @@ void Human::choose(World& world) {
         want(Want::Loot, -DREAD_LOOT * dread_);
     if (std::any_of(world.humans().begin(), world.humans().end(), [&](const auto& o) { return wouldRob(world, *o); }))
         want(Want::Rob, ROB_TEMPT + ROB_HUNGRY * drive);
-    bool fetchCakes = cakes < carryMax() && (!memory.cakes.empty() ||
+    bool fetchCakes = cakes < carryMax() && (!memory.cakes.empty() || hoardBuys() ||
                                              std::any_of(memory.piles.begin(), memory.piles.end(),
                                                          [&](const auto& p) { return p.second.cakes > 0 && !isMine(p.first); }));
     // A hoarder with a stash still to fill fetches the harder for it, and
@@ -637,7 +648,7 @@ bool Human::pursue(World& world, Want w) {
     case Want::Food:
         return seekFood(world);
     case Want::Drink:
-        return seekWater(world);
+        return seekWater(world) || buyBottle(world);
     case Want::Relieve:
         return seekRelief(world);
     case Want::Sleep:
@@ -653,7 +664,7 @@ bool Human::pursue(World& world, Want w) {
     case Want::Wash:
         return startWash(world);
     case Want::Fill:
-        return seekFill(world);
+        return seekFill(world) || buyBottle(world);
     case Want::Stash:
         return seekStash(world);
     case Want::Meet:
@@ -700,6 +711,9 @@ bool Human::pursue(World& world, Want w) {
             startWalking(Goal::Pick, *q);
             return true;
         }
+        // Nothing to fetch: the greedy buy cakes to hoard.
+        if (!p && hoardBuys())
+            if (auto v = machinePath(world, Vend::Cake)) return goBuy(world, *v, Vend::Cake);
         if (!p) return false;
         if (!inReach(p->empty() ? cell : p->back(), memory.keys)) {
             startWalking(Goal::FetchCake, *p);

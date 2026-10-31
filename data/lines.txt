@@ -218,6 +218,7 @@ they.filthy rude        | NOT LIKE THAT. YOU STINK.
 they.filthy rude        | WASH FIRST.
 they.filthy timid       | UM... YOU'VE GOT SOMETHING ON YOU.
 they.filthy greedy rude | UGH. GET AWAY FROM ME.
+rude                    | FUCK OFF.
 
 # Turned away: what the one who came to greet says back.
 [snubbed 0.6]
@@ -2142,3 +2143,115 @@ brave                   | WHOEVER HAS IT WILL GIVE IT BACK.
                         | I'M NOT LETTING GO OF THIS.
 timid                   | I CAN'T LOSE THIS. I CAN'T.
 greedy                  | NOBODY GETS THIS BOTTLE.
+
+# ---- Going unwashed ---------------------------------------------------------
+
+# Turning dirty from going too long unwashed, said to nobody.
+[got_dirty 0.6]
+                        | I NEED A WASH.
+                        | LOOK AT THE STATE OF ME.
+                        | UGH. I'M FILTHY.
+timid                   | I HOPE NOBODY SEES ME LIKE THIS.
+brave                   | A BIT OF DIRT NEVER HURT.
+erratic                 | DIRT. GOOD DIRT.
+
+# Washed clean of it again, said to nobody.
+[washed_clean 0.6]
+                        | AH. CLEAN AT LAST.
+                        | THAT'S BETTER.
+                        | I FEEL HUMAN AGAIN.
+timid                   | MUCH BETTER. NOBODY SAW.
+
+# ---- Smell ------------------------------------------------------------------
+
+# Starting to smell, from going dirty too long, said to nobody.
+[stink 0.6]
+                        | UGH. IS THAT ME?
+                        | I REEK.
+                        | THESE FLIES WON'T LEAVE ME ALONE.
+timid                   | EVERYONE CAN SMELL ME...
+brave                   | SO I STINK. SO WHAT.
+erratic                 | MY FLIES. MY LITTLE FRIENDS.
+
+# Smelling a body it can't see, said to nobody.
+[smell_death 0.8]
+                        | WHAT IS THAT SMELL?
+                        | SOMETHING'S DEAD AROUND HERE.
+                        | THAT SMELL... SOMETHING DIED.
+timid scared            | OH NO. THAT'S A BODY. I KNOW THAT SMELL.
+craving                 | I SMELL MEAT.
+erratic                 | DINNER'S CLOSE. I CAN SMELL IT.
+
+# Setting off after a smell of death, hungry for flesh, said to nobody.
+[follow_stench 0.7]
+                        | FOLLOW THE SMELL.
+                        | IT'S THIS WAY. I CAN SMELL IT.
+guilty                  | I SHOULDN'T... BUT I'M SO HUNGRY.
+erratic                 | SNIFF, SNIFF. THERE YOU ARE.
+
+# Walking off from a smell to eat, said to nobody.
+[put_off 0.6]
+                        | NOT HERE. NOT WITH THAT SMELL.
+                        | I CAN'T EAT NEXT TO THAT.
+                        | UGH. SOMEWHERE ELSE.
+greedy                  | NOT LETTING THAT RUIN MY CAKE.
+
+# ---- Vending machines ------------------------------------------------------
+
+# The first vending machine it ever sees, lit up behind its glass, said to
+# nobody.
+[first_vending]
+                        | IT'S... STILL ON.
+                        | WHO KEEPS THIS RUNNING?
+                        | THERE'S A SLOT. FOR WHAT?
+curious                 | WHAT DOES IT TAKE?
+hungry                  | FOOD. BEHIND GLASS.
+thirsty                 | NOTHING TO DRINK IN IT?
+keys                    | IT WANTS KEYS.
+timid                   | IT HUMS.
+greedy                  | ALL OF IT. I WANT ALL OF IT.
+
+# Paying keys for a cake from a machine, said to nobody.
+[vend_cake 0.7]
+                        | THREE DOORS I WON'T OPEN.
+                        | WORTH IT. FOR NOW.
+                        | IT EATS KEYS.
+hungry                  | FINALLY.
+starving                | ANYTHING. ANYTHING.
+curious                 | SOMEONE STOCKS IT. SOMEONE.
+greedy                  | ONE MORE FOR LATER.
+hopeless                | WHAT WERE THE KEYS FOR ANYWAY.
+sure                    | THE WAY OUT CAN WAIT.
+
+# Paying keys for an empty bottle from a machine, said to nobody.
+[vend_bottle 0.7]
+                        | NOW TO FIND WATER.
+                        | EMPTY. OF COURSE.
+                        | SOMETHING TO CARRY IT IN.
+thirsty                 | IT'S A START.
+timid                   | I WON'T LOSE THIS ONE.
+greedy                  | MINE.
+
+# At the machine, and nothing left in it: said to nobody.
+[vend_empty 0.8]
+                        | NOTHING.
+                        | EMPTY. EMPTY.
+                        | SOMEONE GOT HERE FIRST.
+hungry                  | NO. NOT NOW.
+starving rude           | NO! COME ON!
+brave                   | IT'LL FILL UP AGAIN. IT HAS TO.
+
+# Telling someone of a vending machine at a greeting, to them.
+[tell_vending]
+                        | THERE'S A MACHINE. IT TAKES KEYS.
+                        | KEYS GET YOU FOOD, NOT FAR FROM HERE.
+friend warm             | I KNOW A MACHINE. IT'S NOT EMPTY YET.
+they.hungry             | GOT KEYS? THEN YOU CAN EAT.
+they.keys               | SPEND THEM WISELY. THERE'S A MACHINE.
+curious                 | SOMEONE STILL FILLS THE MACHINES.
+
+# Selling word of a machine for a cake, to the one told.
+[sell_vending]
+                        | A CAKE, AND I'LL TELL YOU WHERE TO SPEND THOSE KEYS.
+greedy                  | THE MACHINE'S WORTH A CAKE TO KNOW.
+                        | YOUR KEYS ARE NO GOOD WITHOUT ME.

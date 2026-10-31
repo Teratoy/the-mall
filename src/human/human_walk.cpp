@@ -135,6 +135,8 @@ void Human::move(World& world, Vec2i next) {
     if (goal == Goal::CheckDoor && !lockedDoorBeside(target_)) rethink_ = true;
     if (goal == Goal::Explore && !isFrontier(target_) && !openDoorBeside(target_)) rethink_ = true;
     if (goal == Goal::FetchCake && !cakeInReach(target_)) rethink_ = true;
+    // Seen empty, or its keys gone, the machine is no use.
+    if (goal == Goal::Vend && (!canBuy() || memory.machines[vend_.at].stock <= 0)) rethink_ = true;
     // Making for a voice with a key, a gate seen near it is worth going to.
     if (goal == Goal::Rescue && keys > 0 && rescue_.rescuee >= 0) {
         auto it = rescue_.cries.find(rescue_.rescuee);
@@ -197,6 +199,9 @@ void Human::arrive(World& world) {
     case Goal::Stash:
         if (stashHere()) return;
         return choose(world);
+    case Goal::Vend:
+        if (startVending(world)) return;
+        return choose(world);
     case Goal::Relieve:
         if (seekRelief(world)) return;
         return choose(world);
@@ -254,6 +259,8 @@ void Human::startIdle(float lo, float hi) {
 }
 
 void Human::rest() {
+    // Never sits down by a smell.
+    if (stinksHere()) return startIdle(IDLE_TIME_MIN, IDLE_TIME_MAX);
     if (!rng_.chance(SIT_CHANCE * sway(1.0f - traits.curious, SIT_CURIOUS) * (1.0f + DREAD_SIT * dread_) *
                      (1.0f + GUILT_SIT * mind_.guilt) * (1.0f + DESPAIR_SIT * gloom())))
         return startIdle(IDLE_TIME_MIN, IDLE_TIME_MAX);
@@ -457,7 +464,7 @@ std::optional<std::vector<Vec2i>> Human::searchFrom(const World& world, Vec2i st
             if (!open(m)) continue;
             bool diagonal = d.x != 0 && d.y != 0;
             if (diagonal && (!open(n.at + Vec2i{d.x, 0}) || !open(n.at + Vec2i{0, d.y}))) continue;
-            int c = n.cost + (diagonal ? 14 : 10) + bloodCost(m) + messCost(world, m);
+            int c = n.cost + (diagonal ? 14 : 10) + bloodCost(m) + messCost(world, m) + smellCost(m);
             auto it = cost.find(m);
             if (it != cost.end() && it->second <= c) continue;
             cost[m] = c;

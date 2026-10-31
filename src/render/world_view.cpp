@@ -8,6 +8,7 @@
 #include "render/statue_art.h"
 #include "render/table_art.h"
 #include "render/toilet_art.h"
+#include "render/vending_art.h"
 #include "render/water_art.h"
 #include "world/world.h"
 #include <algorithm>
@@ -44,6 +45,15 @@ constexpr Color PLATE_DOWN = {0, 0, 0, 90};
 constexpr Color DART = {226, 214, 172, 255};
 /// Darts fly about chest high, this far above the middle of their row.
 constexpr int DART_RISE_PX = 3;
+/// Flies buzz over whatever smells, more the stronger it smells: one at the
+/// faintest, FLIES_MAX at the strongest. Each loops about its smell this
+/// many pixels either side, across and up and down, at its own speed.
+constexpr Color FLY = {20, 18, 16, 255};
+constexpr int FLIES_MAX = 5;
+constexpr float FLY_RX = 4.0f, FLY_RY = 2.5f, FLY_SPEED_X = 5.0f, FLY_SPEED_Y = 7.3f;
+/// They hover this many pixels over a standing human's head, a body lying
+/// down, or the middle of a cell.
+constexpr float FLY_OVER_HEAD = 2.0f, FLY_OVER_BODY = 4.0f, FLY_OVER_CELL = 3.0f;
 /// A human just hit is drawn tinted with this.
 constexpr Color HURT_TINT = {255, 90, 90, 255};
 /// The viewer behind a statue shows through it, this faintly.
@@ -127,6 +137,7 @@ void drawCell(int x, int y, Tile t, Tile above, Tile below, Floor floor, WallSty
     case Tile::Statue:
     case Tile::Basin:
     case Tile::Toilet:
+    case Tile::Vending:
         DrawRectangle(x, y, CELL_PX, CELL_PX, dim(toColor(FLOOR_PALETTES[floor.palette].base), lit));
         break;
     case Tile::Wall:
@@ -262,6 +273,8 @@ Pose poseOf(const Human& h) {
     case Human::State::Looting:
     case Human::State::Stashing: return Pose::Search;
     case Human::State::Feeding: return Pose::Feed;
+    // An arm out to the buttons.
+    case Human::State::Vending: return Pose::Point;
     case Human::State::Idle:
     case Human::State::Walking: break;
     }
@@ -352,7 +365,7 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
                                     dim(toColor(WALL_PALETTES[w.palette].ink), lit));
                 continue;
             }
-            if (tile != Tile::Floor && tile != Tile::Table && tile != Tile::Statue) continue;
+            if (tile != Tile::Floor && tile != Tile::Table && tile != Tile::Statue && tile != Tile::Vending) continue;
             Floor f = world.floor(c);
             floorTiles.draw(x * CELL_PX - left, y * CELL_PX - top, c, f.pattern,
                             dim(toColor(FLOOR_PALETTES[f.palette].ink), lit));
@@ -372,7 +385,9 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
     for (int y = y0; y <= y1; y++)
         for (int x = x0; x <= x1; x++) {
             Tile tile = known({x, y});
-            if (tile != Tile::Void && tile != Tile::Table && tile != Tile::Statue && tile != Tile::Basin) drawBlood({x, y}, 0);
+            if (tile != Tile::Void && tile != Tile::Table && tile != Tile::Statue && tile != Tile::Basin &&
+                tile != Tile::Vending)
+                drawBlood({x, y}, 0);
         }
 
     // Piss and feces in sight, and those the viewer saw before, dimmed.
@@ -453,6 +468,7 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
         float y;
         const Human* human;
         int statue;
+        const Machine* machine = nullptr;
     };
     std::vector<Drawn> drawn;
     for (const auto& h : world.humans())
@@ -460,6 +476,14 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
     for (int id : statues) {
         const Statue& s = world.statues()[size_t(id)];
         drawn.push_back({float((s.at.y + s.size.y) * CELL_PX), nullptr, id});
+    }
+    // Machines the viewer knows either cell of, standing on the bottom edge
+    // of their lower cell.
+    for (const Machine& m : world.machines()) {
+        Vec2i last = m.at + m.along();
+        if (last.x < x0 - 1 || m.at.x > x1 + 1 || last.y < y0 || m.at.y > y1 + VENDING_H / CELL_PX + 1) continue;
+        if (known(m.at) != Tile::Vending && known(last) != Tile::Vending) continue;
+        drawn.push_back({float((last.y + 1) * CELL_PX), nullptr, -1, &m});
     }
     std::sort(drawn.begin(), drawn.end(), [](const Drawn& a, const Drawn& b) {
         bool deadA = a.human && a.human->dead(), deadB = b.human && b.human->dead();
@@ -483,6 +507,22 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
         }
     };
     for (const Drawn& d : drawn) {
+        if (d.machine) {
+            // In sight it shows what it holds now; remembered, what the viewer saw in it, dimmed and still.
+            const Machine& m = *d.machine;
+            bool lit = reveal || viewer.sight.sees(m.at) || viewer.sight.sees(m.at + m.along());
+            int x = m.at.x * CELL_PX - left, y = int(d.y) - top;
+            if (!m.side()) {
+                auto it = viewer.memory.machines.find(m.at);
+                int stock = lit ? m.stock : it == viewer.memory.machines.end() ? 0 : it->second.stock;
+                drawVendingMachine(m.kind, x, y, uint8_t((1u << stock) - 1), lit, float(GetTime()));
+            } else {
+                // Its back to the wall, its flank to the viewer.
+                int sx = m.facing.x < 0 ? x + CELL_PX - VENDING_DEPTH : x;
+                drawVendingMachineSide(m.kind, sx, y, lit, float(GetTime()), m.facing.x > 0);
+            }
+            continue;
+        }
         if (!d.human) {
             const Statue& s = world.statues()[size_t(d.statue)];
             bool lit = reveal;
@@ -509,6 +549,30 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
         float px = (d.from.x + d.dir.x * d.flown + 0.5f) * CELL_PX - left;
         float py = (d.from.y + d.dir.y * d.flown + 0.5f) * CELL_PX - top - DART_RISE_PX;
         for (int i = 0; i < 3; i++) DrawPixel(int(px) - d.dir.x * i, int(py) - d.dir.y * i, DART);
+    }
+
+    // Flies over every smell in sight; a human's go where it goes.
+    float now = world.time();
+    for (const Smell& s : world.smells()) {
+        Vector2 at{(s.cell.x + 0.5f) * CELL_PX, (s.cell.y + 0.5f) * CELL_PX - FLY_OVER_CELL};
+        if (s.kind == SmellKind::Human || s.kind == SmellKind::Body) {
+            const Human& h = world.human(s.who);
+            if (!shown(viewer, h, reveal)) continue;
+            at = feetOf(h);
+            at.y -= h.dead() ? SPRITE_W / 2.0f + FLY_OVER_BODY : SPRITE_H + FLY_OVER_HEAD;
+        } else if (!reveal && !viewer.sight.sees(s.cell)) {
+            continue;
+        }
+        int flies = 1 + int(std::lround(s.strength * (FLIES_MAX - 1)));
+        // Each swarm its own, by where it is.
+        unsigned hash = (unsigned(s.cell.x) * 73856093u) ^ (unsigned(s.cell.y) * 19349663u);
+        float seed = float(hash & 0xffffu) / 100.0f + float(s.who);
+        for (int i = 0; i < flies; i++) {
+            float phase = seed + 2.4f * i;
+            float x = at.x + std::sin(now * FLY_SPEED_X * (1.0f + 0.37f * i) + phase) * FLY_RX;
+            float y = at.y + std::sin(now * FLY_SPEED_Y * (1.0f + 0.23f * i) + 1.7f * phase) * FLY_RY;
+            DrawPixel(int(std::lround(x)) - left, int(std::lround(y)) - top, FLY);
+        }
     }
     EndMode2D();
     EndScissorMode();

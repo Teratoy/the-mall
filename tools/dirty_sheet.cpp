@@ -1,11 +1,13 @@
-// Draws a sheet of one human beside itself gone feral, in every pose and
+// Draws a sheet of one human beside itself gone dirty, in every pose and
 // with everything that rides on the body: a cake carried, a bottle in the
 // pocket and in the hand, pointing, blood, feces and piss, and the remains
 // eaten and rotten. It all goes through HumanSprites::draw, as in the game,
-// so the sheet shows whether the feral frames still line up with all of it.
-// Usage: build/feral_sheet [out.png] [seed] [scale]   (make feralsheet)
-// Each cell is the normal human on the left and the feral one on the right,
-// with what it shows written above.
+// so the sheet shows whether the dirty frames still line up with all of it.
+// Usage: build/dirty_sheet [out.png] [seed] [scale] [styles]   (make dirtysheet)
+// Each cell is the normal human on the left and the dirty one on the right,
+// with what it shows written above. With styles, the sheet is instead one
+// row for each hair style, in a few poses, each row a human of its own with
+// and without a beard in turn.
 #include "core/rng.h"
 #include "human/body_blood.h"
 #include "human/bottle.h"
@@ -15,6 +17,8 @@
 #include <cstdlib>
 #include <memory>
 #include <raylib.h>
+#include <rlgl.h>
+#include <string>
 #include <vector>
 
 namespace {
@@ -100,10 +104,21 @@ Coated coat(const HumanLook& look, Coat c) {
 } // namespace
 
 int main(int argc, char** argv) {
-    const char* out = argc > 1 ? argv[1] : "build/feral-sheet.png";
+    const char* out = argc > 1 ? argv[1] : "build/dirty-sheet.png";
     uint64_t seed = argc > 2 ? std::strtoull(argv[2], nullptr, 10) : 42;
     int scale = argc > 3 ? std::atoi(argv[3]) : 4;
-    const std::vector<Cell> cells = {
+    bool styles = argc > 4 && std::string(argv[4]) == "styles";
+    const std::vector<Cell> stylePoses = {
+        {"Idle", Pose::Idle},
+        {"Walk 1", Pose::Walk, 0.13f},
+        {"Point", Pose::Point},
+        {"Sip", Pose::Sip, 0.0f, false, true, true},
+        {"Sit", Pose::Sit, 1.0f},
+        {"Sleep curl", Pose::Sleep, 3.0f},
+        {"Fall down", Pose::Fall, 1.0f},
+        {"Bloody", Pose::Idle, 0.0f, false, false, false, Coat::Bloody},
+    };
+    const std::vector<Cell> cells = styles ? std::vector<Cell>{} : std::vector<Cell>{
         {"Idle", Pose::Idle},
         {"Walk 1", Pose::Walk, 0.13f},
         {"Walk 3", Pose::Walk, 0.38f},
@@ -151,38 +166,54 @@ int main(int argc, char** argv) {
         {"Bones", Pose::Fall, 1.0f, false, false, false, Coat::Bones},
         {"Eaten curled", Pose::DiedAsleep, 0.0f, false, false, false, Coat::CurledEaten},
     };
+    constexpr int HAIRS = int(Hair::Cap) + 1;
 
     SetTraceLogLevel(LOG_WARNING);
     SetConfigFlags(FLAG_WINDOW_HIDDEN);
-    InitWindow(64, 64, "feral sheet");
+    InitWindow(64, 64, "dirty sheet");
     const int cellW = (2 * SLOT + PAIR_GAP) * scale, cellH = SLOT * scale + LABEL;
-    const int rows = (int(cells.size()) + COLUMNS - 1) / COLUMNS;
+    const int rows = styles ? HAIRS : (int(cells.size()) + COLUMNS - 1) / COLUMNS;
     RenderTexture2D rt = LoadRenderTexture(COLUMNS * cellW, rows * cellH);
     bool ok = false;
     {
         Rng rng(seed);
-        HumanLook normal = HumanLook::random(rng);
-        HumanLook feral = normal;
-        feral.feral = true;
         const Bottle bottle{0.7f};
-        Coated coats[2][7];
-        for (int f = 0; f < 2; f++)
-            for (int c = 0; c < 7; c++) coats[f][c] = coat(f ? feral : normal, Coat(c));
-
         BeginTextureMode(rt);
         ClearBackground(BACKDROP);
-        for (size_t i = 0; i < cells.size(); i++) {
-            const Cell& c = cells[i];
-            int ox = int(i % COLUMNS) * cellW, oy = int(i / COLUMNS) * cellH;
-            DrawText(c.label, ox + 4, oy + 1, 10, INK);
-            // The floor under the feet, a sprite pixel from the bottom.
-            float floorY = float(oy + cellH - 2 * scale);
-            DrawRectangle(ox, int(floorY), cellW - scale, 2 * scale, FLOOR);
-            for (int f = 0; f < 2; f++) {
-                Vector2 feet{float(ox + (f * (SLOT + PAIR_GAP) + SLOT / 2) * scale), floorY};
-                coats[f][int(c.coat)].sprites->draw(feet, c.pose, c.time, false, scale, WHITE, c.carrying,
-                                                     c.bottle ? &bottle : nullptr, c.inHand);
+        // Draws a row of cells for one human, normal and dirty, from cell first on.
+        auto drawCells = [&](const HumanLook& normal, const std::vector<Cell>& row, int first, const char* tag) {
+            HumanLook grubby = normal;
+            grubby.dirty = true;
+            Coated coats[2][7];
+            for (int f = 0; f < 2; f++)
+                for (int c = 0; c < 7; c++) coats[f][c] = coat(f ? grubby : normal, Coat(c));
+            for (size_t j = 0; j < row.size(); j++) {
+                const Cell& c = row[j];
+                int i = first + int(j);
+                int ox = i % COLUMNS * cellW, oy = i / COLUMNS * cellH;
+                DrawText(j == 0 && tag ? tag : c.label, ox + 4, oy + 1, 10, INK);
+                // The floor under the feet, a sprite pixel from the bottom.
+                float floorY = float(oy + cellH - 2 * scale);
+                DrawRectangle(ox, int(floorY), cellW - scale, 2 * scale, FLOOR);
+                for (int f = 0; f < 2; f++) {
+                    Vector2 feet{float(ox + (f * (SLOT + PAIR_GAP) + SLOT / 2) * scale), floorY};
+                    coats[f][int(c.coat)].sprites->draw(feet, c.pose, c.time, false, scale, WHITE, c.carrying,
+                                                         c.bottle ? &bottle : nullptr, c.inHand);
+                }
             }
+            // Drawn before the sprites are unloaded, which free their textures.
+            rlDrawRenderBatchActive();
+        };
+        if (styles) {
+            const char* names[HAIRS] = {"Bald", "Short", "Long", "Spiky", "Bun", "Mohawk", "Ponytail", "Cap"};
+            for (int h = 0; h < HAIRS; h++) {
+                HumanLook look = HumanLook::random(rng);
+                look.hairStyle = Hair(h);
+                look.beard = h % 2 == 1;
+                drawCells(look, stylePoses, h * COLUMNS, TextFormat("%s%s", names[h], look.beard ? ", beard" : ""));
+            }
+        } else {
+            drawCells(HumanLook::random(rng), cells, 0, nullptr);
         }
         EndTextureMode();
         Image img = LoadImageFromTexture(rt.texture);

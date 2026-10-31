@@ -7,14 +7,17 @@
 //   LOGLINES=path writes every distinct log line written, as the soak does,
 //   for tools/coverage.py.
 // Exits non-zero if any scenario fails. Deterministic, like the soak.
+#include "human/human_tuning.h"
 #include "probe.h"
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <deque>
 #include <functional>
 #include <map>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 using P = SoakProbe;
@@ -154,6 +157,41 @@ bool plain(const Traits&) { return true; }
 // Which way round blood and a body are put together (AI/blame_plan.md).
 bool blamesBefore(const Traits& t) { return t.brave < 0.3f && t.curious < 0.6f; }
 bool blamesAfter(const Traits& t) { return t.brave >= 0.6f && t.curious < 0.6f; }
+
+// How much shame a human feels (Human::modesty: sociable and timid).
+bool modest(const Traits& t) { return (t.sociable + 1.0f - t.brave) / 2.0f >= 0.75f; }
+bool shameless(const Traits& t) { return (t.sociable + 1.0f - t.brave) / 2.0f < 0.27f; }
+/// Shameless, but neither so bold nor so curious it puts washing off.
+bool shamelessMeek(const Traits& t) { return shameless(t) && t.brave <= 0.62f && t.curious < 0.3f; }
+
+/// This line in h's own log, or (with yes false) not.
+Check own(const Human& h, std::string line, bool yes = true) {
+    std::string label = (yes ? "#" : "no #") + std::to_string(h.id) + " " + line;
+    return {label, [&h, line, yes](const Stage&) {
+                bool found = false;
+                for (const auto& e : h.log.entries()) found |= e.what == line;
+                return found == yes;
+            }};
+}
+
+/// A modest human and a shameless one by a basin they know, calm, each
+/// set up the same way by dirty().
+Checks washOrNot(Stage& s, const std::function<void(Human&)>& dirty,
+                 const std::function<Checks(const Human& modest, const Human& shameless)>& expect,
+                 bool (*slobLike)(const Traits&) = shameless) {
+    auto b = s.basin();
+    if (!b) return {{"room for a basin near the spawn", [](const Stage&) { return false; }}};
+    Human& prim = s.first();
+    Human& slob = s.add(seedWhere(slobLike, 12000), 2);
+    for (Human* h : {&prim, &slob}) {
+        P::knowChunk(s.world, *h);
+        h->hunger = h->thirst = h->tiredness = 0.05f;
+        h->bladder = h->bowels = 0.0f;
+        dirty(*h);
+    }
+    s.run(60);
+    return expect(prim, slob);
+}
 
 /// A stranger, thirsty and not yet parched, near a settler at home by
 /// the basin, with a cake or not.
@@ -537,7 +575,7 @@ const std::vector<Scenario> SCENARIOS = {
          return Checks{logged({"ROBBED @ IN THEIR SLEEP", "@ WOKE UP AS I ROBBED THEM"})};
      }},
     {"rob-companion", "a hungry human robs the one it keeps with, then leaves them, and never misses them",
-     seedWhere([](const Traits& t) { return t.sociable >= 0.6f && t.greedy >= 0.5f && !cunning(t); }, 4000),
+     seedWhere([](const Traits& t) { return t.sociable >= 0.6f && t.greedy >= 0.5f && !cunning(t); }, 4200),
      [](Stage& s) {
          Human& robber = s.first();
          Human& victim = s.add(seedWhere([](const Traits& t) { return t.brave < 0.4f && t.greedy >= 0.8f; }, 5000));
@@ -613,11 +651,55 @@ const std::vector<Scenario> SCENARIOS = {
      seedWhere(cunning),
      [](Stage& s) {
          Human& liar = s.first();
+         // Set up apart from how the spawn room came out: the plate lies in the
+         // corridor to the room's locked door, a few steps in from it, walled
+         // in to one cell there, so the way to that door is over it.
+         const Vec2i home = World::slotOf(liar.cell);
+         std::optional<Vec2i> inner;
+         for (int y = 0; y < CHUNK && !inner; y++)
+             for (int x = 0; x < CHUNK && !inner; x++) {
+                 Vec2i c = home * CHUNK + Vec2i{x, y};
+                 if (s.world.tile(c) != Tile::DoorLocked) continue;
+                 for (Vec2i d : DIRS4)
+                     if (World::slotOf(c + d) == home && s.world.tile(c + d) == Tile::Floor) inner = c + d;
+             }
+         if (!inner) return Checks{{"a locked door out of the room", [](const Stage&) { return false; }}};
+         // Along the corridor from the door, the first cell at least four
+         // steps in where it is just three cells across.
+         auto floor = [&](Vec2i c) { return s.world.tile(c) == Tile::Floor; };
+         std::optional<Vec2i> plate;
+         Vec2i across{};
+         std::unordered_map<Vec2i, int, Vec2iHash> dist{{*inner, 0}};
+         std::deque<Vec2i> open{*inner};
+         while (!open.empty() && !plate) {
+             Vec2i p = open.front();
+             open.pop_front();
+             for (Vec2i a : {Vec2i{1, 0}, Vec2i{0, 1}}) {
+                 Vec2i along{a.y, a.x};
+                 if (dist[p] >= 4 && floor(p + a) && floor(p - a) && !floor(p + a * 2) && !floor(p - a * 2) &&
+                     floor(p + along) && floor(p - along)) {
+                     plate = p;
+                     across = a;
+                     break;
+                 }
+             }
+             for (Vec2i d : DIRS4)
+                 if (floor(p + d) && World::slotOf(p + d) == home && !dist.count(p + d)) {
+                     dist[p + d] = dist[p] + 1;
+                     open.push_back(p + d);
+                 }
+         }
+         if (!plate) return Checks{{"a corridor to the locked door", [](const Stage&) { return false; }}};
+         P::addWall(s.world, *plate + across);
+         P::addWall(s.world, *plate - across);
          P::knowChunk(s.world, liar);
          // A restless loner: it goes its own way, down the route, not with the liar.
          Human& victim = s.add(seedWhere([](const Traits& t) { return t.sociable < 0.3f && t.curious > 0.5f; }, 6000));
-         setUpLie(s, liar, victim, TrapKind::Darts, 4);
-         for (const auto& [c, kind] : liar.memory.traps) P::addTrap(s.world, c, kind);
+         P::setTrust(liar, victim, -0.6f);
+         liar.hunger = victim.hunger = 0.1f;
+         liar.thirst = victim.thirst = 0.1f;
+         P::addTrap(s.world, *plate, TrapKind::Darts);
+         liar.learnTrap(*plate, TrapKind::Darts);
          victim.keys = 1;
          // Hungry with nothing to eat, a key holder makes for a door sooner.
          victim.hunger = 0.7f;
@@ -688,43 +770,77 @@ const std::vector<Scenario> SCENARIOS = {
      seedWhere([](const Traits& t) { return cunning(t) && t.greedy >= 0.7f; }),
      [](Stage& s) {
          Human& liar = s.first();
-         // Set up apart from how the spawn room came out: of its two tables
-         // farthest apart, a cake on one and nothing on the other. The liar
-         // knows the room and its cake, and stands about ten cells from the
-         // cake on the side away from the bare table; the rival, a stranger,
-         // wakes beside it, too far from the bare table ever to have seen it.
-         std::vector<Vec2i> tables;
+         // Set up apart from how the spawn room came out: the rival would see
+         // the bare table across the open room once its daze lifts, so that is
+         // through the door, on the table farthest off in the chunk beyond,
+         // and the cake on the room's table farthest from the door. The liar
+         // knows both chunks and the cake, and stands about ten cells from the
+         // cake on the side away from the door; the rival, a stranger, wakes
+         // a few cells behind it, as far from the cake as it can be and still
+         // be a rival for it, so it sees the cake late and the liar is nearer.
+         const Vec2i home = World::slotOf(liar.cell);
+         std::optional<Vec2i> door, cake, bare;
+         for (int y = 0; y < CHUNK && !bare; y++)
+             for (int x = 0; x < CHUNK && !bare; x++) {
+                 Vec2i c = home * CHUNK + Vec2i{x, y};
+                 Tile t = s.world.tile(c);
+                 if (t != Tile::DoorOpen && t != Tile::DoorLocked) continue;
+                 for (Vec2i d : DIRS4) {
+                     Vec2i out = c + d;
+                     if (World::slotOf(out) == home) continue;
+                     s.world.ensureGenerated(out);
+                     for (const Table& tb : s.world.tables())
+                         if (P::chunkOf(s.world, tb.at) == P::chunkOf(s.world, out) && (!bare || cheb(tb.at, c) > cheb(*bare, c)))
+                             bare = tb.at;
+                     if (bare) door = c;
+                 }
+             }
+         if (!bare) return Checks{{"a table through a door of the spawn room", [](const Stage&) { return false; }}};
          for (const Table& t : s.world.tables())
-             if (World::slotOf(t.at) == World::slotOf(liar.cell)) tables.push_back(t.at);
-         std::optional<std::pair<Vec2i, Vec2i>> pair;
-         for (Vec2i a : tables)
-             for (Vec2i b : tables)
-                 if (!pair || cheb(a, b) > cheb(pair->first, pair->second)) pair = {a, b};
-         if (!pair || cheb(pair->first, pair->second) < 40)
-             return Checks{{"two tables far apart in the spawn chunk", [](const Stage&) { return false; }}};
-         auto [cake, bare] = *pair;
-         P::clearChunk(s.world, cake);
-         P::addCake(s.world, cake);
+             if (World::slotOf(t.at) == home && (!cake || cheb(t.at, *door) > cheb(*cake, *door))) cake = t.at;
+         if (!cake) return Checks{{"a table in the spawn room", [](const Stage&) { return false; }}};
+         P::clearChunk(s.world, *bare);
+         P::knowChunkOf(s.world, liar, *bare);
+         P::clearChunk(s.world, *cake);
+         P::addCake(s.world, *cake);
          P::knowChunk(s.world, liar, true);
+         auto open = [&](Vec2i c) {
+             return s.world.tile(c) == Tile::Floor && !s.world.occupant(c) && !s.world.table(c) && !s.world.statue(c);
+         };
          std::optional<Vec2i> stand;
          for (int y = -10; y <= 10; y++)
              for (int x = -10; x <= 10; x++) {
-                 Vec2i c = cake + Vec2i{x, y};
-                 if (cheb(c, cake) < 8 || s.world.tile(c) != Tile::Floor || s.world.occupant(c) || s.world.table(c) ||
-                     s.world.statue(c))
-                     continue;
-                 if (!stand || cheb(c, bare) > cheb(*stand, bare)) stand = c;
+                 Vec2i c = *cake + Vec2i{x, y};
+                 if (cheb(c, *cake) < 8 || !open(c)) continue;
+                 if (!stand || cheb(c, *door) > cheb(*stand, *door)) stand = c;
              }
          if (!stand) return Checks{{"floor near the cake", [](const Stage&) { return false; }}};
          P::place(s.world, liar, *stand);
+         std::optional<Vec2i> behind;
+         for (int y = -10; y <= 10; y++)
+             for (int x = -10; x <= 10; x++) {
+                 Vec2i c = *stand + Vec2i{x, y};
+                 if (cheb(c, *stand) > 6 || cheb(c, *cake) >= RIVAL_NEAR || !open(c)) continue;
+                 if (!behind || cheb(c, *cake) > cheb(*behind, *cake)) behind = c;
+             }
+         if (!behind) return Checks{{"floor behind the liar", [](const Stage&) { return false; }}};
          Human& rival = s.add(seedWhere(plain, 9700));
+         P::place(s.world, rival, *behind);
          liar.hunger = 0.4f;
          liar.cakes = 0;
          rival.hunger = 0.68f;
          rival.cakes = 0;
          liar.thirst = rival.thirst = 0.1f;
          s.run(90);
-         return Checks{logged({"SENT @ AWAY FROM A CAKE I WANT"}), logged({"@ TOLD ME WHERE A CAKE IS"})};
+         Check took{"the liar picked up the cake after the lie", [&liar](const Stage&) {
+                        float lied = -1.0f;
+                        for (const auto& e : liar.log.entries()) {
+                            if (e.what == "SENT @ AWAY FROM A CAKE I WANT") lied = e.time;
+                            if (lied >= 0.0f && e.what == "PICKED UP A CAKE") return true;
+                        }
+                        return false;
+                    }};
+         return Checks{logged({"SENT @ AWAY FROM A CAKE I WANT"}), logged({"@ TOLD ME WHERE A CAKE IS"}), took};
      }},
     {"gain-trap", "a cunning stranger sells spikes that aren't there for a cake",
      seedWhere([](const Traits& t) { return cunning(t) && t.greedy >= 0.7f; }),
@@ -1304,7 +1420,7 @@ const std::vector<Scenario> SCENARIOS = {
                        unlogged("LEFT @. THEY KNOW NO MORE THAN I DO")};
      }},
     {"parched-door", "a caring human with a key, beyond the door the parched lie calling through, opens it",
-     seedWhere([](const Traits& t) { return t.sociable >= 0.75f && t.brave >= 0.3f; }, 17000),
+     seedWhere([](const Traits& t) { return t.sociable >= 0.75f && t.brave >= 0.3f; }, 17500),
      [](Stage& s) {
          Human& leader = s.first();
          Human& follower = s.add(seedWhere([](const Traits& t) { return t.sociable >= 0.75f; }, 17500), 2);
@@ -1423,6 +1539,159 @@ const std::vector<Scenario> SCENARIOS = {
          s.run(60);
          return Checks{loggedBy(dying, "DRANK, AFTER NEARLY DYING OF THIRST"), loggedBy(dry, "DRANK WATER"),
                        loggedBy(dry, "DRANK, AFTER NEARLY DYING OF THIRST", false)};
+     }},
+    {"vend-cake", "hungry with three keys and no cake about, it buys one from a machine and eats it",
+     seedWhere(plain, 14000), [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         P::standMachine(s.world, Vend::Cake, h.cell + Vec2i{4, -3}, {0, 1}, 3);
+         h.hunger = 0.6f;
+         h.thirst = h.tiredness = 0.1f;
+         h.keys = MACHINE_PRICE;
+         s.run(30);
+         return Checks{loggedBy(h, "PAID 3 KEYS FOR A CAKE FROM A MACHINE"), loggedBy(h, "ATE A CAKE"),
+                       {"its keys spent", [&h](const Stage&) { return h.keys == 0; }}};
+     }},
+    {"vend-bottle", "thirsty with no bottle and three keys, it buys an empty one from a machine side on",
+     seedWhere(plain, 15000), [](Stage& s) {
+         Human& h = s.first();
+         P::standMachine(s.world, Vend::Bottle, h.cell + Vec2i{5, -1}, {-1, 0}, 2);
+         h.bottles.clear();
+         P::setDrankYet(h);
+         h.thirst = 0.6f;
+         h.hunger = h.tiredness = 0.1f;
+         h.keys = MACHINE_PRICE;
+         s.run(30);
+         return Checks{loggedBy(h, "PAID 3 KEYS FOR A BOTTLE FROM A MACHINE"),
+                       {"a bottle in hand", [&h](const Stage&) { return h.bottles.size() == 1; }}};
+     }},
+    {"vend-empty", "two humans work one machine with one cake left at once: one gets it, one finds it empty",
+     seedWhere(plain, 18000), [](Stage& s) {
+         Human& a = s.first();
+         P::clearChunk(s.world, a.cell);
+         const Machine& m = P::standMachine(s.world, Vend::Cake, a.cell + Vec2i{4, -3}, {0, 1}, 1);
+         Human& b = s.add(seedWhere(plain, 19000), 3);
+         for (Human* h : {&a, &b}) calm(*h);
+         s.run(8);
+         P::place(s.world, a, m.at + m.facing);
+         P::place(s.world, b, m.at + m.along() + m.facing);
+         for (Human* h : {&a, &b}) {
+             h->keys = MACHINE_PRICE;
+             P::knowMachine(*h, m);
+         }
+         bool started = P::startVending(s.world, a, Vend::Cake) && P::startVending(s.world, b, Vend::Cake);
+         s.run(5);
+         return Checks{{"both started", [started](const Stage&) { return started; }},
+                       logged({"PAID 3 KEYS FOR A CAKE FROM A MACHINE"}), logged({"THE MACHINE WAS EMPTY"})};
+     }},
+    {"sell-vending", "a grasping stranger sells word of a bottle machine to one with no bottle and cakes to spare",
+     seedWhere([](const Traits& t) { return t.greedy >= 0.55f && t.brave < 0.35f; }, 20000), [](Stage& s) {
+         Human& seller = s.first();
+         P::clearChunk(s.world, seller.cell);
+         const Machine& m = P::standMachine(s.world, Vend::Bottle, seller.cell + Vec2i{0, -24}, {0, 1}, 4);
+         Human& buyer = s.add(seedWhere([](const Traits& t) { return t.greedy < 0.6f && t.sociable >= 0.4f; }, 21000), 3);
+         P::knowChunk(s.world, seller);
+         P::knowMachine(seller, m);
+         calm(seller);
+         buyer.hunger = buyer.thirst = buyer.tiredness = 0.1f;
+         buyer.bottles.clear();
+         P::setDrankYet(buyer);
+         buyer.keys = MACHINE_PRICE;
+         buyer.cakes = 3;
+         s.run(60);
+         return Checks{loggedBy(seller, "TOLD @ WHERE A MACHINE IS"), loggedBy(buyer, "PAID @ A CAKE FOR NEWS")};
+     }},
+    {"tell-vending", "a friend tells a hungry friend with keys of a machine out of sight, who goes and buys",
+     seedWhere(kindly, 16000), [](Stage& s) {
+         Human& teller = s.first();
+         P::clearChunk(s.world, teller.cell);
+         const Machine& m = P::standMachine(s.world, Vend::Cake, teller.cell + Vec2i{0, -24}, {0, 1}, 4);
+         Human& hungry = s.add(seedWhere(kindly, 17000), 3);
+         P::knowChunk(s.world, teller);
+         P::knowMachine(teller, m);
+         P::setTrust(teller, hungry, 0.6f);
+         P::setTrust(hungry, teller, 0.6f);
+         calm(teller);
+         hungry.hunger = 0.6f;
+         hungry.thirst = hungry.tiredness = 0.1f;
+         hungry.keys = MACHINE_PRICE;
+         s.run(90);
+         return Checks{loggedBy(teller, "TOLD @ WHERE A MACHINE IS"), loggedBy(hungry, "@ TOLD ME WHERE A MACHINE IS"),
+                       loggedBy(hungry, "PAID 3 KEYS FOR A CAKE FROM A MACHINE")};
+     }},
+    {"dirty-wash", "turning dirty, the modest wash it off and the shameless don't", seedWhere(modest, 12500),
+     [](Stage& s) {
+         return washOrNot(s, [](Human& h) { P::setGrime(h, 0.97f); }, [](const Human& prim, const Human& slob) {
+             return Checks{own(prim, "TURNED DIRTY"), own(prim, "WASHED OFF DIRT"), own(prim, "WASHED CLEAN"),
+                           own(slob, "TURNED DIRTY"), own(slob, "WASHED OFF DIRT", false),
+                           {"#0 done washing", [&prim](const Stage&) { return prim.state != Human::State::Washing; }}};
+         });
+     }},
+    {"dry-blood", "with dried blood on, the modest wash it off and the shameless don't", seedWhere(modest, 12500),
+     [](Stage& s) {
+         return washOrNot(s, [](Human& h) { P::bloody(h), P::dry(h); }, [](const Human& prim, const Human& slob) {
+             return Checks{own(prim, "WASHED OFF BLOOD"), own(slob, "WASHED OFF BLOOD", false)};
+         });
+     }},
+    {"fresh-blood", "with fresh blood on, even the shameless wash it off", seedWhere(modest, 12500),
+     [](Stage& s) {
+         return washOrNot(
+             s, [](Human& h) { P::bloody(h); },
+             [](const Human& prim, const Human& slob) {
+                 return Checks{own(prim, "WASHED OFF BLOOD"), own(slob, "WASHED OFF BLOOD")};
+             },
+             shamelessMeek);
+     }},
+    {"stink", "dirty long enough, a human starts to smell", seedWhere(shameless, 12000),
+     [](Stage& s) {
+         Human& h = s.first();
+         calm(h);
+         P::setGrime(h, 1.45f);
+         s.run(60);
+         return Checks{own(h, "TURNED DIRTY"), own(h, "STARTED TO SMELL")};
+     }},
+    {"put-off", "hungry beside someone who smells, a human walks off to eat", seedWhere(modest, 12500),
+     [](Stage& s) {
+         Human& eater = s.first();
+         Human& smelly = s.add(seedWhere(shameless, 12000), 1);
+         calm(eater);
+         calm(smelly);
+         eater.hunger = 0.75f;
+         eater.cakes = 1;
+         P::setGrime(smelly, 2.8f);
+         s.run(40);
+         return Checks{own(smelly, "STARTED TO SMELL"), own(eater, "MOVED AWAY FROM A SMELL TO EAT"),
+                       own(eater, "ATE A CAKE")};
+     }},
+    {"smell-death", "a body walled in out of sight is smelt through the wall", 1,
+     [](Stage& s) {
+         Human& nose = s.first();
+         Human& victim = s.add(seedWhere(plain, 9900));
+         calm(nose);
+         Vec2i at = nose.cell + Vec2i{3, 0};
+         P::wallIn(s.world, at);
+         P::place(s.world, victim, at);
+         P::kill(s.world, victim, 1200.0f);
+         s.run(20);
+         return Checks{own(nose, "SMELT DEATH"), unlogged("FOUND @ DEAD")};
+     }},
+    {"follow-stench", "an erratic human hungry for flesh follows a smell of death to the body",
+     seedWhere([](const Traits& t) { return t.brave >= 0.6f; }, 13000),
+     [](Stage& s) {
+         Human& nose = s.first();
+         Human& victim = s.add(seedWhere(plain, 9900));
+         calm(nose);
+         Vec2i at = nose.cell + Vec2i{3, 0};
+         // A way in on the far side.
+         P::wallIn(s.world, at, Vec2i{2, 0});
+         P::place(s.world, victim, at);
+         P::kill(s.world, victim, 1200.0f);
+         P::craze(nose, 1.0f);
+         nose.hunger = 0.8f;
+         nose.cakes = 0;
+         s.run(60);
+         return Checks{own(nose, "SMELT DEATH"), own(nose, "FOLLOWED THE SMELL OF DEATH"),
+                       logged({"ATE FROM @'S ROTTEN BODY", "ATE FROM @'S BODY"})};
      }},
 };
 

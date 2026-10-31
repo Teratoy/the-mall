@@ -6,10 +6,12 @@
 #include "world/gen.h"
 #include "world/mess.h"
 #include "world/pile.h"
+#include "world/smell.h"
 #include "world/statue.h"
 #include "world/table.h"
 #include "world/toilet.h"
 #include "world/trap.h"
+#include "world/vending.h"
 #include <memory>
 #include <optional>
 #include <string>
@@ -28,6 +30,8 @@ struct HumanLook;
 /// Here and there giant household objects stand as statues, in rooms roomy
 /// enough for them, and maybe one in the spawn room.
 /// A plaza without a fountain has a basin to drink from. Here and there, rarely, stands a toilet.
+/// Now and then in room networks and plazas a vending machine stands
+/// against a wall, selling cakes or empty bottles for keys.
 /// Hidden traps lie about every chunk but the spawn: spikes in the open,
 /// darts rigged under some cakes, and in room networks slam rooms baited
 /// with a cake, each with one more key to open it again.
@@ -77,6 +81,16 @@ public:
         if (auto it = toilets_.find(cell); it != toilets_.end()) it->second.dirt += amount;
     }
 
+    /// The vending machine on a cell, if any. Machines never move.
+    const Machine* machine(Vec2i cell) const {
+        auto it = machineCells_.find(cell);
+        return it == machineCells_.end() ? nullptr : &machines_[size_t(it->second)];
+    }
+    const std::vector<Machine>& machines() const { return machines_; }
+    /// Takes one item out of the machine on the cell, from the bottom of
+    /// what it holds; false if there is none or nothing left in it.
+    bool vend(Vec2i cell);
+
     bool hasKey(Vec2i cell) const { return keys_.count(cell) > 0; }
     bool takeKey(Vec2i cell) { return keys_.erase(cell) > 0; }
     const std::unordered_set<Vec2i, Vec2iHash>& keys() const { return keys_; }
@@ -120,6 +134,9 @@ public:
     float foul(Vec2i cell) const { return mess_.foul(cell); }
     /// How much of it is from feces and piss, not blood.
     float filthFoul(Vec2i cell) const { return std::max(0.0f, mess_.foul(cell) - mess_.bloodFoul(cell)); }
+    /// Everything that smells, as it was when last gathered: every
+    /// SMELL_EVERY seconds.
+    const std::vector<Smell>& smells() const { return smells_; }
 
     /// Simulates every chunk and every human, seen or not.
     void update(float dt);
@@ -149,6 +166,8 @@ private:
     };
 
     Rng rng_;
+    /// The seed it was made from, for generators that roll dice of their own.
+    uint64_t seed_;
     std::vector<std::unique_ptr<Chunk>> chunks_;
     std::unordered_map<Vec2i, int, Vec2iHash> slotChunk_;
     std::unordered_map<EdgeKey, Door, EdgeKeyHash> doors_;
@@ -164,6 +183,9 @@ private:
     /// there, where nobody could see it.
     std::unordered_set<Vec2i, Vec2iHash> behindStatues_;
     std::unordered_map<Vec2i, Toilet, Vec2iHash> toilets_;
+    std::vector<Machine> machines_;
+    /// Which machine stands on each cell.
+    std::unordered_map<Vec2i, int, Vec2iHash> machineCells_;
     std::unordered_set<Vec2i, Vec2iHash> keys_;
     std::unordered_set<Vec2i, Vec2iHash> cakes_;
     std::unordered_map<Vec2i, Pile, Vec2iHash> piles_;
@@ -176,6 +198,11 @@ private:
     Blood blood_;
     Mess mess_;
     float time_ = 0.0f;
+    std::vector<Smell> smells_;
+    /// Seconds until the smells are gathered again.
+    float smellIn_ = 0.0f;
+    /// Gathers what smells now: humans and bodies, fresh feces, foul water.
+    void gatherSmells();
 
     const Chunk* chunkAt(Vec2i slot) const;
     Chunk* chunkAt(Vec2i slot);
@@ -209,6 +236,17 @@ private:
     /// A toilet plaza's toilets: along the hall's walls and round its
     /// columns, wherever one blocks nothing. In gen_toilets.cpp.
     void placePlazaToilets(Chunk& c);
+    /// Now and then, in a room network or plaza, a vending machine or a
+    /// pair against a straight wall, clear of doors and slam rooms. In
+    /// gen_vending.cpp.
+    void placeMachines(Chunk& c, const std::vector<gen::SlamRoom>& slams);
+    /// Stands a machine of the kind holding stock items with its first cell
+    /// at the world cell, facing away from its wall, if both cells are
+    /// floor; the cells its body rises over are kept clear like those
+    /// behind statues.
+    bool standMachine(Chunk& c, Vend kind, Vec2i at, Vec2i facing, int stock);
+    /// Machines get an item back each day.
+    void updateMachines(float dt);
     /// Sets a square basin with its top left corner at the cell, with floor
     /// all round it. False if it doesn't fit there.
     bool placeBasin(Chunk& c, Vec2i cell);

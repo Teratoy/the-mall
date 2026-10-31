@@ -28,10 +28,10 @@ GENPROBE := build/genprobe
 HIDEF := build/hidef
 # Human frames with bottles, scaled up, to check the bottle art by eye.
 BOTTLESHEET := build/bottle_sheet
-# A human beside itself gone feral, in every pose, with all that rides on it.
-FERALSHEET := build/feral_sheet
+# A human beside itself gone dirty, in every pose, with all that rides on it.
+DIRTYSHEET := build/dirty_sheet
 
-.PHONY: all run clean stuck check golden coverage shot scenarios genprobe hidef bottlesheet feralsheet fontdump lines trapprobe icon apk install-apk logcat
+.PHONY: all run clean stuck check golden coverage shot scenarios genprobe hidef bottlesheet dirtysheet fontdump lines trapprobe icon apk install-apk logcat
 
 all: $(BIN)
 
@@ -105,11 +105,11 @@ $(BOTTLESHEET): tools/bottle_sheet.cpp $(filter-out build/main.o,$(OBJ))
 bottlesheet: $(BOTTLESHEET)
 	./$(BOTTLESHEET) build/bottle-sheet.png
 
-$(FERALSHEET): tools/feral_sheet.cpp $(filter-out build/main.o,$(OBJ))
+$(DIRTYSHEET): tools/dirty_sheet.cpp $(filter-out build/main.o,$(OBJ))
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@ $(LDLIBS)
 
-feralsheet: $(FERALSHEET)
-	./$(FERALSHEET) build/feral-sheet.png $(FERALSHEET_ARGS)
+dirtysheet: $(DIRTYSHEET)
+	./$(DIRTYSHEET) build/dirty-sheet.png $(DIRTYSHEET_ARGS)
 
 # raylib's default font, saved for the lines editor (tools/font_dump.cpp).
 FONTDUMP := build/font_dump
