@@ -505,13 +505,14 @@ void WorldScene::drawStats(const Human& viewer, Rectangle area) {
     y = pipRow("CURIOUS", t.curious, x, right, y);
     y = pipRow("SOCIAL", t.sociable, x, right, y);
     y = pipRow("MODEST", viewer.modesty(), x, right, y);
-    // Whom they have greeted, been told the name of, and count friends and
-    // foes, seen or heard of.
+    // Whom they have greeted, been told the name of, count friends and foes,
+    // seen or heard of, and know they killed.
     y = section("PEOPLE", x, y + SECTION_GAP);
     y = countRow("MET", int(viewer.met.size()), x, right, y);
     y = countRow("NAMES", int(viewer.memory.names.size()), x, right, y);
     y = countRow("FRIENDS", viewer.friendCount(), x, right, y);
     y = countRow("FOES", viewer.foeCount(), x, right, y);
+    y = countRow("KILLS", viewer.killCount(), x, right, y);
     // How frightened and erratic they are, and what eating flesh left:
     // guilt, or a taste for it; the mind red once erratic.
     y = section("MIND", x, y + SECTION_GAP);

@@ -455,6 +455,7 @@ bool Human::observe(const World& world) {
                 lift(friendDead ? HOPE_FRIEND_DEAD : o->bones() ? HOPE_BONES : HOPE_BODY);
                 if (o->deaths_.killer == id && !o->deaths_.killerSaw) {
                     note("FOUND @ DEAD. MY BEATING DID IT", o->id);
+                    deaths_.kills++;
                     rememberAt(o->cell, Episode::What::Kill, EPISODE_KILLED, id, o->id);
                 } else if (o->deaths_.killer != id) {
                     if (known) {

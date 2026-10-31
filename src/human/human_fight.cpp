@@ -293,6 +293,7 @@ void Human::creditKill(World& world, Human& by, bool witnesses) {
     // Bled out out of its sight, it only learns of it at the body.
     deaths_.killerSaw = witnesses || (!by.dead() && by.sight.sees(cell));
     if (!deaths_.killerSaw) return;
+    by.deaths_.kills++;
     by.note(by.hunting() ? "KILLED @ TO EAT" : "KILLED @", id);
     by.remember(Episode::What::Kill, EPISODE_KILLED, by.id, id);
     by.sayLater(talk::Moment::Killed, -1, id);

@@ -291,6 +291,8 @@ public:
     /// How many it counts friends, and foes, from what it saw and was told.
     int friendCount() const;
     int foeCount() const;
+    /// How many it knows it killed: seen die by its hand, or found dead of its beating.
+    int killCount() const { return deaths_.kills; }
     /// Whom it keeps company with, -1 if nobody; and whether it is standing
     /// waiting for its group to catch up.
     int companion() const { return social_.companion; }
@@ -718,6 +720,8 @@ private:
         int killer = -1;
         /// Whether the killer saw it die; if not, it learns it on finding the body.
         bool killerSaw = false;
+        /// How many it knows it killed.
+        int kills = 0;
         std::unordered_map<int, Body> bodies;
         /// The body it is going to, or kneeling by, to go through.
         int corpse = -1;
