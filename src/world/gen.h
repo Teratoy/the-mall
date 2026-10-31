@@ -35,8 +35,9 @@ void connectRegions(Chunk& c, int width);
 /// anything but water share a label. Water and the border are -1.
 std::vector<int> sides(const Chunk& c);
 
-/// The spawn: the whole chunk is one square room.
-void squareRoom(Chunk& c);
+/// The spawn: one square room this many cells a side in the middle of the
+/// chunk. Its doors dig their own corridors to it.
+void squareRoom(Chunk& c, int side);
 void maze(Chunk& c, Rng& rng);
 /// A room's box, and the floor cell in it that corridors aim at. Local cells.
 struct RoomBox {

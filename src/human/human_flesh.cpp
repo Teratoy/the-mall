@@ -160,6 +160,8 @@ bool Human::wouldEat(int id) const {
     if (it == deaths_.bodies.end()) return false;
     const Body& b = it->second;
     if (b.meals <= 0 || (b.spoiled && mind_.appetite < SPOILED_APPETITE)) return false;
+    // A body that smells puts off all but the erratic and the starving.
+    if (!isErratic() && !starving() && smellsOfDeath(b.cell)) return false;
     if (isFriend(id) && mind_.erratic < ERRATIC_MAD) return false;
     auto f = social_.lastSeen.find(fight_.feared);
     return !(fight_.fear > 0.0f && f != social_.lastSeen.end() && cheb(b.cell, f->second) < FEARED_DIST);
@@ -195,7 +197,8 @@ bool Human::startFeed(World& world, int body) {
     }
     if (!p) {
         mind_.meal = -1;
-        return false;
+        // None it knows of: one it has smelt, maybe.
+        return body < 0 && followStench(world);
     }
     mind_.meal = whose;
     if (!p->empty()) {

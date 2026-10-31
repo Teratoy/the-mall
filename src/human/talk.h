@@ -150,6 +150,12 @@ enum class Moment {
     // whom it blames); the first time it runs its bottle dry or fills it,
     // seeing that water is scarce (to nobody).
     SeeBottle, BottleGone, BottleStolen, Scarce,
+    // Turning dirty from going unwashed, and washed clean of it again (both
+    // to nobody).
+    GotDirty, WashedClean,
+    // Smell: starting to smell itself, smelling death it can't see, setting
+    // off after that smell, walking off from a smell to eat (all to nobody).
+    Stink, SmellDeath, FollowStench, PutOff,
     // Vending machines: the first one it ever sees, buying a cake or a
     // bottle with keys, finding it empty (all to nobody); a machine at a
     // greeting, told or sold (to the one told).

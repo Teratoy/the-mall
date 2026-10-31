@@ -302,6 +302,7 @@ const HumanSprites& WorldScene::spritesFor(const Human& h) {
     if (!s) s = std::make_unique<HumanSprites>(h.look);
     s->bloody(h.stains);
     s->dirty(h.dirt, h.soaked);
+    s->setDirty(h.dirty());
     if (h.dead()) s->remains(1.0f - float(h.flesh) / Human::FLESH_MEALS, h.decay(), uint64_t(h.id) * 2654435761ULL + 1, h.diedAsleep());
     return *s;
 }
@@ -386,8 +387,8 @@ void WorldScene::update(float dt, const Canvas& canvas) {
         wheel = 0.0f;
     }
     if (wheelOnLog) {
-        if (wheel < 0.0f) logScroll_++;
-        if (wheel > 0.0f) logScroll_--;
+        if (wheel > 0.0f) logScroll_++;
+        if (wheel < 0.0f) logScroll_--;
         wheel = 0.0f;
     }
     if (wheel > 0.0f) step++;
@@ -403,14 +404,14 @@ void WorldScene::update(float dt, const Canvas& canvas) {
             return;
         }
     }
-    // Dragging the log up shows older entries, one per row dragged.
+    // Dragging the log down shows older entries, one per row dragged.
     if (logShown && IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(m, logArea)) {
         dragging_ = true;
         dragFrom_ = m.y;
         dragScroll_ = logScroll_;
     }
     if (!logShown || !IsMouseButtonDown(MOUSE_BUTTON_LEFT)) dragging_ = false;
-    if (dragging_) logScroll_ = dragScroll_ + int((dragFrom_ - m.y) / ui::ROW);
+    if (dragging_) logScroll_ = dragScroll_ + int((m.y - dragFrom_) / ui::ROW);
     // Dragging the map moves it under the finger, and it stops following.
     if (mapShown && IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(m, mapArea)) {
         mapDragging_ = true;
@@ -433,22 +434,23 @@ void WorldScene::update(float dt, const Canvas& canvas) {
 }
 
 // Each entry is its time, dimmed, then what happened, wrapped under itself.
-// Whatever doesn't fit at the bottom is scrolled to.
-void WorldScene::drawLog(const Human& viewer, Rectangle area) {
+// The newest sits at the bottom and older ones stack up above it; whatever
+// doesn't fit at the top is scrolled to.
+void WorldScene::drawLog(const Human& viewer, Rectangle area, int clear) {
     if (logFor_ != viewer.id) logFor_ = viewer.id, logScroll_ = 0, dragging_ = false;
     DrawRectangleRec(area, LOG_SHADE);
     const auto& entries = viewer.log.entries();
     int left = int(area.x) + MARGIN, right = int(area.x + area.width) - MARGIN;
-    int y = int(area.y) + MARGIN, bottom = int(area.y + area.height) - MARGIN;
+    int top = int(area.y) + MARGIN, y = int(area.y + area.height) - MARGIN - clear;
     if (entries.empty()) {
-        ui::textCentred("NOTHING YET", (left + right) / 2, y, ui::DIM);
+        ui::textCentred("NOTHING YET", (left + right) / 2, y - ui::ROW, ui::DIM);
         return;
     }
     logScroll_ = std::clamp(logScroll_, 0, int(entries.size()) - 1);
     if (logScroll_ > 0) {
         std::string newer = std::to_string(logScroll_) + " NEWER";
+        y -= ui::ROW;
         ui::textRight(newer.c_str(), right, y, ui::DIM);
-        y += ui::ROW;
     }
     // The newest time is the longest; measured in zeros, as 1 is narrower.
     std::string widest = ui::clockText(entries.back().time);
@@ -458,12 +460,11 @@ void WorldScene::drawLog(const Human& viewer, Rectangle area) {
     for (int i = int(entries.size()) - 1 - logScroll_; i >= 0; i--) {
         const LifeLog::Entry& e = entries[size_t(i)];
         std::vector<std::string> rows = ui::wrap(logLine(viewer, e), right - left - column);
-        if (y + int(rows.size()) * ui::ROW > bottom) break;
+        int block = int(rows.size()) * ui::ROW;
+        if (y - block < top) break;
+        y -= block;
         ui::text(ui::clockText(e.time).c_str(), left, y, ui::DIM);
-        for (const std::string& row : rows) {
-            ui::text(row.c_str(), left + column, y);
-            y += ui::ROW;
-        }
+        for (size_t r = 0; r < rows.size(); r++) ui::text(rows[r].c_str(), left + column, y + int(r) * ui::ROW);
     }
 }
 
@@ -523,10 +524,11 @@ void WorldScene::drawStats(const Human& viewer, Rectangle area) {
     y = pipRow("ERRATIC", viewer.erratic(), x, right, y, viewer.isErratic() ? ERRATIC_INK : ui::INK);
     y = pipRow("GUILT", viewer.guilt(), x, right, y);
     y = pipRow("CRAVE", viewer.appetite(), x, right, y);
-    // How badly they need to go.
+    // How badly they need to go, and how long they have gone unwashed.
     y = section("BODY", x, y + SECTION_GAP);
     y = pipRow("BLADDER", viewer.bladder, x, right, y);
     y = pipRow("BOWELS", viewer.bowels, x, right, y);
+    y = pipRow("GRIME", viewer.grime(), x, right, y);
     y = section("LESSONS", x, y + SECTION_GAP);
     y = pipRow("HOARDS", viewer.lessons.hoard, x, right, y);
     y = pipRow("KEYS FIRST", viewer.lessons.keysFirst, x, right, y);
@@ -611,7 +613,9 @@ void WorldScene::drawPhone(const Human& viewer, Vector2 mouse) {
         y += ui::ROW;
     }
 
-    if (logOpen_) drawLog(viewer, LOG_AREA);
+    // The dead's NEXT button sits over the bottom of the log: the newest
+    // entries stay above it.
+    if (logOpen_) drawLog(viewer, LOG_AREA, viewer.dead() ? int(LOG_AREA.y + LOG_AREA.height - NEXT_BUTTON.y) : 0);
     if (statsOpen_) drawStats(viewer, LOG_AREA);
     if (mapOpen_) drawMapIn(viewer, LOG_AREA);
 

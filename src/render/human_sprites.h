@@ -50,6 +50,9 @@ public:
     void bloody(const BodyBlood& blood);
     /// The same for the feces and the piss on it, painted over the blood.
     void dirty(const BodyBlood& dirt, const BodyBlood& soaked);
+    /// Redraws every frame dirty from going unwashed (HumanLook::dirty), or
+    /// clean again, unless it already shows so.
+    void setDirty(bool dirty);
     /// Redraws the body lying dead eaten this far (0 whole to 1 picked over)
     /// and rotten this far (0 fresh to 1 bare bones), unless it already
     /// shows about that much; seed keeps the bites its own. curled: it died
@@ -81,6 +84,8 @@ private:
     int dirtVersion_ = 0, soakedVersion_ = 0;
     const BodyBlood* dirt_ = nullptr;
     const BodyBlood* soaked_ = nullptr;
+    /// The look the frames are drawn from, dirty or not.
+    HumanLook look_;
     /// For the remains: the skin as it was, and how eaten and how rotten
     /// the dead body shows, in steps.
     Rgba skin_;
@@ -88,6 +93,9 @@ private:
     bool curledDead_ = false;
     uint64_t seed_ = 0;
 
+    /// Calls add(texture, frame) for every texture with its frame drawn
+    /// from look, always in the same order.
+    template <class F> void eachFrame(const HumanLook& look, F&& add);
     void add(Texture2D& t, SpriteFrame f);
     /// Uploads the frame with the blood on it, and on the dead body its remains.
     void paint(Texture2D& t, const SpriteFrame& f);

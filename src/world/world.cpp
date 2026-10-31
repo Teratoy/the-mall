@@ -9,6 +9,15 @@
 
 namespace {
 
+/// Smells are gathered this often, in seconds.
+constexpr float SMELL_EVERY = 1.0f;
+/// Feces smell until this fresh (Mess::freshness), as dry as no longer to
+/// stick to a foot; the fresher and the bigger, the stronger.
+constexpr float FECES_SMELL_DRY = 0.4f;
+/// Water this foul smells, as foul as to sicken (the user), at least this
+/// strongly, fouler water more.
+constexpr float WATER_SMELL_FOUL = 0.5f, WATER_SMELL_MIN = 0.2f;
+
 /// Chance each free stretch of border gets an exit door, beyond the one
 /// every chunk with an empty neighbour is sure to have.
 constexpr float NEW_DOOR_CHANCE = 0.35f;
@@ -83,6 +92,8 @@ constexpr StatueKind NICHE_KINDS[] = {StatueKind::Spoon, StatueKind::Bulb, Statu
                                       StatueKind::Clock};
 
 constexpr int STATUES_PER_SLOT_MAX = 3;
+/// Cells per side of the spawn room: 30% of the floor the whole chunk once gave.
+constexpr int SPAWN_ROOM = 54;
 /// The spawn room gets a statue this often, at least this far from its middle.
 constexpr float SPAWN_STATUE_CHANCE = 0.6f;
 constexpr int SPAWN_STATUE_GAP = 14;
@@ -165,13 +176,13 @@ Chunk& World::addChunk(ChunkKind kind, Vec2i slot, const Footprint& parts) {
 Human& World::makeSpawn(const HumanLook& look, uint64_t seed, const std::string& name) {
     Chunk& c = addChunk(ChunkKind::Spawn, {0, 0}, boxFootprint({1, 1}));
     c.paint = gen::randomFloor(rng_);
-    gen::squareRoom(c);
+    gen::squareRoom(c, SPAWN_ROOM);
     Vec2i centre{c.w / 2, c.h / 2};
+    const int lo = (c.w - SPAWN_ROOM) / 2, hi = lo + SPAWN_ROOM - 1;
     placeDoors(c, centre, 0.0f, 1, 1);
     if (rng_.chance(SPAWN_STATUE_CHANCE))
         for (int t = 0; t < 40; t++) {
-            Vec2i at{rng_.range(SPAWN_STATUE_GAP, c.w - SPAWN_STATUE_GAP),
-                     rng_.range(SPAWN_STATUE_GAP, c.h - SPAWN_STATUE_GAP)};
+            Vec2i at{rng_.range(lo, hi), rng_.range(lo, hi)};
             if (cheb(at, centre) >= SPAWN_STATUE_GAP && placeStatue(c, at, centre)) break;
         }
     std::vector<Vec2i> spots = deepSpots(c, centre);
@@ -857,6 +868,29 @@ bool World::vend(Vec2i cell) {
     return true;
 }
 
+// Humans in the order they came, feces in the order they were left, then
+// water by its cell, so the same world gathers them the same way.
+void World::gatherSmells() {
+    smells_.clear();
+    for (const auto& h : humans_)
+        if (float s = h->smellStrength(); s > 0.0f)
+            smells_.push_back({h->dead() ? SmellKind::Body : SmellKind::Human, h->cell, s, h->id});
+    for (const Dropping& d : mess_.all()) {
+        if (d.kind != MessKind::Feces) continue;
+        float fresh = Mess::freshness(d, time_);
+        if (fresh > FECES_SMELL_DRY)
+            smells_.push_back({SmellKind::Feces, d.cell, std::min(1.0f, d.size * (fresh - FECES_SMELL_DRY) / (1.0f - FECES_SMELL_DRY)), d.who});
+    }
+    std::vector<Smell> water;
+    for (const auto& [c, f] : mess_.fouled())
+        if (f >= WATER_SMELL_FOUL && drinkable(tile(c)))
+            water.push_back({SmellKind::Water, c, std::min(1.0f, WATER_SMELL_MIN + (f - WATER_SMELL_FOUL) / WATER_SMELL_FOUL), -1});
+    std::sort(water.begin(), water.end(), [](const Smell& a, const Smell& b) {
+        return a.cell.y != b.cell.y ? a.cell.y < b.cell.y : a.cell.x < b.cell.x;
+    });
+    smells_.insert(smells_.end(), water.begin(), water.end());
+}
+
 // By index: a human stepping into an empty slot adds a chunk and a human.
 void World::update(float dt) {
     time_ += dt;
@@ -866,5 +900,9 @@ void World::update(float dt) {
     blood_.update(dt);
     for (const auto& [c, f] : blood_.takeFoul()) mess_.foulWater(c, f, true);
     mess_.update(dt, [&](Vec2i c) { return drinkable(tile(c)); });
+    if ((smellIn_ -= dt) <= 0.0f) {
+        smellIn_ += SMELL_EVERY;
+        gatherSmells();
+    }
     for (size_t i = 0; i < humans_.size(); i++) humans_[i]->update(*this, dt);
 }

@@ -45,6 +45,15 @@ constexpr Color PLATE_DOWN = {0, 0, 0, 90};
 constexpr Color DART = {226, 214, 172, 255};
 /// Darts fly about chest high, this far above the middle of their row.
 constexpr int DART_RISE_PX = 3;
+/// Flies buzz over whatever smells, more the stronger it smells: one at the
+/// faintest, FLIES_MAX at the strongest. Each loops about its smell this
+/// many pixels either side, across and up and down, at its own speed.
+constexpr Color FLY = {20, 18, 16, 255};
+constexpr int FLIES_MAX = 5;
+constexpr float FLY_RX = 4.0f, FLY_RY = 2.5f, FLY_SPEED_X = 5.0f, FLY_SPEED_Y = 7.3f;
+/// They hover this many pixels over a standing human's head, a body lying
+/// down, or the middle of a cell.
+constexpr float FLY_OVER_HEAD = 2.0f, FLY_OVER_BODY = 4.0f, FLY_OVER_CELL = 3.0f;
 /// A human just hit is drawn tinted with this.
 constexpr Color HURT_TINT = {255, 90, 90, 255};
 /// The viewer behind a statue shows through it, this faintly.
@@ -540,6 +549,30 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
         float px = (d.from.x + d.dir.x * d.flown + 0.5f) * CELL_PX - left;
         float py = (d.from.y + d.dir.y * d.flown + 0.5f) * CELL_PX - top - DART_RISE_PX;
         for (int i = 0; i < 3; i++) DrawPixel(int(px) - d.dir.x * i, int(py) - d.dir.y * i, DART);
+    }
+
+    // Flies over every smell in sight; a human's go where it goes.
+    float now = world.time();
+    for (const Smell& s : world.smells()) {
+        Vector2 at{(s.cell.x + 0.5f) * CELL_PX, (s.cell.y + 0.5f) * CELL_PX - FLY_OVER_CELL};
+        if (s.kind == SmellKind::Human || s.kind == SmellKind::Body) {
+            const Human& h = world.human(s.who);
+            if (!shown(viewer, h, reveal)) continue;
+            at = feetOf(h);
+            at.y -= h.dead() ? SPRITE_W / 2.0f + FLY_OVER_BODY : SPRITE_H + FLY_OVER_HEAD;
+        } else if (!reveal && !viewer.sight.sees(s.cell)) {
+            continue;
+        }
+        int flies = 1 + int(std::lround(s.strength * (FLIES_MAX - 1)));
+        // Each swarm its own, by where it is.
+        unsigned hash = (unsigned(s.cell.x) * 73856093u) ^ (unsigned(s.cell.y) * 19349663u);
+        float seed = float(hash & 0xffffu) / 100.0f + float(s.who);
+        for (int i = 0; i < flies; i++) {
+            float phase = seed + 2.4f * i;
+            float x = at.x + std::sin(now * FLY_SPEED_X * (1.0f + 0.37f * i) + phase) * FLY_RX;
+            float y = at.y + std::sin(now * FLY_SPEED_Y * (1.0f + 0.23f * i) + 1.7f * phase) * FLY_RY;
+            DrawPixel(int(std::lround(x)) - left, int(std::lround(y)) - top, FLY);
+        }
     }
     EndMode2D();
     EndScissorMode();

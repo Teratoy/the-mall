@@ -33,9 +33,10 @@ toolbox run -c claude-build make check        # soak vs golden output (~75 s)
 | `make coverage` | Lists log lines (`note(...)`) and talk moments that neither the soak nor the scenarios reached |
 | `make stuck` | The soak with its own arguments: `build/stuck_soak [seeds] [minutes] [verbose] [crowd]`. `TRACE=seed:id:from:to` follows one human |
 | `make bottlesheet` | Draws every pose with a bottle at several levels and dirt, scaled up, to `build/bottle-sheet.png` |
-| `make feralsheet` | Draws one human beside itself feral in every pose, with cake, bottle, blood and remains, to `build/feral-sheet.png` |
+| `make dirtysheet` | Draws one human beside itself dirty in every pose, with cake, bottle, blood and remains, to `build/dirty-sheet.png` |
 | `make genprobe` | Grows chunk interiors on every footprint (L, T, S, boxes) and checks they keep to it. `GENPROBE_ARGS="20 png"` also saves pictures to `build/genprobe-png/` |
 | `make apk` (on the host, not the toolbox) | Builds `build/TheMall-debug.apk` for the phone with the Android NDK. See `android/apk.mk` and [AI/android_plan.md](AI/android_plan.md) |
+| `make lines` (host or toolbox), or `./lines.sh` (the "The Mall Lines" desktop shortcut) | The lines editor: a local web page at http://localhost:8765 for rewriting `data/lines.txt`, with the game's bubble drawn beside each line. See [AI/lines_editor_plan.md](AI/lines_editor_plan.md) |
 | `make shot SHOT_ARGS="..."` | Saves `build/shot.png` without a visible window. See `tools/shot.cpp` for the options (`--scene`, `--seconds`, `--seed`, `--zoom`, `--stats`, `--log`, `--reveal`, `--wide`) |
 
 **The sim is deterministic.** Same seeds, same output, byte for byte. So:
@@ -80,7 +81,7 @@ lost, and several useful probes already have been.
   - social: trust, greeting, tells, lies, names
   - fight: cakes, fights, hits, looting
   - speech: lines and the log
-  - blood, thirst, bottle, relief, sleep, flesh, hope, rescue, company, chat, topic, episode
+  - blood, thirst, bottle, relief, grime, smell, sleep, flesh, hope, rescue, company, chat, topic, episode
 - `src/world/`: chunks and generation (`gen_*.cpp`), blood, mess, traps,
   tables, statues, toilets.
 - `src/render/`: pixel art drawn in code; `src/scenes/`: menu, create,
@@ -88,6 +89,10 @@ lost, and several useful probes already have been.
 - `data/lines.txt`: everything humans say. The user edits it, and F5
   reloads it in game. Its header explains the format.
 - `data/names.txt`: what names are grown from.
+- `data/lines_review.json` and `data/lines_drafts.json`: the lines editor's
+  review marks, and rewrites Claude drafts for the user to accept or reject
+  there (format at the top of `tools/lines_editor.py`). Draft rewrites go in
+  the drafts file, not straight into `data/lines.txt`.
 - `data/obituary.txt`: the player's save file. It isn't tracked by git,
   so don't commit or reset it.
 - `AI/`: plans, one per feature, with the user's decisions and what was

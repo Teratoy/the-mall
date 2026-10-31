@@ -236,6 +236,17 @@ public:
     /// How filthy it looks: the feces on its feet and legs and the piss
     /// on it, 0 to 1.
     float filth() const;
+    /// Gone unwashed so long it looks it: ragged, smudged, its hair a mess
+    /// (human_grime.cpp). Until it washes it all off.
+    bool dirty() const { return grime_.dirty; }
+    /// How long it has gone unwashed, 1 being long enough to turn dirty.
+    float grime() const { return grime_.level; }
+    /// How strongly it smells, 0 to 1: alive, from going dirty too long;
+    /// dead, from rotting, or at once if bloody, until it is bare bones
+    /// (human_smell.cpp).
+    float smellStrength() const;
+    /// Gone unwashed long enough to smell.
+    bool smelly() const { return grime_.smelly; }
     /// While Punching: the fist is out and the blow has landed.
     bool punchLanded = false;
     int keys = 0;
@@ -1629,6 +1640,53 @@ private:
         std::unordered_set<int> filthNoted;
     };
     Relief relief_;
+    /// Going unwashed (human_grime.cpp).
+    struct Grime {
+        /// 0 just washed; grows by 1 every GRIME_TIME, up to GRIME_MAX.
+        float level = 0.0f;
+        /// Turned dirty at level 1; clean again only once washed to 0.
+        bool dirty = false;
+        /// Dirty long enough to smell (SMELL_GRIME), until washed clean.
+        bool smelly = false;
+    };
+    Grime grime_;
+    /// Smelling (human_smell.cpp).
+    struct Nose {
+        /// Seconds until it next sniffs.
+        float sniffIn = 0.0f;
+        /// Clock time it last moved away from a smell to eat.
+        float putOffAt = -1e9f;
+        /// Bodies it has smelt unseen, and those whose smell it set off after.
+        std::unordered_set<int> smeltDead, followed;
+    };
+    Nose nose_;
+    /// Every SNIFF_EVERY, learns the smells within their reach of it, walls
+    /// or no walls, and forgets those it can no longer smell where it would.
+    /// Its own smell it doesn't notice. Asleep it smells nothing.
+    void sniff(const World& world, float dt);
+    /// What a cell next to a smell it knows adds to walking there: the
+    /// modest keep further off, the erratic don't care.
+    int smellCost(Vec2i c) const;
+    /// There is a smell it knows on or next to where it stands, and it minds.
+    bool stinksHere() const;
+    /// Hungry with a cake by a smell: walks off to eat away from it, unless it
+    /// did so lately. False if it won't, or there is nowhere.
+    bool leaveStench(World& world);
+    /// Knows a rotting or bloody body by its smell at the cell.
+    bool smellsOfDeath(Vec2i c) const;
+    /// Hungry enough for flesh with no body it knows to eat: sets off after
+    /// the strongest smell of death it has smelt but not seen. False if none.
+    bool followStench(World& world);
+    /// Grime building over dt, faster with blood, feces or piss on it.
+    void soil(float dt);
+    /// Modest enough to wash for grime and dried blood at all: the
+    /// shameless wash only fresh blood and feces off.
+    bool washesForLooks() const;
+    /// Dirty, and modest enough to wash for it now: the most modest as
+    /// soon as it turns dirty, the less modest only once far grimier.
+    bool wantsScrub() const;
+    /// Scrubs a little more grime off at the water. False once it is clean.
+    bool scrub();
     /// Bladder and bowels filling over dt; human_relief.cpp, like the rest
     /// of going.
     void press(float dt);

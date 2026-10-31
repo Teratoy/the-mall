@@ -259,6 +259,8 @@ void Human::startIdle(float lo, float hi) {
 }
 
 void Human::rest() {
+    // Never sits down by a smell.
+    if (stinksHere()) return startIdle(IDLE_TIME_MIN, IDLE_TIME_MAX);
     if (!rng_.chance(SIT_CHANCE * sway(1.0f - traits.curious, SIT_CURIOUS) * (1.0f + DREAD_SIT * dread_) *
                      (1.0f + GUILT_SIT * mind_.guilt) * (1.0f + DESPAIR_SIT * gloom())))
         return startIdle(IDLE_TIME_MIN, IDLE_TIME_MAX);
@@ -462,7 +464,7 @@ std::optional<std::vector<Vec2i>> Human::searchFrom(const World& world, Vec2i st
             if (!open(m)) continue;
             bool diagonal = d.x != 0 && d.y != 0;
             if (diagonal && (!open(n.at + Vec2i{d.x, 0}) || !open(n.at + Vec2i{0, d.y}))) continue;
-            int c = n.cost + (diagonal ? 14 : 10) + bloodCost(m) + messCost(world, m);
+            int c = n.cost + (diagonal ? 14 : 10) + bloodCost(m) + messCost(world, m) + smellCost(m);
             auto it = cost.find(m);
             if (it != cost.end() && it->second <= c) continue;
             cost[m] = c;

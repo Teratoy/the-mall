@@ -287,7 +287,9 @@ int main(int argc, char** argv) {
                 k.prevStuck = P::stuck(h);
                 if (trace && s == tseed && h.id == tid && t >= tfrom && t <= tto &&
                     (h.goal != k.prevGoal || h.cell != k.steps.back().second || f % 15 == 0))
-                    std::printf("    T %.2f %s rethink%d stuck%d\n", t, label(h).c_str(), P::rethink(h), P::stuck(h));
+                    std::printf("    T %.2f %s rethink%d stuck%d grime%.2f blood%d dirt%d piss%d | %s\n", t,
+                                label(h).c_str(), P::rethink(h), P::stuck(h), h.grime(), h.stains.any(), h.dirt.any(),
+                                h.soaked.any(), h.log.entries().empty() ? "" : h.log.entries().back().what.c_str());
                 if (h.goal == Human::Goal::GiveWay && k.prevGoal != Human::Goal::GiveWay) T.giveWays++;
                 k.prevGoal = h.goal;
 
@@ -322,6 +324,10 @@ int main(int argc, char** argv) {
         int alive = 0, looted = 0, empty = 0, hoardLessons = 0, keyLessons = 0, starved = 0;
         // Thirst: parched spells, drinks begun, and deaths by cause.
         // Going: pisses, shits, and how many of them anyone else could see.
+        // Going unwashed: turned dirty, washed for it, washed clean, dirty at the end.
+        int turnedDirty = 0, washedDirt = 0, washedClean = 0, dirtyEnd = 0;
+        // Smell: started to smell, smelt death unseen, followed it, walked off to eat.
+        int stank = 0, smeltDeath = 0, followedStench = 0, putOff = 0;
         int pisses = 0, shits = 0, stepped = 0, filthy = 0, washedShit = 0, foulSick = 0, foulGulps = 0, toiletUses = 0, toiletMisses = 0, toiletWaits = 0;
         int vendFound = 0, vendCakes = 0, vendBottles = 0, vendEmpty = 0, vendTold = 0;
         // Accidents (bursting, fright), going seen, going in water seen, and mocking.
@@ -393,6 +399,13 @@ int main(int argc, char** argv) {
                 shits += e.what == "TOOK A SHIT" ? e.times : 0;
                 stepped += e.what == "STEPPED IN SHIT" ? e.times : 0;
                 washedShit += e.what == "WASHED OFF SHIT" ? e.times : 0;
+                turnedDirty += e.what == "TURNED DIRTY" ? e.times : 0;
+                washedDirt += e.what == "WASHED OFF DIRT" ? e.times : 0;
+                washedClean += e.what == "WASHED CLEAN" ? e.times : 0;
+                stank += e.what == "STARTED TO SMELL" ? e.times : 0;
+                smeltDeath += e.what == "SMELT DEATH" ? e.times : 0;
+                followedStench += e.what == "FOLLOWED THE SMELL OF DEATH" ? e.times : 0;
+                putOff += e.what == "MOVED AWAY FROM A SMELL TO EAT" ? e.times : 0;
                 foulSick += e.what == "THE FOUL WATER MADE ME SICK" ? e.times : 0;
                 foulGulps += e.what == "DRANK FOUL WATER" ? e.times : 0;
                 toiletUses += e.what == "USED A TOILET" ? e.times : 0;
@@ -428,6 +441,7 @@ int main(int argc, char** argv) {
                 mocked += e.what == "LAUGHED AT @ FOR WETTING THEMSELVES" ? e.times : 0;
             }
             filthy += !h->dead() && h->filth() >= 0.15f;
+            dirtyEnd += !h->dead() && h->dirty();
             diedAsleep += h->dead() && h->diedAsleep();
             if (h->dead()) {
                 bool thirst = false, starve = false, bled = false;
@@ -459,6 +473,10 @@ int main(int argc, char** argv) {
         std::printf("   going: %d pissed, %d shat, %zu left lying; %d stepped in it, %d filthy at the end, "
                     "%d washed it off, %d sick from foul water\n",
                     pisses, shits, w.mess().all().size(), stepped, filthy, washedShit, foulSick);
+        std::printf("   dirty: %d turned dirty, %d washed for it, %d washed clean, %d dirty at the end\n", turnedDirty,
+                    washedDirt, washedClean, dirtyEnd);
+        std::printf("   smell: %d started to smell, %d smelt death unseen, %d followed it, %d walked off to eat\n", stank,
+                    smeltDeath, followedStench, putOff);
         {
             // How foul the water got: cells foul at all, past refusing, past sickness, and the worst.
             std::map<Vec2i, float, bool (*)(Vec2i, Vec2i)> f([](Vec2i a, Vec2i b) { return a.x != b.x ? a.x < b.x : a.y < b.y; });

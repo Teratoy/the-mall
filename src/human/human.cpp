@@ -211,6 +211,8 @@ void Human::live(World& world, float dt) {
     thirst = std::min(1.0f, thirst + THIRST_PER_SECOND[size_t(action())] * dt);
     tire(dt);
     press(dt);
+    soil(dt);
+    sniff(world, dt);
     if (hunger >= 1.0f) health -= STARVE_RATE * dt;
     if (thirst >= 1.0f) {
         health -= PARCH_RATE * dt;
@@ -529,7 +531,11 @@ void Human::choose(World& world) {
         if (isErratic()) return startRelieving(world);
         accident(world, false);
     }
-    if (hungry() && cakes > 0) return startEating();
+    // Not by a smell, unless starving: it walks off to eat first.
+    if (hungry() && cakes > 0) {
+        if (!starving() && stinksHere() && leaveStench(world)) return;
+        return startEating();
+    }
     if (thirsty())
         if (auto w = waterBeside(cell); w && wouldDrink(world, cell, *w)) return startDrinking(*w);
     // Beside water it would drink with a bottle to fill, it fills it.
@@ -590,7 +596,7 @@ void Human::choose(World& world) {
     if (!needy) {
         // Guilt keeps it to itself.
         want(Want::Escort, -GUILT_ALONE * mind_.guilt + parchedToLead(world));
-        want(Want::Wash, wantsWashing() ? FILTH_WASH * (0.5f + modesty()) : 0.0f);
+        want(Want::Wash, wantsWashing() ? FILTH_WASH * (0.5f + modesty()) : wantsScrub() ? GRIME_WASH * modesty() : 0.0f);
         if (float fill = fillDrive(); fill >= 0.0f) want(Want::Fill, fill);
         // The cunning go out of their way to lie to a foe.
         if (social_.partner >= 0)

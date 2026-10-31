@@ -2143,6 +2143,58 @@ brave                   | WHOEVER HAS IT WILL GIVE IT BACK.
 timid                   | I CAN'T LOSE THIS. I CAN'T.
 greedy                  | NOBODY GETS THIS BOTTLE.
 
+# ---- Going unwashed ---------------------------------------------------------
+
+# Turning dirty from going too long unwashed, said to nobody.
+[got_dirty 0.6]
+                        | I NEED A WASH.
+                        | LOOK AT THE STATE OF ME.
+                        | UGH. I'M FILTHY.
+timid                   | I HOPE NOBODY SEES ME LIKE THIS.
+brave                   | A BIT OF DIRT NEVER HURT.
+erratic                 | DIRT. GOOD DIRT.
+
+# Washed clean of it again, said to nobody.
+[washed_clean 0.6]
+                        | AH. CLEAN AT LAST.
+                        | THAT'S BETTER.
+                        | I FEEL HUMAN AGAIN.
+timid                   | MUCH BETTER. NOBODY SAW.
+
+# ---- Smell ------------------------------------------------------------------
+
+# Starting to smell, from going dirty too long, said to nobody.
+[stink 0.6]
+                        | UGH. IS THAT ME?
+                        | I REEK.
+                        | THESE FLIES WON'T LEAVE ME ALONE.
+timid                   | EVERYONE CAN SMELL ME...
+brave                   | SO I STINK. SO WHAT.
+erratic                 | MY FLIES. MY LITTLE FRIENDS.
+
+# Smelling a body it can't see, said to nobody.
+[smell_death 0.8]
+                        | WHAT IS THAT SMELL?
+                        | SOMETHING'S DEAD AROUND HERE.
+                        | THAT SMELL... SOMETHING DIED.
+timid scared            | OH NO. THAT'S A BODY. I KNOW THAT SMELL.
+craving                 | I SMELL MEAT.
+erratic                 | DINNER'S CLOSE. I CAN SMELL IT.
+
+# Setting off after a smell of death, hungry for flesh, said to nobody.
+[follow_stench 0.7]
+                        | FOLLOW THE SMELL.
+                        | IT'S THIS WAY. I CAN SMELL IT.
+guilty                  | I SHOULDN'T... BUT I'M SO HUNGRY.
+erratic                 | SNIFF, SNIFF. THERE YOU ARE.
+
+# Walking off from a smell to eat, said to nobody.
+[put_off 0.6]
+                        | NOT HERE. NOT WITH THAT SMELL.
+                        | I CAN'T EAT NEXT TO THAT.
+                        | UGH. SOMEWHERE ELSE.
+greedy                  | NOT LETTING THAT RUIN MY CAKE.
+
 # ---- Vending machines ------------------------------------------------------
 
 # The first vending machine it ever sees, lit up behind its glass, said to

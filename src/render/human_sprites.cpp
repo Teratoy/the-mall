@@ -65,7 +65,7 @@ Texture2D toTexture(const SpriteFrame& f) {
 
 } // namespace
 
-HumanSprites::HumanSprites(const HumanLook& look) : skin_(look.skin) {
+template <class F> void HumanSprites::eachFrame(const HumanLook& look, F&& add) {
     add(idle_, look.idle());
     add(guard_, look.guard());
     add(punch_, look.punch());
@@ -91,6 +91,10 @@ HumanSprites::HumanSprites(const HumanLook& look) : skin_(look.skin) {
     add(fill_, look.fill());
     add(pour_, look.pour());
     add(offerBottle_, look.offerBottle());
+}
+
+HumanSprites::HumanSprites(const HumanLook& look) : look_(look), skin_(look.skin) {
+    eachFrame(look, [this](Texture2D& t, SpriteFrame f) { add(t, std::move(f)); });
     // Where the head is and how far the body reaches ahead, curled up and
     // breathing in, cake and all.
     const SpriteFrame curled = look.curl(1, true);
@@ -116,6 +120,18 @@ void HumanSprites::add(Texture2D& t, SpriteFrame f) {
     t = toTexture(f);
     spots_[&t] = {f.held, f.hand};
     frames_.emplace_back(&t, std::move(f));
+}
+
+void HumanSprites::setDirty(bool dirty) {
+    if (dirty == look_.dirty) return;
+    look_.dirty = dirty;
+    // The frames come in the same order as they were added in.
+    size_t i = 0;
+    eachFrame(look_, [&](Texture2D& t, SpriteFrame f) {
+        spots_[&t] = {f.held, f.hand};
+        frames_[i].second = std::move(f);
+        paint(t, frames_[i++].second);
+    });
 }
 
 void HumanSprites::dirty(const BodyBlood& dirt, const BodyBlood& soaked) {
