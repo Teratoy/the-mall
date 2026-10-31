@@ -27,7 +27,7 @@
 /// the water; Pour holds it out upside down, water running out of it;
 /// OfferBottle holds it out to someone. Run is the run cycle; Winded stands
 /// bent over, hands on its knees, panting.
-enum class Pose { Idle, Walk, Wave, Eat, Guard, Punch, Offer, Fall, Sit, Rise, Wash, Search, Feed, Wake, Point, PointUp, PointDown, Squat, Piss, Sleep, WakeUp, DiedAsleep, Sip, Fill, Pour, OfferBottle, Lie, Run, Winded };
+enum class Pose { Idle, Walk, Wave, Eat, Guard, Punch, Offer, Fall, Sit, Rise, Wash, Search, Feed, Wake, Point, PointUp, PointDown, Squat, Piss, Sleep, WakeUp, DiedAsleep, Sip, Fill, Pour, OfferBottle, Lie, Run, Winded, Type };
 
 
 /// One human's frames as textures, made from its look.
@@ -71,6 +71,7 @@ private:
     std::array<Texture2D, WINDED_FRAMES> winded_;
     std::array<Texture2D, WAVE_FRAMES> wave_;
     std::array<Texture2D, EAT_FRAMES> eat_;
+    std::array<Texture2D, TYPE_FRAMES> type_;
     std::array<Texture2D, SIT_FRAMES> sit_;
     std::array<Texture2D, DOZE_FRAMES> doze_;
     std::array<Texture2D, CURL_FRAMES> curl_, curlCarry_;

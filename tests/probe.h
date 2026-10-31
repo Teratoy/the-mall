@@ -107,7 +107,19 @@ struct SoakProbe {
         h.escape_.fogSights |= 1u;
         h.vend_.seen = h.server_.seen = true;
         h.inspect_.body = h.inspect_.pool = h.inspect_.trap = h.inspect_.bottle = true;
+        h.computers_.terminal = h.computers_.desk = true;
+        h.computers_.tries = 64;
     }
+    /// A terminal or console desk stood with its cell (the desk's top-left) at at.
+    static void standComputer(World& w, Rig kind, Vec2i at) { w.standPiece(*w.chunkAt(World::slotOf(at)), kind, at, 1); }
+    /// h tried this computer earlier, and was turned away.
+    static void triedComputer(Human& h, Vec2i at, Rig kind) {
+        h.computers_.seen[at] = Human::Computers::Try::Tried;
+        (kind == Rig::Terminal ? h.computers_.terminal : h.computers_.desk) = true;
+        h.computers_.tries++;
+    }
+    /// h has already made up its mind to try this computer when it next sees it.
+    static void meanToTry(Human& h, Vec2i at) { h.computers_.seen[at] = Human::Computers::Try::Meant; }
     /// What it has kept to go and look at.
     static size_t findsKept(const Human& h) { return h.inspect_.queue.size() + (h.inspect_.going ? 1 : 0); }
     /// As if it had already set foot in n other places (ids no chunk has).

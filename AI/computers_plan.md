@@ -85,4 +85,69 @@ find it locked again, with a different line each time.
 
 ## User's decisions
 
-(to fill in)
+2026-10-31:
+
+1. Curious enough: `traits.curious` 0.5 and up. The curious walk farther and
+   stand longer, as with inspecting.
+2. A try lasts 3 s to 8 s by curiosity, a new `Action::Type` costing about
+   what sitting does. No key or other cost.
+3. Remembered by cell: a computer tried is never tried again.
+4. Tried again only in passing: an untried computer in sight while exploring
+   or wandering, nothing pressing. Each failed try halves the chance of the
+   next, so it dies out after a few.
+5. A feeling only: the first try gives a little hope (someone runs this
+   place), each later lock a little dread.
+6. Not told to others.
+7. Curious onlookers (0.5 and up) who see someone at a computer comment on
+   it, once a life each.
+8. A typing pose (hands forward at the keys), and while it types the screen
+   shows a small password prompt with blinking stars, drawn in
+   `computer_art.cpp`; a `make shot` scene shows it.
+9. The desk is used from its chair (the walkable middle cell under its
+   screens), facing up.
+10. Lines: about 5 each for the first terminal and the first desk; one shared
+    try-again moment with about 8, never the same line twice while any are
+    left.
+
+The onlooker's floor is the same 0.5 as trying (not asked separately).
+
+## What was built
+
+- `src/human/human_computer.cpp`, state in `Human::computers_`: every
+  terminal and desk seen, by cell, weighed once: the first of its kind
+  `First` (always tried), later ones `Meant` or `Passed` by a roll of
+  0.5^tries; `Tried` once typed at, never again. After a try, the other
+  `First` ones are weighed again, so a second terminal in the same room
+  gets the roll too.
+- Seen in `observe()` (`seeComputer()`), a meant computer within reach (10
+  steps, 5 to 15 by curiosity) becomes a `Find` with `rig` set, walked to by
+  the inspect system to where it is used from (`ServerPiece::usedFrom()`: a
+  terminal from either side, the desk from its chair cells). Not got to (too
+  far, unreachable, 15 s, something pressing) it says nothing and lets
+  computers be for 10 s.
+- There: new `State::Typing` and `Action::Type` (rows in all three tables,
+  costed as sitting), 3 s to 8 s by curiosity, looking round as it types.
+  Something pressing (`freeToInspect`) breaks it off: `LEFT THE COMPUTER,
+  SOMETHING MORE PRESSING`, no line. Done: `TRIED A TERMINAL. LOCKED BY A
+  PASSWORD` / `TRIED THE CONSOLE DESK. ...` / `TRIED ANOTHER TERMINAL. A
+  PASSWORD AGAIN`, its line said there (`sayHere()`, shared with
+  `lookAt()`), the first try lifting hope 0.05, later ones dread 0.05.
+- Log `STEPPED UP TO A TERMINAL TO TYPE` / `TOOK THE CHAIR AT THE CONSOLE
+  DESK TO TYPE` as it starts; an onlooker: `WATCHED @ TRY A COMPUTER`.
+- Moments `TryTerminal`, `TryDesk`, `TryAgain` (10 lines; `talk::pick`
+  prefers the line said longest ago, so later tries vary), `WatchTyping`.
+- Art: `Pose::Type` (`Arm::TypeUp/TypeDown`, forearm out at the waist,
+  the hand tapping at 5 a second); while someone in sight types, the
+  terminal's screen, or the desk's big screen before the chair, shows a
+  prompt line and a field of stars filling in, flashing refused when full
+  (`prompt()` in `computer_art.cpp`). On the same row machines now draw
+  before humans, so the typist sits in front of the desk's chair.
+- `make shot SHOT_ARGS="--typing terminal"` or `"--typing desk --seed 1"`.
+- Scenarios `computer-terminal`, `computer-desk`, `computer-hungry`,
+  `computer-incurious`, `computer-never-same`, `computer-again` (two later
+  tries, two different lines), `computer-watch`. `cooler-fill` now starts
+  with `seenItAll`, as it got pulled aside to a terminal. `Stage::run` takes
+  a callback run after each step.
+- Soak: unchanged but for `Typing` in "states never seen": in the 6 soak
+  worlds no curious human gets into a server room. `make coverage` leaves
+  only `TRIED ANOTHER CONSOLE DESK` unreached (a room has one desk).

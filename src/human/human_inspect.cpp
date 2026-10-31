@@ -67,6 +67,11 @@ bool Human::discover(Find f) {
 }
 
 bool Human::sayFind(const Find& f) {
+    // A computer not got to is said nothing of: it may come back to it.
+    if (f.rig) {
+        letComputerBe();
+        return false;
+    }
     Saying s(f.moment, -1, f.about);
     s.topic = f.topic;
     return sayLater(std::move(s));
@@ -125,7 +130,8 @@ bool Human::inspectNext(World& world, bool grimOnly) {
             continue;
         }
         auto p = search(world, [&](Vec2i c) {
-            return c != f.at && cheb(c, f.at) <= f.near && !avoids(c) && (c == cell || !world.occupant(c));
+            bool there = f.rig ? ServerPiece{*f.rig, f.at}.usedFrom(c) : c != f.at && cheb(c, f.at) <= f.near;
+            return there && !avoids(c) && (c == cell || !world.occupant(c));
         });
         if (!p || int(p->size()) > reach) {
             sayFind(f);
@@ -143,14 +149,19 @@ bool Human::inspectNext(World& world, bool grimOnly) {
 }
 
 void Human::lookAt(const Find& f, bool walked) {
+    if (f.rig) return startTyping(f);
     if (f.at.x != cell.x) facingLeft = f.at.x < cell.x;
     note(std::string(walked ? "WENT CLOSER TO LOOK AT " : "STOPPED TO LOOK AT ") + findWord(f.moment));
     startIdle(INSPECT_TIME_MIN, INSPECT_TIME_MIN + INSPECT_TIME_SPAN * traits.curious);
     goal = Goal::Inspect;
-    // Its line comes next, ahead of anything else it meant to say, and it
-    // stands there until it is said, then looks a while more.
     Saying s(f.moment, -1, f.about);
     s.topic = f.topic;
+    sayHere(std::move(s));
+}
+
+// Its line comes next, ahead of anything else it meant to say, and it
+// stands there until it is said, then a while more.
+void Human::sayHere(Saying s) {
     s.awaited = true;
     auto at = std::find_if(voice_.sayings.begin(), voice_.sayings.end(),
                            [](const Saying& q) { return !talk::isUrgent(q.moment); });

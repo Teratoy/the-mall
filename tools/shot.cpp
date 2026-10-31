@@ -15,6 +15,8 @@
 //                  stands in it, and put the followed human in front of it
 //   --server       grow the mall round the spawn until a server room
 //                  stands in it, and put the followed human inside it
+//   --typing terminal|desk  the same, the human set typing at a terminal or
+//                  the console desk there, to see the pose and the password prompt
 //   --washroom     the same for a data centre's washroom, the human at its doorway
 //   --centre-vending  the same for a machine in a data centre's corridor alcove
 //   --pissed       grow the mall round the spawn until a toilet stands in it,
@@ -133,6 +135,31 @@ struct ShotProbe {
         }
     }
 
+    /// As server(), then stands the followed human at a terminal or the
+    /// console desk of a server room and sets it typing there for good.
+    static void typing(WorldScene& s, Rig kind) {
+        server(s);
+        World& w = s.world_;
+        Human& h = w.human(s.follow_);
+        for (const ServerPiece& p : w.pieces()) {
+            if (p.kind != kind) continue;
+            for (int y = -1; y <= DESK_D; y++)
+                for (int x = -1; x <= DESK_W; x++) {
+                    Vec2i to = p.at + Vec2i{x, y};
+                    if (!p.usedFrom(to) || w.tile(to) != Tile::Floor || w.occupant(to)) continue;
+                    w.moveOccupant(h.cell, to, &h);
+                    h.cell = h.prev = to;
+                    h.observe(w);
+                    Human::Find f(talk::Moment::TryTerminal, p.at);
+                    f.rig = kind;
+                    h.startTyping(f);
+                    h.timer = 1e6f;
+                    return;
+                }
+        }
+        std::fprintf(stderr, "shot: no %s to type at\n", kind == Rig::Desk ? "desk" : "terminal");
+    }
+
     /// Grows the mall round the spawn until a data centre stands in it with
     /// a machine facing the viewer in a corridor alcove, and puts the
     /// followed human in the corridor a little in front of it.
@@ -237,7 +264,7 @@ int main(int argc, char** argv) {
     if (argc < 2 || argv[1][0] == '-') {
         std::fprintf(stderr, "usage: %s out.png [--scene world|menu|create|obituary] [--seconds S] [--seed N] "
                              "[--zoom 0-3] [--stats] [--log] [--map] [--reveal] [--wide] [--pile] [--smells] "
-                             "[--vending] [--server] [--washroom] [--pissed]\n", argv[0]);
+                             "[--vending] [--server] [--typing terminal|desk] [--washroom] [--pissed]\n", argv[0]);
         return 1;
     }
     const char* out = argv[1];
@@ -247,6 +274,7 @@ int main(int argc, char** argv) {
     int zoom = 2;
     bool stats = false, log = false, reveal = false, wide = false, pile = false, smelly = false, vending = false,
          map = false, server = false, washroom = false, centreVending = false, pissed = false;
+    std::string typing;
     for (int i = 2; i < argc; i++) {
         auto value = [&]() -> const char* {
             if (i + 1 >= argc) {
@@ -268,6 +296,7 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(argv[i], "--smells")) smelly = true;
         else if (!std::strcmp(argv[i], "--vending")) vending = true;
         else if (!std::strcmp(argv[i], "--server")) server = true;
+        else if (!std::strcmp(argv[i], "--typing")) typing = value();
         else if (!std::strcmp(argv[i], "--washroom")) washroom = true;
         else if (!std::strcmp(argv[i], "--centre-vending")) centreVending = true;
         else if (!std::strcmp(argv[i], "--pissed")) pissed = true;
@@ -293,6 +322,7 @@ int main(int argc, char** argv) {
             if (smelly) ShotProbe::smells(*w);
             if (vending) ShotProbe::vending(*w);
             if (server) ShotProbe::server(*w);
+            if (!typing.empty()) ShotProbe::typing(*w, typing == "desk" ? Rig::Desk : Rig::Terminal);
             if (washroom) ShotProbe::washroom(*w);
             if (centreVending) ShotProbe::centreVending(*w);
             if (pissed) ShotProbe::toilet(*w);

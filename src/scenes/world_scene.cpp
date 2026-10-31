@@ -159,6 +159,7 @@ std::string doing(const Human& h) {
     case Human::State::Pouring: return h.refilling() ? "POURING INTO THE COOLER" : "POURING THE BOTTLE OUT";
     case Human::State::Stashing: return h.putting() ? "STASHING THINGS" : "PICKING THINGS UP";
     case Human::State::Vending: return "BUYING FROM A MACHINE";
+    case Human::State::Typing: return "TYPING AT A COMPUTER";
     case Human::State::Relieving: return h.shitting() ? "SHITTING" : "PISSING";
     case Human::State::Punching: return (h.hunting() ? "ATTACKING " : "FIGHTING ") + who;
     case Human::State::Giving: return (h.givingWater() ? "SHARING WATER WITH " : "SHARING A CAKE WITH ") + who;

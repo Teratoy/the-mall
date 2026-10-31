@@ -16,6 +16,7 @@
 #include <cstring>
 #include <deque>
 #include <functional>
+#include <memory>
 #include <map>
 #include <string>
 #include <unordered_map>
@@ -91,8 +92,15 @@ struct Stage {
         return std::nullopt;
     }
     void run(float seconds) {
+        run(seconds, [] {});
+    }
+    /// Runs, calling each() after every step.
+    template <typename F> void run(float seconds, F each) {
         const float dt = 1.0f / 30.0f;
-        for (int f = 0; f < int(seconds / dt); f++) world.update(dt);
+        for (int f = 0; f < int(seconds / dt); f++) {
+            world.update(dt);
+            each();
+        }
     }
     /// Someone's log has this line.
     bool logged(const std::string& line) const {
@@ -367,6 +375,53 @@ Human& shutInFirst(Stage& s) {
     return caller;
 }
 void calm(Human& h) { h.hunger = h.thirst = h.tiredness = 0.05f; }
+/// A terminal or console desk stood on clear floor at least gap cells from
+/// the first human, with a cell clear all round it; its cell (the desk's
+/// top-left), or the human's own if none fits.
+Vec2i computerNear(Stage& s, Rig kind, int gap) {
+    const int w = kind == Rig::Desk ? DESK_W : 1, d = kind == Rig::Desk ? DESK_D : 1;
+    auto clear = [&](Vec2i at) {
+        for (int y = -1; y <= d; y++)
+            for (int x = -1; x <= w; x++) {
+                Vec2i c = at + Vec2i{x, y};
+                if (s.world.tile(c) != Tile::Floor || s.world.occupant(c) || s.world.table(c) || s.world.statue(c) ||
+                    World::slotOf(c) != World::slotOf(at))
+                    return false;
+            }
+        return true;
+    };
+    Vec2i from = s.first().cell;
+    for (int r = gap; r < 20; r++)
+        for (int y = -r; y <= r; y++)
+            for (int x = -r; x <= r; x++) {
+                Vec2i at = from + Vec2i{x, y};
+                if (std::max(std::abs(x), std::abs(y)) != r || !clear(at)) continue;
+                P::standComputer(s.world, kind, at);
+                return at;
+            }
+    std::fprintf(stderr, "scenario: no room for a computer\n");
+    return from;
+}
+/// h's first lines said after each time this line is in its log (within 4 s), all different, at least n of them.
+Check saidDifferently(const Human& h, const std::string& line, size_t n) {
+    return {"#" + std::to_string(h.id) + " said " + std::to_string(n) + "+ different lines after " + line,
+            [&h, line, n](const Stage&) {
+                const auto& es = h.log.entries();
+                std::vector<std::string> said;
+                for (size_t i = 0; i < es.size(); i++) {
+                    if (es[i].what != line) continue;
+                    for (size_t j = i + 1; j < es.size() && es[j].time - es[i].time <= 4.0f; j++)
+                        if (es[j].what.rfind("SAID ", 0) == 0) {
+                            said.push_back(es[j].what);
+                            break;
+                        }
+                }
+                for (size_t i = 0; i < said.size(); i++)
+                    for (size_t j = i + 1; j < said.size(); j++)
+                        if (said[i] == said[j]) return false;
+                return said.size() >= n;
+            }};
+}
 /// h, with 3 keys, walled into a little box whose only way out is a
 /// server room's outer door, having met the airlock this many times before
 /// (AI/server_room_keys_plan.md).
@@ -2183,6 +2238,7 @@ const std::vector<Scenario> SCENARIOS = {
          calm(h);
          s.run(8);
          P::place(s.world, h, r.inner + Vec2i{0, -1});
+         P::seenItAll(h);
          const Dispenser& d = P::fillDispenser(s.world, r, 2.0f);
          h.bottles.assign(1, Bottle{});
          s.run(40);
@@ -2240,6 +2296,96 @@ const std::vector<Scenario> SCENARIOS = {
          s.run(40);
          return Checks{loggedBy(h, "WENT CLOSER TO LOOK AT A CAKE"), saidAround(h, "WENT CLOSER TO LOOK AT A CAKE", true),
                        {"nothing left to look at", [&h](const Stage&) { return P::findsKept(h) == 0; }}};
+     }},
+    {"computer-terminal", "a curious human walks up to the first terminal it sees, types at it and finds a password",
+     seedWhere([](const Traits& t) { return t.curious >= 0.7f; }, 9000),
+     [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         computerNear(s, Rig::Terminal, 4);
+         calm(h);
+         s.run(40);
+         return Checks{loggedBy(h, "STEPPED UP TO A TERMINAL TO TYPE"),
+                       loggedBy(h, "TRIED A TERMINAL. LOCKED BY A PASSWORD"),
+                       saidAround(h, "TRIED A TERMINAL. LOCKED BY A PASSWORD", true)};
+     }},
+    {"computer-desk", "a curious human takes the chair at the first console desk it sees and finds it locked too",
+     seedWhere([](const Traits& t) { return t.curious >= 0.7f; }, 9100),
+     [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         Vec2i at = computerNear(s, Rig::Desk, 3);
+         calm(h);
+         auto chair = std::make_shared<bool>(false);
+         s.run(40, [&] { *chair |= h.typingAt() == at && ServerPiece{Rig::Desk, at}.usedFrom(h.cell); });
+         return Checks{loggedBy(h, "TOOK THE CHAIR AT THE CONSOLE DESK TO TYPE"),
+                       loggedBy(h, "TRIED THE CONSOLE DESK. LOCKED BY A PASSWORD"),
+                       saidAround(h, "TRIED THE CONSOLE DESK. LOCKED BY A PASSWORD", true),
+                       {"typed from the chair", [chair](const Stage&) { return *chair; }}};
+     }},
+    {"computer-hungry", "a human typing at a terminal leaves it mid-try once hunger comes on, and never comes back to it",
+     seedWhere([](const Traits& t) { return t.curious >= 0.7f; }, 9000),
+     [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         computerNear(s, Rig::Terminal, 4);
+         calm(h);
+         s.run(40, [&] {
+             if (h.typingAt() && h.hunger < 0.5f) {
+                 h.hunger = 0.7f;
+                 h.cakes = 1;
+             }
+         });
+         return Checks{loggedBy(h, "LEFT THE COMPUTER, SOMETHING MORE PRESSING"),
+                       loggedBy(h, "TRIED A TERMINAL. LOCKED BY A PASSWORD", false)};
+     }},
+    {"computer-incurious", "an incurious human leaves the terminal it sees alone",
+     seedWhere([](const Traits& t) { return t.curious < 0.4f; }, 9000),
+     [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         computerNear(s, Rig::Terminal, 4);
+         calm(h);
+         s.run(40);
+         return Checks{loggedBy(h, "STEPPED UP TO A TERMINAL TO TYPE", false)};
+     }},
+    {"computer-never-same", "a curious human never tries again a terminal it has tried before",
+     seedWhere([](const Traits& t) { return t.curious >= 0.7f; }, 9200),
+     [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         Vec2i at = computerNear(s, Rig::Terminal, 3);
+         P::triedComputer(h, at, Rig::Terminal);
+         calm(h);
+         s.run(40);
+         return Checks{loggedBy(h, "STEPPED UP TO A TERMINAL TO TYPE", false)};
+     }},
+    {"computer-again", "turned away by one terminal before, it tries two more it meant to, finding a password "
+                       "each time and saying something different each time",
+     seedWhere([](const Traits& t) { return t.curious >= 0.7f; }, 9300),
+     [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         P::triedComputer(h, {-1000, -1000}, Rig::Terminal);
+         P::meanToTry(h, computerNear(s, Rig::Terminal, 3));
+         P::meanToTry(h, computerNear(s, Rig::Terminal, 6));
+         calm(h);
+         s.run(60);
+         return Checks{loggedBy(h, "TRIED ANOTHER TERMINAL. A PASSWORD AGAIN"),
+                       saidDifferently(h, "TRIED ANOTHER TERMINAL. A PASSWORD AGAIN", 2)};
+     }},
+    {"computer-watch", "a curious onlooker remarks on someone typing at a terminal",
+     seedWhere([](const Traits& t) { return t.curious >= 0.7f; }, 9000),
+     [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         computerNear(s, Rig::Terminal, 4);
+         Human& o = s.add(seedWhere([](const Traits& t) { return t.curious >= 0.6f && t.sociable < 0.4f; }, 9400), 2);
+         P::seenItAll(o);
+         calm(h);
+         calm(o);
+         s.run(40);
+         return Checks{loggedBy(h, "TRIED A TERMINAL. LOCKED BY A PASSWORD"), loggedBy(o, "WATCHED @ TRY A COMPUTER")};
      }},
     {"inspect-hungry", "a hungry human goes for the cake it sees without stopping to look at anything",
      seedWhere([](const Traits& t) { return t.curious >= 0.7f; }, 9000),

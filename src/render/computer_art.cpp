@@ -1,4 +1,5 @@
 #include "render/computer_art.h"
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <raylib.h>
@@ -134,6 +135,11 @@ constexpr Rgba RED_ON = hex(0xff4040), RED_OFF = hex(0x3a1214);
 constexpr float TICKS = 8.0f;
 /// A screen scrolls a line every this many ticks, and its cursor blinks every this many.
 constexpr int SCREEN_SCROLL = 12, CURSOR_BLINK = 4;
+/// Typed at, a star goes in every this many ticks, and once the field is full
+/// the screen flashes refused for this many keys' time.
+constexpr int PROMPT_KEY = 2, PROMPT_REFUSED = 4;
+/// The console desk's screen in front of the chair, the one typed at, begins in this column.
+constexpr int DESK_TYPED_SCREEN = 13;
 /// A lamp holds for between LAMP_MIN and LAMP_MIN + LAMP_SPREAD - 1 ticks.
 constexpr int LAMP_MIN = 3, LAMP_SPREAD = 6;
 /// The sweep goes round once in this many ticks, and leaves a trail this many ticks long.
@@ -172,6 +178,26 @@ Rgba screenAt(const char* const* glyph, int rows, int gx, int gy, int tick) {
     while (top > 0 && glyph[top - 1][gx] == 'S') top--;
     while (bottom + 1 < rows && glyph[bottom + 1][gx] == 'S') bottom++;
     return screen(gx - left, gy - top, right - left + 1, bottom - top + 1, left * 31 + top, tick);
+}
+
+/// A screen asking for a password, being typed at: a line of prompt on
+/// top, then a field of stars filling in one a key with the cursor after
+/// them; full, the screen flashes, refused, and the field empties again.
+Rgba prompt(int sx, int sy, int w, int h, int tick) {
+    // A big screen keeps a margin and boxes its field in; a small one fills edge to edge.
+    const bool big = h >= 5;
+    const int from = big ? 1 : 0, field = w - 2 * from - (big ? 0 : 1);
+    const int label = big ? 1 : 0, stars = big ? 3 : 1;
+    int t = tick / PROMPT_KEY % (field + PROMPT_REFUSED), typed = std::min(t, field);
+    if (t >= field) return (t - field) % 2 ? PHOSPHOR_DARK : PHOSPHOR;
+    int at = sx - from;
+    if (sy == label) return at >= 0 && at < field - 1 && !(big && at == field / 2) ? PHOSPHOR_DIM : PHOSPHOR_DARK;
+    if (sy == stars && at >= 0 && at < field) {
+        if (at < typed) return !big || at % 2 == 0 ? PHOSPHOR : PHOSPHOR_DARK;
+        if (at == typed) return tick / CURSOR_BLINK % 2 ? PHOSPHOR : PHOSPHOR_DARK;
+    }
+    if (big && (sy == stars - 1 || sy == stars + 1) && at >= 0 && at < field) return PHOSPHOR_DIM;
+    return PHOSPHOR_DARK;
 }
 
 /// How many ticks ago the sweep last passed the angle of dx, dy from the scope's middle.
@@ -220,11 +246,11 @@ int tickAt(bool lit, float seconds) { return lit ? int(seconds * TICKS) : 0; }
 
 } // namespace
 
-Rgba terminalPixel(int gx, int gy, int tick) {
+Rgba terminalPixel(int gx, int gy, int tick, bool typed) {
     switch (TERMINAL_GLYPH[gy][gx]) {
     case 'C': return PUTTY;
     case 'c': return PUTTY_SHADE;
-    case 'S': return screenAt(TERMINAL_GLYPH, TERMINAL_H, gx, gy, tick);
+    case 'S': return typed ? prompt(gx - 1, gy - 1, 4, 3, tick) : screenAt(TERMINAL_GLYPH, TERMINAL_H, gx, gy, tick);
     case 'o': return POWER;
     case 'k': return gx % 2 ? KEY_GAP : KEY;
     case 'j': return PUTTY_SHADE;
@@ -235,12 +261,15 @@ Rgba terminalPixel(int gx, int gy, int tick) {
     }
 }
 
-Rgba consoleDeskPixel(int gx, int gy, int tick) {
+Rgba consoleDeskPixel(int gx, int gy, int tick, bool typed) {
     switch (CONSOLE_GLYPH[gy][gx]) {
     case 'C': return PUTTY;
     case 'c': return PUTTY_SHADE;
     case 'd': return PUTTY_TURNED;
-    case 'S': return screenAt(CONSOLE_GLYPH, CONSOLE_H, gx, gy, tick);
+    case 'S':
+        if (typed && gx >= DESK_TYPED_SCREEN && gx < DESK_TYPED_SCREEN + 9)
+            return prompt(gx - DESK_TYPED_SCREEN, gy - 3, 9, 6, tick);
+        return screenAt(CONSOLE_GLYPH, CONSOLE_H, gx, gy, tick);
     case 'o': return POWER;
     case 'U': return PUTTY_TOP;
     case 'n': return STEEL;
@@ -280,14 +309,14 @@ Rgba consoleDeskPixel(int gx, int gy, int tick) {
     }
 }
 
-void drawTerminal(int x, int y, bool lit, float seconds) {
+void drawTerminal(int x, int y, bool lit, float seconds, bool typed) {
     int tick = tickAt(lit, seconds);
     drawGlyph(x, y - TERMINAL_H, TERMINAL_W, TERMINAL_H, lit,
-              [&](int gx, int gy) { return terminalPixel(gx, gy, tick); });
+              [&](int gx, int gy) { return terminalPixel(gx, gy, tick, typed); });
 }
 
-void drawConsoleDesk(int x, int y, bool lit, float seconds) {
+void drawConsoleDesk(int x, int y, bool lit, float seconds, bool typed) {
     int tick = tickAt(lit, seconds);
     drawGlyph(x, y - CONSOLE_RISE, CONSOLE_W, CONSOLE_H, lit,
-              [&](int gx, int gy) { return consoleDeskPixel(gx, gy, tick); });
+              [&](int gx, int gy) { return consoleDeskPixel(gx, gy, tick, typed); });
 }

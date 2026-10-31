@@ -235,6 +235,8 @@ SpriteFrame HumanLook::pour() const { return draw({.front = Arm::Pour}); }
 
 SpriteFrame HumanLook::offerBottle() const { return draw({.front = Arm::OfferBottle}); }
 
+SpriteFrame HumanLook::type(int frame) const { return draw({.front = frame == 0 ? Arm::TypeUp : Arm::TypeDown}); }
+
 // Built from the feet up, so short legs and torsos leave empty rows on top.
 SpriteFrame HumanLook::drawBody(const Stance& s) const {
     Paper p;
@@ -497,6 +499,14 @@ SpriteFrame HumanLook::drawBody(const Stance& s) const {
                 armPx(side, x + 1, shoulder, 1, false);
                 armPx(side, x + 2, shoulder, 2, true);
                 p.f.hand = {int8_t(x + 2), int8_t(shoulder - 1), BottleTurn::Up};
+                break;
+            case Arm::TypeUp:
+            case Arm::TypeDown:
+                // Upper arm down, forearm out ahead to the keys.
+                armPx(side, x, shoulder, 0, false);
+                armPx(side, x, shoulder + 1, 1, false);
+                armPx(side, x + 1, shoulder + 2, 2, false);
+                armPx(side, x + 2, shoulder + (s.front == Arm::TypeDown ? 3 : 2), 3, true);
                 break;
             case Arm::Swing:
                 break;
