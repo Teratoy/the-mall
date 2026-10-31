@@ -7,6 +7,7 @@
           android:versionName="0.1-debug">
     <uses-feature android:glEsVersion="0x00020000" android:required="true" />
     <application android:label="The Mall"
+                 android:icon="@mipmap/ic_launcher"
                  android:hasCode="false"
                  android:allowBackup="false">
         <activity android:name="android.app.NativeActivity"

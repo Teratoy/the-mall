@@ -31,7 +31,7 @@ BOTTLESHEET := build/bottle_sheet
 # A human beside itself gone feral, in every pose, with all that rides on it.
 FERALSHEET := build/feral_sheet
 
-.PHONY: all run clean stuck check golden coverage shot scenarios genprobe hidef bottlesheet feralsheet trapprobe apk install-apk logcat
+.PHONY: all run clean stuck check golden coverage shot scenarios genprobe hidef bottlesheet feralsheet trapprobe icon apk install-apk logcat
 
 all: $(BIN)
 
@@ -122,6 +122,14 @@ $(TRAPPROBE): tools/trap_probe.cpp tests/probe.h $(filter-out build/main.o,$(OBJ
 
 trapprobe: $(TRAPPROBE)
 	./$(TRAPPROBE) $(TRAPPROBE_ARGS)
+
+# The icon, written where the desktop shortcut and the APK find it (tools/icon.cpp).
+ICON := build/icon
+$(ICON): tools/icon.cpp build/render/icon_art.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@ $(LDLIBS)
+
+icon: $(ICON)
+	./$(ICON)
 
 # The phone build: see android/apk.mk. Run these on the host, not in the toolbox.
 apk install-apk logcat:
