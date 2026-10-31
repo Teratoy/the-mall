@@ -20,16 +20,16 @@ don't try to install anything.
 
 ```bash
 toolbox run -c claude-build make -j8          # build/themall
-toolbox run -c claude-build make check        # soak vs golden output (~1 min)
+toolbox run -c claude-build make check        # soak vs golden output (~75 s)
 ```
 
 | Command (inside the toolbox) | What it does |
 |---|---|
 | `make` | Builds `build/themall`. Zero warnings is the norm: keep it so |
 | `./play.sh` (from the host) | Rebuilds if needed and opens the game window |
-| `make check` | Runs the scenarios, then the headless soak (`build/stuck_soak 6 15 1 6`), diffing it with `tests/golden/soak.txt` |
+| `make check` | Runs the headless soak (`build/stuck_soak 6 15 1 6`, one process per seed) with the scenarios beside it, diffing the soak with `tests/golden/soak.txt`. The soak's output is kept in `build/soak.txt` and only rerun when the soak, the data files or the Makefile change |
 | `make scenarios` | The scenarios alone (3 s): set-up situations that check rare features still happen. `build/scenarios NAME` runs one and prints every log line |
-| `make golden` | Rewrites the golden output after a change meant to alter behaviour. Commit it with that change |
+| `make golden` | Rewrites the golden output after a change meant to alter behaviour. Commit it with that change. Straight after a failed `make check` it just copies `build/soak.txt`, so it takes no time |
 | `make coverage` | Lists log lines (`note(...)`) and talk moments that neither the soak nor the scenarios reached |
 | `make stuck` | The soak with its own arguments: `build/stuck_soak [seeds] [minutes] [verbose] [crowd]`. `TRACE=seed:id:from:to` follows one human |
 | `make bottlesheet` | Draws every pose with a bottle at several levels and dirt, scaled up, to `build/bottle-sheet.png` |
