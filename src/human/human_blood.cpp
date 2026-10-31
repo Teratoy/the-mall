@@ -636,7 +636,7 @@ bool Human::wouldEscort(const Human& o) const {
            cakes > 0 && fight_.foe < 0 &&
            fight_.fear <= 0.0f && &o != this && !o.dead() && !o.wounds.empty() && o.stains.total() >= SUSPECT_BLOOD &&
            o.escorting_.by < 0 && o.escorting_.escortee < 0 && !o.hungry() && o.fight_.foe < 0 && o.fight_.fear <= 0.0f &&
-           o.state != State::Washing && !suspicious(o.id) && !isFoe(o.id) && !o.isFoe(id) && sight.sees(o.cell) &&
+           o.state != State::Washing && o.state != State::Sleeping && !suspicious(o.id) && !isFoe(o.id) && !o.isFoe(id) && sight.sees(o.cell) &&
            cheb(cell, o.cell) <= ESCORT_MEET;
 }
 

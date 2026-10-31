@@ -94,6 +94,11 @@ struct SoakProbe {
     /// from talk::Moment::FirstStatue.
     static unsigned fogSights(const Human& h) { return h.escape_.fogSights; }
     /// As if it had already set foot in n other places (ids no chunk has).
+    /// Drops asleep where it is, worn out, asking nobody to keep watch.
+    static void collapse(World& w, Human& h) {
+        h.tiredness = 0.95f;
+        h.startSleeping(w, true);
+    }
     static void beenIn(Human& h, int n) {
         for (int i = 0; i < n; i++) h.escape_.chunksIn.insert(-100 - i);
     }

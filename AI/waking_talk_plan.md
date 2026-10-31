@@ -231,7 +231,10 @@ to seed 15119.
 
 The soak turned up a stall that isn't this step's: in s5 at ~690 s a
 watcher stands 30 s telling a sleeping, parched companion to come to water
-until it wakes (Idle/Escort).
+until it wakes (Idle/Escort). Fixed the same day: nobody is led to drink
+(`wouldLeadToDrink`) or to wash (`wouldEscort`) while asleep. Scenarios
+`lead-drink` and `lead-sleeper` (the helper tired, so it gives up any
+watch, as in the soak; it led the sleeper before the fix).
 
 ### 7. Pacing and the scenario
 

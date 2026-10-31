@@ -439,6 +439,31 @@ Checks askForWater(Stage& s, Checks expect, const std::function<void(Human& hold
     return expect;
 }
 
+/// Two friends come to: the first knows a basin near by and is calm, the
+/// other is parched with an empty bottle; if asleep, it drops asleep once
+/// both are up, with nobody asked to keep watch.
+Checks leadToDrink(Stage& s, bool asleep, Checks expect) {
+    Human& helper = s.first();
+    auto b = s.basin();
+    if (!b) return {{"a basin near the spawn", [](const Stage&) { return false; }}};
+    Human& friendly = s.add(seedWhere([](const Traits& t) { return t.sociable >= 0.5f; }, 19000), 2);
+    calm(helper);
+    calm(friendly);
+    P::setTrust(helper, friendly, 0.8f);
+    P::setTrust(friendly, helper, 0.8f);
+    s.run(10);
+    P::knowChunk(s.world, helper);
+    friendly.thirst = 0.9f;
+    friendly.bottles = {Bottle{}};
+    // Tired itself, the helper gives up any watch it would keep over them.
+    if (asleep) {
+        P::collapse(s.world, friendly);
+        helper.tiredness = 0.55f;
+    }
+    s.run(asleep ? 60 : 20);
+    return expect;
+}
+
 /// The first human wakes as in play and finds its bottle; a thirsty stranger
 /// with none comes to beside it and takes it. Later thirsty, the first goes
 /// back for it and finds it gone: a loss, or (hard, having learnt the thirst
@@ -1749,6 +1774,13 @@ const std::vector<Scenario> SCENARIOS = {
                        loggedBy(s.first(), "LEFT THE PLACE I WOKE IN. THERE'S MORE OF IT", false)};
      },
      nullptr, true},
+    {"lead-drink", "a friend that knows water leads a parched friend with none there",
+     seedWhere([](const Traits& t) { return t.sociable >= 0.6f; }, 9900),
+     [](Stage& s) { return leadToDrink(s, false, {loggedBy(s.first(), "TOOK @ TO WATER TO DRINK")}); }, nullptr},
+    {"lead-sleeper", "a friend that knows water lets a parched friend sleep rather than lead it",
+     seedWhere([](const Traits& t) { return t.sociable >= 0.6f; }, 9900),
+     [](Stage& s) { return leadToDrink(s, true, {loggedBy(s.first(), "TOOK @ TO WATER TO DRINK", false)}); },
+     nullptr},
     {"waking-statue", "still dazed, it remarks on a giant statue in the room it woke in", seedWhere(plain, 9800),
      [](Stage& s) {
          Human& h = s.first();
