@@ -33,15 +33,15 @@ seed 2: 17 humans (12 alive), 11 chunks, 14 bodies gone through (12 empty), star
    toilets: 4, 0 uses, 0 misses, dirtiest 0.00, 0 waits
    water: 292 cells foul, 2 >= 0.3, 1 >= 0.5, worst 0.51; 2 foul gulps
    machines: 4, 16 items left, 4 found, 0 cakes and 0 bottles bought, 0 found empty, 0 told of
-seed 3: 8 humans (0 alive), 2 chunks, 8 bodies gone through (7 empty), starving spells 4, lessons: 4 hoard, 4 keys first
+seed 3: 8 humans (0 alive), 2 chunks, 10 bodies gone through (8 empty), starving spells 4, lessons: 4 hoard, 4 keys first
    flesh: 4 meals (0 rotten), 2 hunts, 2 killed to eat, eaters 0 guilty / 2 craving, 0 broken by guilt, 6 snapped, 0 saw it
    kills: 2 by a last blow, 3 known at once, 0 learnt at the body
    thirst: 7 parched spells, 0 drinks; died of thirst 4, starved 0, bled 2, other 2
-   sleep: 0 slept, 0 collapsed, 0 exhausted spells, 0 woken by a blow, 0 learnt to sleep safe
-   asleep: 0 robbed unseen (0 blamed someone), 0 caught robbing, 0 hit, 0 woken by noise, 0 died
+   sleep: 1 slept, 0 collapsed, 0 exhausted spells, 0 woken by a blow, 0 learnt to sleep safe
+   asleep: 0 robbed unseen (0 blamed someone), 0 caught robbing, 0 hit, 0 woken by noise, 1 died
    watch: 0 kept, 0 asked (0 refused, 0 paid), 0 alarms, 0 turns, 0 slept on it, 0 robbed on it, 0 blamed
    going: 0 pissed, 0 shat, 7 left lying; 0 stepped in it, 0 filthy at the end, 0 washed it off, 0 sick from foul water
-   dirty: 1 turned dirty, 0 washed for it, 0 washed clean, 0 dirty at the end
+   dirty: 2 turned dirty, 0 washed for it, 0 washed clean, 0 dirty at the end
    smell: 0 started to smell, 0 smelt death unseen, 0 followed it, 0 walked off to eat
    water tips: 0 told, 0 over spikes, 4 asks of the group said, 0 led to drink; 7 learnt to keep near water
    guarded water: 0 homes by water, 0 let drink, 0 asked a cake (0 paid, 0 cheated), 0 turned away
@@ -109,7 +109,7 @@ seed 6: 12 humans (8 alive), 6 chunks, 4 bodies gone through (3 empty), starving
    water: 232 cells foul, 0 >= 0.3, 0 >= 0.5, worst 0.25; 1 foul gulps
    machines: 2, 11 items left, 0 found, 0 cakes and 0 bottles bought, 0 found empty, 0 told of
 
-== 596 human-minutes ==
+== 597 human-minutes ==
 asleep 5.5% of the time
 made way 12 times; blocked 0.07% of time, 29 give-ups, 0 mutual blocks, 0 blocks >=5s
 went 59 times, 6 in someone's sight (4 of those erratic or bursting)
@@ -118,4 +118,4 @@ still by:  Greeting/Company=2  Greeting/Meet=1  Idle/Company=2  Idle/Escort=1
 flip by:  Explore=3  FetchCake=1  Fill=1  OpenDoor=1  Stash=1  Wash=1
 goals never seen: Rescue Vend
 states never seen: Vending
-goal time (blocked share):  Explore 40.9%(0%)  FetchKey 1.4%(0%)  OpenDoor 1.7%(0%)  PassDoor 0.1%(0%)  Wander 9.9%(0%)  Meet 7.2%(0%)  Follow 0.6%(0%)  Company 4.8%(0%)  FetchCake 4.1%(0%)  Drink 6.0%(0%)  Relieve 0.9%(0%)  Fight 2.1%(0%)  Flee 0.3%(0%)  Share 0.0%(0%)  CheckDoor 0.8%(0%)  Wash 3.1%(0%)  Avoid 1.2%(0%)  Escort 0.2%(0%)  Escorted 0.1%(0%)  Track 1.4%(0%)  GiveWay 0.1%(0%)  Loot 2.0%(0%)  Feed 1.1%(0%)  Sleep 5.6%(0%)  Rob 0.0%(0%)  Watch 0.1%(0%)  Fill 1.2%(0%)  Ask 0.1%(0%)  Pick 1.9%(1%)  Stash 1.0%(0%)
+goal time (blocked share):  Explore 40.8%(0%)  FetchKey 1.4%(0%)  OpenDoor 1.7%(0%)  PassDoor 0.1%(0%)  Wander 10.0%(0%)  Meet 7.2%(0%)  Follow 0.6%(0%)  Company 4.8%(0%)  FetchCake 4.1%(0%)  Drink 6.0%(0%)  Relieve 0.9%(0%)  Fight 2.1%(0%)  Flee 0.3%(0%)  Share 0.0%(0%)  CheckDoor 0.7%(0%)  Wash 3.1%(0%)  Avoid 1.2%(0%)  Escort 0.2%(0%)  Escorted 0.1%(0%)  Track 1.4%(0%)  GiveWay 0.1%(0%)  Loot 2.0%(0%)  Feed 1.1%(0%)  Sleep 5.7%(0%)  Rob 0.0%(0%)  Watch 0.1%(0%)  Fill 1.2%(0%)  Ask 0.1%(0%)  Pick 1.9%(1%)  Stash 1.0%(0%)

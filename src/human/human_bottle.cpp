@@ -406,7 +406,7 @@ const Human* Human::nearestWaterHolder(const World& world) const {
 }
 
 bool Human::bottleRaging() const {
-    return isErratic() && parched() && !hungry() && sippable() < 0 && bottles.size() < size_t(BOTTLE_MAX);
+    return isErratic() && parched() && !hungry() && sippable() < 0 && roomForBottle();
 }
 
 // At sight: the nearest it sees, but whoever it is afraid of.
