@@ -6,6 +6,7 @@
 #include "render/canvas.h"
 #include "render/map_view.h"
 #include "render/speech_view.h"
+#include "render/sprites.h"
 #include "render/world_view.h"
 #include "scenes/menu_scene.h"
 #include "ui/pixel_ui.h"
@@ -336,7 +337,10 @@ void WorldScene::update(float dt, const Canvas& canvas) {
     speed_ = std::clamp(speed_ + speedStep_, 0, SPEED_COUNT - 1);
     speedStep_ = 0;
     if (IsKeyPressed(KEY_TAB)) reveal_ = !reveal_;
-    if (IsKeyPressed(KEY_F5)) talk::reload();
+    if (IsKeyPressed(KEY_F5)) {
+        talk::reload();
+        sprites::reload();
+    }
     int step = zoomStep_;
     zoomStep_ = 0;
     if (IsKeyPressed(KEY_EQUAL) || IsKeyPressed(KEY_KP_ADD)) step++;

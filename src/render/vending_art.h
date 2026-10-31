@@ -14,6 +14,8 @@ enum class Vend : uint8_t { Cake, Bottle, Gun, Count };
 
 /// How many slots it has; bit i of stock is slot i, left to right, top to bottom.
 int vendingSlots(Vend kind);
+/// Where slot i's goods sit on the front, their top-left: for the sprite editor's preview.
+void vendingSlotAt(Vend kind, int slot, int& x, int& y);
 /// Stock with every slot filled.
 uint8_t vendingFull(Vend kind);
 

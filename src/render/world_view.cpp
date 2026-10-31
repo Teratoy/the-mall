@@ -4,6 +4,7 @@
 #include "render/bottle_art.h"
 #include "render/floor_tiles.h"
 #include "render/human_sprites.h"
+#include "render/item_art.h"
 #include "render/mess_art.h"
 #include "render/statue_art.h"
 #include "render/table_art.h"
@@ -31,20 +32,11 @@ constexpr Color BASIN_RIM = {164, 160, 150, 255};
 constexpr Color BASIN_RIM_SHADE = {104, 100, 94, 255};
 /// Glint frames a second. Remembered water holds still.
 constexpr float WATER_FPS = 3.0f;
-constexpr Color KEY = {232, 197, 71, 255};
-constexpr Color CAKE_CHERRY = {200, 48, 58, 255};
-constexpr Color CAKE_FROSTING = {236, 180, 196, 255};
-constexpr Color CAKE_SPONGE = {176, 124, 80, 255};
-/// Traps are drawn see-through, so they sit on any floor.
-constexpr Color TRAP_HOLE = {0, 0, 0, 120};
-constexpr Color SPIKE_TIP = {214, 214, 208, 255};
-constexpr Color SPIKE_SHAFT = {132, 132, 128, 255};
-constexpr Color PLATE_EDGE = {255, 255, 255, 48};
-constexpr Color PLATE_DOWN = {0, 0, 0, 90};
 constexpr Color DART = {226, 214, 172, 255};
+/// The slot in the wall darts fly from, as dark as a spike trap's holes.
+constexpr Color TRAP_HOLE = {0, 0, 0, 120};
 /// Darts fly about chest high, this far above the middle of their row.
-constexpr int DART_RISE_PX = 3;
-/// A human just hit is drawn tinted with this.
+constexpr int DART_RISE_PX = 3;/// A human just hit is drawn tinted with this.
 constexpr Color HURT_TINT = {255, 90, 90, 255};
 /// The viewer behind a statue shows through it, this faintly.
 constexpr Color GHOST_TINT = {255, 255, 255, 110};
@@ -53,60 +45,6 @@ constexpr float MEMORY_DIM = 0.45f;
 /// Statues are looked for this many rows below the screen, as the tallest
 /// rise into it from there.
 constexpr int STATUE_REACH = 28;
-
-constexpr const char* KEY_GLYPH[CELL_PX] = {
-    "......",
-    "##....",
-    "#.####",
-    "##.#.#",
-    "......",
-    "......",
-};
-
-/// c is the cherry, f frosting, s sponge.
-constexpr const char* CAKE_GLYPH[CELL_PX] = {
-    "..c...",
-    ".ffff.",
-    "fsfsff",
-    "ssssss",
-    "ffffff",
-    "ssssss",
-};
-
-/// o is a hole in the floor; t a spike's tip, s its shaft.
-constexpr const char* SPIKES_GLYPH[CELL_PX] = {
-    "......",
-    ".o..o.",
-    "......",
-    "......",
-    ".o..o.",
-    "......",
-};
-constexpr const char* SPIKES_UP_GLYPH[CELL_PX] = {
-    ".t..t.",
-    ".s..s.",
-    "......",
-    ".t..t.",
-    ".s..s.",
-    "......",
-};
-/// e is the plate's edge; d the plate pressed down.
-constexpr const char* PLATE_GLYPH[CELL_PX] = {
-    "......",
-    ".eeee.",
-    ".e..e.",
-    ".e..e.",
-    ".eeee.",
-    "......",
-};
-constexpr const char* PLATE_DOWN_GLYPH[CELL_PX] = {
-    "......",
-    ".eeee.",
-    ".edde.",
-    ".edde.",
-    ".eeee.",
-    "......",
-};
 
 Color toColor(Rgba c) { return {c.r, c.g, c.b, c.a}; }
 
@@ -164,30 +102,6 @@ void drawBasin(int x, int y, bool up, bool down, bool leftSide, bool rightSide, 
                           dim(WATER_EDGE, lit));
 }
 
-void drawKey(int x, int y, bool lit) {
-    for (int gy = 0; gy < CELL_PX; gy++)
-        for (int gx = 0; gx < CELL_PX; gx++)
-            if (KEY_GLYPH[gy][gx] == '#') DrawPixel(x + gx, y + gy, dim(KEY, lit));
-}
-
-void drawCake(int x, int y, bool lit) {
-    for (int gy = 0; gy < CELL_PX; gy++)
-        for (int gx = 0; gx < CELL_PX; gx++) {
-            char g = CAKE_GLYPH[gy][gx];
-            if (g == '.') continue;
-            Color c = g == 'c' ? CAKE_CHERRY : g == 'f' ? CAKE_FROSTING : CAKE_SPONGE;
-            DrawPixel(x + gx, y + gy, dim(c, lit));
-        }
-}
-
-/// A cake put down, smaller than one on a table so a few heap up on a cell:
-/// c the cherry, f frosting, s sponge.
-constexpr int HEAP_CAKE_W = 4, HEAP_CAKE_H = 3;
-constexpr const char* HEAP_CAKE_GLYPH[HEAP_CAKE_H] = {
-    ".c..",
-    "ffff",
-    "ssss",
-};
 /// Where each cake put down goes, its top-left from the cell's: two on the
 /// floor a pixel apart, two on those, one on top; the rest are under.
 constexpr Vec2i HEAP[] = {{-2, 2}, {3, 2}, {0, -1}, {5, -1}, {2, -4}};
@@ -195,16 +109,6 @@ constexpr Vec2i HEAP[] = {{-2, 2}, {3, 2}, {0, -1}, {5, -1}, {2, -4}};
 /// this many at most, the first's base here from the cell's top-left.
 constexpr int HEAP_BOTTLES = 2;
 constexpr int HEAP_BOTTLE_X = -3, HEAP_BOTTLE_Y = 7;
-
-void drawHeapCake(int x, int y, bool lit) {
-    for (int gy = 0; gy < HEAP_CAKE_H; gy++)
-        for (int gx = 0; gx < HEAP_CAKE_W; gx++) {
-            char g = HEAP_CAKE_GLYPH[gy][gx];
-            if (g == '.') continue;
-            Color c = g == 'c' ? CAKE_CHERRY : g == 'f' ? CAKE_FROSTING : CAKE_SPONGE;
-            DrawPixel(x + gx, y + gy, dim(c, lit));
-        }
-}
 
 /// What lies put down on a cell with its top-left at (x, y): the cakes
 /// heaped, and the bottles on their side in front, each as full and as
@@ -216,19 +120,6 @@ void drawPile(int x, int y, const Pile& p, bool lit) {
     for (int i = 0; i < bottles; i++)
         drawBottle({float(x), float(y)}, HEAP_BOTTLE_X + i * (BOTTLE_LONG + 1), HEAP_BOTTLE_Y, BottleTurn::Ahead, false,
                    p.bottles[size_t(i)], 1, dim(WHITE, lit));
-}
-
-// Spikes up and plates down show a trap that just went off, or a spent one.
-void drawTrap(int x, int y, TrapKind kind, bool sprung, bool lit) {
-    const char* const* glyph = kind == TrapKind::Spikes ? (sprung ? SPIKES_UP_GLYPH : SPIKES_GLYPH)
-                                                        : (sprung ? PLATE_DOWN_GLYPH : PLATE_GLYPH);
-    for (int gy = 0; gy < CELL_PX; gy++)
-        for (int gx = 0; gx < CELL_PX; gx++) {
-            char g = glyph[gy][gx];
-            if (g == '.') continue;
-            Color c = g == 'o' ? TRAP_HOLE : g == 't' ? SPIKE_TIP : g == 's' ? SPIKE_SHAFT : g == 'e' ? PLATE_EDGE : PLATE_DOWN;
-            DrawPixel(x + gx, y + gy, dim(c, lit));
-        }
 }
 
 /// The slot in the wall that darts fly from.

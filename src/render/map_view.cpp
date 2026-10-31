@@ -1,5 +1,6 @@
 #include "render/map_view.h"
 #include "human/human.h"
+#include "render/sprites.h"
 #include "ui/pixel_ui.h"
 #include "world/world.h"
 #include <algorithm>
@@ -24,16 +25,9 @@ constexpr Color BLOOD = {150, 30, 34, 255};
 constexpr Color MESS = {118, 84, 40, 255};
 /// The symbols, each on a dark outline so it reads on any tile.
 constexpr Color OUTLINE = {0, 0, 0, 255};
-constexpr Color YOU = {255, 255, 255, 255};
-constexpr Color KEY = {232, 197, 71, 255};
-constexpr Color CAKE = {236, 150, 176, 255};
-constexpr Color TRAP = {230, 60, 60, 255};
-constexpr Color BODY = {200, 200, 190, 255};
-constexpr Color TOILET = {220, 236, 240, 255};
 /// What it only has on someone's word: places dimmed to this share of
 /// their colour, with question marks over them and beside told symbols.
 constexpr float HEARD_SHADE = 0.45f;
-constexpr Color QUESTION = {255, 236, 150, 255};
 /// Told symbols are dimmed to this share, and their ? sits up and right.
 constexpr float TOLD_SHADE = 0.6f;
 constexpr int TOLD_MARK_DX = 4, TOLD_MARK_DY = -4;
@@ -41,16 +35,18 @@ constexpr int TOLD_MARK_DX = 4, TOLD_MARK_DY = -4;
 /// pixels across, on the heard cell nearest its middle.
 constexpr int HEARD_SPACING_PX = 24, HEARD_SPACING_MIN = 4;
 
-/// A symbol is GLYPH x GLYPH pixels, # set, centred on its cell.
+/// A symbol is GLYPH x GLYPH pixels, centred on its cell, drawn from
+/// data/sprites.txt in its ink #: every letter but '.' is set.
 constexpr int GLYPH = 5;
-using Glyph = const char* [GLYPH];
-constexpr Glyph YOU_GLYPH = {".###.", "#...#", "#...#", "#...#", ".###."};
-constexpr Glyph KEY_GLYPH = {".###.", ".#.#.", ".###.", "..#..", "..##."};
-constexpr Glyph CAKE_GLYPH = {"..#..", ".....", "#####", "#####", "#####"};
-constexpr Glyph TRAP_GLYPH = {"#...#", ".#.#.", "..#..", ".#.#.", "#...#"};
-constexpr Glyph BODY_GLYPH = {"..#..", "#####", "..#..", "..#..", "..#.."};
-constexpr Glyph TOILET_GLYPH = {"##...", "##...", "#####", ".###.", "..#.."};
-constexpr Glyph QUESTION_GLYPH = {".###.", "...#.", "..##.", ".....", "..#.."};
+using Glyph = Sprite;
+
+const Glyph& symbol(std::string_view name) { return sprites::get(name, GLYPH, GLYPH); }
+
+/// The symbol's colour, its ink #.
+Color inkOf(const Glyph& g) {
+    Rgba c = g.ink('#');
+    return {c.r, c.g, c.b, c.a};
+}
 
 /// The legend: a symbol or swatch, a gap, its name; items ITEM_GAP apart,
 /// on as many rows as they need.
@@ -82,7 +78,7 @@ void drawGlyph(const Glyph& g, int x, int y, Color c) {
     for (int pass = 0; pass < 2; pass++)
         for (int r = 0; r < GLYPH; r++)
             for (int col = 0; col < GLYPH; col++) {
-                if (g[r][col] != '#') continue;
+                if (g.letter(col, r) == '.') continue;
                 if (pass == 0)
                     DrawRectangle(x + col - 1, y + r - 1, 3, 3, OUTLINE);
                 else
@@ -113,7 +109,10 @@ struct Frame {
     /// A symbol, dimmed with a ? by it if it is only on someone's word.
     void item(Vec2i c, const Glyph& g, Color col, bool told) const {
         glyph(c, g, told ? shade(col, TOLD_SHADE) : col);
-        if (told) glyph(c, QUESTION_GLYPH, QUESTION, TOLD_MARK_DX, TOLD_MARK_DY);
+        if (told) {
+            const Glyph& q = symbol("map heard of");
+            glyph(c, q, inkOf(q), TOLD_MARK_DX, TOLD_MARK_DY);
+        }
     }
     /// A cell tinted, at least 2 pixels so it shows zoomed out.
     void tint(Vec2i c, Color col) const {
@@ -126,15 +125,16 @@ struct Frame {
 
 struct LegendItem {
     const char* label;
-    const Glyph* glyph;
+    /// The symbol's sprite, or none for a swatch of color.
+    const char* glyph;
     Color color;
 };
 
 constexpr LegendItem LEGEND[] = {
-    {"YOU", &YOU_GLYPH, YOU},     {"KEY", &KEY_GLYPH, KEY},       {"CAKE", &CAKE_GLYPH, CAKE},
-    {"TRAP", &TRAP_GLYPH, TRAP},  {"BODY", &BODY_GLYPH, BODY},    {"TOILET", &TOILET_GLYPH, TOILET},
+    {"YOU", "map you", {}},       {"KEY", "map key", {}},         {"CAKE", "map cake", {}},
+    {"TRAP", "map trap", {}},     {"BODY", "map body", {}},       {"TOILET", "map toilet", {}},
     {"BLOOD", nullptr, BLOOD},    {"MESS", nullptr, MESS},        {"LOCKED", nullptr, DOOR_LOCKED},
-    {"WATER", nullptr, WATER},    {"HEARD OF", &QUESTION_GLYPH, QUESTION},
+    {"WATER", nullptr, WATER},    {"HEARD OF", "map heard of", {}},
 };
 
 // Items flow left to right and wrap onto the next row.
@@ -145,9 +145,10 @@ void drawLegend(Rectangle area) {
     for (const LegendItem& item : LEGEND) {
         int w = GLYPH + LEGEND_ICON_GAP + ui::textWidth(item.label);
         if (x + w > right && x > left) x = left, y += ui::ROW;
-        if (item.glyph)
-            drawGlyph(*item.glyph, x, y + 2, item.color);
-        else
+        if (item.glyph) {
+            const Glyph& g = symbol(item.glyph);
+            drawGlyph(g, x, y + 2, inkOf(g));
+        } else
             DrawRectangle(x, y + 2, GLYPH, GLYPH, item.color);
         ui::text(item.label, x + GLYPH + LEGEND_ICON_GAP, y, ui::DIM);
         x += w + ITEM_GAP;
@@ -216,24 +217,27 @@ void drawMap(const World& world, const Human& viewer, Rectangle area, int cellPx
     std::vector<std::pair<Vec2i, Vec2i>> marks(best.begin(), best.end());
     std::sort(marks.begin(), marks.end(), [&](const auto& a, const auto& b) { return before(a.first, b.first); });
     std::vector<Vec2i> kept;
+    const Glyph& question = symbol("map heard of");
     for (const auto& [key, c] : marks) {
         bool crowded = false;
         for (Vec2i k : kept) crowded |= cheb(c, k) < block * 3 / 4;
         if (crowded) continue;
         kept.push_back(c);
-        f.glyph(c, QUESTION_GLYPH, QUESTION);
+        f.glyph(c, question, inkOf(question));
     }
     auto told = [&](Vec2i c) { return memory.toldBy.count(c) > 0; };
-    for (Vec2i c : toilets) f.glyph(c, TOILET_GLYPH, TOILET);
-    for (const auto& [c, kind] : memory.traps) f.item(c, TRAP_GLYPH, TRAP, told(c));
-    for (Vec2i c : viewer.bodyCells()) f.glyph(c, BODY_GLYPH, BODY);
-    for (Vec2i c : memory.keys) f.item(c, KEY_GLYPH, KEY, told(c));
-    for (Vec2i c : memory.cakes) f.item(c, CAKE_GLYPH, CAKE, told(c));
-    f.glyph(viewer.cell, YOU_GLYPH, YOU);
+    const Glyph &toilet = symbol("map toilet"), &trap = symbol("map trap"), &body = symbol("map body");
+    const Glyph &key = symbol("map key"), &cake = symbol("map cake"), &you = symbol("map you");
+    for (Vec2i c : toilets) f.glyph(c, toilet, inkOf(toilet));
+    for (const auto& [c, kind] : memory.traps) f.item(c, trap, inkOf(trap), told(c));
+    for (Vec2i c : viewer.bodyCells()) f.glyph(c, body, inkOf(body));
+    for (Vec2i c : memory.keys) f.item(c, key, inkOf(key), told(c));
+    for (Vec2i c : memory.cakes) f.item(c, cake, inkOf(cake), told(c));
+    f.glyph(viewer.cell, you, inkOf(you));
     if (std::fmod(time, 2 * BLINK) < BLINK) {
         Vector2 p = f.at(viewer.cell);
         int x = int(p.x) + cellPx / 2 - 1, y = int(p.y) + cellPx / 2 - 1;
-        if (x >= clipL && y >= clipT && x + 3 <= clipR && y + 3 <= clipB) DrawRectangle(x, y, 3, 3, YOU);
+        if (x >= clipL && y >= clipT && x + 3 <= clipR && y + 3 <= clipB) DrawRectangle(x, y, 3, 3, inkOf(you));
     }
     drawLegend(area);
 }

@@ -29,7 +29,7 @@ class Human;
 /// and offers RESUME or MAIN MENU. The human you made goes into the
 /// obituary when they die, or as left behind if the world is left with
 /// them alive. Debug keys: 1-5 set the speed, TAB reveals everything, F5
-/// reads data/lines.txt again.
+/// reads data/lines.txt and data/sprites.txt again.
 ///
 /// In a window wider than tall it takes the PC layout instead: the world in
 /// a square, with the stats and log side by side left of it, the name,

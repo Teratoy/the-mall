@@ -76,10 +76,10 @@ $(KEYSTORE):
 
 # The data files go in as assets under the same names the game opens on a
 # computer; the library goes in stripped of its debug symbols.
-$(APK): android/AndroidManifest.xml $(B)/res.zip $(B)/libthemall.so data/lines.txt data/names.txt | $(KEYSTORE)
+$(APK): android/AndroidManifest.xml $(B)/res.zip $(B)/libthemall.so data/lines.txt data/names.txt data/sprites.txt | $(KEYSTORE)
 	@command -v java > /dev/null || (echo "apk: signing needs Java: run make apk on the host, not in the toolbox"; exit 1)
 	rm -rf $(B)/pkg && mkdir -p $(B)/pkg/assets/data $(B)/pkg/lib/arm64-v8a
-	cp data/lines.txt data/names.txt $(B)/pkg/assets/data/
+	cp data/lines.txt data/names.txt data/sprites.txt $(B)/pkg/assets/data/
 	$(STRIP) --strip-debug -o $(B)/pkg/lib/arm64-v8a/libthemall.so $(B)/libthemall.so
 	$(BUILD_TOOLS)/aapt2 link -o $(B)/unsigned.apk --manifest android/AndroidManifest.xml -I $(PLATFORM)/android.jar \
 		--min-sdk-version $(MIN_SDK) --target-sdk-version $(TARGET_SDK) --debug-mode -A $(B)/pkg/assets $(B)/res.zip

@@ -3,6 +3,7 @@
 #include "render/bottle_art.h"
 #include "render/mess_art.h"
 #include "render/remains_art.h"
+#include "render/sprites.h"
 #include <algorithm>
 #include <cmath>
 
@@ -33,9 +34,8 @@ constexpr float ROUSE_BLINK_EVERY = 0.7f, ROUSE_BLINK_TIME = 0.2f;
 /// drifting up Z_RISE pixels and on past the head Z_DRIFT over Z_LIFE, swaying Z_SWAY pixels
 /// either side, fading in and out.
 constexpr float Z_EVERY = 1.3f, Z_LIFE = 2.6f, Z_RISE = 15.0f, Z_DRIFT = 4.0f, Z_SWAY = 1.0f, Z_FADE = 0.3f;
-constexpr Color Z_COLOR{226, 228, 240, 255};
+/// Each Z is the sprite "sleeper's z" in data/sprites.txt, this many pixels square.
 constexpr int Z_SIZE = 4;
-constexpr const char* Z_GLYPH[Z_SIZE] = {"####", "..#.", ".#..", "####"};
 /// The remains are redrawn only every this much of eating and of rot.
 constexpr int EATEN_STEPS = 12, ROT_STEPS = 24;
 
@@ -271,6 +271,7 @@ void HumanSprites::drawCurled(Vector2 feet, const Texture2D& tex, bool flip, int
     float along = SPRITE_H / 2.0f - curlHead_.y, across = curlHead_.x - SPRITE_W / 2.0f;
     float ahead = flip ? -1.0f : 1.0f;
     Vector2 head{mid.x + ahead * along * scale, mid.y + across * scale};
+    const Sprite& zSprite = sprites::get("sleeper's z", Z_SIZE, Z_SIZE);
     for (int n = 0; n * Z_EVERY < Z_LIFE; n++) {
         float age = std::fmod(sleepTime, Z_EVERY) + n * Z_EVERY;
         if (age > sleepTime || age >= Z_LIFE) continue;
@@ -278,11 +279,14 @@ void HumanSprites::drawCurled(Vector2 feet, const Texture2D& tex, bool flip, int
         float fade = std::min({1.0f, k / Z_FADE, (1.0f - k) / Z_FADE});
         float x = head.x + ahead * (1.0f + k * Z_DRIFT + std::sin(k * 6.2832f) * Z_SWAY) * scale;
         float y = head.y - (5.0f + k * Z_RISE) * scale;
-        Color c{uint8_t(Z_COLOR.r * tint.r / 255), uint8_t(Z_COLOR.g * tint.g / 255),
-                uint8_t(Z_COLOR.b * tint.b / 255), uint8_t(Z_COLOR.a * fade * tint.a / 255)};
         int zx = int(std::round(x)) - Z_SIZE / 2 * scale, zy = int(std::round(y)) - Z_SIZE / 2 * scale;
         for (int gy = 0; gy < Z_SIZE; gy++)
-            for (int gx = 0; gx < Z_SIZE; gx++)
-                if (Z_GLYPH[gy][gx] == '#') DrawRectangle(zx + gx * scale, zy + gy * scale, scale, scale, c);
+            for (int gx = 0; gx < Z_SIZE; gx++) {
+                Rgba z = zSprite.pixel(gx, gy);
+                if (!z.solid()) continue;
+                Color c{uint8_t(z.r * tint.r / 255), uint8_t(z.g * tint.g / 255), uint8_t(z.b * tint.b / 255),
+                        uint8_t(z.a * fade * tint.a / 255)};
+                DrawRectangle(zx + gx * scale, zy + gy * scale, scale, scale, c);
+            }
     }
 }

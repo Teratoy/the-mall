@@ -1,0 +1,486 @@
+# Every sprite the game draws from letters, read at start and again on F5
+# in the game. The sprite editor (make sprites, or sprites.sh) edits it, but
+# it is plain text and can be edited by hand too.
+#
+# A sprite is:
+#   sprite NAME            the name the game looks it up by
+#   # ...                  what it is, and what the game does with its letters
+#   ink L RRGGBB [what]    the colour of letter L, RRGGBBAA if see-through
+#   blink A B              letters A and B trade colours on every other blink
+#   rows of letters        '.' is see-through; every row as wide as the first
+# group NAME only sorts the sprites into groups for the editor.
+#
+# The game draws each sprite at a fixed size, so keep its rows and columns:
+# one the wrong size is reported and kept as it was. A colour the game
+# changes as it draws (dimmed when remembered, dirt, blood) is changed from
+# these.
+
+group Items
+
+sprite cake
+# On a table or the floor.
+ink c c8303a cherry
+ink f ecb4c4 frosting
+ink s b07c50 sponge
+..c...
+.ffff.
+fsfsff
+ssssss
+ffffff
+ssssss
+
+sprite cake put down
+# Smaller, so a few heap up on one cell.
+ink c c8303a cherry
+ink f ecb4c4 frosting
+ink s b07c50 sponge
+.c..
+ffff
+ssss
+
+sprite key
+# Lying on a table or the floor.
+ink # e8c547 key
+......
+##....
+#.####
+##.#.#
+......
+......
+
+sprite gun
+# Lying on the floor, its barrel pointing right.
+ink n b4b8c0 slide lit
+ink N 5c6070 slide
+ink r 9a6a40 grip
+ink t 8a8e98 trigger guard
+......
+nnnnnn
+NNNNNN
+rr.t..
+rrtt..
+rr....
+
+group Traps
+
+sprite spikes
+# Spikes waiting in their holes; see-through, so they sit on any floor.
+ink o 00000078 hole
+......
+.o..o.
+......
+......
+.o..o.
+......
+
+sprite spikes up
+# Spikes just sprung, or spent.
+ink t d6d6d0 spike tip
+ink s 848480 spike shaft
+.t..t.
+.s..s.
+......
+.t..t.
+.s..s.
+......
+
+sprite plate
+# A pressure plate, for the slam and dart traps.
+ink e ffffff30 plate edge
+......
+.eeee.
+.e..e.
+.e..e.
+.eeee.
+......
+
+sprite plate down
+# The plate pressed down.
+ink e ffffff30 plate edge
+ink d 0000005a plate down
+......
+.eeee.
+.edde.
+.edde.
+.eeee.
+......
+
+group Toilets
+
+sprite toilet
+# Seen from above, the tank at the top; the game turns it to its wall.
+# H, the bowl's water, browns with dirt; R, the rim, and t, the tank's edge, streak.
+ink T e4e4de tank
+ink t a8a8a2 tank shade
+ink R ceccc6 rim
+ink H 7692a4 bowl water
+.TTTT.
+.tttt.
+.RRRR.
+RHHHHR
+RHHHHR
+.RRRR.
+
+group Vending machines
+
+sprite cake machine
+# Seen from the front: the sign with what it sells, the glass with its coils, the panel.
+# o and O, the LEDs round the sign, trade colours as they blink. What it sells shows on the coils.
+ink o ffd84a LED
+ink O ff7ab0 LED, other
+ink L fff2d8 sign
+ink K 3a2630 trim
+ink B d8607e body
+ink b a84660 shade
+ink G 2e3a4c glass
+ink g 8ea6c0 glint
+ink W 9a9ca2 coil
+ink P 5a4e58 panel
+ink d 7ee08a screen
+ink p f2d060 buttons
+ink y 16121a coin slot
+ink D 120c12 drop
+ink c c8303a cherry
+ink l ecb4c4 frosting
+ink s b07c50 sponge
+blink o O
+oOoOoOoOoOoO
+OLLLLcLLLLLo
+oLLLlllLLLLO
+OLLLsssLLLLo
+oOoOoOoOoOoO
+BgGGGGGGGPPb
+BgGGGGGGGddb
+BGGGGGGGGPPb
+BWWWWWWWWppB
+BGGGGgGGGPPb
+BGGGGgGGGppb
+BGGGGGGGGPPb
+BWWWWWWWWppB
+BGGGGGGGGPPb
+BGGGGGGGGyPb
+BGGGGGGGGyPb
+BWWWWWWWWPPb
+BBBBBBBBBBBb
+BKDDDDDDKBBb
+BKDDDDDDKBBb
+bbbbbbbbbbbb
+
+sprite cake machine side
+# Seen from its right: the mall's spiral, and what it sells painted below.
+ink o ffd84a LED
+ink O ff7ab0 LED, other
+ink L fff2d8 sign
+ink K 3a2630 trim
+ink B d8607e body
+ink b a84660 shade
+ink m fff2d8 spiral
+ink c c8303a cherry
+ink l ecb4c4 frosting
+ink s b07c50 sponge
+blink o O
+oOoOoOoOo
+OLLLLLLLO
+oLLLLLLLo
+OLLLLLLLO
+oOoOoOoOo
+Bbbbbbbbb
+Bmmmmmmmb
+Bbbbbbbmb
+Bmmmmmbmb
+Bmbbbmbmb
+Bmbmmmbmb
+Bmbbbbbmb
+Bmmmmmmmb
+Bbbbbbbbb
+Bbbbcbbbb
+Bblllllbb
+Bblslslbb
+Bbsssssbb
+Bblllllbb
+Bbsssssbb
+KKKKKKKKK
+
+sprite cake machine goods
+# One of what it sells, as it sits on a coil behind the glass, at each slot that is stocked.
+ink c c8303a cherry
+ink l ecb4c4 frosting
+ink s b07c50 sponge
+.c.
+lll
+sss
+
+sprite bottle machine
+# Seen from the front: the sign with what it sells, the glass with its coils, the panel.
+# o and O, the LEDs round the sign, trade colours as they blink. What it sells shows on the coils.
+ink o ffffff LED
+ink O 6ee0ff LED, other
+ink L fff2d8 sign
+ink K 3a2630 trim
+ink B 4a9ac4 body
+ink b 346f92 shade
+ink G 2e3a4c glass
+ink g 8ea6c0 glint
+ink W 9a9ca2 coil
+ink P 5a4e58 panel
+ink d 7ee08a screen
+ink p f2d060 buttons
+ink y 16121a coin slot
+ink D 120c12 drop
+ink A 788696 cap shade
+ink v 5a8cb0 glass deep
+blink o O
+oOoOoOoOoOoO
+OLvvvvvvLLLo
+oLvLLLLvvALO
+OLvvvvvvLLLo
+oOoOoOoOoOoO
+BgGGGGGGGPPb
+BgGGGGGGGddb
+BGGGGGGGGPPb
+BGGGGGGGGppB
+BGGGGgGGGPPb
+BWWWWWWWWppb
+BGGGGGGGGPPb
+BGGGGGGGGppB
+BGGGGGGGGPPb
+BGGGGGGGGyPb
+BGGGGGGGGyPb
+BWWWWWWWWPPb
+BBBBBBBBBBBb
+BKDDDDDDKBBb
+BKDDDDDDKBBb
+bbbbbbbbbbbb
+
+sprite bottle machine side
+# Seen from its right: the mall's spiral, and what it sells painted below.
+ink o ffffff LED
+ink O 6ee0ff LED, other
+ink L fff2d8 sign
+ink K 3a2630 trim
+ink B 4a9ac4 body
+ink b 346f92 shade
+ink m fff2d8 spiral
+ink a c4d2de cap
+ink q 9cc0d6 glass
+ink Q e4f2fa glint
+blink o O
+oOoOoOoOo
+OLLLLLLLO
+oLLLLLLLo
+OLLLLLLLO
+oOoOoOoOo
+Bbbbbbbbb
+Bmmmmmmmb
+Bbbbbbbmb
+Bmmmmmbmb
+Bmbbbmbmb
+Bmbmmmbmb
+Bmbbbbbmb
+Bmmmmmmmb
+Bbbbbbbbb
+Bbbbabbbb
+Bbbbqbbbb
+Bbbqqqbbb
+BbbQqqbbb
+BbbQqqbbb
+Bbbqqqbbb
+KKKKKKKKK
+
+sprite bottle machine goods
+# One of what it sells, as it sits on a coil behind the glass, at each slot that is stocked.
+ink a c4d2de cap
+ink A 788696 cap shade
+ink q 9cc0d6 glass
+ink Q e4f2fa glint
+aA
+Qq
+qq
+qq
+qq
+
+sprite gun machine
+# Seen from the front: the sign with what it sells, the glass with its coils, the panel.
+# o and O, the LEDs round the sign, trade colours as they blink. What it sells shows on the coils.
+ink o ff4a3a LED
+ink O ffb03a LED, other
+ink L fff2d8 sign
+ink K 3a2630 trim
+ink B 5e6648 body
+ink b 434a32 shade
+ink G 2e3a4c glass
+ink g 8ea6c0 glint
+ink W 9a9ca2 coil
+ink P 5a4e58 panel
+ink d 7ee08a screen
+ink p f2d060 buttons
+ink y 16121a coin slot
+ink D 120c12 drop
+ink n b4b8c0 slide lit
+ink N 5c6070 slide
+ink r 9a6a40 grip
+ink t 8a8e98 trigger guard
+blink o O
+oOoOoOoOoOoO
+OLLnnnnnnLLo
+oLLNNNNNNLLO
+OLLrrtLLLLLo
+oOoOoOoOoOoO
+BgGGGGGGGPPb
+BgGGGGGGGddb
+BGGGGGGGGPPb
+BGGGGGGGGppB
+BGGGGgGGGPPb
+BWWWWWWWWppb
+BGGGGGGGGPPb
+BGGGGGGGGppB
+BGGGGGGGGPPb
+BGGGGGGGGyPb
+BGGGGGGGGyPb
+BWWWWWWWWPPb
+BBBBBBBBBBBb
+BKDDDDDDKBBb
+BKDDDDDDKBBb
+bbbbbbbbbbbb
+
+sprite gun machine side
+# Seen from its right: the mall's spiral, and what it sells painted below.
+ink o ff4a3a LED
+ink O ffb03a LED, other
+ink L fff2d8 sign
+ink K 3a2630 trim
+ink B 5e6648 body
+ink b 434a32 shade
+ink m fff2d8 spiral
+ink n b4b8c0 slide lit
+ink N 5c6070 slide
+ink r 9a6a40 grip
+ink t 8a8e98 trigger guard
+blink o O
+oOoOoOoOo
+OLLLLLLLO
+oLLLLLLLo
+OLLLLLLLO
+oOoOoOoOo
+Bbbbbbbbb
+Bmmmmmmmb
+Bbbbbbbmb
+Bmmmmmbmb
+Bmbbbmbmb
+Bmbmmmbmb
+Bmbbbbbmb
+Bmmmmmmmb
+Bbbbbbbbb
+Bbbbbbbbb
+Bnnnnnnnb
+BNNNNNNNb
+Brrbtbbbb
+Brrttbbbb
+Brrbbbbbb
+KKKKKKKKK
+
+sprite gun machine goods
+# One of what it sells, as it sits on a coil behind the glass, at each slot that is stocked.
+ink n b4b8c0 slide lit
+ink N 5c6070 slide
+ink r 9a6a40 grip
+ink t 8a8e98 trigger guard
+nnnnnn
+NNNNNN
+rr.t..
+rrtt..
+rr....
+
+group Map
+
+sprite map you
+# Where you are. One colour, ink #, drawn on a dark outline.
+ink # ffffff symbol
+.###.
+#...#
+#...#
+#...#
+.###.
+
+sprite map key
+# A key known of. One colour, ink #, drawn on a dark outline.
+ink # e8c547 symbol
+.###.
+.#.#.
+.###.
+..#..
+..##.
+
+sprite map cake
+# A cake known of. One colour, ink #, drawn on a dark outline.
+ink # ec96b0 symbol
+..#..
+.....
+#####
+#####
+#####
+
+sprite map trap
+# A trap known of. One colour, ink #, drawn on a dark outline.
+ink # e63c3c symbol
+#...#
+.#.#.
+..#..
+.#.#.
+#...#
+
+sprite map body
+# A body seen. One colour, ink #, drawn on a dark outline.
+ink # c8c8be symbol
+..#..
+#####
+..#..
+..#..
+..#..
+
+sprite map toilet
+# A toilet known of. One colour, ink #, drawn on a dark outline.
+ink # dcecf0 symbol
+##...
+##...
+#####
+.###.
+..#..
+
+sprite map heard of
+# Over places only heard of, and beside what was only told. One colour, ink #, drawn on a dark outline.
+ink # ffec96 symbol
+.###.
+...#.
+..##.
+.....
+..#..
+
+group Other
+
+sprite icon
+# The game's icon and the window's: a square spiral, on dark paper.
+ink # f0f0f0 wall
+###############
+..............#
+#############.#
+#...........#.#
+#.#########.#.#
+#.#.......#.#.#
+#.#.#####.#.#.#
+#.#.#...#.#.#.#
+#.#.#.###.#.#.#
+#.#.#.....#.#.#
+#.#.#######.#.#
+#.#.........#.#
+#.###########.#
+#.............#
+###############
+
+sprite sleeper's z
+# Rising from a sleeper's head, fading in and out.
+ink # e2e4f0 z
+####
+..#.
+.#..
+####
