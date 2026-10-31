@@ -172,6 +172,9 @@ enum class Moment {
     // Up, alone and finding nothing new for a while, the quiet of the place
     // (to nobody).
     Quiet,
+    // Setting foot outside the place it woke in for the first time, and the
+    // first new place that no longer lifts its hope (both to nobody).
+    ItGoesOn, NeverEnds,
     Count
 };
 

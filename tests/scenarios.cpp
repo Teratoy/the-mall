@@ -1026,7 +1026,7 @@ const std::vector<Scenario> SCENARIOS = {
                             [](Human&, Human&) {});
      }},
     {"bottle-refuse", "a stingy stranger won't give any of its water",
-     seedWhere([](const Traits& t) { return t.greedy < 0.35f && t.sociable < 0.4f && t.brave < 0.3f; }, 15084),
+     seedWhere([](const Traits& t) { return t.greedy < 0.35f && t.sociable < 0.4f && t.brave < 0.3f; }, 15119),
      [](Stage& s) {
          return askForWater(s, {logged({"WOULDN'T GIVE @ WATER"}), logged({"@ WOULDN'T GIVE ME WATER"})},
                             [](Human&, Human&) {});
@@ -1731,6 +1731,22 @@ const std::vector<Scenario> SCENARIOS = {
          calm(s.first());
          s.run(180);
          return Checks{loggedBy(s.first(), "ALONE IN THE QUIET")};
+     },
+     nullptr, true},
+    {"it-goes-on", "leaving the place it woke in, it sees there is more", seedWhere(plain, 9850),
+     [](Stage& s) {
+         calm(s.first());
+         s.run(150);
+         return Checks{loggedBy(s.first(), "LEFT THE PLACE I WOKE IN. THERE'S MORE OF IT")};
+     },
+     nullptr, true},
+    {"never-ends", "five places on, the next one like the last lifts its hope no more", seedWhere(plain, 9850),
+     [](Stage& s) {
+         calm(s.first());
+         P::beenIn(s.first(), 5);
+         s.run(150);
+         return Checks{loggedBy(s.first(), "ANOTHER PLACE LIKE THE LAST. IT NEVER ENDS"),
+                       loggedBy(s.first(), "LEFT THE PLACE I WOKE IN. THERE'S MORE OF IT", false)};
      },
      nullptr, true},
     {"waking-statue", "still dazed, it remarks on a giant statue in the room it woke in", seedWhere(plain, 9800),

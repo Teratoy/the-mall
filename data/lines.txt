@@ -742,6 +742,34 @@ hopeless                | SAME WALLS. SAME QUIET.
 settled                 | JUST ME AND THE QUIET.
 erratic                 | SHH. IT'S LISTENING.
 
+# Setting foot outside the place it woke in for the first time: said to
+# nobody, as it sees there is more.
+[it_goes_on 0.8]
+                        | MORE OF IT.
+                        | HOW BIG IS THIS PLACE?
+                        | IT JUST KEEPS GOING.
+                        | WHERE DOES IT END?
+sure                    | THIS WAY. IT HAS TO BE THIS WAY.
+curious                 | WHAT ELSE IS OUT HERE?
+timid                   | I SHOULD HAVE STAYED PUT.
+brave                   | KEEP MOVING. THERE'S AN END SOMEWHERE.
+homebody                | I'M GETTING FARTHER FROM... WHERE?
+dazed                   | IT'S ALL SO... BIG.
+
+# The first new place that no longer lifts its hope, much like the ones
+# before: said to nobody.
+[never_ends 0.8]
+                        | IT NEVER ENDS, DOES IT?
+                        | ALL THE SAME. ALL OF IT.
+                        | HAVEN'T I BEEN HERE?
+                        | HOW FAR DOES IT GO?
+sure                    | IT HAS TO END. IT HAS TO.
+hopeless                | WHY DO I EVEN BOTHER?
+brave                   | THEN I KEEP GOING.
+timid                   | I'M SO FAR FROM WHERE I WOKE.
+curious                 | SOMEONE MADE ALL THIS. WHY?
+erratic                 | IT'S GROWING. I KNOW IT IS.
+
 # Still dazed, the room it woke in, a thing at a time, said to nobody. The
 # first giant statue it sees ({THING} is what it is, and statue.mug and the
 # rest which), the first table, and, once it has looked round a while and

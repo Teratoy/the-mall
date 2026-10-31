@@ -215,6 +215,24 @@ JUST KEEPS GOING.", sure "THIS WAY. IT HAS TO BE THIS WAY." (its hunch).
 The third new chunk with no way out yet: "IT NEVER ENDS, DOES IT?" with a
 small hope cost (the hope system already has costs for dead ends).
 
+### Built (2026-10-31)
+
+Moments `ItGoesOn` and `NeverEnds`, `[it_goes_on 0.8]` and
+`[never_ends 0.8]` in lines.txt after `[quiet]`, said from
+`enterChunk()` (human_hope.cpp). It goes on: the second chunk it ever sets
+foot in, log "LEFT THE PLACE I WOKE IN. THERE'S MORE OF IT". Never ends:
+not the third chunk with a hope cost as planned, but the first new place
+whose lift has worn down to nothing (the 6th new one; `later` reaching
+HOPE_NEW_CHUNK / HOPE_SAMEISH), log "ANOTHER PLACE LIKE THE LAST. IT NEVER
+ENDS". Words only: the hope system already stops lifting there and wears
+hope down after, so no extra cost. Scenarios `it-goes-on` and `never-ends`
+(`SoakProbe::beenIn` fakes five places already seen); bottle-refuse moved
+to seed 15119.
+
+The soak turned up a stall that isn't this step's: in s5 at ~690 s a
+watcher stands 30 s telling a sleeping, parched companion to come to water
+until it wakes (Idle/Escort).
+
 ### 7. Pacing and the scenario
 
 - One shared gap for all of steps 1–6: a muttered line no sooner than

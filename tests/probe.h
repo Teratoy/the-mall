@@ -93,6 +93,10 @@ struct SoakProbe {
     /// Which remarks on the room through the fog it has made, a bit each
     /// from talk::Moment::FirstStatue.
     static unsigned fogSights(const Human& h) { return h.escape_.fogSights; }
+    /// As if it had already set foot in n other places (ids no chunk has).
+    static void beenIn(Human& h, int n) {
+        for (int i = 0; i < n; i++) h.escape_.chunksIn.insert(-100 - i);
+    }
     /// A cake on the cell, as if the world had made it there.
     static void addCake(World& w, Vec2i cell) { w.cakes_.insert(cell); }
     /// Takes every key and cake off the chunk the cell is in.

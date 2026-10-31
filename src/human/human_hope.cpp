@@ -88,7 +88,17 @@ void Human::enterChunk(const World& world) {
     int c = world.chunkIdAt(cell);
     if (c < 0 || !escape_.chunksIn.insert(c).second || escape_.chunksIn.size() == 1) return;
     int later = int(escape_.chunksIn.size()) - 1 - HOPE_FRESH;
-    lift(std::max(HOPE_SAME_FLOOR, HOPE_NEW_CHUNK - HOPE_SAMEISH * float(std::max(0, later))));
+    float lifts = std::max(HOPE_SAME_FLOOR, HOPE_NEW_CHUNK - HOPE_SAMEISH * float(std::max(0, later)));
+    lift(lifts);
+    // Out of where it woke, there is more of it; and the first new place that
+    // lifts it no more, the sense that there is no end.
+    if (escape_.chunksIn.size() == 2) {
+        note("LEFT THE PLACE I WOKE IN. THERE'S MORE OF IT");
+        sayLater(talk::Moment::ItGoesOn);
+    } else if (later == int(std::lround(HOPE_NEW_CHUNK / HOPE_SAMEISH))) {
+        note("ANOTHER PLACE LIKE THE LAST. IT NEVER ENDS");
+        sayLater(talk::Moment::NeverEnds);
+    }
     // The first few new places stand out; later ones blur together.
     remember(Episode::What::NewPlace, later < 0 ? EPISODE_NEW_PLACE : EPISODE_NEW_PLACE * 0.5f, -1, -1, c);
 }
