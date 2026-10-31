@@ -218,6 +218,7 @@ they.filthy rude        | NOT LIKE THAT. YOU STINK.
 they.filthy rude        | WASH FIRST.
 they.filthy timid       | UM... YOU'VE GOT SOMETHING ON YOU.
 they.filthy greedy rude | UGH. GET AWAY FROM ME.
+rude                    | FUCK OFF.
 
 # Turned away: what the one who came to greet says back.
 [snubbed 0.6]
