@@ -37,20 +37,18 @@ bool overlap(const Rectangle& a, const Rectangle& b) {
 } // namespace
 
 void drawSpeech(const World& world, const Human& viewer, bool reveal, float zoom, Rectangle view, int top,
-                int bottom) {
-    // The world is drawn from whole world pixels, so the head is taken from
-    // the same pixel its sprite stands on; else the bubble slides smoothly
-    // while the body steps, and shakes against it.
-    Vector2 cam = cameraFor(viewer, zoom, {view.width, view.height});
-    int camLeft = int(cam.x), camTop = int(cam.y);
+                int bottom, Vector2 focus) {
+    // The head is taken from the same canvas pixel its sprite is drawn on;
+    // else the bubble and the body move by different steps, and shake.
+    Vector2 cam = cameraFor(focus, zoom, {view.width, view.height});
     float viewRight = view.x + view.width;
     std::vector<Bubble> bubbles;
     for (const auto& h : world.humans()) {
         const Human::Speech* s = h->speaking();
         if (!s || h->dead() || !shown(viewer, *h, reveal)) continue;
-        Vector2 feet = feetOf(*h);
-        Vector2 head{view.x + std::round(feet.x - camLeft) * zoom,
-                     view.y + (std::round(feet.y - camTop) - SPRITE_H) * zoom};
+        Vector2 feet = drawnFeet(*h, zoom);
+        Vector2 head{view.x + std::round((feet.x - cam.x) * zoom),
+                     view.y + std::round((feet.y - SPRITE_H - cam.y) * zoom)};
         if (head.x < view.x || head.x >= viewRight || head.y < top || head.y >= bottom) continue;
         Bubble b;
         b.rows = ui::wrap(s->text, TEXT_W);

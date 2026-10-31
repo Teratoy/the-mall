@@ -553,16 +553,17 @@ void WorldScene::draw(const Canvas& canvas) {
     bool wide = canvas.wide();
     Rectangle view = wide ? WIDE_VIEW : PHONE_VIEW;
     drawWorld(world_, viewer, [this](const Human& h) -> const HumanSprites& { return spritesFor(h); },
-              floorTiles_, statueArt_, reveal_, ZOOMS[zoom_], view);
+              floorTiles_, statueArt_, reveal_, ZOOMS[zoom_], view, feetOf(viewer));
     // Under the pause menu nothing else takes a tap.
     Vector2 mouse = paused_ ? Vector2{-1.0f, -1.0f} : canvas.mouse();
     if (wide) {
         std::vector<std::string> rows = ui::wrap(doing(viewer), WIDE_DOING_W);
         int stripY = Canvas::H - int(rows.size()) * ui::ROW - 2 * MARGIN;
-        drawSpeech(world_, viewer, reveal_, ZOOMS[zoom_], view, 0, stripY);
+        drawSpeech(world_, viewer, reveal_, ZOOMS[zoom_], view, 0, stripY, feetOf(viewer));
         drawWide(viewer, mouse, rows, stripY);
     } else {
-        if (!logOpen_ && !statsOpen_ && !mapOpen_) drawSpeech(world_, viewer, reveal_, ZOOMS[zoom_], view, TOP_H, BOTTOM_Y);
+        if (!logOpen_ && !statsOpen_ && !mapOpen_) drawSpeech(world_, viewer, reveal_, ZOOMS[zoom_], view, TOP_H, BOTTOM_Y,
+                                                             feetOf(viewer));
         drawPhone(viewer, mouse);
     }
     if (paused_) drawPause(canvas.mouse(), canvas.width());

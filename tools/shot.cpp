@@ -4,6 +4,8 @@
 // Usage: build/shot out.png [options]   (or: make shot, to build/shot.png)
 //   --scene world|menu|create|obituary   which screen (world)
 //   --seconds S    world time to run before the shot (8)
+//   --frames N     N shots, one each frame from there on, as out_000.png,
+//                  out_001.png, ...: to see how things move, frame by frame
 //   --seed N       the world's seed (7); the human you made is seeded 99
 //   --zoom Z       world zoom level 0-3 (2)
 //   --stats        open the followed human's stats
@@ -237,14 +239,14 @@ int main(int argc, char** argv) {
     if (argc < 2 || argv[1][0] == '-') {
         std::fprintf(stderr, "usage: %s out.png [--scene world|menu|create|obituary] [--seconds S] [--seed N] "
                              "[--zoom 0-3] [--stats] [--log] [--map] [--reveal] [--wide] [--pile] [--smells] "
-                             "[--vending] [--server] [--washroom] [--pissed]\n", argv[0]);
+                             "[--vending] [--server] [--washroom] [--pissed] [--frames N]\n", argv[0]);
         return 1;
     }
     const char* out = argv[1];
     std::string scene = "world";
     float seconds = 8.0f;
     uint64_t seed = 7;
-    int zoom = 2;
+    int zoom = 2, frames = 0;
     bool stats = false, log = false, reveal = false, wide = false, pile = false, smelly = false, vending = false,
          map = false, server = false, washroom = false, centreVending = false, pissed = false;
     for (int i = 2; i < argc; i++) {
@@ -259,6 +261,7 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(argv[i], "--seconds")) seconds = float(std::atof(value()));
         else if (!std::strcmp(argv[i], "--seed")) seed = std::strtoull(value(), nullptr, 10);
         else if (!std::strcmp(argv[i], "--zoom")) zoom = std::atoi(value());
+        else if (!std::strcmp(argv[i], "--frames")) frames = std::atoi(value());
         else if (!std::strcmp(argv[i], "--stats")) stats = true;
         else if (!std::strcmp(argv[i], "--log")) log = true;
         else if (!std::strcmp(argv[i], "--map")) map = true;
@@ -312,18 +315,28 @@ int main(int argc, char** argv) {
             for (int f = 0; f < int(seconds * 60.0f); f++) s->update(1.0f / 60.0f, canvas);
             if (world && pissed) ShotProbe::pissed(*world);
             if (world) ShotProbe::set(*world, zoom, stats, log, reveal, map);
-            canvas.begin();
-            s->draw(canvas);
-            canvas.end();
-            BeginDrawing();
-            ClearBackground(BLACK);
-            canvas.present();
-            rlDrawRenderBatchActive();
-            Image img = LoadImageFromScreen();
-            EndDrawing();
-            ok = ExportImage(img, out);
-            UnloadImage(img);
-            if (ok) std::printf("wrote %s\n", out);
+            // One frame; with --frames, the world goes on a frame between each.
+            std::string base = out, ext;
+            if (size_t dot = base.rfind('.'); dot != std::string::npos) ext = base.substr(dot), base.resize(dot);
+            ok = true;
+            for (int f = 0; f < std::max(frames, 1) && ok; f++) {
+                if (f > 0) s->update(1.0f / 60.0f, canvas);
+                canvas.begin();
+                s->draw(canvas);
+                canvas.end();
+                BeginDrawing();
+                ClearBackground(BLACK);
+                canvas.present();
+                rlDrawRenderBatchActive();
+                Image img = LoadImageFromScreen();
+                EndDrawing();
+                char name[16];
+                std::snprintf(name, sizeof name, "_%03d", f);
+                std::string path = frames > 0 ? base + name + ext : std::string(out);
+                ok = ExportImage(img, path.c_str());
+                UnloadImage(img);
+                if (ok) std::printf("wrote %s\n", path.c_str());
+            }
         }
     }
     CloseWindow();

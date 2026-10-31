@@ -16,6 +16,7 @@
 #include "render/vending_art.h"
 #include "render/water_art.h"
 #include "world/world.h"
+#include <rlgl.h>
 #include <algorithm>
 #include <cmath>
 #include <unordered_set>
@@ -194,13 +195,17 @@ Vector2 feetOf(const Human& h) {
             (h.prev.y + (h.cell.y - h.prev.y) * t) * CELL_PX + CELL_PX};
 }
 
+Vector2 drawnFeet(const Human& h, float zoom) {
+    Vector2 feet = feetOf(h);
+    return {std::round(feet.x * zoom) / zoom, std::round(feet.y * zoom) / zoom};
+}
+
 // On the middle of the sprite, snapped to whole canvas pixels: zoomed out,
-// a canvas pixel spans several world ones.
-Vector2 cameraFor(const Human& viewer, float zoom, Vector2 size) {
-    Vector2 feet = feetOf(viewer);
-    float snap = std::max(1.0f, 1.0f / zoom);
-    auto snapped = [snap](float v) { return std::round(v / snap) * snap; };
-    return {snapped(feet.x - size.x / zoom / 2), snapped(feet.y - SPRITE_H / 2.0f - size.y / zoom / 2)};
+// a canvas pixel spans several world ones; zoomed in, a world pixel spans
+// several canvas ones, and the camera moves by the canvas pixel.
+Vector2 cameraFor(Vector2 focus, float zoom, Vector2 size) {
+    auto snapped = [zoom](float v) { return std::round(v * zoom) / zoom; };
+    return {snapped(focus.x - size.x / zoom / 2), snapped(focus.y - SPRITE_H / 2.0f - size.y / zoom / 2)};
 }
 
 bool shown(const Human& viewer, const Human& h, bool reveal) {
@@ -208,15 +213,18 @@ bool shown(const Human& viewer, const Human& h, bool reveal) {
 }
 
 void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprites,
-               const FloorTiles& floorTiles, const StatueArt& statueArt, bool reveal, float zoom, Rectangle area) {
-    Vector2 cam = cameraFor(viewer, zoom, {area.width, area.height});
-    int left = int(cam.x), top = int(cam.y);
+               const FloorTiles& floorTiles, const StatueArt& statueArt, bool reveal, float zoom, Rectangle area,
+               Vector2 focus) {
+    // Everything is placed in whole world pixels from left and top; the
+    // camera's part of a world pixel past them shifts it all at once.
+    Vector2 cam = cameraFor(focus, zoom, {area.width, area.height});
+    int left = int(std::floor(cam.x)), top = int(std::floor(cam.y));
     BeginScissorMode(int(area.x), int(area.y), int(area.width), int(area.height));
-    BeginMode2D(Camera2D{{area.x, area.y}, {0, 0}, 0.0f, zoom});
+    BeginMode2D(Camera2D{{area.x, area.y}, {cam.x - float(left), cam.y - float(top)}, 0.0f, zoom});
 
     auto known = [&](Vec2i c) { return reveal ? world.tile(c) : viewer.memory.tile(c); };
-    int x0 = floorDiv(left, CELL_PX), x1 = floorDiv(left + int(std::ceil(area.width / zoom)), CELL_PX);
-    int y0 = floorDiv(top, CELL_PX), y1 = floorDiv(top + int(std::ceil(area.height / zoom)), CELL_PX);
+    int x0 = floorDiv(left, CELL_PX), x1 = floorDiv(left + 1 + int(std::ceil(area.width / zoom)), CELL_PX);
+    int y0 = floorDiv(top, CELL_PX), y1 = floorDiv(top + 1 + int(std::ceil(area.height / zoom)), CELL_PX);
     // Floors never change, so a remembered one looks as it really is.
     for (int y = y0; y <= y1; y++)
         for (int x = x0; x <= x1; x++) {
@@ -432,9 +440,14 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
     const Vector2 viewerFeet = feetOf(viewer);
     bool viewerDrawn = false, viewerHidden = false;
     auto drawHuman = [&](const Human& h, Color tint) {
-        Vector2 feet = feetOf(h);
-        sprites(h).draw({feet.x - left, feet.y - top}, poseOf(h), h.animTime, h.facingLeft, 1,
+        // Its art is laid out in whole world pixels and then shifted by the
+        // part of one its feet stand past, so it glides by the canvas pixel.
+        Vector2 feet = drawnFeet(h, zoom), whole{std::round(feet.x), std::round(feet.y)};
+        rlPushMatrix();
+        rlTranslatef(feet.x - whole.x, feet.y - whole.y, 0.0f);
+        sprites(h).draw({whole.x - left, whole.y - top}, poseOf(h), h.animTime, h.facingLeft, 1,
                         h.hurtTime > 0.0f ? HURT_TINT : tint, h.cakes, h.shownBottle(), h.bottleInHand());
+        rlPopMatrix();
         // The cakes a body still holds lie in plain sight on it, and its
         // bottles on their side at its feet.
         bool lit = reveal || viewer.sight.sees(h.cell);
