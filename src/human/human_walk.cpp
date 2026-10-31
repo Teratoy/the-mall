@@ -15,6 +15,11 @@
 // next cell, the path is replanned around everyone in the way.
 void Human::step(World& world) {
     moving = false;
+    // Out of breath, it stands bent over until it has some back.
+    if (winded()) {
+        timer = run_.winded;
+        return;
+    }
     // Stepping aside, it thinks again once out of the way.
     if (rethink_ && goal != Goal::GiveWay) {
         choose(world);
@@ -112,8 +117,7 @@ void Human::move(World& world, Vec2i next) {
     moving = true;
     stuck_ = 0;
     if (next.x != prev.x) facingLeft = next.x < prev.x;
-    bool running = goal == Goal::Fight || goal == Goal::Flee;
-    stepTime = STEP_TIME * (running ? RUN : 1.0f) * (next.x != prev.x && next.y != prev.y ? DIAGONAL : 1.0f) *
+    stepTime = STEP_TIME * (running() ? RUN : 1.0f) * (next.x != prev.x && next.y != prev.y ? DIAGONAL : 1.0f) *
                (1.0f + DAZE_SLOW * escape_.daze) * (exhausted() ? EXHAUSTED_SLOW : 1.0f);
     timer = stepTime;
     world.setOff(cell, *this);
@@ -310,6 +314,7 @@ void Human::startRising() {
 void Human::startWalking(Goal g, std::vector<Vec2i> path) {
     state = State::Walking;
     awaiting_ = false;
+    run_.on = false;
     goal = g;
     path_.assign(path.begin(), path.end());
     target_ = path.empty() ? cell : path.back();

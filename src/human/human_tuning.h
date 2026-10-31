@@ -285,8 +285,12 @@ constexpr float LOOT_TIME = 2.0f;
 /// the greedy raise it by up to PREY_HEALTH_GREEDY.
 constexpr float PREY_HEALTH = 0.35f;
 constexpr float PREY_HEALTH_GREEDY = 0.25f;
-/// Running steps, to a fight or away from one, take this much of a walking step's time.
-constexpr float RUN = 0.7f;
+/// Running steps take this much of a walking step's time.
+constexpr float RUN = 0.6f;
+/// Seconds of running a full breath lasts, rolled for each human.
+constexpr float LUNGS_MIN = 7.0f, LUNGS_MAX = 9.0f;
+/// Mixed into a human's seed to roll its lungs.
+constexpr uint64_t LUNGS_SALT = 0x6c756e6773ULL;
 /// A punch: fist up, then out and landing for some health, then back.
 constexpr float PUNCH_WINDUP = 0.25f, PUNCH_FOLLOW = 0.2f;
 constexpr float PUNCH_DAMAGE_MIN = 0.08f, PUNCH_DAMAGE_MAX = 0.16f;

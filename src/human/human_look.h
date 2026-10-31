@@ -11,6 +11,10 @@ inline constexpr int SPRITE_W = 15;
 inline constexpr int SPRITE_H = 18;
 inline constexpr int SPRITE_BASE_X = SPRITE_W / 2;
 inline constexpr int WALK_FRAMES = 4;
+/// Running: a long stride with either leg, and the passing steps between.
+inline constexpr int RUN_FRAMES = 4;
+/// Winded: breathing out, breathing in.
+inline constexpr int WINDED_FRAMES = 2;
 inline constexpr int WAVE_FRAMES = 2;
 inline constexpr int EAT_FRAMES = 2;
 /// Seated: eyes open, then a blink.
@@ -95,6 +99,12 @@ struct HumanLook {
     SpriteFrame idle() const;
     /// One frame of the walk cycle: 0 and 2 stand, 1 and 3 stride.
     SpriteFrame walk(int frame) const;
+    /// One frame of the run: 0 and 2 the long strides, 1 and 3 passing;
+    /// leaning into it, the arms bent and pumping.
+    SpriteFrame run(int frame) const;
+    /// Out of breath, knees bent and hands on them, head hung, panting:
+    /// 0 breathing out, 1 in.
+    SpriteFrame winded(int frame) const;
     /// One frame of a wave with the front arm.
     SpriteFrame wave(int frame) const;
     /// Fist up in front, about to punch.
@@ -151,6 +161,12 @@ private:
         bool breathe = false;
         /// Pixels the head hangs down, nodding off.
         int nod = 0;
+        /// Pixels the head is thrust ahead, leaning into a run.
+        int lean = 0;
+        /// Running: the arms bent at the elbow, swinging against the legs.
+        bool run = false;
+        /// Bent over winded: knees bent a row, hands down on them.
+        bool bend = false;
         /// Curled, a cake hugged to the chest.
         bool carry = false;
         bool eyesShut = false;

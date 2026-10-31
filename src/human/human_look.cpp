@@ -179,6 +179,15 @@ void HumanLook::wear(SpriteFrame& f, const SpriteFrame& stand) const {
 
 SpriteFrame HumanLook::walk(int frame) const { return draw({.stride = frame == 1 ? 1 : frame == 3 ? -1 : 0}); }
 
+SpriteFrame HumanLook::run(int frame) const {
+    constexpr int STRIDES[RUN_FRAMES] = {2, 1, -2, -1};
+    return draw({.stride = STRIDES[frame], .lean = 1, .run = true});
+}
+
+SpriteFrame HumanLook::winded(int frame) const {
+    return draw({.breathe = frame == 1, .nod = 1, .lean = 1, .bend = true});
+}
+
 SpriteFrame HumanLook::wave(int frame) const { return draw({.front = frame == 0 ? Arm::WaveIn : Arm::WaveOut}); }
 
 SpriteFrame HumanLook::guard() const { return draw({.front = Arm::Guard}); }
@@ -222,7 +231,11 @@ SpriteFrame HumanLook::drawBody(const Stance& s) const {
     // Kneeling folds the legs, lowering everything above them; sitting
     // lays them along the floor, two rows thick, under the hips. Curled,
     // they take a row more, bent at the knee.
-    const int legs = s.sit ? 2 : s.curl ? legH + 1 : s.kneel ? std::max(1, legH - 2) : legH;
+    const int legs = s.sit    ? 2
+                     : s.curl ? legH + 1
+                     : s.kneel ? std::max(1, legH - 2)
+                     : s.bend  ? std::max(1, legH - 1)
+                               : legH;
     const int feet = SPRITE_H - 1;
     const int legTop = feet - legs + 1;
     const int torsoBottom = legTop - 1;
@@ -472,32 +485,54 @@ SpriteFrame HumanLook::drawBody(const Stance& s) const {
             continue;
         }
         int swing = side == 0 ? stride : -stride;
+        // Bent over winded: the arm hangs straight down to the knee, the hand on it.
+        if (s.bend) {
+            int knee = legTop + 1;
+            for (int y = shoulder; y <= knee; y++) armPx(side, x, y, y - shoulder, y == knee);
+            if (side == 0) p.f.held = {int8_t(x - 2), int8_t(knee), BottleTurn::Up};
+            continue;
+        }
+        // Running, bent at the elbow: the arm swung ahead brings its hand up
+        // (the back one only as far as its side, behind the body), the one
+        // swung back trails it behind.
+        if (s.run) {
+            bool tucked = swing > 0 && side == 0;
+            int handX = swing > 0 && side == 1 ? x + 1 : swing < 0 ? x - 1 : x;
+            int handY = swing > 0 ? shoulder + 1 : shoulder + 2;
+            armPx(side, x, shoulder, 0, false);
+            armPx(side, x, shoulder + 1, 1, tucked);
+            if (!tucked) armPx(side, handX, handY, 2, true);
+            if (side == 0) p.f.held = {int8_t(handX - 2), int8_t(handY), BottleTurn::Up};
+            continue;
+        }
         int hand = torsoBottom + 1 - (swing > 0 ? 1 : 0);
         for (int y = shoulder; y <= hand; y++) armPx(side, x, y, y - shoulder, y == hand);
         // Carried at the side, behind the hand.
         if (side == 0) p.f.held = {int8_t(x - 2), int8_t(hand), BottleTurn::Up};
     }
 
-    p.body(BodyPart::Head, lifted);
-    p.row(CX - 1, CX + 1, neck, skin);
+    // Leaning into a run, or bent over, the head is thrust ahead.
+    const int hx = CX + s.lean;
+    p.body(BodyPart::Head, [up, lean = s.lean](int x, int y) { return Vec2i{x - lean, y + up}; });
+    p.row(hx - 1, hx + 1, neck, skin);
     // Nodding off, the head hangs down over the neck.
     const int hTop = headTop + s.nod, hBottom = headBottom + s.nod;
-    p.body(BodyPart::Head, [up, nod = s.nod](int x, int y) { return Vec2i{x, y + up - nod}; });
+    p.body(BodyPart::Head, [up, nod = s.nod, lean = s.lean](int x, int y) { return Vec2i{x - lean, y + up - nod}; });
     for (int y = hTop; y <= hBottom; y++) {
         int edge = (y == hTop || y == hBottom) ? 1 : 0;
-        p.row(CX - 2 + edge, CX + 2 - edge, y, skin);
+        p.row(hx - 2 + edge, hx + 2 - edge, y, skin);
     }
     Rgba eyes = s.eyesShut ? shade(skin, 0.7f) : EYES;
-    p.set(CX - 1, hTop + 2, eyes);
-    p.set(CX + 1, hTop + 2, eyes);
-    if (beard) p.row(CX - 1, CX + 1, hBottom, hair);
+    p.set(hx - 1, hTop + 2, eyes);
+    p.set(hx + 1, hTop + 2, eyes);
+    if (beard) p.row(hx - 1, hx + 1, hBottom, hair);
     // Dirty, the beard grows out ragged under the chin.
-    if (beard && dirty) p.set(CX, hBottom + 1, hair);
+    if (beard && dirty) p.set(hx, hBottom + 1, hair);
 
     // Hair sits on the head; the back of the head is the left side.
     auto crop = [&] {
-        p.row(CX - 2, CX + 2, hTop, hair);
-        p.set(CX - 2, hTop + 1, hair);
+        p.row(hx - 2, hx + 2, hTop, hair);
+        p.set(hx - 2, hTop + 1, hair);
     };
     switch (hairStyle) {
     case Hair::Bald:
@@ -507,30 +542,30 @@ SpriteFrame HumanLook::drawBody(const Stance& s) const {
         break;
     case Hair::Long:
         crop();
-        for (int y = hTop + 1; y <= hBottom + 1; y++) p.row(CX - 3, CX - 2, y, hair);
+        for (int y = hTop + 1; y <= hBottom + 1; y++) p.row(hx - 3, hx - 2, y, hair);
         break;
     case Hair::Spiky:
         crop();
-        p.set(CX - 2, hTop - 1, hair);
-        p.set(CX, hTop - 1, hair);
-        p.set(CX + 2, hTop - 1, hair);
+        p.set(hx - 2, hTop - 1, hair);
+        p.set(hx, hTop - 1, hair);
+        p.set(hx + 2, hTop - 1, hair);
         break;
     case Hair::Bun:
         crop();
-        p.row(CX - 2, CX - 1, hTop - 1, hair);
+        p.row(hx - 2, hx - 1, hTop - 1, hair);
         break;
     case Hair::Mohawk:
-        p.row(CX - 1, CX, hTop - 1, hair);
-        p.row(CX - 1, CX, hTop, hair);
+        p.row(hx - 1, hx, hTop - 1, hair);
+        p.row(hx - 1, hx, hTop, hair);
         break;
     case Hair::Ponytail:
         crop();
-        for (int y = hTop + 1; y <= hTop + 3; y++) p.set(CX - 3, y, hair);
+        for (int y = hTop + 1; y <= hTop + 3; y++) p.set(hx - 3, y, hair);
         break;
     case Hair::Cap:
-        p.set(CX - 2, hTop + 1, hair);
-        p.row(CX - 1, CX + 1, hTop - 1, hat);
-        p.row(CX - 2, CX + 3, hTop, hat);
+        p.set(hx - 2, hTop + 1, hair);
+        p.row(hx - 1, hx + 1, hTop - 1, hat);
+        p.row(hx - 2, hx + 3, hTop, hat);
         break;
     }
 
@@ -538,7 +573,7 @@ SpriteFrame HumanLook::drawBody(const Stance& s) const {
     // whatever it had, hair sticking out from under a cap. The bald stay bald.
     if (dirty) {
         auto strays = [&](std::initializer_list<Vec2i> at) {
-            for (Vec2i v : at) p.set(CX + v.x, hTop + v.y, hair);
+            for (Vec2i v : at) p.set(hx + v.x, hTop + v.y, hair);
         };
         switch (hairStyle) {
         case Hair::Bald:

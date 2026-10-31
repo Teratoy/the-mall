@@ -17,6 +17,8 @@ Human::Human(int id, const HumanLook& look, Vec2i cell, uint64_t seed, std::stri
     tiredness = rng_.range(0.0f, START_TIRED_MAX);
     timer = rng_.range(WAKE_LIE_MIN, WAKE_LIE_MAX);
     escape_.hunch = rng_.range(0.0f, TAU);
+    // Rolled from the seed, as traits are, leaving its own dice as they were.
+    run_.lungs = Rng(seed ^ LUNGS_SALT).range(LUNGS_MIN, LUNGS_MAX);
 }
 
 void Human::update(World& world, float dt) {
@@ -148,7 +150,7 @@ Human::Action Human::action() const {
         return goal == Goal::Watch ? Action::Watch : Action::Sit;
     case State::Walking:
         if (!moving) return Action::Rest;
-        return goal == Goal::Fight || goal == Goal::Flee ? Action::Run : Action::Walk;
+        return running() ? Action::Run : Action::Walk;
     case State::Greeting:
         return Action::Greet;
     case State::Eating:
@@ -215,6 +217,7 @@ void Human::live(World& world, float dt) {
     hunger = std::min(1.0f, hunger + HUNGER_PER_SECOND[size_t(action())] * dt);
     thirst = std::min(1.0f, thirst + THIRST_PER_SECOND[size_t(action())] * dt);
     tire(dt);
+    breathe(dt);
     press(dt);
     soil(dt);
     sniff(world, dt);

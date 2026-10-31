@@ -25,8 +25,9 @@
 /// DiedAsleep lies curled as in sleep, but still: no breath, no z's.
 /// Sip drinks from a bottle held up to the mouth; Fill kneels with it in
 /// the water; Pour holds it out upside down, water running out of it;
-/// OfferBottle holds it out to someone.
-enum class Pose { Idle, Walk, Wave, Eat, Guard, Punch, Offer, Fall, Sit, Rise, Wash, Search, Feed, Wake, Point, PointUp, PointDown, Squat, Piss, Sleep, WakeUp, DiedAsleep, Sip, Fill, Pour, OfferBottle, Lie };
+/// OfferBottle holds it out to someone. Run is the run cycle; Winded stands
+/// bent over, hands on its knees, panting.
+enum class Pose { Idle, Walk, Wave, Eat, Guard, Punch, Offer, Fall, Sit, Rise, Wash, Search, Feed, Wake, Point, PointUp, PointDown, Squat, Piss, Sleep, WakeUp, DiedAsleep, Sip, Fill, Pour, OfferBottle, Lie, Run, Winded };
 
 
 /// One human's frames as textures, made from its look.
@@ -66,6 +67,8 @@ private:
     /// the front hand.
     std::unordered_map<const Texture2D*, std::pair<BottleSpot, BottleSpot>> spots_;
     std::array<Texture2D, WALK_FRAMES> walk_;
+    std::array<Texture2D, RUN_FRAMES> run_;
+    std::array<Texture2D, WINDED_FRAMES> winded_;
     std::array<Texture2D, WAVE_FRAMES> wave_;
     std::array<Texture2D, EAT_FRAMES> eat_;
     std::array<Texture2D, SIT_FRAMES> sit_;

@@ -163,6 +163,8 @@ enum class Moment {
     // Coming to: stirring while it still lies with its eyes shut, and
     // getting up out of the waking sit (both to nobody).
     WakeStir, WakeStand,
+    // Running out of breath, bent over winded (to nobody).
+    Winded,
     Count
 };
 

@@ -10,6 +10,10 @@ namespace {
 
 /// Pocket Rave's walk speed.
 constexpr float WALK_FPS = 8.0f;
+/// The run cycle, played quicker than the walk for its quicker steps, and
+/// the panting of a human out of breath.
+constexpr float RUN_FPS = 14.0f;
+constexpr float WINDED_FPS = 4.0f;
 /// A greeting's wave is a quick flick of the hand, then they stand and talk.
 constexpr float WAVE_FPS = 10.0f, WAVE_TIME = 0.4f;
 /// Bites and chews.
@@ -77,6 +81,8 @@ template <class F> void HumanSprites::eachFrame(const HumanLook& look, F&& add) 
     add(dead_, look.dead());
     add(crouch_, look.crouch());
     for (int i = 0; i < WALK_FRAMES; i++) add(walk_[size_t(i)], look.walk(i));
+    for (int i = 0; i < RUN_FRAMES; i++) add(run_[size_t(i)], look.run(i));
+    for (int i = 0; i < WINDED_FRAMES; i++) add(winded_[size_t(i)], look.winded(i));
     for (int i = 0; i < WAVE_FRAMES; i++) add(wave_[size_t(i)], look.wave(i));
     for (int i = 0; i < EAT_FRAMES; i++) add(eat_[size_t(i)], look.eat(i));
     for (int i = 0; i < SIT_FRAMES; i++) add(sit_[size_t(i)], look.sit(i));
@@ -230,6 +236,8 @@ void HumanSprites::draw(Vector2 feet, Pose pose, float animTime, bool flip, int 
     }
     const Texture2D& seated = sit_[std::fmod(animTime, BLINK_EVERY) < BLINK_EVERY - BLINK_TIME ? 0 : 1];
     const Texture2D& tex = pose == Pose::Walk  ? walk_[size_t(int(animTime * WALK_FPS) % WALK_FRAMES)]
+                           : pose == Pose::Run ? run_[size_t(int(animTime * RUN_FPS) % RUN_FRAMES)]
+                           : pose == Pose::Winded ? winded_[size_t(int(animTime * WINDED_FPS) % WINDED_FRAMES)]
                            : pose == Pose::Wave && animTime < WAVE_TIME ? wave_[size_t(int(animTime * WAVE_FPS) % WAVE_FRAMES)]
                            : pose == Pose::Eat  ? eat_[size_t(int(animTime * EAT_FPS) % EAT_FRAMES)]
                            : pose == Pose::Guard ? guard_
