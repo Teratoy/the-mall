@@ -16,6 +16,9 @@ public:
     /// out to radius (at most RADIUS): less for the dazed.
     void look(const World& world, Vec2i eye, int radius = RADIUS);
     bool sees(Vec2i cell) const;
+    /// The cell it last looked from, and how far it saw from there.
+    Vec2i eye() const { return eye_; }
+    int radius() const { return radius_; }
     /// Eyes shut: sees nothing until it next looks.
     void blind() { seen_.assign(seen_.size(), false); }
 
