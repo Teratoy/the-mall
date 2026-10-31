@@ -60,6 +60,18 @@ private:
 
     /// The human the camera follows; 0 is the one you made.
     int follow_ = 0;
+    /// Where the camera looks, in world pixels. It eases after the followed
+    /// human's feet instead of being pinned to them, so the stops between
+    /// steps and uneven frames glide. focusOf_ is whose feet it last eased
+    /// after; for anyone else it jumps straight to them.
+    Vector2 focus_{};
+    int focusOf_ = -1;
+    /// How far the camera trails the viewer this frame, in whole canvas
+    /// pixels at zoom lagZoom_, and where the viewer was drawn last frame,
+    /// in canvas pixels. See easeCamera.
+    Vec2i lag_{};
+    Vec2i drawnAt_{};
+    int lagZoom_ = -1;
     /// An index into the zoom levels.
     int zoom_ = 2;
     /// A zoom button's step, reported while drawing.
@@ -107,6 +119,10 @@ private:
     const HumanSprites& spritesFor(const Human& h);
     /// Puts the human you made into the obituary, dead or left behind.
     void record();
+    /// Moves the camera's focus a frame of dt seconds nearer the followed human.
+    void easeCamera(float dt);
+    /// Where the camera looks this frame: the viewer as drawn, less lag_.
+    Vector2 cameraFocus(const Human& viewer) const;
     /// The six buttons that zoom, set the speed and pause, wherever the
     /// layout puts them; speed is the slot showing it, between its arrows.
     struct Controls {

@@ -10,5 +10,6 @@ class Human;
 /// stays sharp at any zoom; bubbles that would overlap are stacked upward,
 /// and all are kept inside view, the part of the canvas drawWorld showed
 /// the world in, and between top and bottom, clear of the HUD strips.
+/// focus is the camera's, as drawWorld was given it.
 void drawSpeech(const World& world, const Human& viewer, bool reveal, float zoom, Rectangle view, int top,
-                int bottom);
+                int bottom, Vector2 focus);
