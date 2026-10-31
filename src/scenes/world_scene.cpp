@@ -450,9 +450,14 @@ void WorldScene::update(float dt, const Canvas& canvas) {
 
 void WorldScene::easeCamera(float dt) {
     Vector2 feet = feetOf(world_.human(follow_));
+    float zoom = ZOOMS[zoom_];
+    Vec2i at{int(std::lround(feet.x * zoom)), int(std::lround(feet.y * zoom))};
     if (focusOf_ != follow_) {
         focus_ = feet;
         focusOf_ = follow_;
+        lag_ = {0, 0};
+        drawnAt_ = at;
+        lagZoom_ = zoom_;
         return;
     }
     float k = 1.0f - std::exp(-CAMERA_CATCH * dt);
@@ -460,6 +465,32 @@ void WorldScene::easeCamera(float dt) {
     focus_.y += (feet.y - focus_.y) * k;
     float dx = feet.x - focus_.x, dy = feet.y - focus_.y, d = std::hypot(dx, dy);
     if (d > CAMERA_LAG_MAX) focus_ = {feet.x - dx * CAMERA_LAG_MAX / d, feet.y - dy * CAMERA_LAG_MAX / d};
+    // The camera is drawn trailing the viewer by lag_, whole canvas pixels,
+    // so the viewer and the world never round apart and take turns, which
+    // shakes the walker a pixel back and forth. lag_ follows focus_ a pixel
+    // a frame, and grows only on a frame the viewer steps that way too, so
+    // the world holds still then instead of stepping back.
+    Vec2i want{int(std::lround((feet.x - focus_.x) * zoom)), int(std::lround((feet.y - focus_.y) * zoom))};
+    if (lagZoom_ != zoom_) lag_ = want, lagZoom_ = zoom_;
+    auto settle = [](int& lag, int want, int stepped) {
+        if (want == lag) return;
+        int toward = want > lag ? 1 : -1;
+        bool growing = lag == 0 || (lag > 0) == (toward > 0);
+        if (!growing || stepped * toward > 0) lag += toward;
+    };
+    settle(lag_.x, want.x, at.x - drawnAt_.x);
+    settle(lag_.y, want.y, at.y - drawnAt_.y);
+    drawnAt_ = at;
+}
+
+Vector2 WorldScene::cameraFocus(const Human& viewer) const {
+    float zoom = ZOOMS[zoom_];
+    Vector2 at = drawnFeet(viewer, zoom);
+    if (lagZoom_ != zoom_) {
+        Vector2 feet = feetOf(viewer);
+        return {at.x - std::round((feet.x - focus_.x) * zoom) / zoom, at.y - std::round((feet.y - focus_.y) * zoom) / zoom};
+    }
+    return {at.x - float(lag_.x) / zoom, at.y - float(lag_.y) / zoom};
 }
 
 // Each entry is its time, dimmed, then what happened, wrapped under itself.
@@ -573,20 +604,21 @@ void WorldScene::draw(const Canvas& canvas) {
     ClearBackground(BLACK);
     const Human& viewer = world_.human(follow_);
     if (focusOf_ != follow_) easeCamera(0.0f);
+    const Vector2 focus = cameraFocus(viewer);
     bool wide = canvas.wide();
     Rectangle view = wide ? WIDE_VIEW : PHONE_VIEW;
     drawWorld(world_, viewer, [this](const Human& h) -> const HumanSprites& { return spritesFor(h); },
-              floorTiles_, statueArt_, reveal_, ZOOMS[zoom_], view, focus_);
+              floorTiles_, statueArt_, reveal_, ZOOMS[zoom_], view, focus);
     // Under the pause menu nothing else takes a tap.
     Vector2 mouse = paused_ ? Vector2{-1.0f, -1.0f} : canvas.mouse();
     if (wide) {
         std::vector<std::string> rows = ui::wrap(doing(viewer), WIDE_DOING_W);
         int stripY = Canvas::H - int(rows.size()) * ui::ROW - 2 * MARGIN;
-        drawSpeech(world_, viewer, reveal_, ZOOMS[zoom_], view, 0, stripY, focus_);
+        drawSpeech(world_, viewer, reveal_, ZOOMS[zoom_], view, 0, stripY, focus);
         drawWide(viewer, mouse, rows, stripY);
     } else {
         if (!logOpen_ && !statsOpen_ && !mapOpen_)
-            drawSpeech(world_, viewer, reveal_, ZOOMS[zoom_], view, TOP_H, BOTTOM_Y, focus_);
+            drawSpeech(world_, viewer, reveal_, ZOOMS[zoom_], view, TOP_H, BOTTOM_Y, focus);
         drawPhone(viewer, mouse);
     }
     if (paused_) drawPause(canvas.mouse(), canvas.width());

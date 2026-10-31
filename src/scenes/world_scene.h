@@ -66,6 +66,12 @@ private:
     /// after; for anyone else it jumps straight to them.
     Vector2 focus_{};
     int focusOf_ = -1;
+    /// How far the camera trails the viewer this frame, in whole canvas
+    /// pixels at zoom lagZoom_, and where the viewer was drawn last frame,
+    /// in canvas pixels. See easeCamera.
+    Vec2i lag_{};
+    Vec2i drawnAt_{};
+    int lagZoom_ = -1;
     /// An index into the zoom levels.
     int zoom_ = 2;
     /// A zoom button's step, reported while drawing.
@@ -115,6 +121,8 @@ private:
     void record();
     /// Moves the camera's focus a frame of dt seconds nearer the followed human.
     void easeCamera(float dt);
+    /// Where the camera looks this frame: the viewer as drawn, less lag_.
+    Vector2 cameraFocus(const Human& viewer) const;
     /// The six buttons that zoom, set the speed and pause, wherever the
     /// layout puts them; speed is the slot showing it, between its arrows.
     struct Controls {
