@@ -341,6 +341,20 @@ Human& shutInFirst(Stage& s) {
     return caller;
 }
 void calm(Human& h) { h.hunger = h.thirst = h.tiredness = 0.05f; }
+/// h, with 3 keys, walled into a little box whose only way out is a
+/// server room's outer door, having met the airlock this many times before
+/// (AI/server_room_keys_plan.md).
+const ServerRoom& airlockPocket(Stage& s, Human& h, int met) {
+    P::clearChunk(s.world, h.cell);
+    const ServerRoom& r = P::buildServerRoom(s.world, h.cell + Vec2i{-5, -17}, 10, 8);
+    calm(h);
+    s.run(8);
+    P::wallIn(s.world, r.outer + Vec2i{0, 3}, Vec2i{0, -2});
+    P::place(s.world, h, r.outer + Vec2i{0, 3});
+    P::metAirlock(h, met);
+    h.keys = 3;
+    return r;
+}
 /// Two humans parched, with empty bottles and no keys, in a spawn room they
 /// know wall to wall, with nothing in it; follower keeps company with leader.
 void lostPair(Stage& s, Human& leader, Human& follower) {
@@ -1981,6 +1995,76 @@ const std::vector<Scenario> SCENARIOS = {
          return Checks{{"the outer door opened", [opened](const Stage&) { return opened; }},
                        {"never inside the room", [&h, &r](const Stage&) { return !r.contains(h.cell); }},
                        {"not stuck in the lobby", [&h, &r](const Stage&) { return !r.encloses(h.cell); }}};
+     }},
+    {"airlock-surprise", "with keys and nowhere else to go, it opens a server room's outer door and finds another behind",
+     seedWhere(plain, 23000), [](Stage& s) {
+         Human& h = s.first();
+         const ServerRoom& r = airlockPocket(s, h, 0);
+         s.run(40);
+         return Checks{loggedBy(h, "ANOTHER LOCKED DOOR BEHIND THE FIRST"), notLogged({"LEARNT THE DOUBLE DOORS EAT KEYS"}),
+                       {"a key spent on it", [&h](const Stage&) { return h.keys < 3; }},
+                       {"not stuck in the lobby", [&h, &r](const Stage&) { return !r.encloses(h.cell) || r.contains(h.cell); }}};
+     }},
+    {"airlock-learn", "the second time it finds a locked door behind the one it opened, it learns the double doors eat keys",
+     seedWhere(plain, 24000), [](Stage& s) {
+         Human& h = s.first();
+         airlockPocket(s, h, 1);
+         s.run(40);
+         return Checks{loggedBy(h, "LEARNT THE DOUBLE DOORS EAT KEYS"),
+                       {"knows it now", [&h](const Stage&) { return P::keyWise(h); }}};
+     }},
+    {"airlock-spare", "key-wise and incurious, with nowhere else to go, it lets the double doors be and keeps its keys",
+     seedWhere([](const Traits& t) { return t.curious < 0.4f; }, 25000), [](Stage& s) {
+         Human& h = s.first();
+         const ServerRoom& r = airlockPocket(s, h, 2);
+         bool entered = false;
+         for (int t = 0; t < 40; t++) {
+             s.run(1);
+             entered |= r.encloses(h.cell);
+         }
+         return Checks{loggedBy(h, "LET THE DOUBLE DOORS BE, KEYS KEPT"),
+                       {"keys kept", [&h](const Stage&) { return h.keys == 3; }},
+                       {"never went through", [entered](const Stage&) { return !entered; }}};
+     }},
+    {"airlock-dare", "key-wise but curious, with nowhere else to go, it opens the double doors anyway",
+     seedWhere([](const Traits& t) { return t.curious >= 0.75f; }, 26000), [](Stage& s) {
+         Human& h = s.first();
+         airlockPocket(s, h, 2);
+         s.run(40);
+         return Checks{loggedBy(h, "OPENED THE DOUBLE DOORS ANYWAY")};
+     }},
+    {"airlock-tell", "a key-wise human tells a friend with keys what the double doors cost",
+     seedWhere(kindly, 27000), [](Stage& s) {
+         Human& teller = s.first();
+         Human& told = s.add(seedWhere(kindly, 27500), 2);
+         P::setTrust(teller, told, 0.6f);
+         P::setTrust(told, teller, 0.6f);
+         calm(teller);
+         calm(told);
+         P::metAirlock(teller, 2);
+         told.keys = 2;
+         s.run(40);
+         return Checks{loggedBy(teller, "TOLD @ THE DOUBLE DOORS EAT KEYS"),
+                       loggedBy(told, "@ TOLD ME THE DOUBLE DOORS EAT KEYS"),
+                       {"the told knows it", [&told](const Stage&) { return P::keyWise(told); }}};
+     }},
+    {"hum-stay", "inside a server room the first time, drowsy, it feels the hum and sleeps there rather than leave",
+     seedWhere(plain, 28000), [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         const ServerRoom& r = P::buildServerRoom(s.world, h.cell + Vec2i{-5, -17}, 10, 8);
+         calm(h);
+         s.run(8);
+         P::place(s.world, h, r.inner + Vec2i{0, -1});
+         h.keys = 2;
+         h.tiredness = 0.4f;
+         h.hunger = h.thirst = 0.1f;
+         s.run(60);
+         return Checks{loggedBy(h, "THE HUM IN HERE IS MADE FOR SLEEP"),
+                       loggedBy(h, "SLEEPING HERE RATHER THAN PAY TO COME BACK"),
+                       {"asleep inside", [&h, &r](const Stage&) {
+                            return h.state == Human::State::Sleeping && r.contains(h.cell);
+                        }}};
      }},
 };
 

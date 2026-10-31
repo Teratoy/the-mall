@@ -275,6 +275,13 @@ struct SoakProbe {
         }
         h.server_.seen = true;
     }
+    /// h has met the airlock this many times, and so may know what the
+    /// double doors cost (AI/server_room_keys_plan.md).
+    static void metAirlock(Human& h, int times) {
+        h.server_.airlocksMet = times;
+        h.server_.keyWise = times >= 2;
+    }
+    static bool keyWise(const Human& h) { return h.server_.keyWise; }
     /// Given up on a way out, at home on home.
     static void settle(Human& h, Vec2i home) {
         h.escape_.settled = true;

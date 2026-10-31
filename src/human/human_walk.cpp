@@ -168,6 +168,11 @@ void Human::arrive(World& world) {
                       memory.tile(rescue_.gate) == Tile::DoorLocked;
         if (rescue) door = rescue_.gate;
         if (door && keys > 0 && world.unlock(*door)) {
+            // Knowing what the double doors cost, the curious pay to see.
+            if (server_.keyWise && memory.airlocks.count(*door) && keysFor(*door) == 2) {
+                note("OPENED THE DOUBLE DOORS ANYWAY");
+                sayLater(talk::Moment::DareAirlock);
+            }
             keys--;
             note("UNLOCKED A DOOR");
             rememberAt(*door, Episode::What::Door, EPISODE_DOOR, id);
@@ -177,6 +182,7 @@ void Human::arrive(World& world) {
             lift(HOPE_DOOR);
             if (lessons.keysFirst > 0.0f) learn(lessons.keysFirst, false);
             observe(world);
+            meetAirlock(*door);
             // Letting someone out, it waits for them at the gate.
             if (letOut(world, *door)) return startIdle(UNLOCK_TIME, UNLOCK_TIME * 2.0f);
             startPassDoor(*door);

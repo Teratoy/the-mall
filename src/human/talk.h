@@ -186,6 +186,13 @@ enum class Moment {
     FirstServerRoom, SeekHum, SleepHum,
     // Running out of breath, bent over winded (to nobody).
     Winded,
+    // The server room airlock (AI/server_room_keys_plan.md): another locked
+    // door behind the one it just opened, the first time; the second time,
+    // learning the double doors eat keys; letting them be to keep its keys;
+    // opening them anyway, curious (all to nobody); telling someone what
+    // they cost (to them); feeling the hum inside one the first time, and
+    // drowsy, lying down there rather than leave (to nobody).
+    AirlockSurprise, AirlockLesson, SpareKeys, DareAirlock, TellAirlock, HumLesson, StayHum,
     Count
 };
 

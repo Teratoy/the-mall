@@ -341,7 +341,7 @@ public:
     /// and what the teller thinks of them, a warning off a foe or a pointer
     /// to an ally, which the listener believes as far as it trusts them.
     struct Tell {
-        enum class Kind { Cake, Key, Trap, Route, People, Way, Water, ShutIn, Stash, Machine };
+        enum class Kind { Cake, Key, Trap, Route, People, Way, Water, ShutIn, Stash, Machine, Airlock };
         Tell(Kind kind, Vec2i cell, TrapKind trap = TrapKind::Spikes) : kind(kind), cell(cell), trap(trap) {}
         Kind kind;
         Vec2i cell;
@@ -1537,6 +1537,18 @@ private:
         bool seen = false;
         /// Making for one to sleep in: said once a trip.
         bool seeking = false;
+        /// Times it unlocked a door and found another locked door behind
+        /// it: the second time, it learns (AI/server_room_keys_plan.md).
+        int airlocksMet = 0;
+        /// Knows the double doors eat a key each and relock behind it,
+        /// learnt the hard way or told: keeps its keys from them unless curious.
+        bool keyWise = false;
+        /// The outer doors of airlocks it let be to keep its keys, said once each.
+        std::unordered_set<Vec2i, Vec2iHash> passedUp;
+        /// Has been inside one and felt the hum: a place to sleep in while it's there.
+        bool lulled = false;
+        /// Drowsy inside one, lying down there before leaving: said once a sleep.
+        bool staying = false;
     };
     ServerRooms server_;
     /// A rack in sight: remembers its room, and remarks on the first.
@@ -1546,6 +1558,23 @@ private:
     bool seekHum(World& world);
     /// How much better a cell is to sleep on: inside a server room it knows, a lot.
     float humShare(Vec2i c) const;
+    /// Keys it takes to get in through the airlock door: 1 for an inner
+    /// door, 2 for an outer one (or one whose inner door it hasn't seen).
+    int keysFor(Vec2i door) const;
+    /// Just unlocked the door: another locked door behind it is the airlock,
+    /// and the second time it learns what that costs.
+    void meetAirlock(Vec2i door);
+    /// Key-wise, it won't spend a key on the airlock door, unless curious
+    /// with keys enough for the rest of the way in.
+    bool sparesKeys(Vec2i door) const;
+    /// A locked door beside the cell worth a key; the first airlock door it
+    /// let be on the way goes in spared.
+    std::optional<Vec2i> doorWorthKey(Vec2i c, std::optional<Vec2i>& spared) const;
+    /// Says so, the first time it lets the airlock door be.
+    void spareKeys(std::optional<Vec2i> spared);
+    /// Drowsy inside a server room it has felt the hum of: sleeps there
+    /// rather than leave and pay to come back.
+    bool humStay() const;
     /// Sleep, robbing sleepers and keeping watch (human_sleep.cpp).
     struct Sleep {
         /// The sleeper it is robbing, or going to; -1 none.

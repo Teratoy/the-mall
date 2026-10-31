@@ -254,6 +254,8 @@ std::optional<Human::Tell> Human::newsFor(const Human& o, bool& forPay) const {
             return Tell{Tell::Kind::Trap, *c, memory.traps.at(*c)};
         }
     }
+    // What the double doors cost, to one with keys to lose to them.
+    if (server_.keyWise && !o.server_.keyWise && o.keys > 0) return Tell{Tell::Kind::Airlock, cell};
     if (o.keys == 0) {
         std::vector<Vec2i> keys(memory.keys.begin(), memory.keys.end());
         if (auto c = nearest(keys, [&](Vec2i c) { return !o.memory.keys.count(c); })) return Tell{Tell::Kind::Key, *c};
@@ -466,6 +468,7 @@ void Human::tell(Human& o, const Tell& t) {
         s.about = t.owner;
         break;
     case Tell::Kind::Machine: s.moment = t.sold ? Moment::SellVending : Moment::TellVending; break;
+    case Tell::Kind::Airlock: s.moment = Moment::TellAirlock; break;
     case Tell::Kind::People: {
         auto w = std::find_if(t.people.begin(), t.people.end(),
                               [&](const Tell::Word& w) { return w.opinion && w.about != o.id; });
@@ -576,6 +579,10 @@ void Human::deliver(Human& o, const Tell& t) {
                     o.memory.hear(m, tile);
         break;
     }
+    case Tell::Kind::Airlock:
+        news = !o.server_.keyWise;
+        o.server_.keyWise = true;
+        break;
     case Tell::Kind::Way: {
         // Believed as far as the teller is trusted, and as sure as it sounds.
         float w = std::clamp(o.trust(id) + WAY_STRANGER, 0.0f, 1.0f);
@@ -608,8 +615,8 @@ void Human::deliver(Human& o, const Tell& t) {
     // Word of people is in the listener's log a piece at a time, above.
     static const char* const WHAT[] = {"WHERE A CAKE IS", "WHERE A KEY IS", "WHERE A TRAP IS", "THE WAY TO A DOOR",
                                        "ABOUT OTHERS", "THE WAY OUT", "THE WAY TO WATER", "SOMEONE IS SHUT IN",
-                                       "WHERE A STASH IS", "WHERE A MACHINE IS"};
-    static_assert(std::size(WHAT) == size_t(Tell::Kind::Machine) + 1);
+                                       "WHERE A STASH IS", "WHERE A MACHINE IS", "THE DOUBLE DOORS EAT KEYS"};
+    static_assert(std::size(WHAT) == size_t(Tell::Kind::Airlock) + 1);
     std::string what = WHAT[size_t(t.kind)];
     if (t.kind != Tell::Kind::People) o.note("@ TOLD ME " + what, id);
     std::string over = std::string(" OVER ") + trapWord(t.trap);

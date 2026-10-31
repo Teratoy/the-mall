@@ -2487,3 +2487,68 @@ timid                   | NOBODY GETS IN HERE.
 sociable                | AT LEAST SOMETHING'S AWAKE.
 erratic                 | THEY'RE SINGING TO ME.
 settled                 | HOME HUMS.
+
+# The server room airlock (AI/server_room_keys_plan.md). The first time it
+# unlocks a door and finds another locked door behind it, said to nobody.
+[airlock_surprise 0.7]
+                        | OH, COME ON.
+                        | ANOTHER ONE?
+                        | THAT'S NOT FAIR.
+greedy                  | THEY WANT MORE.
+timid                   | WHAT ARE THEY KEEPING IN THERE?
+erratic                 | DOORS ALL THE WAY DOWN.
+
+# The second time: it learns the double doors eat a key each, said to nobody.
+[airlock_lesson 0.7]
+                        | NOT FALLING FOR THAT AGAIN.
+                        | I KNOW THIS TRICK NOW.
+                        | IT JUST EATS KEYS.
+greedy                  | NEVER AGAIN. NOT MY KEYS.
+hopeless                | EVEN THE DOORS ARE GREEDY.
+curious                 | WORTH IT, MAYBE. MAYBE NOT.
+
+# Letting a server room's doors be to keep its keys, said to nobody.
+[spare_keys 0.5]
+                        | NOT THOSE DOORS.
+                        | I'M KEEPING THESE.
+                        | YOU'RE NOT GETTING ANY.
+greedy                  | MINE. ALL MINE.
+keys                    | THESE ARE FOR A REAL DOOR.
+
+# Key-wise but curious, opening a server room's doors anyway, said to
+# nobody.
+[dare_airlock 0.7]
+                        | JUST ONE MORE LOOK.
+                        | I KNOW, I KNOW.
+                        | WHAT'S THE WORST THAT HAPPENS?
+greedy                  | THIS HAD BETTER BE WORTH IT.
+tired                   | AT LEAST I CAN SLEEP IN THERE.
+
+# Telling someone what the double doors cost, to the one told.
+[tell_airlock]
+                        | DON'T WASTE YOUR KEYS ON THE DOUBLE DOORS.
+                        | THOSE HUMMING ROOMS EAT KEYS.
+friend warm             | {NAME}, KEEP YOUR KEYS. TRUST ME.
+they.keys               | HOLD ON TO THOSE. THE DOUBLE DOORS TAKE TWO.
+hopeless                | THERE'S NO WAY OUT IN THERE. JUST MACHINES.
+tired                   | ONLY GO IN THERE TO SLEEP.
+
+# Inside a server room for the first time, the hum sinking in, said to
+# nobody.
+[hum_lesson 0.6]
+                        | I COULD SLEEP FOR DAYS IN HERE.
+                        | MY EYES ARE GETTING HEAVY.
+                        | SO WARM. SO SOFT.
+timid                   | NOTHING CAN GET IN HERE.
+erratic                 | THEY'RE SINGING A LULLABY.
+hopeless                | MAYBE I'LL JUST STAY.
+
+# Drowsy inside a server room, lying down before leaving rather than pay
+# to come back, said to nobody.
+[stay_hum 0.6]
+                        | WHILE I'M HERE.
+                        | WHY LEAVE?
+                        | A LITTLE NAP. IT'S PAID FOR.
+greedy                  | I'M NOT PAYING TWICE.
+keys                    | SAVE THE KEYS. SLEEP NOW.
+timid                   | SAFER IN HERE ANYWAY.

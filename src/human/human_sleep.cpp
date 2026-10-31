@@ -204,6 +204,8 @@ std::optional<Vec2i> Human::sleepBase() const {
     return std::nullopt;
 }
 
+bool Human::humStay() const { return server_.lulled && tiredness >= DROWSY && humShare(cell) < 1.0f; }
+
 float Human::drowsy() const {
     return std::clamp((tiredness - DROWSY) / (TIRED - DROWSY), 0.0f, 1.0f) * (0.6f + 0.4f * lessons.safeSleep);
 }
@@ -339,6 +341,7 @@ void Human::startSleeping(World& world, bool collapsed) {
     if (hum) sayLater(talk::Moment::SleepHum);
     else if (!collapsed && !askToWatch(world)) sayLater(talk::Moment::SleepNow);
     server_.seeking = false;
+    server_.staying = false;
     auto base = sleepBase();
     sleep_.atSleepSpot = !collapsed && base && cheb(cell, *base) <= BASE_NEAR;
     // What it holds, and who is about, as it shuts its eyes.

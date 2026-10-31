@@ -633,6 +633,8 @@ void Human::choose(World& world) {
     // back there first.
     if (tired() || sleepsWithGroup(world))
         want(Want::Sleep, tiredDrive());
+    else if (humStay())
+        want(Want::Sleep);
     else if (float back = headBack(); back > 0.0f)
         want(Want::Sleep, back - WANTING[size_t(Want::Sleep)].base);
     // Up to RELIEF_DRIVE more as it nears bursting.
@@ -700,6 +702,14 @@ bool Human::pursue(World& world, Want w) {
     case Want::Relieve:
         return seekRelief(world);
     case Want::Sleep:
+        if (!tired() && humStay()) {
+            if (!server_.staying) {
+                server_.staying = true;
+                note("SLEEPING HERE RATHER THAN PAY TO COME BACK");
+                sayLater(talk::Moment::StayHum);
+            }
+            return seekSleep(world);
+        }
         return tired() || sleepsWithGroup(world) ? seekSleep(world) : returnToSleepPlace(world);
     case Want::Flesh:
         return startFeed(world);
@@ -725,10 +735,13 @@ bool Human::pursue(World& world, Want w) {
         // Frightened, never a door that lies toward whoever scared it.
         auto it = social_.lastSeen.find(fight_.feared);
         bool afraid = fight_.fear > 0.0f && it != social_.lastSeen.end();
-        if (auto p = search(world, [&](Vec2i c) {
-                auto d = lockedDoorBeside(c);
-                return d && !(afraid && cheb(*d, it->second) < cheb(cell, it->second));
-            }, afraid, [&](Vec2i c) { return hunchCost(c, HUNCH_DOOR_COST); })) {
+        std::optional<Vec2i> spared;
+        auto p = search(world, [&](Vec2i c) {
+            auto d = doorWorthKey(c, spared);
+            return d && !(afraid && cheb(*d, it->second) < cheb(cell, it->second));
+        }, afraid, [&](Vec2i c) { return hunchCost(c, HUNCH_DOOR_COST); });
+        spareKeys(spared);
+        if (p) {
             if (escape_.outUrged && !escape_.urgedNoted) note("TRYING A DOOR. THERE HAS TO BE A WAY OUT");
             escape_.urgedNoted = escape_.outUrged;
             startWalking(Goal::OpenDoor, *p);
@@ -797,14 +810,16 @@ bool Human::pursue(World& world, Want w) {
             lift(HOPE_DEAD_END);
         }
         return false;
-    case Want::OpenDoor:
+    case Want::OpenDoor: {
         if (keys <= 0) return false;
-        if (auto p = search(world, [&](Vec2i c) { return lockedDoorBeside(c).has_value(); }, false,
-                            [&](Vec2i c) { return hunchCost(c, HUNCH_DOOR_COST); })) {
-            startWalking(Goal::OpenDoor, *p);
-            return true;
-        }
-        return false;
+        std::optional<Vec2i> spared;
+        auto p = search(world, [&](Vec2i c) { return doorWorthKey(c, spared).has_value(); }, false,
+                        [&](Vec2i c) { return hunchCost(c, HUNCH_DOOR_COST); });
+        spareKeys(spared);
+        if (!p) return false;
+        startWalking(Goal::OpenDoor, *p);
+        return true;
+    }
     case Want::CheckDoor:
         if (auto p = search(world, [&](Vec2i c) { return doorDue(c); })) {
             startWalking(Goal::CheckDoor, *p);
