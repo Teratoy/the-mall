@@ -152,6 +152,8 @@ void save(const Chunk& c, const std::string& path, const World* w = nullptr) {
 
 /// Chunks a world grows to, crossing doors.
 constexpr int WORLD_CHUNKS = 40;
+/// Data centres grown, and the machines in their corridors.
+int centres = 0, centreMachines = 0;
 
 struct Tally {
     int chunks = 0, doors = 0, keys = 0, cakes = 0, machines = 0, servers = 0;
@@ -259,7 +261,17 @@ int growWorld(uint64_t seed, std::map<std::string, Tally>& tally, bool png) {
                 }
                 if (m.facing.y < 0) why = "a machine with its back to the viewer";
                 if (!reached) why = "a machine sealed off";
+                // A data centre's stands in an alcove, wall at both its ends,
+                // so the corridor keeps its width.
+                if (c.kind == ChunkKind::DataCentre &&
+                    (w.tile(m.at - m.along()) != Tile::Wall || w.tile(m.at + m.along() * 2) != Tile::Wall) &&
+                    !w.machine(m.at - m.along()) && !w.machine(m.at + m.along() * 2))
+                    why = "a data centre machine out of its alcove";
             }
+        if (c.kind == ChunkKind::DataCentre) {
+            centres++;
+            for (const Machine& m : w.machines()) centreMachines += w.chunkIdAt(m.at) == c.id;
+        }
         // Every cell of a server room's floor can be walked to through its
         // airlock: no row of racks or desk walls any of it off.
         for (const ServerRoom& r : w.serverRooms())
@@ -345,6 +357,8 @@ int main(int argc, char** argv) {
                     double(t.cakes) / t.chunks, double(t.overWater) / t.chunks, double(t.machines) / t.chunks,
                     double(t.servers) / t.chunks, t.slowest);
     }
+    std::printf("world datacentre %d chunks, %4.2f machines each\n", centres,
+                centres ? double(centreMachines) / centres : 0.0);
     std::printf("genprobe: %d worlds, %d chunks grown, %d failed\n", seeds, grown, worldFailed);
     failed += worldFailed;
     return failed ? 1 : 0;

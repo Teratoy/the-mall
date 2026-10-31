@@ -10,6 +10,10 @@
 // against a west or east wall, side on. Never against a south wall, where
 // only its back would show. They are placed with dice of their own, so the
 // rest of the mall comes out as it would without them.
+//
+// A data centre's corridors have more, mostly in pairs, each in an alcove
+// cut one cell into the corridor wall, so the corridor keeps its width
+// (user).
 
 namespace {
 
@@ -28,31 +32,55 @@ constexpr int MACHINE_DOOR_GAP = 3;
 constexpr int RISE_FRONT = 3, RISE_SIDE = 2;
 /// The ways a machine may face: away from a north, a west and an east wall.
 constexpr Vec2i FACINGS[] = {{0, 1}, {1, 0}, {-1, 0}};
+/// Machine spots wanted per slot of a data centre (user: commoner there).
+constexpr int CENTRE_MACHINES_PER_SLOT = 1;
+/// Chance a data centre's machine stands with a second beside it (user: usually).
+constexpr float CENTRE_PAIR_CHANCE = 0.75f;
+/// Cells of solid wall behind an alcove, so the niche opens on nothing else
+/// and the machine's body rises over wall.
+constexpr int ALCOVE_BACK = 3;
+
+bool sameFloor(Floor a, Floor b) { return a.pattern == b.pattern && a.palette == b.palette; }
 
 } // namespace
 
 void World::placeMachines(Chunk& c, const std::vector<gen::SlamRoom>& slams) {
-    if (c.kind != ChunkKind::Rooms && c.kind != ChunkKind::Plaza) return;
+    const bool centre = c.kind == ChunkKind::DataCentre;
+    if (c.kind != ChunkKind::Rooms && c.kind != ChunkKind::Plaza && !centre) return;
     Rng dice(seed_ ^ uint64_t(c.id + 1) * 0x9E3779B97F4A7C15ull);
     int want = 0;
-    for (int i = 0; i < c.slotCount(); i++) want += dice.chance(MACHINE_CHANCE);
+    if (centre)
+        want = CENTRE_MACHINES_PER_SLOT * c.slotCount();
+    else
+        for (int i = 0; i < c.slotCount(); i++) want += dice.chance(MACHINE_CHANCE);
+    // In a data centre only its corridors, laid in the chunk's own floor.
     auto floorAt = [&](Vec2i l) {
-        return c.interior(l) && c.get(l) == Tile::Floor && !behindStatues_.count(c.origin() + l);
+        return c.interior(l) && c.get(l) == Tile::Floor && !behindStatues_.count(c.origin() + l) &&
+               (!centre || sameFloor(c.floor(l), c.paint));
     };
+    auto wallAt = [&](Vec2i l) { return c.interior(l) && c.get(l) == Tile::Wall; };
     for (int t = 0; t < MACHINE_TRIES && want > 0; t++) {
         Vec2i l{dice.range(1, c.w - 2), dice.range(1, c.h - 2)};
         Vec2i facing = FACINGS[dice.range(0, 2)];
-        int count = dice.chance(PAIR_CHANCE) ? 2 : 1;
+        int count = dice.chance(centre ? CENTRE_PAIR_CHANCE : PAIR_CHANCE) ? 2 : 1;
         Vend kinds[] = {Vend(dice.range(0, 1)), Vend(dice.range(0, 1))};
         Vec2i along = Machine{Vend::Cake, {}, facing}.along(), back = -facing;
         int length = 2 * count;
         // The cells it stands on, wall behind them and the cells past both
         // ends, floor at both ends and two deep in front.
+        // In an alcove: its cells and both ends wall, solid behind, and
+        // corridor floor in front of the alcove and two deep before it.
         bool fits = true;
         for (int i = -1; i <= length && fits; i++) {
             Vec2i p = l + along * i;
-            fits = c.inside(p + back) && c.get(p + back) == Tile::Wall && floorAt(p) && floorAt(p + facing) &&
-                   (i < 0 || i >= length || floorAt(p + facing * 2));
+            bool ends = i < 0 || i >= length;
+            if (centre) {
+                fits = wallAt(p) && floorAt(p + facing) && (ends || floorAt(p + facing * 2));
+                for (int d = 1; d <= ALCOVE_BACK && fits; d++) fits = wallAt(p + back * d);
+            } else {
+                fits = c.inside(p + back) && c.get(p + back) == Tile::Wall && floorAt(p) && floorAt(p + facing) &&
+                       (ends || floorAt(p + facing * 2));
+            }
             Vec2i w = c.origin() + p;
             fits = fits && !hasKey(w) && !hasCake(w) && !occupant(w) && !traps_.count(w) && !traps_.count(w + facing);
         }
@@ -69,6 +97,8 @@ void World::placeMachines(Chunk& c, const std::vector<gen::SlamRoom>& slams) {
                 fits = !r.contains(p) && !r.contains(p + facing) && cheb(p, r.gate) > MACHINE_DOOR_GAP;
             }
         if (!fits) continue;
+        if (centre)
+            for (int i = 0; i < length; i++) gen::carve(c, l + along * i);
         for (int i = 0; i < count; i++)
             standMachine(c, kinds[i], c.origin() + l + along * (2 * i), facing, dice.range(STOCK_MIN, STOCK_MAX));
         want--;
