@@ -29,7 +29,7 @@ constexpr float FALL_KNEEL = 0.15f, FALL_DOWN = 0.45f;
 constexpr float BLINK_EVERY = 3.2f, BLINK_TIME = 0.15f;
 /// Coming to, the eyes stay shut this long, then blink slow and heavy.
 constexpr float WAKE_EYES_SHUT = 1.5f, WAKE_BLINK_EVERY = 1.1f, WAKE_BLINK_TIME = 0.3f;
-/// Shooting, the kick and the muzzle flash last this long after each shot.
+/// Shooting, the kick lasts this long after each shot.
 constexpr float SHOT_TIME = 0.1f;
 /// Feeding, the head dips a pixel this often.
 constexpr float FEED_FPS = 3.0f;

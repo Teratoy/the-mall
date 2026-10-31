@@ -75,19 +75,20 @@ sprite gun held raised
 # quarter to aim down ahead.
 ink n b4b8c0 slide lit
 ink t 8a8e98 trigger guard
-...n
-..nn
-.nn.
-nt..
-....
+.nn
+nn.
+nt.
+...
 
-sprite muzzle flash
-# Out of the muzzle as the gun goes off, whichever way it aims.
-ink W fff8d0 core
-ink y ffc040 flame
-.y.
-yWy
-.y.
+sprite gun held toward
+# In the hand, aimed south, out at the one looking on, held in front of
+# the chest: seen end on, the slide over the muzzle's dark hole, the hand
+# just behind its top-right corner.
+ink n b4b8c0 slide lit
+ink N 5c6070 slide
+ink o 2a2c30 muzzle
+nn
+oN
 
 group Traps
 

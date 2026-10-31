@@ -58,7 +58,7 @@ struct BottleSpot {
 
 /// Where a frame holds a gun: the pixel of the hand holding it, which way
 /// it points facing right (-2 straight up, -1 up ahead, 0 ahead, 1 down
-/// ahead, 2 straight down), and whether it is going off. None when x is
+/// ahead, 2 south, out at the one looking on), and whether it is going off. None when x is
 /// below 0.
 struct GunSpot {
     int8_t x = -1, y = -1, aim = 0;
@@ -166,8 +166,10 @@ struct HumanLook {
     /// Holding a bottle out to someone, upright.
     SpriteFrame offerBottle() const;
     /// Shooting: the front arm held out straight with the gun, aimed one of
-    /// the SHOOT_AIMS ways (GunSpot::aim); fire kicks the hand back a
-    /// pixel as it goes off. The gun is out of the waistband.
+    /// the SHOOT_AIMS ways (GunSpot::aim); aimed south it is held out at
+    /// the one looking on. fire is the kick as it goes off: the hand
+    /// knocked back a pixel, the muzzle tipped up, the head jolted back.
+    /// The gun is out of the waistband.
     SpriteFrame shoot(int aim, bool fire) const;
     /// At the keys of a computer, the front forearm out level ahead at the
     /// waist: 0 the hand lifted, 1 down on a key.

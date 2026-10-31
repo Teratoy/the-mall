@@ -17,6 +17,6 @@ void drawGun(int x, int y, bool lit);
 
 /// Draws the gun a human shoots with in its hand at sprite pixel at.x,
 /// at.y of a frame whose pixel (0, 0) is at origin, scale screen pixels to
-/// a sprite pixel, mirrored when flip; aimed at.aim, the muzzle flashing
-/// when at.fire.
+/// a sprite pixel, mirrored when flip; aimed at.aim, the muzzle tipped up
+/// by the kick when at.fire.
 void drawHeldGun(Vector2 origin, GunSpot at, bool flip, int scale, Color tint);

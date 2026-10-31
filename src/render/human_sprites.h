@@ -28,10 +28,11 @@
 /// OfferBottle holds it out to someone. Run is the run cycle; Winded stands
 /// bent over, hands on its knees, panting. Shooting holds the gun out at
 /// arm's length, aimed straight up (ShootUp), up ahead (ShootUpAhead),
-/// ahead (Shoot), down ahead (ShootDownAhead) or straight down (ShootDown);
+/// ahead (Shoot), down ahead (ShootDownAhead) or south, out at the one
+/// looking on (ShootDown);
 /// facing left mirrors them, for eight ways in all. animTime counts from
-/// the shot: the hand kicks back with a flash at the muzzle for SHOT_TIME,
-/// then holds the aim. Type stands at a computer's keys, tapping.
+/// the shot: the kick knocks the hand back, tips the muzzle up and jolts
+/// the head back for SHOT_TIME, then it holds the aim. Type stands at a computer's keys, tapping.
 enum class Pose { Idle, Walk, Wave, Eat, Guard, Punch, Offer, Fall, Sit, Rise, Wash, Search, Feed, Wake, Point, PointUp, PointDown, Squat, Piss, Sleep, WakeUp, DiedAsleep, Sip, Fill, Pour, OfferBottle, Lie, Run, Winded, Shoot, ShootUp, ShootUpAhead, ShootDownAhead, ShootDown, Type };
 
 

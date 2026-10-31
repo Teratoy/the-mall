@@ -234,8 +234,9 @@ SpriteFrame HumanLook::pour() const { return draw({.front = Arm::Pour}); }
 
 SpriteFrame HumanLook::offerBottle() const { return draw({.front = Arm::OfferBottle}); }
 
+// Going off, the kick jolts the head back a pixel.
 SpriteFrame HumanLook::shoot(int aim, bool fire) const {
-    return draw({.front = Arm::Aim, .aim = std::clamp(aim, -2, 2), .fire = fire});
+    return draw({.front = Arm::Aim, .lean = fire ? -1 : 0, .aim = std::clamp(aim, -2, 2), .fire = fire});
 }
 SpriteFrame HumanLook::type(int frame) const { return draw({.front = frame == 0 ? Arm::TypeUp : Arm::TypeDown}); }
 
@@ -492,9 +493,19 @@ SpriteFrame HumanLook::drawBody(const Stance& s) const {
                 p.f.hand = {int8_t(x + 2), int8_t(shoulder - 1), BottleTurn::Up};
                 break;
             case Arm::Aim: {
-                // Straight out from the shoulder the way it aims, a step at
-                // a time; going off, the kick pulls the hand back a step.
-                static constexpr Vec2i STEP[SHOOT_AIMS] = {{0, -1}, {1, -1}, {1, 0}, {1, 1}, {0, 1}};
+                // Aimed south, out at the one looking on, the arm comes
+                // round in front of the chest, the hand over it; the kick
+                // knocks it up a pixel.
+                if (s.aim == 2) {
+                    int hy = s.fire ? shoulder : shoulder + 1;
+                    armPx(side, x, shoulder, 0, false);
+                    armPx(side, x - 1, hy, 1, true);
+                    p.f.gun = {int8_t(x - 1), int8_t(hy), int8_t(s.aim), s.fire};
+                    break;
+                }
+                // Otherwise straight out from the shoulder the way it aims, a
+                // step at a time; the kick pulls the hand back a step.
+                static constexpr Vec2i STEP[SHOOT_AIMS - 1] = {{0, -1}, {1, -1}, {1, 0}, {1, 1}};
                 Vec2i d = STEP[s.aim + 2];
                 int reach = s.fire ? 1 : 2;
                 for (int i = 0; i <= reach; i++) armPx(side, x + d.x * i, shoulder + d.y * i, i, i == reach);

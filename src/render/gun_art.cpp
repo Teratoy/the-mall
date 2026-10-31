@@ -5,12 +5,10 @@
 
 namespace {
 
-/// The gun in the hand, aimed ahead and aimed up ahead, from data/sprites.txt;
-/// in each, the pixel the hand is on, and the middle of the muzzle flash.
-constexpr int HELD_W = 4, HELD_H = 2, RAISED_W = 4, RAISED_H = 5;
-constexpr Vec2i HELD_HAND{0, 1}, RAISED_HAND{0, 4};
-constexpr Vec2i HELD_FLASH{5, 0}, RAISED_FLASH{5, -2};
-constexpr int FLASH_SIZE = 3;
+/// The gun in the hand, aimed ahead, up ahead and south, from
+/// data/sprites.txt; in each, the pixel the hand is on.
+constexpr int HELD_W = 4, HELD_H = 2, RAISED_W = 3, RAISED_H = 4, TOWARD_W = 2, TOWARD_H = 2;
+constexpr Vec2i HELD_HAND{0, 1}, RAISED_HAND{0, 3}, TOWARD_HAND{2, 0};
 
 /// Remembered but out of sight: drawn at this brightness, as the rest of the world.
 constexpr float MEMORY_DIM = 0.45f;
@@ -30,15 +28,19 @@ void drawGun(int x, int y, bool lit) {
 
 void drawHeldGun(Vector2 origin, GunSpot at, bool flip, int scale, Color tint) {
     if (!at.valid()) return;
-    // Aimed straight, the gun held ahead; on the slant, held raised. Each
-    // turns a quarter to aim down, and the one held ahead the other quarter
-    // to aim up, mirrored so its slide still faces ahead.
-    bool slant = at.aim % 2 != 0;
-    const Sprite& gun = slant ? sprites::get("gun held raised", RAISED_W, RAISED_H)
-                              : sprites::get("gun held", HELD_W, HELD_H);
-    Vec2i hand = slant ? RAISED_HAND : HELD_HAND;
-    auto turn = [aim = at.aim](Vec2i r) {
-        return aim > 0 ? Vec2i{-r.y, r.x} : aim == -2 ? Vec2i{-r.y, -r.x} : r;
+    // Going off, the kick tips the muzzle up a step, the way the slide
+    // faces; aimed south, the hand's kick shows it.
+    int aim = at.fire && at.aim < 2 ? (at.aim == -2 ? -1 : at.aim - 1) : at.aim;
+    // Aimed ahead or up, the gun held ahead; on the slant, held raised;
+    // south, end on. The slant turns a quarter to aim down ahead, and the
+    // one held ahead a quarter to aim up, mirrored so its slide faces ahead.
+    bool slant = aim % 2 != 0;
+    const Sprite& gun = aim == 2 ? sprites::get("gun held toward", TOWARD_W, TOWARD_H)
+                        : slant  ? sprites::get("gun held raised", RAISED_W, RAISED_H)
+                                 : sprites::get("gun held", HELD_W, HELD_H);
+    Vec2i hand = aim == 2 ? TOWARD_HAND : slant ? RAISED_HAND : HELD_HAND;
+    auto turn = [aim](Vec2i r) {
+        return aim == 1 ? Vec2i{-r.y, r.x} : aim == -2 ? Vec2i{-r.y, -r.x} : r;
     };
     auto put = [&](Vec2i r, Rgba c) {
         if (!c.solid()) return;
@@ -51,10 +53,4 @@ void drawHeldGun(Vector2 origin, GunSpot at, bool flip, int scale, Color tint) {
     };
     for (int gy = 0; gy < gun.h; gy++)
         for (int gx = 0; gx < gun.w; gx++) put({gx - hand.x, gy - hand.y}, gun.pixel(gx, gy));
-    if (!at.fire) return;
-    const Sprite& flash = sprites::get("muzzle flash", FLASH_SIZE, FLASH_SIZE);
-    Vec2i mid = (slant ? RAISED_FLASH : HELD_FLASH) - hand;
-    for (int fy = 0; fy < FLASH_SIZE; fy++)
-        for (int fx = 0; fx < FLASH_SIZE; fx++)
-            put({mid.x + fx - FLASH_SIZE / 2, mid.y + fy - FLASH_SIZE / 2}, flash.pixel(fx, fy));
 }
