@@ -34,6 +34,7 @@ Status as of 2026-10-30.
 | [trap_wary_plan.md](trap_wary_plan.md) | Wary of the next trap like one that caught it: table cakes after darts, one-door rooms after a slam | Built | Should seeing someone else caught make it wary too? |
 | [lines_editor_plan.md](lines_editor_plan.md) | `make lines`: a local web page for rewriting data/lines.txt, with bubble previews, review marks and Claude's drafts | Built | — |
 | [dirty_plan.md](dirty_plan.md) | Going unwashed: grime, turning dirty (a ragged look on the same skeleton), washing for it by modesty, dried blood only washed by the modest; smell from the dirty, bodies, feces and foul water, sniffed through walls, flies | Built | Hunched/claws on the look; tuning from play |
+| [waking_talk_plan.md](waking_talk_plan.md) | More muttering in the first minutes: stirring, standing, reaching for memory, the room through the fog, the quiet, calling out, it goes on | Planned | Dread from the quiet; longer waking; the mall's sound |
 | [human_split_plan.md](human_split_plan.md) | Splitting Human into per-system classes | Not started | Advised against for now; if done, only system by system, when that system is being reworked anyway |
 
 ## Known gaps found by the tests
