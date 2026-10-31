@@ -34,6 +34,8 @@ constexpr float SIT_GLANCE = 0.5f;
 /// this far and walks this much slower, both wearing off over DAZE_TIME.
 constexpr float WAKE_LIE_MIN = 3.0f, WAKE_LIE_MAX = 6.0f;
 constexpr float WAKE_SIT_MIN = 2.0f, WAKE_SIT_MAX = 4.0f;
+/// Lying there this long, eyes still shut, it stirs and mutters.
+constexpr float WAKE_STIR_AT = 1.0f;
 constexpr float DAZE_TIME = 40.0f;
 constexpr int DAZE_SIGHT = 6;
 constexpr float DAZE_SLOW = 0.6f;

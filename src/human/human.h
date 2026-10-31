@@ -804,6 +804,8 @@ private:
         /// whatever it sees (escape_.comingTo).
         float daze = 1.0f;
         bool comingTo = false;
+        /// It has stirred where it lies, before sitting up.
+        bool stirred = false;
         /// See outUrge() and hunch().
         float out = 1.0f;
         float hunch = 0.0f;

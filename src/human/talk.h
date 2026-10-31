@@ -160,6 +160,9 @@ enum class Moment {
     // bottle with keys, finding it empty (all to nobody); a machine at a
     // greeting, told or sold (to the one told).
     FirstVending, VendCake, VendBottle, VendEmpty, TellVending, SellVending,
+    // Coming to: stirring while it still lies with its eyes shut, and
+    // getting up out of the waking sit (both to nobody).
+    WakeStir, WakeStand,
     Count
 };
 

@@ -652,6 +652,20 @@ erratic craving         | NOTHING TASTES LIKE IT.
 
 # ---- Waking ----------------------------------------------------------------
 
+# Coming to, before it opens its eyes: said to nobody, still lying where
+# it woke. The body before the mind.
+[wake_stir 0.7]
+                        | MMH...
+                        | COLD...
+                        | NNGH.
+                        | WHAT...
+homebody                | FIVE MORE MINUTES...
+timid                   | NO... NOT YET...
+hungry                  | SO EMPTY...
+thirsty                 | MY MOUTH...
+loner                   | LEAVE ME...
+erratic                 | WHO'S THERE? WHO'S THERE?
+
 # Coming to somewhere it has never seen, remembering nothing: said to
 # nobody, sitting up.
 [wake 0.8]
@@ -669,6 +683,23 @@ brave                   | RIGHT. HOW DO I GET OUT OF HERE?
 hungry                  | SO HUNGRY... HOW LONG WAS I OUT?
 sociable                | HELLO? ANYBODY?
 loner                   | ...
+
+# Getting up for the first time, the fog not lifted yet: said to nobody,
+# steadying itself.
+[wake_stand 0.6]
+                        | OKAY. OKAY.
+                        | STEADY...
+                        | LEGS... STILL WORK.
+                        | WHOA. SLOWLY.
+brave                   | RIGHT. ONE STEP AT A TIME.
+timid                   | I DON'T WANT TO GO OUT THERE.
+curious                 | LET'S SEE, THEN.
+homebody                | I JUST WANT TO GO HOME.
+sociable                | SOMEONE MUST BE AROUND.
+loner                   | FINE. ON MY OWN, THEN.
+hungry                  | FOOD. FIRST, FOOD.
+thirsty                 | WATER. I NEED WATER.
+erratic                 | THEY PUT ME HERE. THEY DID.
 
 
 # The first time it ever sees each of these, said to nobody, once each:

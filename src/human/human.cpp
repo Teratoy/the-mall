@@ -55,6 +55,11 @@ void Human::update(World& world, float dt) {
         return;
     }
     if (state == State::Waking) {
+        // The body before the mind: a mutter with its eyes still shut.
+        if (!escape_.stirred && animTime >= WAKE_STIR_AT) {
+            escape_.stirred = true;
+            sayLater(talk::Moment::WakeStir);
+        }
         if (timer <= 0.0f) sitUp();
         return;
     }

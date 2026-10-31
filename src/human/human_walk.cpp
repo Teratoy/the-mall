@@ -295,6 +295,11 @@ void Human::sitUp() {
 }
 
 void Human::startRising() {
+    // Up for the first time, steadying itself, the fog not yet gone.
+    if (escape_.comingTo) {
+        note("GOT UP, STILL IN A FOG");
+        sayLater(talk::Moment::WakeStand);
+    }
     escape_.comingTo = false;
     sleep_.roused = false;
     state = State::Rising;

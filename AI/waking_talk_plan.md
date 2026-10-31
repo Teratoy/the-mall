@@ -64,6 +64,24 @@ Log: unchanged ("WOKE UP, REMEMBERING NOTHING"); add "GOT UP, STILL IN A
 FOG" on standing. Lying and sitting costs are already there; no new
 Action.
 
+### Built (2026-10-31)
+
+Moments `WakeStir` and `WakeStand` at the end of `talk::Moment`;
+`[wake_stir 0.7]` and `[wake_stand 0.6]` in lines.txt either side of
+`[wake]`. The stir is queued once WAKE_STIR_AT (1 s) into the lie, eyes
+still shut (`escape_.stirred`); the stand in `startRising()` while
+`escape_.comingTo` is still set, with the log line "GOT UP, STILL IN A
+FOG". The three beats fall within about the first 10 s, with the bottle's
+remark often between the sit and the stand. Scenario `waking-alone`
+(seed 9700, as in play).
+
+The new line rolls shifted later dice, so three scenarios needed new seeds
+(bottle-refuse 15084, stash-robbed 18007, parched-door 17626), and the soak
+showed a wash/follow loop that was already there: bloody feet over the
+wash bar one step from the water, under it on arrival. Fixed with
+WASH_KEEP (human_blood.cpp): set on washing, it keeps at it down to half
+the bar.
+
 ### 2. Reaching for memory
 
 While dazed and still in the spawn chunk (or its own waking chunk), once,

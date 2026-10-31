@@ -58,6 +58,9 @@ constexpr float RUN_SHARE = 0.35f;
 /// wait until well soaked.
 constexpr float WASH_MIN = 0.004f;
 constexpr float WASH_FEET_MIN = 0.6f;
+/// Already set on washing, it keeps at it down to this share of those bars,
+/// so blood worn off its feet on the last step to the water doesn't turn it back.
+constexpr float WASH_KEEP = 0.5f;
 /// Water someone it sees lives by is as far as this many tenths of a cell
 /// more walking (human_thirst.cpp).
 constexpr int OTHERS_WATER_COST = 400;
@@ -341,7 +344,7 @@ void Human::spill(World& world, float dt) {
 
 bool Human::startWash(World& world) {
     // The brave put up with more blood on them before bothering.
-    float put = 0.5f + traits.brave;
+    float put = (0.5f + traits.brave) * (goal == Goal::Wash ? WASH_KEEP : 1.0f);
     if (hungry() || thirsty() || fight_.fear > 0.0f || fight_.foe >= 0) return false;
     // Only the modest bother with blood once it has dried.
     bool bloody = (stains.total(false) >= WASH_MIN * put || stains.feet() >= WASH_FEET_MIN * put) &&

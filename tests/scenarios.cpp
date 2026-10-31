@@ -130,6 +130,20 @@ Check loggedBy(const Human& h, const std::string& line, bool said = true) {
             }};
 }
 
+/// h said something just before (after false) or just after this line in its log.
+Check saidAround(const Human& h, const std::string& line, bool after) {
+    return {std::string("#") + std::to_string(h.id) + " said something " + (after ? "after " : "before ") + line,
+            [&h, line, after](const Stage&) {
+                const auto& es = h.log.entries();
+                for (size_t i = 0; i < es.size(); i++) {
+                    if (es[i].what != line) continue;
+                    if (!after) return i > 0 && es[i - 1].what.rfind("SAID ", 0) == 0;
+                    return i + 1 < es.size() && es[i + 1].what.rfind("SAID ", 0) == 0;
+                }
+                return false;
+            }};
+}
+
 struct Scenario {
     const char* name;
     const char* what;
@@ -1005,7 +1019,7 @@ const std::vector<Scenario> SCENARIOS = {
                             [](Human&, Human&) {});
      }},
     {"bottle-refuse", "a stingy stranger won't give any of its water",
-     seedWhere([](const Traits& t) { return t.greedy < 0.35f && t.sociable < 0.4f && t.brave < 0.3f; }, 15000),
+     seedWhere([](const Traits& t) { return t.greedy < 0.35f && t.sociable < 0.4f && t.brave < 0.3f; }, 15084),
      [](Stage& s) {
          return askForWater(s, {logged({"WOULDN'T GIVE @ WATER"}), logged({"@ WOULDN'T GIVE ME WATER"})},
                             [](Human&, Human&) {});
@@ -1213,7 +1227,7 @@ const std::vector<Scenario> SCENARIOS = {
          s.world.putDown(at, 6, {});
          P::ownStash(s.world, owner, at);
          P::place(s.world, owner, s.farFrom(at, 18));
-         Human& other = P::addHuman(s.world, HumanLook::random(s.rng), s.freeNear(at, 1), seedWhere(plain, 18000));
+         Human& other = P::addHuman(s.world, HumanLook::random(s.rng), s.freeNear(at, 1), seedWhere(plain, 18007));
          s.humans.push_back(&other);
          other.cakes = 0;
          other.hunger = 0.6f;
@@ -1420,7 +1434,7 @@ const std::vector<Scenario> SCENARIOS = {
                        unlogged("LEFT @. THEY KNOW NO MORE THAN I DO")};
      }},
     {"parched-door", "a caring human with a key, beyond the door the parched lie calling through, opens it",
-     seedWhere([](const Traits& t) { return t.sociable >= 0.75f && t.brave >= 0.3f; }, 17500),
+     seedWhere([](const Traits& t) { return t.sociable >= 0.75f && t.brave >= 0.3f; }, 17626),
      [](Stage& s) {
          Human& leader = s.first();
          Human& follower = s.add(seedWhere([](const Traits& t) { return t.sociable >= 0.75f; }, 17500), 2);
@@ -1693,6 +1707,15 @@ const std::vector<Scenario> SCENARIOS = {
          return Checks{own(nose, "SMELT DEATH"), own(nose, "FOLLOWED THE SMELL OF DEATH"),
                        logged({"ATE FROM @'S ROTTEN BODY", "ATE FROM @'S BODY"})};
      }},
+    {"waking-alone", "coming to alone, it mutters with its eyes shut, sits up, and steadies itself getting up",
+     seedWhere(plain, 9700),
+     [](Stage& s) {
+         s.run(20);
+         return Checks{saidAround(s.first(), "WOKE UP, REMEMBERING NOTHING", false),
+                       loggedBy(s.first(), "GOT UP, STILL IN A FOG"),
+                       saidAround(s.first(), "GOT UP, STILL IN A FOG", true)};
+     },
+     nullptr, true},
 };
 
 } // namespace
