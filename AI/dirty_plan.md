@@ -97,23 +97,40 @@ What the user asked for (2026-10-31):
 - **Bloody corpses smell.**
 - **Foul water smells** past a certain foulness.
 
-Open questions, to ask before building it:
+### User's answers on smell (2026-10-31)
 
-1. How long dirty before it smells? (Say another 5 minutes dirty, or
-   grime 2 of 3.) Does washing take the smell off at once?
-2. What does smell do? Nothing but the flies, or do others keep away,
-   trust less, refuse to greet, lose their appetite near it?
-3. Can humans smell what they can't see: a body behind a wall, a smelly
-   human round the corner? That would be a new way of knowing (Memory),
-   so it needs care with "humans know only what they've seen or told".
-4. Does a bloody corpse smell for as long as there is blood on it, until
-   it rots to bones, or for a set time? Does a corpse that isn't bloody
-   smell when it rots?
-5. Foul water: at what foulness (the bottle and thirst plans use 0.3 and
-   0.5 as marks)? Does a puddle poured from a foul bottle smell too?
-6. Flies: how many, and do they move between cells with the human or hop
-   off to nearby smells? (Suggested: 2 or 3 one-pixel dots circling over
-   the head or cell, drawn in code like the z's of sleep.)
+1. **When**: a human smells after about **5 more minutes dirty** (grime
+   1.5 of 3). Any wash that gets it clean ends the smell **at once**.
+2. **What it does**, besides the flies:
+   - **Others keep away**: humans avoid walking, standing or sitting near
+     smelly cells and smelly humans (the modest more).
+   - **Puts off appetite**: they won't stop to eat or sit next to a smell,
+     waiting to eat until away from it; and a smelly (rotting) body is less
+     tempting to eat, except to the erratic and the starving.
+   - Not trust or greeting: no trust cost, no refusing to greet.
+3. **Out of sight**: **yes, close by**. Within a few cells, even through
+   walls, a human smells it and learns something smells there. This is a
+   new way of knowing, alongside seeing and being told, and so finding
+   bodies by smell becomes possible.
+4. **Bodies**: **any rotting body** smells, bloody or not, until it is bare
+   bones; blood on it makes it smell at once.
+5. **Foul water** smells from foulness **0.5** (where it sickens).
+6. **Flies**: a **swarm by strength**, 1 to 5 one-pixel dots buzzing in
+   small loops over the smelly cell or head, drawn in code like the z's of
+   sleep. A smelly human's flies move with it.
+
+Also as asked before: feces smell until they dry; feces footprints don't.
+
+### To settle while building (suggested defaults)
+
+- Smell strength 0 to 1 per source: a smelly human by how far past the
+  mark its grime is, feces by freshness, a body by rot (and blood), water
+  by foulness past 0.5. Flies = 1 + 4 x strength.
+- "Close by": smelled within 3 cells, through walls, for the strongest;
+  less for faint smells. Remembered in `Memory` as a smell at a cell, with
+  when.
+- Keeping away: a path cost on cells next to a smell it knows (like
+  `messCost`), more for the modest; nobody keeps away from its own smell.
 
 ## Open questions on the look
 
