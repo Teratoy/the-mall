@@ -363,11 +363,11 @@ bool Human::observe(const World& world) {
     };
     // Still dazed, the room it woke in is remarked on too, a thing at a time,
     // to fill a silence while it is alone: anyone about has its attention.
+    bool alone = std::none_of(world.humans().begin(), world.humans().end(), [&](const auto& o) {
+        return o.get() != this && !o->dead() && sight.sees(o->cell);
+    });
     bool foggy = state != State::Waking && escape_.daze >= DAZE_REMARK_MIN &&
-                 world.time() - escape_.fogAt >= DAZE_REMARK_GAP && voice_.sayings.empty() &&
-                 std::none_of(world.humans().begin(), world.humans().end(), [&](const auto& o) {
-                     return o.get() != this && !o->dead() && sight.sees(o->cell);
-                 });
+                 world.time() - escape_.fogAt >= DAZE_REMARK_GAP && voice_.sayings.empty() && alone;
     auto fogSight = [&](talk::Moment m, std::optional<Topic> topic = std::nullopt) {
         unsigned bit = 1u << (int(m) - int(talk::Moment::FirstStatue));
         if (remarked || !foggy || (escape_.fogSights & bit)) return false;
@@ -538,6 +538,7 @@ bool Human::observe(const World& world) {
         note("TRIED TO REMEMBER ANYTHING FROM BEFORE. NOTHING");
     // Looked round long enough to be sure: nobody, anywhere it can see.
     if (social_.lastSeen.empty() && !escape_.comingTo && escape_.daze <= EMPTY_ROOM_DAZE) fogSight(talk::Moment::EmptyRoom);
+    hearQuiet(alone);
     return news;
 }
 

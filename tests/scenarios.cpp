@@ -1725,6 +1725,14 @@ const std::vector<Scenario> SCENARIOS = {
                        loggedBy(s.first(), "TRIED TO REMEMBER ANYTHING FROM BEFORE. NOTHING")};
      },
      nullptr, true},
+    {"quiet", "alone and finding nothing new for a while in its first minutes, it remarks on the quiet",
+     seedWhere(plain, 9850),
+     [](Stage& s) {
+         calm(s.first());
+         s.run(180);
+         return Checks{loggedBy(s.first(), "ALONE IN THE QUIET")};
+     },
+     nullptr, true},
     {"waking-statue", "still dazed, it remarks on a giant statue in the room it woke in", seedWhere(plain, 9800),
      [](Stage& s) {
          Human& h = s.first();

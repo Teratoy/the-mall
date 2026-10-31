@@ -810,6 +810,9 @@ private:
         /// of talk::Moment from FirstStatue, and when the last was.
         unsigned fogSights = 0;
         float fogAt = -1e9f;
+        /// See hearQuiet(): when it last remarked on the quiet, and since
+        /// when it has seen nobody.
+        float quietAt = -1e9f, aloneSince = 0.0f;
         /// See outUrge() and hunch().
         float out = 1.0f;
         float hunch = 0.0f;
@@ -841,6 +844,9 @@ private:
     /// Once a tick: hope worn down by finding nothing new for long, and
     /// settling or setting off again.
     void brood(const World& world);
+    /// Each look: up, alone and finding nothing new for a while, in its
+    /// first minutes or long alone again, it remarks on the quiet.
+    void hearQuiet(bool alone);
     /// Wanting out as it weighs now: the urge times how much it still
     /// hopes; nothing once settled.
     float outDrive() const;

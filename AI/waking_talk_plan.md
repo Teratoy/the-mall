@@ -174,6 +174,19 @@ once a minute, only in its first few minutes or when alone again for long.
 Small effect: `[quiet]` nudges dread up a little for the timid and
 sociable, down for the loner. Or none (open question 3).
 
+### Built (2026-10-31)
+
+Words only: no dread from the quiet yet (open question 1 stays open).
+Moment `Quiet`, `[quiet]` in lines.txt after `[blank]`, always said, with
+the log line "ALONE IN THE QUIET". `Human::hearQuiet(alone)` in
+human_hope.cpp, called at the end of each look: nobody alive in sight, up
+and not talking, nothing new seen and nobody seen for QUIET_AFTER (15 s).
+In its first QUIET_EARLY (180 s) no oftener than QUIET_AGAIN (60 s);
+after that only once alone for QUIET_LONELY (300 s), no oftener than
+QUIET_LONELY_AGAIN (240 s). Exploring keeps finding new floor, so it
+comes seldom: once in three minutes in the `quiet` scenario. Lines name
+only silence, its steps, breath and heart, as decided.
+
 ### 5. Calling out
 
 The first time it steps through a door out of its waking room, alone,

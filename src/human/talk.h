@@ -169,6 +169,9 @@ enum class Moment {
     // Still dazed, trying to remember anything from before and finding
     // only its own name (to nobody).
     Blank,
+    // Up, alone and finding nothing new for a while, the quiet of the place
+    // (to nobody).
+    Quiet,
     Count
 };
 

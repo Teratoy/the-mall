@@ -721,6 +721,27 @@ loner                   | NOBODY TO REMEMBER, MAYBE.
 hungry                  | HOW LONG WAS I LYING THERE?
 erratic                 | {ME}? IS THAT EVEN ME?
 
+# Up, alone and finding nothing new for a while: in its first minutes, or
+# again once long alone. Said to nobody. Only silence, its own steps and
+# breath: nothing else is known to be there.
+[quiet]
+                        | IT'S SO QUIET.
+                        | IS ANYONE ELSE HERE?
+                        | HOW LONG HAS IT BEEN EMPTY?
+                        | I CAN HEAR MY OWN HEART.
+                        | JUST MY OWN FEET.
+                        | HELLO...? NO. NOTHING.
+timid                   | DON'T THINK ABOUT IT. KEEP WALKING.
+timid scared            | WHY IS IT SO QUIET?
+sociable                | SAY SOMETHING. ANYONE.
+loner                   | AT LEAST IT'S QUIET.
+curious                 | WHERE DID EVERYONE GO?
+brave                   | QUIET'S FINE. QUIET'S GOOD.
+homebody                | I MISS... SOMETHING.
+hopeless                | SAME WALLS. SAME QUIET.
+settled                 | JUST ME AND THE QUIET.
+erratic                 | SHH. IT'S LISTENING.
+
 # Still dazed, the room it woke in, a thing at a time, said to nobody. The
 # first giant statue it sees ({THING} is what it is, and statue.mug and the
 # rest which), the first table, and, once it has looked round a while and
