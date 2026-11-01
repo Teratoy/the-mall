@@ -2869,3 +2869,41 @@ often                   | MY BODY'S STOPPED FIGHTING IT.
 timid                   | WHAT WOULD THEY THINK OF ME? BEFORE?
 erratic                 | GOOD. IT'S GOOD.
 hopeless                | THERE'S NOTHING LEFT TO SINK TO.
+
+# The first time it stands where no light falls. Said to nobody.
+[first_dark]
+                        | WHERE DID THE LIGHT GO?
+                        | STAY CLOSE TO THE WALL.
+timid                   | DON'T. DON'T. DON'T.
+timid                   | SOMETHING'S BREATHING. IS IT ME?
+brave                   | JUST SHADOWS. KEEP MOVING.
+curious                 | WHAT DO THEY KEEP IN HERE, IN THE DARK?
+dazed                   | MY EYES... OR IS IT ME?
+hopeless                | OF COURSE. OF COURSE IT IS.
+
+# Going into the dark again after a while in light. Said to nobody.
+[into_dark 0.4]
+                        | HERE WE GO AGAIN.
+                        | ONE HAND ON THE WALL.
+timid                   | COUNT THE STEPS. JUST COUNT.
+timid                   | DON'T LOOK BEHIND YOU.
+brave                   | NOTHING IN HERE BUT ME.
+scared                  | I SHOULDN'T BE IN HERE.
+hopeless                | IT'S ALL GOING DARK.
+
+# Coming out of a long spell in the dark. Said to nobody.
+[out_of_dark 0.6]
+                        | THERE. BREATHE.
+                        | MY EYES HURT.
+timid                   | NEVER AGAIN. NOT IN THERE.
+brave                   | THAT WASN'T SO BAD.
+hurt                    | LET ME SEE HOW BAD IT IS.
+sociable                | IS ANYONE ELSE OUT HERE?
+
+# In the dark, making for light it saw. Said to nobody.
+[toward_light 0.7]
+                        | THAT WAY. WHERE IT'S BRIGHT.
+                        | THE LIGHT. GO TO THE LIGHT.
+timid                   | PLEASE LET THERE BE SOMEONE THERE.
+parched                 | WATER... MAYBE OVER THERE.
+hopeless                | LIKE A MOTH.

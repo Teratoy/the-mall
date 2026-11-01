@@ -288,6 +288,27 @@ User asked for other dithering: crossed, hatched, and lines.
 - A cake across a dark room is missed until it is near.
 - A scenario per behaviour in `tests/scenarios.cpp`.
 
+### Built: fear and making for light (2026-11-01)
+- `human_dark.cpp`, `dark_`: standing where no light falls (its own cell,
+  which it sees), dread rises by `DARK_DREAD` (0.012/s) swayed by
+  bravery, up to `DARK_DREAD_MOST` (0.45) from the dark alone. Not asleep
+  or still waking.
+- Lines (to nobody): `first_dark` the first time ("STOOD IN THE DARK");
+  `into_dark` going back in after 60 s in light; `out_of_dark` after 20 s
+  or more in it; `toward_light` (below).
+- Exploring **from the dark**, a frontier it remembers dark costs up to
+  `DARK_FRONTIER_COST` (20 cells) by `darkFear()`: 1 - brave, +0.4
+  parched, +0.3 by gloom. Making for a lit frontier from the dark, a timid
+  enough human says so once a spell ("MADE FOR THE LIGHT"). At first the
+  cost applied in light too, and whole groups funnelled to the same lit
+  frontier and jammed in a corridor (4 loops in the soak); only from the
+  dark, the soak has none.
+- Scenarios `dark-fear`, `toward-light`. `parched-lost` now runs 120 s
+  (was 80): whether a parched human lies or sits by the door is a coin
+  toss, and the new lines moved the dice. `bottle-lie` and `hard-no-sell`
+  pass again; `bottle-sell` is still known.
+- Soak: 13 still, 0 flips, 0 loops (was 18, 5, 0).
+
 ### 6. The mall clock and its bells
 - The world keeps the mall's time of day, from the world's start (no
   dice). At closing time the ceiling fittings go out mall-wide but for a

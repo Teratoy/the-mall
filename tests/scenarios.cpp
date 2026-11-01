@@ -1262,9 +1262,7 @@ const std::vector<Scenario> SCENARIOS = {
      [](Stage& s) {
          return askForWater(s, {logged({"TOLD @ MY BOTTLE WAS EMPTY"}), logged({"@ SAID THEIR BOTTLE WAS EMPTY. IT WASN'T"})},
                             [](Human&, Human&) {});
-     },
-     "since light limits sight (light_plan step 4), the asker wanders dark corridors, comes back parched and is "
-     "told off its place before it asks, and takes the water by force"},
+     }},
     {"bottle-refuse", "a stingy stranger won't give any of its water",
      seedWhere([](const Traits& t) { return t.greedy < 0.35f && t.sociable < 0.4f && t.brave < 0.3f; }, 15119),
      [](Stage& s) {
@@ -1364,9 +1362,7 @@ const std::vector<Scenario> SCENARIOS = {
                                 asker.cakes = 1;
                                 holder.lessons.nearWater = 1.0f;
                             });
-     },
-     "since light limits sight (light_plan step 4), the asker wanders dark corridors, comes back parched and is "
-     "told off its place before it asks, and takes the water by force"},
+     }},
     {"pile-cakes", "a hungry human with no cakes picks up cakes lying on the floor", 99,
      [](Stage& s) {
          Human& h = s.first();
@@ -1732,7 +1728,7 @@ const std::vector<Scenario> SCENARIOS = {
          Human& leader = s.first();
          Human& follower = s.add(seedWhere([](const Traits& t) { return t.sociable >= 0.75f; }, 17500), 2);
          lostPair(s, leader, follower);
-         Check lying = runSeeingLying(s, 80);
+         Check lying = runSeeingLying(s, 120);
          return Checks{logged({"@ KNEW OF NO WATER EITHER"}), askedOnce(),
                        logged({"NO WATER ANYWHERE. LYING BY A LOCKED DOOR, CALLING FOR HELP"}), lying,
                        unlogged("LEFT @. THEY KNOW NO MORE THAN I DO")};
@@ -2169,6 +2165,34 @@ const std::vector<Scenario> SCENARIOS = {
          return Checks{{"sees the cake beside it", [&h, near](const Stage&) { return h.memory.cakes.count(near) > 0; }},
                        {"not the one in the dark", [&h, dark](const Stage&) { return h.memory.cakes.count(dark) == 0; }},
                        {"sees the lit one", [&h, lit](const Stage&) { return h.memory.cakes.count(lit) > 0; }}};
+     }},
+    {"dark-fear", "the timid, put in the dark, marks it and grows uneasy; the brave hardly",
+     seedWhere([](const Traits& t) { return t.brave < 0.2f; }, 27000), [](Stage& s) {
+         Human& timid = s.first();
+         Human& brave = s.add(seedWhere([](const Traits& t) { return t.brave > 0.8f; }, 27500), 3);
+         P::clearChunk(s.world, timid.cell);
+         calm(timid);
+         calm(brave);
+         s.run(45);
+         P::setDread(timid, 0.0f);
+         P::setDread(brave, 0.0f);
+         P::darkenChunk(s.world, timid.cell);
+         s.run(20);
+         return Checks{loggedBy(timid, "STOOD IN THE DARK"),
+                       {"the timid uneasy", [&timid](const Stage&) { return timid.dread() > 0.15f; }},
+                       {"the brave less so", [&timid, &brave](const Stage&) { return brave.dread() < timid.dread() / 2; }}};
+     }},
+    {"toward-light", "timid in the dark, it makes for a light it sees rather than feel its way on",
+     seedWhere([](const Traits& t) { return t.brave < 0.2f; }, 28000), [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         calm(h);
+         s.run(45);
+         P::darkenChunk(s.world, h.cell);
+         P::forget(h);
+         P::hangLight(s.world, s.farFrom(h.cell, 12));
+         s.run(20);
+         return Checks{loggedBy(h, "MADE FOR THE LIGHT")};
      }},
     {"airlock-surprise", "with keys and nowhere else to go, it opens a server room's outer door and finds another behind",
      seedWhere(plain, 23000), [](Stage& s) {

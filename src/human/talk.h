@@ -219,6 +219,11 @@ enum class Moment {
     // or foul water).
     CakesAgain, BodiesAgain, WaterAgain, DoorsAgain, TrapsAgain, BloodAgain, FightsAgain, GoingAgain, SleepAgain,
     QuietAgain, FacesAgain, LowAgain,
+    // The dark (AI/light_plan.md step 5): the first time it stands where no
+    // light falls; going into the dark again after a while in light; coming
+    // out of a long spell in it; making for light it sees from the dark
+    // (all to nobody).
+    FirstDark, IntoDark, OutOfDark, TowardLight,
     Count
 };
 

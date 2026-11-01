@@ -1253,6 +1253,28 @@ private:
         bool spent = false;
     };
     Run run_;
+
+    /// The dark (human_dark.cpp, AI/light_plan.md step 5): standing where
+    /// no light falls it grows uneasy, the timid most, and the timid, the
+    /// parched and the hopeless make for light they can see.
+    struct Dark {
+        /// Seconds in the dark so far, and in light since it last was.
+        float in = 0.0f, lit = 1e9f;
+        /// Has ever been in the dark; has made for the light this spell.
+        bool met = false, toward = false;
+    };
+    Dark dark_;
+    /// Unease in the dark, and its words going in and coming out.
+    void darkness(const World& world, float dt);
+    /// How much the dark puts it off, 0 to 1: the timid, the parched and
+    /// the hopeless most.
+    float darkFear() const;
+    /// Standing in the dark, what a frontier it remembers dark costs it as
+    /// a place to explore, in tenths of a cell.
+    int darkCost(Vec2i c) const;
+    /// Exploring by this path: if it stands in the dark and makes for light,
+    /// it says so, once a spell.
+    void makeForLight(const World& world, const std::vector<Vec2i>& path);
     /// Walks the path running, for why.
     void startRunning(Goal g, std::vector<Vec2i> path, RunWhy why);
     /// Breath goes running and comes back resting; at none it is winded.
