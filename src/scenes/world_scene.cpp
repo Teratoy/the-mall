@@ -157,10 +157,10 @@ constexpr float WIDE_NEXT_W = 48, WIDE_NEXT_H = 16;
 /// The lines between the columns.
 constexpr Color COLUMN_EDGE = ui::GROUND;
 
-// Choosing the human, before the world's first moment: a strip at the top
-// with BACK and the name to tap and type over, and one at the bottom with
-// the traits and the two buttons. On the PC both stand in the left two
-// columns, on paper, one over the other in the middle.
+// Choosing the human, before the world's first moment: on the phone a thin
+// strip at the top with BACK, and one at the bottom with the name to tap and
+// type over, the traits and the two buttons. On the PC the name stands over
+// the rest in the left two columns, on paper, BACK in the corner.
 /// Mixed into the world's seed for the dice the humans are rolled with.
 constexpr uint64_t ROLL_SALT = 0x5EED0F7A11ULL;
 /// While choosing, the camera is as close as play lets it get.
@@ -185,6 +185,13 @@ constexpr int CHOOSE_PAD = 8;
 constexpr int TRAITS = 4, TRAIT_ROW = 13, TRAIT_BAR_W = 68, TRAIT_PIPS = 9, TRAIT_BAR_H = 6;
 constexpr int CHOOSE_BUTTON_H = 24;
 constexpr int CHOOSE_BOTTOM_H = CHOOSE_PAD + TRAITS * TRAIT_ROW + CHOOSE_PAD + CHOOSE_BUTTON_H + CHOOSE_PAD;
+/// On the phone the name heads the bottom strip, over the traits, and the top
+/// strip holds only BACK. A phone shows no hint under the name.
+/// The name's box stands CHOOSE_PAD under the strip's edge, the traits CHOOSE_PAD under the box, or the hint.
+constexpr int CHOOSE_NAME_BLOCK_H = CHOOSE_PAD + CHOOSE_NAME_H + (files::TOUCH_ONLY ? 0 : CHOOSE_HINT_Y - CHOOSE_NAME_Y + ui::ROW);
+constexpr int CHOOSE_BACK_H = 2 * MARGIN + 14;
+/// On the phone the bottom strip with the name over it.
+constexpr int CHOOSE_PHONE_BOTTOM_H = CHOOSE_NAME_BLOCK_H + CHOOSE_BOTTOM_H;
 /// On the PC, the column the choosing stands in.
 constexpr int CHOOSE_WIDE_W = 2 * COLUMN_W;
 
@@ -845,7 +852,8 @@ void WorldScene::drawChoosing(Vector2 mouse, bool wide, float out) {
     const int width = wide ? CHOOSE_WIDE_W : Canvas::W, cx = width / 2;
     // On the PC the two strips stand one over the other in the middle.
     const int topY = wide ? Canvas::H / 2 - CHOOSE_TOP_H - CHOOSE_PAD : 0;
-    const int bottomY = wide ? Canvas::H / 2 : Canvas::H - CHOOSE_BOTTOM_H;
+    const int bottomH = wide ? CHOOSE_BOTTOM_H : CHOOSE_PHONE_BOTTOM_H;
+    const int bottomY = wide ? Canvas::H / 2 : Canvas::H - bottomH;
     auto slide = [](float dx, float dy) {
         rlPushMatrix();
         rlTranslatef(std::round(dx), std::round(dy), 0.0f);
@@ -855,15 +863,22 @@ void WorldScene::drawChoosing(Vector2 mouse, bool wide, float out) {
         DrawRectangle(0, 0, width, Canvas::H, ui::PAPER);
         DrawRectangle(width - 1, 0, 1, Canvas::H, COLUMN_EDGE);
     } else {
-        slide(0.0f, -out * CHOOSE_TOP_H);
-        ui::panel({0, 0, float(width), float(CHOOSE_TOP_H)});
+        slide(0.0f, -out * CHOOSE_BACK_H);
+        ui::panel({0, 0, float(width), float(CHOOSE_BACK_H)});
+    }
+    back_ |= ui::button(CHOOSE_BACK, "BACK", mouse);
+    if (!wide) {
+        rlPopMatrix();
+        slide(0.0f, out * bottomH);
+        ui::panel({0, float(bottomY), float(width), float(bottomH)});
     }
 
     // The name to tap and type over. A phone has no keyboard to type with,
     // so there the rolled name stays.
-    const Rectangle field{float(cx - CHOOSE_NAME_W / 2), float(topY + CHOOSE_NAME_Y - 4), float(CHOOSE_NAME_W),
+    const int nameTop = wide ? topY : bottomY + CHOOSE_PAD - (CHOOSE_NAME_Y - 4);
+    const Rectangle field{float(cx - CHOOSE_NAME_W / 2), float(nameTop + CHOOSE_NAME_Y - 4), float(CHOOSE_NAME_W),
                           float(CHOOSE_NAME_H)};
-    const int nameY = topY + CHOOSE_NAME_Y, hintY = topY + CHOOSE_HINT_Y;
+    const int nameY = nameTop + CHOOSE_NAME_Y, hintY = nameTop + CHOOSE_HINT_Y;
     bool overName = !files::TOUCH_ONLY && CheckCollisionPointRec(mouse, field);
     if (editing_ || overName) DrawRectangleRec(field, ui::GROUND);
     std::string shown = caps(chosen_.empty() && !editing_ ? world_->human(0).name : chosen_);
@@ -883,12 +898,6 @@ void WorldScene::drawChoosing(Vector2 mouse, bool wide, float out) {
             while (!chosen_.empty() && chosen_.back() == ' ') chosen_.pop_back();
         }
     }
-    back_ |= ui::button(CHOOSE_BACK, "BACK", mouse);
-    if (!wide) {
-        rlPopMatrix();
-        slide(0.0f, out * CHOOSE_BOTTOM_H);
-        ui::panel({0, float(bottomY), float(width), float(CHOOSE_BOTTOM_H)});
-    }
 
     // What they are like, 0 to 9 pips each, as the stats will count them.
     const Traits& t = world_->human(0).traits;
@@ -896,7 +905,7 @@ void WorldScene::drawChoosing(Vector2 mouse, bool wide, float out) {
     const float values[TRAITS] = {t.brave, t.greedy, t.curious, t.sociable};
     const int step = TRAIT_BAR_W / TRAIT_PIPS;
     for (int i = 0; i < TRAITS; i++) {
-        int y = bottomY + CHOOSE_PAD + i * TRAIT_ROW;
+        int y = bottomY + (wide ? 0 : CHOOSE_NAME_BLOCK_H) + CHOOSE_PAD + i * TRAIT_ROW;
         ui::text(labels[i], cx - TRAIT_BAR_W, y);
         int pips = int(values[i] * 9.99f);
         for (int p = 0; p < TRAIT_PIPS; p++)
@@ -904,7 +913,7 @@ void WorldScene::drawChoosing(Vector2 mouse, bool wide, float out) {
     }
     // Two buttons across the bottom, with the same margin everywhere.
     const float buttonW = (width - 3 * CHOOSE_PAD) / 2.0f;
-    const float buttonY = float(bottomY + CHOOSE_BOTTOM_H - CHOOSE_PAD - CHOOSE_BUTTON_H);
+    const float buttonY = float(bottomY + bottomH - CHOOSE_PAD - CHOOSE_BUTTON_H);
     refresh_ |= ui::button({float(CHOOSE_PAD), buttonY, buttonW, float(CHOOSE_BUTTON_H)}, "REFRESH", mouse);
     wake_ |= ui::button({width - CHOOSE_PAD - buttonW, buttonY, buttonW, float(CHOOSE_BUTTON_H)}, "WAKE UP", mouse);
     rlPopMatrix();
