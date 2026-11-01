@@ -91,6 +91,27 @@ def piece(kind, i, j):
     return kind + (" " + joins if joins else "")
 
 
+# The plant joined to its runs: (machine, kind of run). From the front a run leaves each side over the bottom two
+# cells; from the side one leaves the bottom, from the second cell in.
+JOINED = [("boiler", "pipe"), ("air handler", "duct")]
+
+
+def joined(img, sprites, left, top):
+    """Each machine of JOINED front and side, with pieces of its run set where they join it."""
+    for k, (machine, kind) in enumerate(JOINED):
+        x = left + k * 100 * SCALE
+        front, side = sprites.get(machine), sprites.get(machine + " side")
+        if not front or not side:
+            continue
+        for name, at in ((kind + " down e", 0), (kind + " ew", 12), (kind + " ew", 42), (kind + " down w", 54)):
+            paint(img, pixels(sprites[name]), x + at * SCALE, top + 18 * SCALE)
+        paint(img, pixels(front), x + 24 * SCALE, top)
+        sx = x + 70 * SCALE
+        paint(img, pixels(side), sx, top)
+        paint(img, pixels(sprites[kind + " ns"]), sx + 6 * SCALE, top + 30 * SCALE)
+        paint(img, pixels(sprites[kind + " down n"]), sx + 6 * SCALE, top + 42 * SCALE)
+
+
 def main():
     out = sys.argv[1] if len(sys.argv) > 1 else "build/sprite-preview.png"
     groups = sys.argv[2:] or ["Air ducts", "Water pipes"]
@@ -105,6 +126,10 @@ def main():
     map_w = len(LAYOUT[0]) * piece_px
     width = max(min(per_row, len(shown)) * box, len(kinds) * (map_w + 2 * box)) + GAP * SCALE
     map_h = len(LAYOUT) * piece_px if kinds else 0
+    plant = "Plant" in groups
+    if plant:
+        width = max(width, len(JOINED) * 100 * SCALE)
+        map_h += 56 * SCALE
     img = Image.new("RGBA", (width, rows * 2 * tall + 2 * GAP * SCALE + map_h), FLOOR)
     for k, (name, s) in enumerate(shown):
         x = GAP * SCALE + k % per_row * box
@@ -123,6 +148,8 @@ def main():
                     print("no sprite", name)
                     continue
                 paint(img, pixels(sprites[name]), left + i * piece_px, top + j * piece_px)
+    if plant:
+        joined(img, sprites, GAP * SCALE, top + (len(LAYOUT) * piece_px if kinds else 0))
     img.save(out)
     print("saved", out)
 
