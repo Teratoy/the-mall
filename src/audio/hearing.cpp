@@ -91,7 +91,7 @@ constexpr const char* PLOP_ON[] = {"plop", "plop_toilet", "plop_water"};
 
 /// Sounds that go on while something lasts are played over and over, each
 /// time before the last has quite faded (this share of its length), so
-/// they run together: chewing, panting, snoring, flies, the hum, water.
+/// they run together: chewing, panting, snoring, flies, the hum.
 constexpr float LOOP_OVERLAP = 0.85f;
 /// While none is near enough, how often to look again, in seconds.
 constexpr float LOOP_RECHECK = 0.5f;
@@ -104,11 +104,14 @@ constexpr float SNORE_LOUD = 0.35f, SNORE_REACH = 10.0f, SNORE_AFTER = 3.0f;
 /// don't snore in step.
 constexpr float SNORE_SPREAD = 1.2f;
 /// Flies over the nearest rotting body or fresh feces, as loud as its smell
-/// is strong.
-constexpr float FLIES_LOUD = 0.45f, FLIES_REACH = 8.0f;
-/// The server racks' hum and water lapping, from the nearest within reach.
+/// is strong: a faint drone under everything else.
+constexpr float FLIES_LOUD = 0.1f, FLIES_REACH = 8.0f;
+/// The server racks' hum, from the nearest within reach.
 constexpr float HUM_LOUD = 0.35f, HUM_REACH = 12.0f;
-constexpr float WATER_LOUD = 0.3f, WATER_REACH = 8.0f;
+/// The mall's bells, heard everywhere alike: the hour's, and the opening and
+/// closing ones, louder. Asleep it hears them softer, like anything urgent.
+constexpr float BELL_LOUD = 0.6f, BELL_DOOR_LOUD = 0.85f;
+constexpr const char* BELL_SOUNDS[] = {"bell_hour", "bell_opening", "bell_closing"};
 
 /// The cells that block sight strictly between a and b, along a line.
 int wallsBetween(const World& world, Vec2i a, Vec2i b) {
@@ -299,8 +302,8 @@ void Hearing::bodies(const World& world, const Human& listener, int speed) {
     }
 }
 
-// Flies over what rots, the racks' hum and water lapping, from the nearest
-// of each, over and over.
+// Flies over what rots and the racks' hum, from the nearest of each, over
+// and over.
 void Hearing::places(const World& world, const Human& listener, int speed) {
     if (due(fliesAt_, "flies")) {
         const Smell* best = nullptr;
@@ -318,11 +321,18 @@ void Hearing::places(const World& world, const Human& listener, int speed) {
             hear(world, listener, *rack, "hum", HUM_LOUD, HUM_REACH, false, speed);
         else humAt_ = GetTime() + LOOP_RECHECK;
     }
-    if (due(waterAt_, "water")) {
-        if (auto water = nearestTile(world, listener.cell, int(WATER_REACH), pooled))
-            hear(world, listener, *water, "water", WATER_LOUD, WATER_REACH, false, speed);
-        else waterAt_ = GetTime() + LOOP_RECHECK;
-    }
+}
+
+// A bell rung since the last frame is heard wherever the listener is, from
+// no one place, through every wall.
+void Hearing::bells(const World& world, const Human& listener) {
+    if (bellsHeard_ < 0) bellsHeard_ = world.bellsRung();
+    if (bellsHeard_ == world.bellsRung()) return;
+    bellsHeard_ = world.bellsRung();
+    Bell b = world.lastBell();
+    float v = b == Bell::Hour ? BELL_LOUD : BELL_DOOR_LOUD;
+    if (listener.state == Human::State::Sleeping) v *= ASLEEP_URGENT_KEEP;
+    queue_.push_back({BELL_SOUNDS[size_t(b)], v, 0.5f, 1.0f, false, true});
 }
 
 void Hearing::update(const World& world, const Human& listener, int speed, bool reveal) {
@@ -330,6 +340,7 @@ void Hearing::update(const World& world, const Human& listener, int speed, bool 
     noises(world, listener, speed);
     bodies(world, listener, speed);
     places(world, listener, speed);
+    bells(world, listener);
     voices(world, listener, speed, reveal);
     footsteps(world, listener, speed);
     // The urgent first, then the loudest, as many as fit.
@@ -346,6 +357,7 @@ void Hearing::update(const World& world, const Human& listener, int speed, bool 
 
 void Hearing::skip(const World& world) {
     noisesHeard_ = world.noiseCount();
+    bellsHeard_ = world.bellsRung();
     said_.clear();
     for (const auto& h : world.humans()) {
         feet_[h->id] = h->dead() ? -1 : footfalls(poseOf(*h), h->animTime);

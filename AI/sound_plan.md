@@ -177,11 +177,18 @@ while they last (each again at 85% of its length, in real time):
 `chew` while eating, `pant` while winded, `snore` from 3 s into sleep
 (a random wait so sleepers don't snore in step), and for the listener's
 nearest: `flies` over a rotting body or fresh feces (as loud as its
-smell), `hum` from a server rack, `water` from a pool or basin. 24 new
+smell, kept faint and played as one unbroken drone), `hum` from a server
+rack. (Water lapping at pools was built and then taken out: the user
+didn't want it.) 24 new
 sounds in `data/sounds.txt` (Violence, then new Bodies, Things and
 Places sections). `make noiseprobe` counts each noise over soak worlds:
 all are made except `Collapse` and `VendEmpty`, which the soak's 90
 minutes never reach. `make check` unchanged. Not listened to in game yet.
+
+The mall's bells (light_plan.md step 6) rang in the sim with no sound.
+Now `Hearing::bells` plays `bell_hour`, `bell_opening` or `bell_closing`
+when `World::bellsRung` moves on: heard everywhere alike, through walls,
+not panned, urgent, softer asleep (as anything urgent).
 
 The ten that matter most, in order:
 1. Blood spraying from a blow, louder the more blood it throws

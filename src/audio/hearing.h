@@ -15,7 +15,8 @@ class Human;
 /// What the player hears of the world: what the followed human could hear
 /// from where it stands. Footsteps, the voice of anyone it could hear
 /// saying a line (at X1; faster, a pop as each bubble it can see opens and
-/// a cry from anyone frightened), and the world's noises (World::noises).
+/// a cry from anyone frightened), the world's noises (World::noises) and
+/// the mall's bells.
 /// Quieter the farther off, muffled through walls, next to nothing while
 /// it sleeps, and thinned out the faster the world runs. It only listens:
 /// nothing it does reaches the sim.
@@ -61,7 +62,9 @@ private:
         double chew = 0.0, pant = 0.0, snore = 0.0;
     };
     std::unordered_map<int, Loops> loops_;
-    double fliesAt_ = 0.0, humAt_ = 0.0, waterAt_ = 0.0;
+    double fliesAt_ = 0.0, humAt_ = 0.0;
+    /// The world's bells already heard; -1 before it first listens.
+    int bellsHeard_ = -1;
     /// The wobble on each sound, for the ear only, never the sim's dice.
     Rng rng_{0x5a17};
 
@@ -77,6 +80,7 @@ private:
     void noises(const World& world, const Human& listener, int speed);
     void bodies(const World& world, const Human& listener, int speed);
     void places(const World& world, const Human& listener, int speed);
+    void bells(const World& world, const Human& listener);
     /// Whether a sound that goes on is due again, and if so when next:
     /// most of its length from now, and extra seconds more.
     bool due(double& next, const char* name, float extra = 0.0f);
