@@ -2680,6 +2680,59 @@ brave                   | ONE OF YOU WILL OPEN.
 timid                   | DON'T WAKE IT UP.
 hopeless                | IT WON'T LET THEM IN EITHER.
 
+# Having learnt to keep near water, drinking at water it passes before it
+# is thirsty; said to nobody.
+[top_up 0.5]
+                        | BETTER NOW THAN LATER.
+                        | WHO KNOWS WHEN THE NEXT ONE IS.
+                        | I'M NOT GETTING CAUGHT DRY AGAIN.
+timid                   | JUST IN CASE.
+erratic                 | DRINK WHILE IT'S HERE. DRINK.
+
+# Gone too far from the water it last drank at: turning back to drink
+# before it is thirsty. Said to nobody.
+[turn_back 0.8]
+                        | THIS IS FAR ENOUGH.
+                        | I DON'T LIKE HOW FAR I'VE COME.
+                        | NOT LIKE LAST TIME.
+brave                   | I'LL COME BACK THIS WAY.
+curious                 | IT WILL STILL BE THERE LATER.
+timid                   | TOO FAR. MUCH TOO FAR.
+
+# Thirsty and knowing no water, setting off to look for some; said to
+# nobody.
+[seek_water 0.7]
+                        | THERE HAS TO BE SOME SOMEWHERE.
+                        | MY MOUTH IS SO DRY.
+                        | A TAP. A PUDDLE. ANYTHING.
+parched                 | KEEP MOVING. KEEP LOOKING.
+timid                   | PLEASE LET THERE BE SOMETHING.
+
+# Hungry and knowing of no cake, setting off to look for some; said to
+# nobody.
+[seek_food 0.6]
+                        | SOMEWHERE THERE'S SOMETHING TO EAT.
+                        | MY STOMACH WON'T SHUT UP.
+starving                | ANYTHING. I'LL EAT ANYTHING.
+greedy                  | SOMEONE MUST HAVE LEFT SOMETHING.
+
+# Just drunk, going for a cake close by; or just taken a cake, going for
+# water close by. Said to nobody.
+[while_here 0.4]
+                        | MIGHT AS WELL.
+                        | SAVES A TRIP.
+                        | NO SENSE COMING BACK FOR IT.
+greedy                  | ONE FOR LATER.
+
+# Going back to the water or cake it set out for, after something turned
+# it aside; said to nobody.
+[errand_back 0.3]
+                        | WHERE WAS I.
+                        | RIGHT. BACK TO IT.
+                        | NOW, WHERE WAS I GOING?
+dazed                   | WHAT WAS I DOING?
+
+
 # ---- The same again --------------------------------------------------------
 # Said to nobody when something has happened again: the 4th, 8th, 15th and
 # 30th time. "again" lines fit the 4th and 8th, "often" lines the 15th and

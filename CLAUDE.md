@@ -34,7 +34,7 @@ toolbox run -c claude-build make check        # soak vs golden output (~75 s)
 | `make stuck` | The soak with its own arguments: `build/stuck_soak [seeds] [minutes] [verbose] [crowd]`. `TRACE=seed:id:from:to` follows one human |
 | `make bottlesheet` | Draws every pose with a bottle at several levels and dirt, scaled up, to `build/bottle-sheet.png` |
 | `make dirtysheet` | Draws one human beside itself dirty in every pose, with cake, bottle, blood and remains, to `build/dirty-sheet.png`. `DIRTYSHEET_ARGS="42 4 gun"` draws a gun tucked into each kind of bottom instead, and `"42 4 shoot"` a human shooting all eight ways |
-| `make shootanim`, then `python3 tools/frames_gif.py build/shoot-anim build/shoot.gif` on the host | One human shooting all eight ways, aiming and firing, as frames in `build/shoot-anim/`, joined into a GIF (the toolbox has no PIL) |
+| `make shootanim`, then `python3 tools/frames_gif.py build/shoot-anim build/shoot.gif` on the host | One human shooting all eight ways, its spent casings piling up on the floor, beside ammo boxes, as frames in `build/shoot-anim/`, joined into a GIF (the toolbox has no PIL). See [AI/gun_art_plan.md](AI/gun_art_plan.md) |
 | `make genprobe` | Grows chunk interiors on every footprint (L, T, S, boxes) and checks they keep to it. `GENPROBE_ARGS="20 png"` also saves pictures to `build/genprobe-png/` |
 | `make apk` (on the host, not the toolbox) | Builds `build/TheMall-debug.apk` for the phone with the Android NDK. See `android/apk.mk` and [AI/android_plan.md](AI/android_plan.md) |
 | `make lines` (host or toolbox), or `./lines.sh` (the "The Mall Lines" desktop shortcut) | The lines editor: a local web page at http://localhost:8765 for rewriting `data/lines.txt`, with the game's bubble drawn beside each line. See [AI/lines_editor_plan.md](AI/lines_editor_plan.md) |
@@ -71,7 +71,7 @@ lost, and several useful probes already have been.
 
 - `src/human/human.h`: the Human class. Each system's state is a struct
   beside that system's methods (`voice_`, `chat_`, `social_`, `fight_`,
-  `deaths_`, `mind_`, `rescue_`, `escape_`, `gore_`, `escorting_`,
+  `deaths_`, `mind_`, `rescue_`, `escape_`, `gore_`, `escorting_`, `errand_`,
   `water_`, `sleep_`, `relief_`). State the core loop uses everywhere
   stays loose (`rng_`, `clock_`, `path_`, `rethink_`, `dread_`, ...). New
   state for a system goes in its struct.
@@ -87,6 +87,7 @@ lost, and several useful probes already have been.
   - fight: cakes, fights, hits, looting
   - speech: lines and the log
   - blood, thirst, bottle, relief, grime, smell, sleep, flesh, hope, rescue, company, chat, topic, episode
+  - errand: keeping to a walk for a need, topping up, turning back, looking for water or food, the other need while there
 - `src/world/`: chunks and generation (`gen_*.cpp`), blood, mess, traps,
   tables, statues, toilets.
 - `src/render/`: pixel art drawn in code; `src/scenes/`: menu, create,

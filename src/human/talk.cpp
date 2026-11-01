@@ -68,6 +68,7 @@ constexpr const char* MOMENTS[] = {
     "spot_trap",
     "toilet_foul", "no_flush",
     "try_terminal", "try_desk", "try_again", "watch_typing",
+    "top_up", "turn_back", "seek_water", "seek_food", "while_here", "errand_back",
     "cakes_again", "bodies_again", "water_again", "doors_again", "traps_again", "blood_again", "fights_again",
     "going_again", "sleep_again", "quiet_again", "faces_again", "low_again",
 };

@@ -218,6 +218,11 @@ struct SoakProbe {
     static std::optional<Vec2i> foundBottle(const Human& h) { return h.water_.found; }
     /// h has drunk somewhere, so it knows water to fill a bottle at.
     static void setDrankYet(Human& h) { h.water_.drankYet = true; }
+    /// Last drank at this cell (AI/needs_planning_plan.md).
+    static void setLastWater(Human& h, Vec2i at) {
+        h.water_.drankYet = true;
+        h.water_.last = at;
+    }
     /// h has seen that water is scarce already.
     static void setScarce(Human& h) { h.water_.scarce = true; }
     /// Kneels and puts down n cakes and these bottles where it stands.

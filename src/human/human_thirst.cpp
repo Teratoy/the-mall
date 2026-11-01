@@ -127,11 +127,10 @@ constexpr float HOPE_WATER = 0.05f, HOPE_WATER_AGAIN = 60.0f;
 constexpr float DRINK_CALM = 0.05f;
 /// The near-water lesson: paid off by drinking within WATER_SOON of getting
 /// thirsty; from TETHER_FROM of it, strolls are about the water it last
-/// drank at; past WATER_TETHER cells from that water, exploring is wanted
-/// up to TETHER_EXPLORE less, by the lesson.
+/// drank at; exploring is wanted up to TETHER_EXPLORE less as it nears as
+/// far from that water as it lets itself go (rangeUsed()).
 constexpr float WATER_SOON = 60.0f;
 constexpr float TETHER_FROM = 0.3f;
-constexpr int WATER_TETHER = 30;
 constexpr float TETHER_EXPLORE = 0.6f;
 /// Knowing a dispenser with water in it, other water is as far off as this
 /// many tenths of a cell more walking (user: better than a basin).
@@ -192,7 +191,9 @@ void Human::seeWater(const World& world, Vec2i water) {
 bool Human::wouldDrink(const World& world, Vec2i from, Vec2i water) const {
     if (knownFoul(world, water) >= FOUL_REFUSE) return false;
     bool craving = mind_.appetite >= BLOOD_CRAVING || isErratic();
-    if (sight.sees(water) && !parched() && !craving && world.blood().tint(water) >= RED_WATER) return false;
+    // Red as it last saw it: out of sight, it doesn't forget.
+    bool red = sight.sees(water) ? world.blood().tint(water) >= RED_WATER : water_.red.count(water) > 0;
+    if (red && !parched() && !craving) return false;
     if (parched()) return true;
     // A settler who turned it away from this water, not long ago.
     for (const auto& [home, at] : water_.refused)
@@ -251,10 +252,14 @@ bool Human::seekWater(World& world) {
     };
     auto find = [&]() -> std::optional<std::vector<Vec2i>> {
         if (!memory.known(Tile::Water) && !memory.known(Tile::Basin) && !cooler) return searchedNothing();
-        return search(world, [&](Vec2i c) {
+        auto at = [&](Vec2i c) {
             auto w = waterBeside(c);
             return w && wouldDrink(world, c, *w);
-        }, true, [&](Vec2i c) { return 1 + int(foulness(c) * FOUL_COST) + plain(c); });
+        };
+        auto cost = [&](Vec2i c) { return 1 + int(foulness(c) * FOUL_COST) + plain(c); };
+        // Someone standing in the way doesn't make the water any less there.
+        if (auto p = search(world, at, true, cost)) return p;
+        return search(world, at, false, cost);
     };
     auto p = find();
     // Warned off as it sets out, it thinks again.
@@ -301,6 +306,7 @@ void Human::startDrinking(Vec2i water) {
         sayLater(water_.thirstHurt ? talk::Moment::Quenched : tap ? talk::Moment::DispenserDrink : talk::Moment::Drink);
         repeated(Repeat::Water);
         water_.thirstHurt = false;
+        gotFor(Want::Drink);
         dread_ = std::max(0.0f, dread_ - DRINK_CALM);
         // Found water soon after getting thirsty: keeping near it paid off.
         if (lessons.nearWater > 0.0f && clock_ - water_.thirstyAt < WATER_SOON) learn(lessons.nearWater, false);
@@ -696,6 +702,13 @@ void Human::gotParched(const World& world) {
     if (!reachable) learn(lessons.nearWater, true);
 }
 
+void Human::seeTint(const World& world, Vec2i water) {
+    if (world.blood().tint(water) >= RED_WATER)
+        water_.red.insert(water);
+    else
+        water_.red.erase(water);
+}
+
 void Human::foundWater() {
     if (clock_ - water_.hopeAt < HOPE_WATER_AGAIN) return;
     water_.hopeAt = clock_;
@@ -710,10 +723,8 @@ Vec2i Human::strollFrom() {
     return cell;
 }
 
-float Human::waterTether() const {
-    if (!water_.drankYet || cheb(cell, water_.last) <= WATER_TETHER) return 0.0f;
-    return TETHER_EXPLORE * lessons.nearWater;
-}
+// The nearer it comes to as far as it lets itself go (human_errand.cpp).
+float Human::waterTether() const { return TETHER_EXPLORE * std::min(1.0f, rangeUsed()); }
 
 // Only for the parched and the erratic, and only once there is no water;
 // from the floor in front, as for going. The parched go to the cleanest

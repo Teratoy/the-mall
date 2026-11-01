@@ -495,14 +495,19 @@ Vector2 WorldScene::cameraFocus(const Human& viewer) const {
 }
 
 // Each entry is its time, dimmed, then what happened, wrapped under itself.
-// The newest sits at the bottom and older ones stack up above it; whatever
-// doesn't fit at the top is scrolled to.
+// The newest sits at the bottom, over the clock, and older ones stack up
+// above it; whatever doesn't fit at the top is scrolled to.
 void WorldScene::drawLog(const Human& viewer, Rectangle area, int clear) {
     if (logFor_ != viewer.id) logFor_ = viewer.id, logScroll_ = 0, dragging_ = false;
     DrawRectangleRec(area, LOG_SHADE);
     const auto& entries = viewer.log.entries();
     int left = int(area.x) + MARGIN, right = int(area.x + area.width) - MARGIN;
     int top = int(area.y) + MARGIN, y = int(area.y + area.height) - MARGIN - clear;
+    // The bottom row is the clock now, live, in the times' column, so the
+    // entries read as how long ago.
+    std::string now = ui::clockText(world_.time());
+    y -= ui::ROW;
+    ui::text(now.c_str(), left, y, ui::DIM);
     if (entries.empty()) {
         ui::textCentred("NOTHING YET", (left + right) / 2, y - ui::ROW, ui::DIM);
         return;
@@ -513,8 +518,8 @@ void WorldScene::drawLog(const Human& viewer, Rectangle area, int clear) {
         y -= ui::ROW;
         ui::textRight(newer.c_str(), right, y, ui::DIM);
     }
-    // The newest time is the longest; measured in zeros, as 1 is narrower.
-    std::string widest = ui::clockText(entries.back().time);
+    // The clock is the longest time; measured in zeros, as 1 is narrower.
+    std::string widest = now;
     for (char& c : widest)
         if (std::isdigit(static_cast<unsigned char>(c))) c = '0';
     int column = ui::textWidth(widest.c_str()) + LOG_TIME_GAP;
