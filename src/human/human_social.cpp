@@ -519,6 +519,11 @@ void Human::deliver(Human& o, const Tell& t) {
         if (news) o.memory.toldBy[t.cell] = id;
         break;
     case Tell::Kind::Route:
+        // Told the way to a locked door, it takes their word that it is.
+        learnRoute();
+        if (o.memory.tile(t.cell) == Tile::DoorLocked)
+            for (Vec2i c : o.doorCells(t.cell)) o.doors_.told.insert(c);
+        break;
     case Tell::Kind::Water:
         // A way to water ends beside it, so the water comes with it, and how
         // full a dispenser was when the teller saw it.
@@ -792,7 +797,7 @@ void Human::tellLockedDoor(World& world, Human& l) {
     auto p = search(world, [&](Vec2i c) {
         if (memory.tile(c) != Tile::Floor) return false;
         for (Vec2i d : DIRS4)
-            if (memory.tile(c + d) == Tile::DoorLocked && l.memory.tile(c + d) == Tile::Void) {
+            if (memory.tile(c + d) == Tile::DoorLocked && doorKnownLocked(c + d) && l.memory.tile(c + d) == Tile::Void) {
                 door = c + d;
                 return true;
             }

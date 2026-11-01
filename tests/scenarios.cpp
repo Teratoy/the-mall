@@ -2273,10 +2273,16 @@ const std::vector<Scenario> SCENARIOS = {
      seedWhere(plain, 23000), [](Stage& s) {
          Human& h = s.first();
          const ServerRoom& r = airlockPocket(s, h, 0);
-         s.run(40);
+         // Passing through, or trying the doors from it, it is in the lobby
+         // a moment at a time, never long.
+         float inLobby = 0.0f, longest = 0.0f;
+         s.run(40, [&] {
+             inLobby = r.encloses(h.cell) && !r.contains(h.cell) ? inLobby + 1.0f / 30.0f : 0.0f;
+             longest = std::max(longest, inLobby);
+         });
          return Checks{loggedBy(h, "ANOTHER LOCKED DOOR BEHIND THE FIRST"), notLogged({"LEARNT THE DOUBLE DOORS EAT KEYS"}),
                        {"a key spent on it", [&h](const Stage&) { return h.keys < 3; }},
-                       {"not stuck in the lobby", [&h, &r](const Stage&) { return !r.encloses(h.cell) || r.contains(h.cell); }}};
+                       {"not stuck in the lobby", [longest](const Stage&) { return longest < 8.0f; }}};
      }},
     {"airlock-learn", "the second time it finds a locked door behind the one it opened, it learns the double doors eat keys",
      seedWhere(plain, 24000), [](Stage& s) {
@@ -2320,6 +2326,59 @@ const std::vector<Scenario> SCENARIOS = {
          return Checks{loggedBy(teller, "TOLD @ THE DOUBLE DOORS EAT KEYS"),
                        loggedBy(told, "@ TOLD ME THE DOUBLE DOORS EAT KEYS"),
                        {"the told knows it", [&told](const Stage&) { return P::keyWise(told); }}};
+     }},
+    {"try-door", "fresh in the spawn room, a human walks up to a shut door and tries it before it counts it locked",
+     seedWhere(plain, 41000), [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         calm(h);
+         s.run(90);
+         return Checks{loggedBy(h, "TRIED A DOOR: LOCKED")};
+     }},
+    {"learn-doors", "two shut doors found locked already, the next teaches it they all are, and it tries no more",
+     seedWhere(plain, 42000), [](Stage& s) {
+         Human& h = s.first();
+         calm(h);
+         P::doorsLocked(h, 2);
+         s.run(90);
+         return Checks{loggedBy(h, "LEARNT THAT SHUT DOORS ARE LOCKED"),
+                       {"no door tried after", [&h](const Stage&) {
+                            bool learnt = false;
+                            for (const auto& e : h.log.entries()) {
+                                if (learnt && e.what == "TRIED A DOOR: LOCKED") return false;
+                                learnt |= e.what == "LEARNT THAT SHUT DOORS ARE LOCKED";
+                            }
+                            return P::doorsLearnt(h);
+                        }}};
+     }},
+    {"airlock-push", "inside a server room with no key, it tries the airlock door from inside and it gives",
+     seedWhere(plain, 43000), [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         const ServerRoom& r = P::buildServerRoom(s.world, h.cell + Vec2i{-5, -17}, 10, 8);
+         calm(h);
+         s.run(8);
+         P::place(s.world, h, r.inner + Vec2i{0, -1});
+         h.keys = 0;
+         h.hunger = h.thirst = h.tiredness = 0.1f;
+         s.run(60);
+         return Checks{loggedBy(h, "PUSHED A DOOR OPEN"),
+                       {"out of the room", [&h, &r](const Stage&) { return !r.contains(h.cell); }}};
+     }},
+    {"told-door", "told the way to a locked door, a human takes the teller's word that it is locked",
+     seedWhere(plain, 44000), [](Stage& s) {
+         Human& teller = s.first();
+         P::knowChunk(s.world, teller);
+         Human& listener = s.add(seedWhere(plain, 44500), 2);
+         P::forget(listener);
+         P::tellLockedDoor(s.world, teller, listener);
+         s.run(15);
+         return Checks{{"told of a door", [&listener](const Stage&) { return !P::doorsTold(listener).empty(); }},
+                       {"taken as locked", [&listener](const Stage&) {
+                            for (Vec2i c : P::doorsTold(listener))
+                                if (!P::doorKnownLocked(listener, c)) return false;
+                            return true;
+                        }}};
      }},
     {"hum-stay", "inside a server room the first time, drowsy, it feels the hum and sleeps there rather than leave",
      seedWhere(plain, 28000), [](Stage& s) {

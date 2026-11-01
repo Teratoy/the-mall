@@ -397,6 +397,7 @@ bool Human::observe(const World& world) {
     sight.forEach([&](Vec2i c) {
         Tile t = world.tile(c);
         if (t == Tile::DoorLocked || t == Tile::DoorOpen) firstSight(talk::Moment::FirstDoor, c);
+        if (t == Tile::DoorLocked) doors_.seen.insert(c);
         if (drinkable(t)) {
             firstSight(talk::Moment::FirstWater, c);
             seeWater(world, c);
@@ -888,13 +889,28 @@ bool Human::pursue(World& world, Want w) {
     case Want::Explore:
         // Looking for water or food, it goes round whoever stands in the way,
         // or somewhere else, rather than wait on them.
+        // A shut door it has never tried may be the way on, as much as an open one.
         if (auto p = search(world, [&](Vec2i c) {
-                return (c != cell && isFrontier(c)) || openDoorBeside(c).has_value();
+                return (c != cell && isFrontier(c)) || openDoorBeside(c).has_value() ||
+                       untriedDoorBeside(c, false).has_value();
             }, errand_.seeking, [&](Vec2i c) {
-                return hunchCost(c, openDoorBeside(c) ? HUNCH_DOOR_COST : HUNCH_COST) + darkCost(c);
+                bool door = openDoorBeside(c) || untriedDoorBeside(c, false);
+                return hunchCost(c, door ? HUNCH_DOOR_COST : HUNCH_COST) + darkCost(c);
             })) {
             if (errand_.seeking) noteSeeking();
             makeForLight(world, *p);
+            startWalking(Goal::Explore, *p);
+            return true;
+        }
+        // Boxed in, it tries every shut door from this side, lesson or not,
+        // before it gives up: so it finds the airlock door that gives.
+        if (auto p = doorsLeftToTry() ? search(world, [&](Vec2i c) { return untriedDoorBeside(c, true).has_value(); })
+                                      : std::nullopt) {
+            if (!doors_.boxedNoted) {
+                note("TRYING THE DOORS AGAIN. THERE MUST BE ONE");
+                sayLater(talk::Moment::TryDoorsBoxed);
+            }
+            doors_.boxedNoted = true;
             startWalking(Goal::Explore, *p);
             return true;
         }

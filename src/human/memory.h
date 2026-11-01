@@ -102,6 +102,9 @@ public:
     /// into the room through each: from that side a door opens at a push,
     /// from the other only with a key.
     std::unordered_map<Vec2i, Vec2i, Vec2iHash> airlocks;
+    /// The airlock doors it has pushed open from inside, so knows give
+    /// from there (AI/door_trying_plan.md).
+    std::unordered_set<Vec2i, Vec2iHash> pushes;
     /// The server rooms it has seen the machines of, by their inner door:
     /// where the warm hum is, kept for later uses (user).
     std::unordered_map<Vec2i, ServerRoom, Vec2iHash> serverRooms;

@@ -149,7 +149,8 @@ void Human::move(World& world, Vec2i next) {
     if (news && goal != Goal::PassDoor && goal != Goal::GiveWay) rethink_ = true;
     // Seen opened from afar: no need to walk up to it.
     if (goal == Goal::CheckDoor && !lockedDoorBeside(target_)) rethink_ = true;
-    if (goal == Goal::Explore && !isFrontier(target_) && !openDoorBeside(target_)) rethink_ = true;
+    if (goal == Goal::Explore && !isFrontier(target_) && !openDoorBeside(target_) && !untriedDoorBeside(target_, true))
+        rethink_ = true;
     if (inspectStale()) rethink_ = true;
     if (goal == Goal::FetchCake && !cakeInReach(target_)) rethink_ = true;
     // Seen empty, or its keys gone, the machine is no use.
@@ -208,6 +209,10 @@ void Human::arrive(World& world) {
     }
     case Goal::Explore:
         if (auto door = openDoorBeside(cell)) return startPassDoor(*door);
+        if (auto door = untriedDoorBeside(cell, true)) {
+            if (tryDoor(world, *door)) return startPassDoor(*door);
+            return startIdle(LOOK_TIME_MIN, LOOK_TIME_MAX);
+        }
         break;
     case Goal::Wander:
         return rest();
@@ -244,6 +249,8 @@ void Human::arrive(World& world) {
         if (seekSleep(world)) return;
         return choose(world);
     case Goal::CheckDoor:
+        // Never tried, it tries the handle; it gives only from an airlock's inside.
+        if (auto door = untriedDoorBeside(cell, false); door && tryDoor(world, *door)) return startPassDoor(*door);
         // Still locked: a look at it, then on to something else.
         return startIdle(LOOK_TIME_MIN, LOOK_TIME_MAX);
     case Goal::Meet:
@@ -421,7 +428,9 @@ bool Human::doorDue(Vec2i c) const {
 
 bool Human::knownPassable(Vec2i c) const { return passable(memory.tile(c)); }
 
+// Only once it has pushed it from there and felt it give.
 bool Human::pushesOpen(Vec2i from, Vec2i door) const {
+    if (!memory.pushes.count(door)) return false;
     auto it = memory.airlocks.find(door);
     return it != memory.airlocks.end() && from == door + it->second;
 }
@@ -452,6 +461,63 @@ std::optional<Vec2i> Human::lockedDoorBeside(Vec2i c) const {
     for (Vec2i d : DIRS4)
         if (memory.tile(c + d) == Tile::DoorLocked && !pushesOpen(c, c + d)) return c + d;
     return std::nullopt;
+}
+
+bool Human::doorKnownLocked(Vec2i door) const {
+    return doors_.learnt || doors_.tried.count(door) || doors_.told.count(door);
+}
+
+std::optional<Vec2i> Human::untriedDoorBeside(Vec2i c, bool anySide) const {
+    if (memory.tile(c) != Tile::Floor) return std::nullopt;
+    for (int i = 0; i < 4; i++) {
+        Vec2i door = c + DIRS4[i];
+        if (memory.tile(door) != Tile::DoorLocked || pushesOpen(c, door)) continue;
+        if (!doorKnownLocked(door)) return door;
+        // The way from the door back to c.
+        auto it = doors_.tried.find(door);
+        if (anySide && (it == doors_.tried.end() || !(it->second & (1u << ((i + 2) % 4))))) return door;
+    }
+    return std::nullopt;
+}
+
+bool Human::doorsLeftToTry() const {
+    for (Vec2i door : doors_.seen)
+        for (Vec2i d : DIRS4)
+            if (untriedDoorBeside(door + d, true) == door) return true;
+    return false;
+}
+
+std::vector<Vec2i> Human::doorCells(Vec2i door) const {
+    std::vector<Vec2i> cells{door};
+    for (Vec2i d : DIRS4)
+        for (Vec2i e = door + d; memory.tile(e) == Tile::DoorLocked; e = e + d) cells.push_back(e);
+    return cells;
+}
+
+// The handle first: most give nothing, and after a few it stops hoping.
+bool Human::tryDoor(World& world, Vec2i door) {
+    int side = 0;
+    while (side < 4 && door + DIRS4[side] != cell) side++;
+    bool fresh = !doorKnownLocked(door);
+    for (Vec2i c : doorCells(door)) doors_.tried[c] |= uint8_t(1u << side);
+    // An airlock door gives from inside, and from then on it knows it does.
+    if (world.pushOpen(door, cell)) {
+        memory.pushes.insert(door);
+        note("PUSHED A DOOR OPEN");
+        sayLater(talk::Moment::DoorGave);
+        observe(world);
+        return true;
+    }
+    if (!fresh) return false;
+    note("TRIED A DOOR: LOCKED");
+    if (++doors_.locked >= DOOR_LESSON && !doors_.learnt) {
+        doors_.learnt = true;
+        note("LEARNT THAT SHUT DOORS ARE LOCKED");
+        sayLater(talk::Moment::LearnDoors);
+    } else {
+        sayLater(talk::Moment::TryDoorLocked);
+    }
+    return false;
 }
 
 // An airlock door that gives at a push from here is as good as open.
