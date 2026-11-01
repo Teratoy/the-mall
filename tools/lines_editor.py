@@ -20,6 +20,10 @@ Beside the lines file it keeps:
       "old" is the words of the line it replaces (null adds a line);
       "conds" left out keeps the old line's; "delete": true proposes
       deleting it.
+
+For the DIAGRAM tab, /api/diagram gives every moment with what the code says
+of it (tools/talk_map.py), its lines, reviewed and tones, its say-chance, and
+how often the tests said it (build/coverage.json, from make coverage).
 """
 import datetime
 import json
@@ -29,6 +33,8 @@ import sys
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+import talk_map
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LINES = os.path.join(ROOT, "data", "lines.txt")
 REVIEW = os.path.join(ROOT, "data", "lines_review.json")
@@ -36,6 +42,7 @@ DRAFTS = os.path.join(ROOT, "data", "lines_drafts.json")
 TALK = os.path.join(ROOT, "src", "human", "talk.cpp")
 PAGE = os.path.join(ROOT, "tools", "lines_editor")
 MEANINGS = os.path.join(PAGE, "conditions.txt")
+COVERAGE = os.path.join(ROOT, "build", "coverage.json")
 
 # Conditions and tone stand in a column this wide before the bar, as in the file.
 COLUMN = 24
@@ -201,7 +208,7 @@ def stamp(path):
 
 
 def version():
-    return f"{stamp(LINES)}-{stamp(REVIEW)}-{stamp(DRAFTS)}-{stamp(TALK)}-{stamp(MEANINGS)}"
+    return f"{stamp(LINES)}-{stamp(REVIEW)}-{stamp(DRAFTS)}-{stamp(TALK)}-{stamp(MEANINGS)}-{stamp(COVERAGE)}"
 
 
 def book():
@@ -225,6 +232,32 @@ def book():
         "meanings": meanings(),
         "review": read_json(REVIEW, {}),
         "drafts": drafts,
+    }
+
+
+def diagram():
+    """Every moment as the DIAGRAM tab draws it: the code's account of it
+    beside its lines, and the moments the code says follow it."""
+    rows = open(LINES, encoding="utf-8").read().split("\n")
+    tones = names("TONES")
+    sections = {m["name"]: m for m in parse(rows, tones)}
+    review = read_json(REVIEW, {})
+    coverage = read_json(COVERAGE, None)
+    code = talk_map.talk_map()
+    for m in code["moments"]:
+        section = sections.get(m["name"])
+        lines = section["lines"] if section else []
+        m["inFile"] = section is not None
+        m["chance"] = section["chance"] if section else None
+        m["lines"] = len(lines)
+        m["reviewed"] = sum(1 for line in lines if line["key"] in review)
+        m["tones"] = {t: n for t in tones if (n := sum(1 for line in lines if line["tone"] == t))}
+        m["said"] = coverage["said"].get(m["name"]) if coverage else None
+    return {
+        "version": version(),
+        "moments": code["moments"],
+        "follows": code["follows"],
+        "coverage": coverage["made"] if coverage else None,
     }
 
 
@@ -405,6 +438,9 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/book":
             with lock:
                 return self.send(200, book())
+        if path == "/api/diagram":
+            with lock:
+                return self.send(200, diagram())
         files = {"/": ("index.html", "text/html; charset=utf-8"), "/font.png": ("font.png", "image/png"),
                  "/font.json": ("font.json", "application/json")}
         if path in files:

@@ -87,6 +87,29 @@ like the line drafts.
 1. `lines_editor.py` reads the moments, groups, `sayLater` call sites and
    their function docs, and `build/coverage.json`; `coverage.py` writes
    that JSON. Served at `/diagram.json`.
+
+### Built (2026-11-01)
+
+- `tools/talk_map.py` reads the code fresh every time. It takes each
+  moment's group comment from talk.h's enum. It finds every place a
+  moment is named outside talk.h and talk.cpp: `talk::Moment::X`,
+  `Moment::X` and `M::X` aliases. Runs picked by arithmetic, such as
+  `Moment(int(Moment::CakesAgain) + ...)` and talk.h's `chatMoment` and
+  `replyMoment`, count for every moment of that run's group. Each place
+  is a say or a check (`s.moment == ...`, `int(Moment::X)`), with its
+  file, line, function, that function's doc (from the .cpp, or human.h)
+  and the nearest comment above it. It also finds the follows the code
+  shows: a check of one moment on the same line as the saying of another,
+  or a call to a function that says others (`AskWay` calls `answerWay`,
+  which says `NoIdea`). `python3 tools/talk_map.py [moment]` prints them.
+  Today every one of the 273 moments is said somewhere, with 7 follows
+  found. The rest come from the flow file (step 2).
+- `make coverage` also writes `build/coverage.json`: how many times the
+  soak and the scenarios said each moment, and when.
+- The editor serves `/api/diagram` (not `/diagram.json`, beside its other
+  `/api/` routes): each moment with the code's account, its line count,
+  reviewed count, tones, say-chance, whether it has a section in
+  lines.txt, and its count from coverage.json (null when there is none).
 2. `data/talk_flow.txt`: the format, the parser in the editor, and the
    checks above. Claude drafts it for every moment.
 3. The DIAGRAM tab: overview and focus, the side panel, the filters.

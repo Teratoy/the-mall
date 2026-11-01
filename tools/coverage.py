@@ -10,7 +10,12 @@ of the string literals in a note(...) call (ternaries give one literal per
 outcome, so each is checked on its own). A talk moment counts as said when
 some SAID line in the log matches one of its lines in data/lines.txt.
 Anything listed is code no soak exercised: a bug there would go unseen.
+
+It also writes build/coverage.json, which the lines editor's DIAGRAM tab reads:
+how many times each moment was said, and when the count was made.
 """
+import datetime
+import json
 import pathlib
 import re
 import sys
@@ -82,10 +87,15 @@ def main():
 
     said = [m.group(1) for w in logged if (m := re.match(r'^SAID "(.*)"( TO @)?$', w))]
     book = moments()
-    quiet = [k for k, pats in book.items() if not any(p.match(t) for p in pats for t in said)]
+    times = {k: sum(1 for t in said if any(p.match(t) for p in pats)) for k, pats in book.items()}
+    quiet = [k for k in book if not times[k]]
     print(f"talk moments: {len(book) - len(quiet)} of {len(book)} said")
     for k in quiet:
         print(f"  never said: [{k}]")
+
+    out = ROOT / "build" / "coverage.json"
+    out.write_text(json.dumps({"made": datetime.datetime.now().isoformat(timespec="minutes"), "said": times},
+                              indent=1, sort_keys=True) + "\n")
 
 
 main()
