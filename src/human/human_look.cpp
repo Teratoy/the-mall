@@ -236,6 +236,10 @@ SpriteFrame HumanLook::pour() const { return draw({.front = Arm::Pour}); }
 
 SpriteFrame HumanLook::offerBottle() const { return draw({.front = Arm::OfferBottle}); }
 
+SpriteFrame HumanLook::reload(int frame, bool far) const {
+    return draw({.front = Arm::Reload, .farGun = far, .reload = std::clamp(frame, 0, RELOAD_FRAMES - 1)});
+}
+
 // Going off, the kick jolts the head back a pixel.
 SpriteFrame HumanLook::shoot(int aim, bool fire, bool far) const {
     aim = std::clamp(aim, -2, 2);
@@ -372,7 +376,7 @@ SpriteFrame HumanLook::drawBody(const Stance& s) const {
     // waistband a tall torso shows, or on the shirt's bottom row, which
     // meets the waist, on a short one. It moves with the torso, so blood
     // lands on it as on the body.
-    if (tuckedGun && s.front != Arm::Aim) {
+    if (tuckedGun && s.front != Arm::Aim && s.front != Arm::Reload) {
         const int waistline = torsoH >= 5 ? torsoBottom - 1 : torsoBottom;
         p.body(BodyPart::Torso, lifted);
         p.set(CX - 2, waistline - 1, shade(GRIP, gunDirt_));
@@ -405,9 +409,52 @@ SpriteFrame HumanLook::drawBody(const Stance& s) const {
     // The front arm may be busy instead: waving beside the face, the hand
     // rocking out and back; up in a guard or thrown in a punch; or bringing
     // a cake to the mouth.
+    // Reloading, both arms are busy. One holds the gun low in front of the
+    // chest, muzzle down ahead; the other reaches into the hip pocket,
+    // brings a round up in its fingers, holds it to the top of the slide and
+    // thumbs it in, the gun dipping a pixel, then goes back down for the next.
+    // With the gun in the far hand, that arm reaches round from behind the
+    // body, its hand at the chest's edge, and the near hand loads, its
+    // pocket at the front of the hip.
+    if (s.front == Arm::Reload) {
+        // An arm drawn pixel by pixel from the shoulder to the hand.
+        auto limb = [&](int side, Vec2i from, Vec2i to, float k) {
+            int n = std::max(std::abs(to.x - from.x), std::abs(to.y - from.y));
+            for (int i = 0; i <= n; i++) {
+                int x = from.x + int(std::lround(float((to.x - from.x) * i) / float(std::max(n, 1))));
+                int y = from.y + int(std::lround(float((to.y - from.y) * i) / float(std::max(n, 1))));
+                armPx(side, x, y, i, i == n, k);
+            }
+        };
+        const int shoulder = torsoTop + 1, step = s.reload;
+        const bool press = step == 3;
+        const int gunSide = s.farGun ? 0 : 1, loadSide = 1 - gunSide;
+        const Vec2i gunShoulder{gunSide == 0 ? tl - 1 : tr + 1, shoulder};
+        const Vec2i loadShoulder{loadSide == 0 ? tl - 1 : tr + 1, shoulder};
+        // The gun hand, and the top of the slide over it, where rounds go in.
+        const Vec2i gun{s.farGun ? tr + 1 : tr, shoulder + 2 + (press ? 1 : 0)};
+        const Vec2i port{gun.x + 1, gun.y - 1};
+        // Where the loading hand is, down in the pocket at its hip, on its
+        // way up, or at the slide; and the round in its fingers, if any.
+        const Vec2i pocket{s.farGun ? tr : loadShoulder.x, torsoBottom};
+        const Vec2i rising = s.farGun ? Vec2i{tr + 3, shoulder + 1} : Vec2i{CX - 1, shoulder + 2};
+        const Vec2i hand = step == 0 ? pocket : step == 2 ? Vec2i{port.x - 1, port.y - 1} : press ? port : rising;
+        if (s.farGun) {
+            // Its shoulder behind, its hand coming out at the chest's edge.
+            armPx(gunSide, gunShoulder.x, gunShoulder.y, 0, false);
+            armPx(gunSide, gun.x, gun.y, 2, true, FAR_ARM_SHADE);
+        } else {
+            limb(gunSide, gunShoulder, gun, 1.0f);
+        }
+        p.f.gun = {int8_t(gun.x), int8_t(gun.y), 1, false};
+        limb(loadSide, loadShoulder, hand, 1.0f);
+        p.off();
+        if (step == 1) p.set(hand.x, hand.y - 1, ROUND);
+        if (step == 2) p.set(port.x, port.y, ROUND);
+    }
     // Shooting with the far hand, the back arm aims and the front one swings.
     const int busy = s.front == Arm::Aim && s.farGun ? 0 : 1;
-    for (int side = 0; side < 2; side++) {
+    for (int side = 0; side < 2 && s.front != Arm::Reload; side++) {
         int x = side == 0 ? tl - 1 : tr + 1;
         int shoulder = torsoTop + 1;
         if (side == busy && s.front != Arm::Swing) {
@@ -538,6 +585,7 @@ SpriteFrame HumanLook::drawBody(const Stance& s) const {
                 armPx(side, x + 2, shoulder + (s.front == Arm::TypeDown ? 3 : 2), 3, true);
                 break;
             case Arm::Swing:
+            case Arm::Reload:
                 break;
             }
             continue;

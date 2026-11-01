@@ -29,6 +29,11 @@ constexpr float FALL_KNEEL = 0.15f, FALL_DOWN = 0.45f;
 constexpr float BLINK_EVERY = 3.2f, BLINK_TIME = 0.15f;
 /// Coming to, the eyes stay shut this long, then blink slow and heavy.
 constexpr float WAKE_EYES_SHUT = 1.5f, WAKE_BLINK_EVERY = 1.1f, WAKE_BLINK_TIME = 0.3f;
+/// Reloading, the seconds one round takes; and the moment in it each frame
+/// ends: in the pocket, bringing the round up, at the gun, pressing it in,
+/// the hand going back down.
+constexpr float RELOAD_ROUND_TIME = 1.2f;
+constexpr float RELOAD_STEP_ENDS[RELOAD_FRAMES] = {0.3f, 0.55f, 0.8f, 1.0f, 1.2f};
 /// Shooting, the kick lasts this long after each shot.
 constexpr float SHOT_TIME = 0.1f;
 /// Feeding, the head dips a pixel this often.
@@ -83,6 +88,14 @@ int shootAim(Pose pose) {
                                           : NO_AIM;
 }
 
+/// Which reload frame shows this long after starting, a round at a time.
+size_t reloadFrame(float t) {
+    float into = std::fmod(std::max(t, 0.0f), RELOAD_ROUND_TIME) / RELOAD_ROUND_TIME * RELOAD_STEP_ENDS[RELOAD_FRAMES - 1];
+    size_t i = 0;
+    while (i + 1 < RELOAD_FRAMES && into >= RELOAD_STEP_ENDS[i]) i++;
+    return i;
+}
+
 } // namespace
 
 template <class F> void HumanSprites::eachFrame(const HumanLook& look, F&& add) {
@@ -118,6 +131,10 @@ template <class F> void HumanSprites::eachFrame(const HumanLook& look, F&& add) 
             add(shoot_[size_t(a)][size_t(fire)], look.shoot(a - 2, fire == 1));
             if (a >= 1 && a <= 3) add(shootFar_[size_t(a - 1)][size_t(fire)], look.shoot(a - 2, fire == 1, true));
         }
+    for (int i = 0; i < RELOAD_FRAMES; i++) {
+        add(reload_[size_t(i)], look.reload(i));
+        add(reloadFar_[size_t(i)], look.reload(i, true));
+    }
     for (int i = 0; i < TYPE_FRAMES; i++) add(type_[size_t(i)], look.type(i));
 }
 
@@ -278,6 +295,7 @@ void HumanSprites::draw(Vector2 feet, Pose pose, float animTime, bool flip, int 
                            : pose == Pose::Fill  ? fill_
                            : pose == Pose::Pour  ? pour_
                            : pose == Pose::OfferBottle ? offerBottle_
+                           : pose == Pose::Reload ? (flip ? reloadFar_ : reload_)[reloadFrame(animTime)]
                            : shooting  ? (flip ? shootFar_[size_t(aim + 1)] : shoot_[size_t(aim + 2)])
                                                  [animTime < SHOT_TIME ? 1 : 0]
                            : pose == Pose::Fall  ? (animTime < FALL_KNEEL ? idle_ : kneel_)
