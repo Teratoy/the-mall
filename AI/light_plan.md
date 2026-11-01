@@ -233,7 +233,7 @@ User asked for other dithering: crossed, hatched, and lines.
   (the name goes to the terminal); `make shot SHOT_ARGS="--dither NAME"`.
   The user picked **ordered** (2026-11-01).
 - The pattern breathes, very subtly (user): each of the 16 places in the
-  pattern has its threshold swing by `PULSE` (0.08) at its own phase,
+  pattern has its threshold swing by `PULSE` (0.04, was 0.08) at its own phase,
   once every `PULSE_SECONDS` (2.4 s), so pixels on the edge of a step
   come and go one by one. View only, on the clock.
 

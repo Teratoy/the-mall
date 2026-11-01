@@ -49,7 +49,7 @@ Dither pattern = Dither::Ordered;
 /// The pattern breathes: each dot's threshold swings by this much, at its
 /// own phase, once every PULSE_SECONDS, so the pixels on the edge of a step
 /// come and go one by one.
-constexpr float PULSE = 0.08f;
+constexpr float PULSE = 0.04f;
 constexpr float PULSE_SECONDS = 2.4f;
 
 /// Each kind of source's colour in full light: strip lights a cool
