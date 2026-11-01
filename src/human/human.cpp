@@ -750,7 +750,10 @@ void Human::choose(World& world) {
                                 (social_.companion >= 0 && social_.leader < 0 ? COMPANY_STAY : 0.0f) - waterTether() - sleepTether());
         if (wishes.back().score < seek) wishes.back().score = seek, errand_.seeking = true;
         if (keys > 0) want(Want::OpenDoor, OUT_EXPLORE * outDrive() - sleepTether());
-        if (rng_.chance(CHECK_DOOR_CHANCE * sway(traits.curious, CHECK_DOOR_CURIOUS))) want(Want::CheckDoor);
+        // Already on its way to check one, it keeps to it rather than roll again at every look.
+        if ((state == State::Walking && goal == Goal::CheckDoor) ||
+            rng_.chance(CHECK_DOOR_CHANCE * sway(traits.curious, CHECK_DOOR_CURIOUS)))
+            want(Want::CheckDoor);
     }
     // Settled, it still goes looking for what it needs.
     else if (seek >= 0.0f) {
@@ -890,12 +893,14 @@ bool Human::pursue(World& world, Want w) {
         // Looking for water or food, it goes round whoever stands in the way,
         // or somewhere else, rather than wait on them.
         // A shut door it has never tried may be the way on, as much as an open one.
+        // It keeps on the way it was going, and a door beats plain unseen floor.
         if (auto p = search(world, [&](Vec2i c) {
                 return (c != cell && isFrontier(c)) || openDoorBeside(c).has_value() ||
                        untriedDoorBeside(c, false).has_value();
             }, errand_.seeking, [&](Vec2i c) {
                 bool door = openDoorBeside(c) || untriedDoorBeside(c, false);
-                return hunchCost(c, door ? HUNCH_DOOR_COST : HUNCH_COST) + darkCost(c);
+                return hunchCost(c, door ? HUNCH_DOOR_COST : HUNCH_COST) + darkCost(c) + headingCost(c) +
+                       (door ? 0 : FRONTIER_COST);
             })) {
             if (errand_.seeking) noteSeeking();
             makeForLight(world, *p);

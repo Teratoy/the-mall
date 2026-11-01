@@ -73,7 +73,11 @@ void Human::step(World& world) {
             // No way round: after a moment one of the two steps aside, else
             // in the end it gives up and thinks again.
             if (stuck_ > 0 && makeWay(world, *o)) return;
-            if (++stuck_ >= GIVE_UP_AFTER) return startIdle(0.0f, LOOK_TIME_MIN);
+            if (++stuck_ >= GIVE_UP_AFTER) {
+                // Exploring, it turns back rather than make for the same way past them again.
+                if (goal == Goal::Explore) heading_ = Vec2i{-heading_.x, -heading_.y};
+                return startIdle(0.0f, LOOK_TIME_MIN);
+            }
             timer = STEP_TIME * rng_.range(0.5f, 1.0f);
             return;
         }
@@ -359,6 +363,15 @@ void Human::startWalking(Goal g, std::vector<Vec2i> path) {
     goal = g;
     path_.assign(path.begin(), path.end());
     target_ = path.empty() ? cell : path.back();
+    if (g == Goal::Explore && target_ != cell) heading_ = target_ - cell;
+}
+
+int Human::headingCost(Vec2i c) const {
+    Vec2i d = c - cell;
+    if (d == Vec2i{0, 0} || heading_ == Vec2i{0, 0}) return 0;
+    float along = float(d.x * heading_.x + d.y * heading_.y) /
+                  (std::hypot(float(d.x), float(d.y)) * std::hypot(float(heading_.x), float(heading_.y)));
+    return int(float(HEADING_COST) * (1.0f - along) / 2.0f);
 }
 
 // Straight through: the door, its other half, and one step in.
@@ -368,6 +381,7 @@ void Human::startPassDoor(Vec2i door) {
     float hx = std::cos(escape_.hunch) * (1.0f - HUNCH_FOLLOW) + float(d.x) * HUNCH_FOLLOW;
     float hy = std::sin(escape_.hunch) * (1.0f - HUNCH_FOLLOW) + float(d.y) * HUNCH_FOLLOW;
     if (hx != 0.0f || hy != 0.0f) escape_.hunch = std::atan2(hy, hx);
+    heading_ = d;
     startWalking(Goal::PassDoor, {door, door + d, door + d * 2});
 }
 

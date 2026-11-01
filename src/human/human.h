@@ -762,6 +762,12 @@ private:
     /// Cells still to walk to, in order, and the last of them.
     std::deque<Vec2i> path_;
     Vec2i target_;
+    /// The way it last set out exploring, or went through a door: it keeps
+    /// on that way rather than turn back to the nearest unseen floor.
+    Vec2i heading_{0, 0};
+    /// The extra a frontier at c costs for lying away from the heading, up
+    /// to HEADING_COST right behind: none straight ahead.
+    int headingCost(Vec2i c) const;
     /// Something changed; decide again before the next step.
     bool rethink_ = false;
     /// Steps in a row someone stood in the way.

@@ -32,6 +32,7 @@ GENPROBE := build/genprobe
 # The world generator editor: knobs and a live preview (tools/genview.cpp).
 GENVIEW := build/genview
 LIGHTPROBE := build/lightprobe
+EXPLOREPROBE := build/exploreprobe
 # A human drawn at twice the detail, beside the one the game draws now.
 HIDEF := build/hidef
 # Human frames with bottles, scaled up, to check the bottle art by eye.
@@ -41,7 +42,7 @@ DIRTYSHEET := build/dirty_sheet
 # One human shooting all eight ways, as animation frames (tools/frames_gif.py makes the GIF).
 SHOOTANIM := build/shoot_anim
 
-.PHONY: all run clean trips stuck check golden coverage shot scenarios genprobe genview lightprobe hidef bottlesheet dirtysheet shootanim spritesheet soundsheet spriteref fontdump lines sprites sounds trapprobe icon apk install-apk logcat simprofile gprof
+.PHONY: all run clean trips stuck check golden coverage shot scenarios genprobe genview lightprobe exploreprobe hidef bottlesheet dirtysheet shootanim spritesheet soundsheet spriteref fontdump lines sprites sounds trapprobe icon apk install-apk logcat simprofile gprof
 
 all: $(BIN)
 
@@ -120,6 +121,12 @@ $(LIGHTPROBE): tools/light_probe.cpp $(filter-out build/main.o,$(OBJ))
 
 lightprobe: $(LIGHTPROBE)
 	./$(LIGHTPROBE) $(LIGHTPROBE_ARGS)
+
+$(EXPLOREPROBE): tools/explore_probe.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDLIBS)
+
+exploreprobe: $(EXPLOREPROBE)
+	./$(EXPLOREPROBE) $(EXPLOREPROBE_ARGS)
 
 $(HIDEF): tools/hidef.cpp $(filter-out build/main.o,$(OBJ))
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@ $(LDLIBS)
