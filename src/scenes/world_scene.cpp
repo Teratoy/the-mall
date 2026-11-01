@@ -216,6 +216,7 @@ std::string doing(const Human& h) {
     case Human::State::Stashing: return h.putting() ? "STASHING THINGS" : "PICKING THINGS UP";
     case Human::State::Vending: return "BUYING FROM A MACHINE";
     case Human::State::Typing: return "TYPING AT A COMPUTER";
+    case Human::State::Banging: return "BANGING ON A DOOR";
     case Human::State::Relieving: return h.shitting() ? "SHITTING" : "PISSING";
     case Human::State::Punching: return (h.hunting() ? "ATTACKING " : "FIGHTING ") + who;
     case Human::State::Giving: return (h.givingWater() ? "SHARING WATER WITH " : "SHARING A CAKE WITH ") + who;
@@ -271,6 +272,7 @@ std::string doing(const Human& h) {
     case Human::Goal::Vend: return "GOING TO A MACHINE";
     case Human::Goal::Voice: return "GOING TOWARD A VOICE";
     case Human::Goal::Inspect: return "GOING TO LOOK";
+    case Human::Goal::Bang: return "GOING TO BANG ON A DOOR";
     case Human::Goal::Feed: return "GOING TO " + who + "'S BODY";
     case Human::Goal::Rob: return "SNEAKING UP ON " + who;
     case Human::Goal::Watch: return "GOING TO KEEP WATCH OVER " + who;

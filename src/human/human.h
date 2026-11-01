@@ -92,12 +92,12 @@ class Human {
 public:
     /// Waking is the first thing every human does: lying where it came to,
     /// knowing nothing, until it sits up (Sitting) and looks round.
-    enum class State { Waking, Idle, Sitting, Rising, Walking, Greeting, Eating, Drinking, Relieving, Punching, Giving, Washing, Looting, Feeding, Sleeping, Sipping, Filling, Pouring, Stashing, Vending, Typing, Dead };
+    enum class State { Waking, Idle, Sitting, Rising, Walking, Greeting, Eating, Drinking, Relieving, Punching, Giving, Washing, Looting, Feeding, Sleeping, Sipping, Filling, Pouring, Stashing, Vending, Typing, Banging, Dead };
     /// Why the human is walking: what it does on arrival.
-    enum class Goal { Explore, FetchKey, OpenDoor, PassDoor, Wander, Meet, Follow, Company, FetchCake, Drink, Relieve, Fight, Flee, Share, CheckDoor, Wash, Avoid, Escort, Escorted, Track, GiveWay, Loot, Feed, Sleep, Rob, Watch, Rescue, Fill, Ask, Pick, Stash, Vend, Voice, Inspect };
+    enum class Goal { Explore, FetchKey, OpenDoor, PassDoor, Wander, Meet, Follow, Company, FetchCake, Drink, Relieve, Fight, Flee, Share, CheckDoor, Wash, Avoid, Escort, Escorted, Track, GiveWay, Loot, Feed, Sleep, Rob, Watch, Rescue, Fill, Ask, Pick, Stash, Vend, Voice, Inspect, Bang };
     /// What the human is doing, as far as hunger, thirst and tiredness go:
     /// each costs its own of all three.
-    enum class Action { Rest, Sit, Walk, Run, Greet, Eat, Drink, Relieve, Punch, Give, Wash, Loot, Feed, Sleep, Watch, Fill, Pour, Stash, Vend, Type, Count };
+    enum class Action { Rest, Sit, Walk, Run, Greet, Eat, Drink, Relieve, Punch, Give, Wash, Loot, Feed, Sleep, Watch, Fill, Pour, Stash, Vend, Type, Bang, Count };
     /// What a human may set out to do once nothing presses. How much it
     /// wants each, by its traits and hunger, is weighed in choose(), which
     /// tries them from the most wanted down; the table of wants is in
@@ -180,7 +180,8 @@ public:
     /// Heard caller, shut in behind gate, cry for help through the walls:
     /// with a key to spare, it may go and let them out; without one, it
     /// remembers them, and may go and call back.
-    void hearHelp(const Human& caller, Vec2i gate);
+    /// Banging, heard farther than a cry: bang says so.
+    void hearHelp(const Human& caller, Vec2i gate, bool bang = false);
 
     const int id;
     /// Its first name, grown from its seed; see name.h.
@@ -287,6 +288,8 @@ public:
     std::optional<Vec2i> typingAt() const {
         return state == State::Typing ? std::optional<Vec2i>(computers_.at) : std::nullopt;
     }
+    /// Banging on a door, the fist on it rather than drawn back for the next blow.
+    bool bangLanded() const;
     bool atTap() const {
         return (state == State::Drinking || state == State::Filling) && memory.tile(water_.drinkAt) == Tile::Dispenser;
     }
@@ -611,6 +614,13 @@ private:
         /// for water, and when it next calls.
         std::optional<Vec2i> callDoor;
         float callTimer = 0.0f;
+        /// Crying or calling through it, the door it means to go and bang on,
+        /// and when it meant to; the door it walks to or bangs on, and while
+        /// banging, the time to the next blow.
+        std::optional<Vec2i> bangDoor;
+        float bangWhen = 0.0f;
+        Vec2i bangAt{};
+        float bangBlow = 0.0f;
         /// Who it means to let out of a slam room, and where the gate is; whose
         /// cries for help it has heard, each a scare once.
         int rescuee = -1;
@@ -720,6 +730,14 @@ private:
     void callThroughDoor(World& world, float dt);
     /// Nowhere to go but a few cells: walled in.
     bool walledIn(const World& world) const;
+    /// Having cried out or called through door, it means to bang on it too.
+    void wantBang(Vec2i door);
+    /// Meaning to bang on a door: beside it, it bangs; else it walks there.
+    bool bangOnDoor(World& world);
+    /// Pounds on door with its fists a few seconds, heard farther than a cry.
+    void startBanging(World& world, Vec2i door);
+    /// Banging: a blow now and then, broken off when something presses.
+    void banging(World& world, float dt);
     /// Makes for the gate of whoever it means to let out; false, and gives
     /// up on them, if it can't.
     bool startRescue(World& world);

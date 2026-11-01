@@ -100,3 +100,44 @@ moment `HelpSteps` (`[help_steps]`), urgent so it cuts in over a line being
 read; the log says "HEARD STEPS OUTSIDE. CRIED OUT". The timed `Help` cry
 also goes ahead of small talk now, instead of being dropped when the queue
 is full. Scenario: `shut-in-steps`.
+
+## Banging on the door (2026-11-01)
+
+The user asked: "make humans stuck in rooms bang door too".
+
+User's decisions:
+- **Who:** anyone shut in a slam room with no key, and a parched human boxed
+  in, calling through a locked door (AI/parched_lost_plan.md).
+- **When:** each time it cries out (the timed cry, or one to steps heard
+  outside) or calls through the door, it walks to the gate and pounds on it
+  with its fists a few seconds, then goes back to what it was doing.
+- **Heard:** farther than a cry, so people farther off learn someone is shut
+  in and may come.
+- **Cost:** tiring only: hunger, thirst and tiredness, more than walking and
+  less than a fight. No bloody knuckles.
+
+Built (`human_rescue.cpp`):
+- A cry or a call sets `rescue_.bangDoor` (`wantBang`). The next `choose()`
+  takes it as a reflex (`bangOnDoor`), after a fight or bottle rage but
+  before anything it means to do: beside the door it bangs, else it walks
+  there (`Goal::Bang`). A wish left 10 s untaken (`BANG_STALE`) is let go,
+  and so is one with a key in hand or the door seen open.
+- `State::Banging`, `Action::Bang` (hunger 1/400, thirst 1/320, tiredness
+  1/900 a second): 2 to 4 s, a blow every 0.4 s, each a `NoiseKind::Bang`
+  noise at the door (`bang` in `data/sounds.txt`, heard 22 cells). Drawn as
+  the punch's guard and blow by turns, facing the door's side. Broken off
+  when something new is seen, the door opens, or a blow lands on it.
+- Anyone within 20 cells (`BANG_RADIUS`, a cry carries 12) who can't see it
+  hears it as a cry for help with the gate's cell (`hearHelp(..., true)`):
+  "HEARD SOMEONE BANGING ON A DOOR", the voice unknown even to a friend.
+- Log: "BANGED ON THE GATE" (slam room) or "BANGED ON THE LOCKED DOOR"
+  (parched). Moments `BangDoor` (`[bang_door 0.7]`) and `HearBang`
+  (`[hear_bang]`, half the time, the first time from each).
+- Scenarios: `shut-in-bang` (a hearer 16 cells off hears the banging, not
+  the cry); `parched-lost` now checks the banging too. `shut-in-told` hushes
+  the caller after its first cry, and its teller is a new seed, since the
+  banging otherwise reached the listener, or sent the teller to call back.
+
+In the soak, a shut-in human bangs about every 10 to 20 s, since each cry
+to steps brings a bout too. A door above or below is pounded with the
+side-on punch: there is no punch drawn up or down.

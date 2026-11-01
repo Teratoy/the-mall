@@ -3056,3 +3056,29 @@ brave                   | FINE. I'LL FIND THE KEYS.
 hopeless                | ONE MORE TIME.
 timid                   | PLEASE. JUST ONE.
 erratic                 | THEY MOVE WHEN I'M NOT LOOKING.
+
+# Shut in, or parched and calling through a locked door, it pounds on it
+# too. Said to nobody, but it carries through the walls.
+[bang_door 0.7]
+fear                    | OPEN UP!
+fear                    | LET ME OUT! LET ME OUT!
+                        | SOMEBODY! ANYBODY!
+                        | I'M STILL HERE!
+brave                   | OPEN THIS! NOW!
+timid                   | PLEASE... PLEASE...
+hopeless                | ...WHY WON'T IT GIVE.
+erratic                 | I'LL BREAK IT! I'LL BREAK YOU!
+parched                 | ...WATER...
+sociable                | CAN YOU HEAR THAT? I'M HERE!
+
+# Hearing someone bang on a door out of sight, the first time from each.
+# Said to nobody.
+[hear_bang]
+                        | WHAT WAS THAT?
+                        | SOMEONE'S IN THERE.
+scared                  | SOMETHING'S TRYING TO GET OUT.
+timid                   | I DIDN'T HEAR THAT.
+curious                 | THAT CAME FROM A DOOR.
+generous                | SOMEONE NEEDS A KEY.
+greedy                  | NOT MY PROBLEM.
+hopeless                | THEY'LL STOP SOON.

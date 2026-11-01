@@ -77,6 +77,13 @@ sound knob
     noise 2800 1800 gain 0.3 decay 0.02 highpass 900 repeat 3 gap 0.08 fade 0.8
     square 240 190 gain 0.3 delay 0.01 decay 0.035 duty 0.4 repeat 3 gap 0.08 fade 0.75
 
+# A fist banging on a locked door or a slam room's gate: a dull thud, the
+# door shaking in its frame.
+sound bang
+    noise 700 180 gain 0.75 decay 0.11 lowpass 1100
+    square 85 55 gain 0.45 decay 0.13 duty 0.45
+    triangle 210 200 gain 0.1 delay 0.01 attack 0.005 decay 0.25
+
 # A server room's airlock: a hiss as it gives, and as it seals.
 sound airlock_open
     noise 3600 2200 gain 0.35 attack 0.03 hold 0.1 decay 0.25 highpass 800

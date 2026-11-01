@@ -78,6 +78,7 @@ void Human::update(World& world, float dt) {
         return;
     }
     if (state == State::Typing) return typing(world, dt);
+    if (state == State::Banging) return banging(world, dt);
     if (timer > 0.0f) return;
     switch (state) {
     case State::Greeting: {
@@ -104,6 +105,7 @@ void Human::update(World& world, float dt) {
     case State::Vending:
         return takeVended(world);
     case State::Typing:
+    case State::Banging:
         return;
     case State::Relieving:
         endRelieving();
@@ -172,6 +174,8 @@ Human::Action Human::action() const {
         return Action::Vend;
     case State::Typing:
         return Action::Type;
+    case State::Banging:
+        return Action::Bang;
     case State::Relieving:
         return Action::Relieve;
     case State::Punching:
@@ -638,6 +642,8 @@ void Human::choose(World& world) {
     if (fight_.foe >= 0 && startFight(world)) return;
     // Erratic and parched, any bottle it sees is worth a fight (human_bottle.cpp).
     if (bottleRage(world)) return;
+    // Shut in, having cried out: it bangs on the door too (human_rescue.cpp).
+    if (bangOnDoor(world)) return;
     // A body or blood first found it stares at, before backing off from it.
     if (inspectNext(world, true)) return;
     if (keepAway(world)) return;

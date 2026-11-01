@@ -79,8 +79,9 @@ constexpr NoiseSound NOISE_SOUNDS[] = {
     {"pick_key", 0.4f, 8.0f, false},      // PickKey
     {"pick_cake", 0.35f, 8.0f, false},    // PickCake
     {"pick_bottle", 0.4f, 8.0f, false},   // PickBottle
+    {"bang", 0.9f, 22.0f, false},         // Bang
 };
-static_assert(std::size(NOISE_SOUNDS) == size_t(NoiseKind::PickBottle) + 1, "a sound for every noise");
+static_assert(std::size(NOISE_SOUNDS) == size_t(NoiseKind::Bang) + 1, "a sound for every noise");
 
 /// A noise is played this many times its size, kept between these.
 constexpr float NOISE_SIZE_MIN = 0.2f, NOISE_SIZE_MAX = 2.0f;

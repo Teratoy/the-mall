@@ -191,6 +191,8 @@ Pose poseOf(const Human& h) {
     case Human::State::Vending: return Pose::Point;
     // Hands at the keys.
     case Human::State::Typing: return Pose::Type;
+    // Fists on the door, drawn back and thrown again.
+    case Human::State::Banging: return h.bangLanded() ? Pose::Punch : Pose::Guard;
     case Human::State::Idle:
     case Human::State::Walking: break;
     }

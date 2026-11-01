@@ -248,6 +248,10 @@ enum class Moment {
     // Seeing a machine fuller than it last saw it, learning they fill up
     // again (to nobody).
     LearnRefill,
+    // Shut in, or parched and calling through a locked door: banging on it
+    // (to nobody, but it carries through the walls); hearing someone bang
+    // on a door out of sight, the first time from each (to nobody).
+    BangDoor, HearBang,
     Count
 };
 

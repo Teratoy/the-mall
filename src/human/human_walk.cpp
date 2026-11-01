@@ -252,6 +252,11 @@ void Human::arrive(World& world) {
     case Goal::Sleep:
         if (seekSleep(world)) return;
         return choose(world);
+    case Goal::Bang:
+        if (std::abs(rescue_.bangAt.x - cell.x) + std::abs(rescue_.bangAt.y - cell.y) == 1 &&
+            memory.tile(rescue_.bangAt) == Tile::DoorLocked)
+            return startBanging(world, rescue_.bangAt);
+        return choose(world);
     case Goal::CheckDoor:
         // Never tried, it tries the handle; it gives only from an airlock's inside.
         if (auto door = untriedDoorBeside(cell, false); door && tryDoor(world, *door)) return startPassDoor(*door);

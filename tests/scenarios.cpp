@@ -1745,12 +1745,24 @@ const std::vector<Scenario> SCENARIOS = {
          return Checks{logged({"HEARD STEPS OUTSIDE. CRIED OUT"}),
                        logged({"HEARD SOMEONE CALLING FOR HELP", "HEARD @ CALLING FOR HELP"})};
      }},
+    {"shut-in-bang", "shut in, having cried out it bangs on the gate, heard by one too far off for the cry", 99,
+     [](Stage& s) {
+         Human& caller = shutInFirst(s);
+         Human& hearer = s.add(seedWhere(caring, 12500), 2);
+         calm(hearer);
+         P::place(s.world, hearer, s.freeNear(caller.cell, 16));
+         s.run(40);
+         return Checks{logged({"BANGED ON THE GATE"}), logged({"HEARD SOMEONE BANGING ON A DOOR"}),
+                       unlogged("HEARD SOMEONE CALLING FOR HELP")};
+     }},
     {"shut-in-told", "a hearer tells a stranger with keys, who never heard the cry, and they let them out", 99,
      [](Stage& s) {
          Human& caller = shutInFirst(s);
-         Human& teller = s.add(seedWhere(caring, 12000), 5);
+         Human& teller = s.add(seedWhere(caring, 12300), 5);
          calm(teller);
          hearCry(s, caller, {&teller});
+         // From now on it cries out, and bangs, only to steps it hears.
+         P::hushShutIn(caller);
          Human& listener = s.add(seedWhere(caring, 13000), 2);
          P::place(s.world, teller, s.farFrom(caller.cell, 18));
          P::place(s.world, listener, s.freeNear(teller.cell, 2));
@@ -1770,7 +1782,7 @@ const std::vector<Scenario> SCENARIOS = {
          Check lying = runSeeingLying(s, 120);
          return Checks{logged({"@ KNEW OF NO WATER EITHER"}), askedOnce(),
                        logged({"NO WATER ANYWHERE. LYING BY A LOCKED DOOR, CALLING FOR HELP"}), lying,
-                       unlogged("LEFT @. THEY KNOW NO MORE THAN I DO")};
+                       logged({"BANGED ON THE LOCKED DOOR"}), unlogged("LEFT @. THEY KNOW NO MORE THAN I DO")};
      }},
     {"parched-door", "a caring human with a key, beyond the door the parched lie calling through, opens it",
      seedWhere([](const Traits& t) { return t.sociable >= 0.75f && t.brave >= 0.3f; }, 17696),

@@ -49,6 +49,8 @@ enum class NoiseKind : uint8_t {
     PickKey,
     PickCake,
     PickBottle,
+    /// A fist banging on a locked door or a slam room's gate.
+    Bang,
 };
 
 struct Noise {

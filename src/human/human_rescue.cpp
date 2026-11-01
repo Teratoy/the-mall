@@ -1,4 +1,5 @@
 #include "human/human.h"
+#include "human/human_tuning.h"
 #include "world/world.h"
 #include <algorithm>
 #include <cstdlib>
@@ -13,7 +14,9 @@
 // A hearer remembers the cry a while: coming by a key later, it may go
 // then, and it tells whoever it meets. Without a key it goes for one it
 // knows of, and may go and call back through the wall. The greedy and the
-// erratic don't care either way (AI/shut_in_plan.md).
+// erratic don't care either way (AI/shut_in_plan.md). Having cried out, it
+// goes to the gate and bangs on it, heard farther off than any cry; so does
+// one parched and calling through a locked door.
 
 namespace {
 
@@ -65,7 +68,15 @@ constexpr float RESCUE_FETCH = 0.8f;
 constexpr float CALL_BACK_WAIT_MIN = 2.0f, CALL_BACK_WAIT_MAX = 4.0f;
 constexpr float HOPE_CALLED_BACK = 0.1f;
 
-float sway(float trait, float half) { return 1.0f + (trait - 0.5f) * 2.0f * half; }
+/// Banging on a door: for this long, a blow every so often, the fist on the
+/// door for this share of each; heard this far, walls or not, by anyone who
+/// can't see it. A wish to bang left this long untaken is let go.
+constexpr float BANG_TIME_MIN = 2.0f, BANG_TIME_MAX = 4.0f;
+constexpr float BANG_EVERY = 0.4f, BANG_LANDED = 0.4f;
+constexpr int BANG_RADIUS = 20;
+constexpr float BANG_STALE = 10.0f;
+/// The chance it says anything on first hearing someone bang on a door.
+constexpr float HEAR_BANG_SAY = 0.5f;
 
 } // namespace
 
@@ -121,6 +132,7 @@ void Human::callForHelp(World& world, float dt) {
     } else if (!sayLater(talk::Moment::Help)) {
         return;
     }
+    wantBang(*rescue_.slamGate);
     for (const auto& o : world.humans())
         if (o.get() != this && !o->dead() && cheb(o->cell, cell) <= HELP_RADIUS) o->hearHelp(*this, *rescue_.slamGate);
 }
@@ -138,28 +150,94 @@ void Human::callThroughDoor(World& world, float dt) {
     if ((rescue_.callTimer -= dt) > 0.0f) return;
     rescue_.callTimer = rng_.range(HELP_EVERY_MIN, HELP_EVERY_MAX);
     if (state == State::Sleeping || !sayLater(talk::Moment::CallDoor)) return;
+    wantBang(door);
     // Those in there with it just hear it said; it is for whoever is beyond.
     for (const auto& o : world.humans())
         if (o.get() != this && !o->dead() && cheb(o->cell, cell) <= HELP_RADIUS && !o->sight.sees(cell))
             o->hearHelp(*this, door);
 }
 
-void Human::hearHelp(const Human& caller, Vec2i gate) {
+void Human::hearHelp(const Human& caller, Vec2i gate, bool bang) {
     if (dead() || state == State::Sleeping) return;
-    // Behind a wall, it knows the voice only of a friend.
-    bool known = isFriend(caller.id);
+    // Behind a wall, it knows the voice only of a friend; a fist on a door is anyone's.
+    bool known = isFriend(caller.id) && !bang;
     if (rescue_.heardHelp.insert(caller.id).second) {
-        if (known)
+        if (bang)
+            note("HEARD SOMEONE BANGING ON A DOOR");
+        else if (known)
             note("HEARD @ CALLING FOR HELP", caller.id);
         else
             note("HEARD SOMEONE CALLING FOR HELP");
         scare(DREAD_HELP_HEARD);
+        if (bang && rng_.chance(HEAR_BANG_SAY)) sayLater(talk::Moment::HearBang);
     }
     // The gate only if it has seen that tile; else just where the voice came from.
     bool knowsGate = memory.tile(gate) != Tile::Void;
     hearOf(caller.id, knowsGate ? gate : caller.cell, knowsGate, -1);
     weighRescue(caller.id);
 }
+
+void Human::wantBang(Vec2i door) {
+    if (state == State::Sleeping || state == State::Banging) return;
+    rescue_.bangDoor = door;
+    rescue_.bangWhen = clock_;
+    rethink_ = true;
+}
+
+bool Human::bangOnDoor(World& world) {
+    if (!rescue_.bangDoor) return false;
+    Vec2i door = *rescue_.bangDoor;
+    rescue_.bangDoor.reset();
+    // A key, the door seen open, or the moment gone: no banging.
+    if (keys > 0 || memory.tile(door) != Tile::DoorLocked || clock_ - rescue_.bangWhen > BANG_STALE) return false;
+    auto beside = [&](Vec2i c) { return std::abs(c.x - door.x) + std::abs(c.y - door.y) == 1; };
+    if (beside(cell)) {
+        startBanging(world, door);
+        return true;
+    }
+    auto p = search(world, beside);
+    if (!p || p->empty()) return false;
+    rescue_.bangAt = door;
+    startWalking(Goal::Bang, *p);
+    return true;
+}
+
+void Human::startBanging(World& world, Vec2i door) {
+    rescue_.bangAt = door;
+    rescue_.bangBlow = 0.0f;
+    if (door.x != cell.x) facingLeft = door.x < cell.x;
+    note(rescue_.slamGate ? "BANGED ON THE GATE" : "BANGED ON THE LOCKED DOOR");
+    sayLater(talk::Moment::BangDoor);
+    state = State::Banging;
+    goal = Goal::Bang;
+    moving = false;
+    path_.clear();
+    animTime = 0.0f;
+    glance_ = SIT_GLANCE;
+    timer = rng_.range(BANG_TIME_MIN, BANG_TIME_MAX);
+    // Heard farther than a voice, by anyone beyond the walls.
+    for (const auto& o : world.humans())
+        if (o.get() != this && !o->dead() && cheb(o->cell, cell) <= BANG_RADIUS && !o->sight.sees(cell))
+            o->hearHelp(*this, door, true);
+}
+
+void Human::banging(World& world, float dt) {
+    glance_ -= dt;
+    if (glance_ <= 0.0f) {
+        glance_ = SIT_GLANCE;
+        if (observe(world)) rethink_ = true;
+    }
+    if ((rescue_.bangBlow -= dt) <= 0.0f) {
+        rescue_.bangBlow += BANG_EVERY;
+        world.noise(NoiseKind::Bang, rescue_.bangAt, id);
+    }
+    // Done, opened, or something new to see to.
+    if (timer > 0.0f && !rethink_ && memory.tile(rescue_.bangAt) == Tile::DoorLocked) return;
+    state = State::Idle;
+    choose(world);
+}
+
+bool Human::bangLanded() const { return state == State::Banging && rescue_.bangBlow > BANG_EVERY * (1.0f - BANG_LANDED); }
 
 bool Human::caresForShutIn() const { return !isErratic() && traits.greedy < UNCARING_GREEDY; }
 
