@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
+#include <iterator>
+#include <raylib.h>
 
 namespace {
 
@@ -56,7 +58,49 @@ constexpr NoiseSound NOISE_SOUNDS[] = {
     {"hit", 0.9f, 16.0f, false},          // Hit
     {"death", 1.0f, 24.0f, true},         // Death
     {"knob", 0.6f, 10.0f, false},         // Knob
+    {"spray", 0.8f, 14.0f, false},        // Spray
+    {"drip", 0.25f, 6.0f, false},         // Drip
+    {"bite", 0.8f, 12.0f, false},         // Bite
+    {"swing", 0.5f, 10.0f, false},        // Swing
+    {"piss", 0.5f, 10.0f, false},         // Piss
+    {"plop", 0.6f, 10.0f, false},         // Feces
+    {"gulp", 0.5f, 9.0f, false},          // Gulp
+    {"sip", 0.4f, 8.0f, false},           // Sip
+    {"collapse", 0.9f, 16.0f, false},     // Collapse
+    {"vend_drop", 0.7f, 14.0f, false},    // VendDrop
+    {"vend_empty", 0.6f, 12.0f, false},   // VendEmpty
+    {"pick_key", 0.4f, 8.0f, false},      // PickKey
+    {"pick_cake", 0.35f, 8.0f, false},    // PickCake
+    {"pick_bottle", 0.4f, 8.0f, false},   // PickBottle
 };
+static_assert(std::size(NOISE_SOUNDS) == size_t(NoiseKind::PickBottle) + 1, "a sound for every noise");
+
+/// A noise is played this many times its size, kept between these.
+constexpr float NOISE_SIZE_MIN = 0.2f, NOISE_SIZE_MAX = 2.0f;
+/// Piss and feces sound of what they land in: a toilet, water, or the floor.
+constexpr const char* PISS_ON[] = {"piss", "piss_toilet", "piss_water"};
+constexpr const char* PLOP_ON[] = {"plop", "plop_toilet", "plop_water"};
+
+/// Sounds that go on while something lasts are played over and over, each
+/// time before the last has quite faded (this share of its length), so
+/// they run together: chewing, panting, snoring, flies, the hum, water.
+constexpr float LOOP_OVERLAP = 0.85f;
+/// While none is near enough, how often to look again, in seconds.
+constexpr float LOOP_RECHECK = 0.5f;
+/// Chewing, panting while winded, and snoring once deep asleep (this many
+/// seconds after lying down): how loud and how far.
+constexpr float CHEW_LOUD = 0.4f, CHEW_REACH = 9.0f;
+constexpr float PANT_LOUD = 0.35f, PANT_REACH = 8.0f;
+constexpr float SNORE_LOUD = 0.35f, SNORE_REACH = 10.0f, SNORE_AFTER = 3.0f;
+/// A snore waits up to this much longer than its length, so sleepers
+/// don't snore in step.
+constexpr float SNORE_SPREAD = 1.2f;
+/// Flies over the nearest rotting body or fresh feces, as loud as its smell
+/// is strong.
+constexpr float FLIES_LOUD = 0.45f, FLIES_REACH = 8.0f;
+/// The server racks' hum and water lapping, from the nearest within reach.
+constexpr float HUM_LOUD = 0.35f, HUM_REACH = 12.0f;
+constexpr float WATER_LOUD = 0.3f, WATER_REACH = 8.0f;
 
 /// The cells that block sight strictly between a and b, along a line.
 int wallsBetween(const World& world, Vec2i a, Vec2i b) {
@@ -71,6 +115,19 @@ int wallsBetween(const World& world, Vec2i a, Vec2i b) {
         if (p == b) return walls;
         if (opaque(world.tile(p)) && ++walls > MAX_WALLS) return walls;
     }
+}
+
+/// The nearest cell within reach of from whose tile is wanted.
+template <class Wanted>
+std::optional<Vec2i> nearestTile(const World& world, Vec2i from, int reach, Wanted wanted) {
+    std::optional<Vec2i> best;
+    int bestD = reach * reach + 1;
+    for (int dy = -reach; dy <= reach; dy++)
+        for (int dx = -reach; dx <= reach; dx++) {
+            int d = dx * dx + dy * dy;
+            if (d < bestD && wanted(world.tile(from + Vec2i{dx, dy}))) best = from + Vec2i{dx, dy}, bestD = d;
+        }
+    return best;
 }
 
 /// Which footstep sound a step onto cell makes.
@@ -153,13 +210,81 @@ void Hearing::noises(const World& world, const Human& listener, int speed) {
     for (size_t i = all.size() - size_t(fresh); i < all.size(); i++) {
         const Noise& n = all[i];
         const NoiseSound& ns = NOISE_SOUNDS[size_t(n.kind)];
-        hear(world, listener, n.cell, ns.name, ns.loud, ns.reach, ns.urgent, speed);
+        const char* name = ns.name;
+        if (n.kind == NoiseKind::Piss || n.kind == NoiseKind::Feces) {
+            Tile t = world.tile(n.cell);
+            int on = t == Tile::Toilet ? 1 : pooled(t) ? 2 : 0;
+            name = (n.kind == NoiseKind::Piss ? PISS_ON : PLOP_ON)[on];
+        }
+        float loud = ns.loud * std::clamp(n.size, NOISE_SIZE_MIN, NOISE_SIZE_MAX);
+        hear(world, listener, n.cell, name, loud, ns.reach, ns.urgent, speed);
+    }
+}
+
+bool Hearing::due(double& next, const char* name, float extra) {
+    double now = GetTime();
+    if (now < next) return false;
+    float len = audio::length(name);
+    next = now + (len > 0.0f ? len * LOOP_OVERLAP : LOOP_RECHECK) + extra;
+    return true;
+}
+
+// Chewing while eating, panting while winded, snoring deep asleep: each
+// human's own, played over and over while it lasts.
+void Hearing::bodies(const World& world, const Human& listener, int speed) {
+    for (const auto& h : world.humans()) {
+        Loops& l = loops_[h->id];
+        if (h->dead()) continue;
+        if (h->state == Human::State::Eating) {
+            if (due(l.chew, "chew")) hear(world, listener, h->cell, "chew", CHEW_LOUD, CHEW_REACH, false, speed);
+        } else {
+            l.chew = 0.0;
+        }
+        if (h->winded() && h->state != Human::State::Sleeping) {
+            if (due(l.pant, "pant")) hear(world, listener, h->cell, "pant", PANT_LOUD, PANT_REACH, false, speed);
+        } else {
+            l.pant = 0.0;
+        }
+        if (h->state == Human::State::Sleeping && h->animTime >= SNORE_AFTER) {
+            if (due(l.snore, "snore", rng_.range(0.0f, SNORE_SPREAD)))
+                hear(world, listener, h->cell, "snore", SNORE_LOUD, SNORE_REACH, false, speed);
+        } else {
+            l.snore = 0.0;
+        }
+    }
+}
+
+// Flies over what rots, the racks' hum and water lapping, from the nearest
+// of each, over and over.
+void Hearing::places(const World& world, const Human& listener, int speed) {
+    if (due(fliesAt_, "flies")) {
+        const Smell* best = nullptr;
+        float bestD = FLIES_REACH * FLIES_REACH;
+        for (const Smell& s : world.smells()) {
+            if (s.kind != SmellKind::Body && s.kind != SmellKind::Feces) continue;
+            Vec2i d = s.cell - listener.cell;
+            if (float dd = float(d.x * d.x + d.y * d.y); dd <= bestD) best = &s, bestD = dd;
+        }
+        if (best) hear(world, listener, best->cell, "flies", FLIES_LOUD * best->strength, FLIES_REACH, false, speed);
+        else fliesAt_ = GetTime() + LOOP_RECHECK;
+    }
+    if (due(humAt_, "hum")) {
+        if (auto rack = nearestTile(world, listener.cell, int(HUM_REACH), [](Tile t) { return t == Tile::Rack; }))
+            hear(world, listener, *rack, "hum", HUM_LOUD, HUM_REACH, false, speed);
+        else humAt_ = GetTime() + LOOP_RECHECK;
+    }
+    if (due(waterAt_, "water")) {
+        if (auto water = nearestTile(world, listener.cell, int(WATER_REACH), pooled))
+            hear(world, listener, *water, "water", WATER_LOUD, WATER_REACH, false, speed);
+        else waterAt_ = GetTime() + LOOP_RECHECK;
     }
 }
 
 void Hearing::update(const World& world, const Human& listener, int speed, bool reveal) {
     queue_.clear();
     noises(world, listener, speed);
+    bodies(world, listener, speed);
+    places(world, listener, speed);
     voices(world, listener, speed, reveal);
     footsteps(world, listener, speed);
     // The urgent first, then the loudest, as many as fit.

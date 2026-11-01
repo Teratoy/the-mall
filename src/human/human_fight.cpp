@@ -244,6 +244,7 @@ void Human::startPunch(Human& foe) {
 // will do).
 void Human::landPunch(World& world) {
     punchLanded = true;
+    world.noise(NoiseKind::Swing, cell, id);
     timer = PUNCH_FOLLOW;
     if (fight_.foe < 0) return;
     Human& f = world.human(fight_.foe);

@@ -250,8 +250,8 @@ Human* World::occupant(Vec2i cell) const {
     return it == occupied_.end() ? nullptr : it->second;
 }
 
-void World::noise(NoiseKind kind, Vec2i cell, int who) {
-    noises_.push_back({kind, cell, who});
+void World::noise(NoiseKind kind, Vec2i cell, int who, float size) {
+    noises_.push_back({kind, cell, who, size});
     noiseCount_++;
     if (noises_.size() > NOISES_KEPT) noises_.pop_front();
 }
@@ -817,6 +817,7 @@ int World::takePileCakes(Vec2i cell, int n) {
     if (it == piles_.end()) return 0;
     int got = std::clamp(n, 0, it->second.cakes);
     it->second.cakes -= got;
+    if (got > 0) noise(NoiseKind::PickCake, cell);
     if (it->second.empty()) piles_.erase(it);
     return got;
 }
@@ -826,6 +827,7 @@ Bottle World::takePileBottle(Vec2i cell, size_t i) {
     if (it == piles_.end() || i >= it->second.bottles.size()) return {};
     Bottle b = it->second.bottles[i];
     it->second.bottles.erase(it->second.bottles.begin() + long(i));
+    noise(NoiseKind::PickBottle, cell);
     if (it->second.empty()) piles_.erase(it);
     return b;
 }
@@ -976,8 +978,13 @@ void World::updateMachines(float dt) {
 // The bottom of what it holds goes first, so the rest stays shelved from the top.
 bool World::vend(Vec2i cell) {
     auto it = machineCells_.find(cell);
-    if (it == machineCells_.end() || machines_[size_t(it->second)].stock <= 0) return false;
+    if (it == machineCells_.end()) return false;
+    if (machines_[size_t(it->second)].stock <= 0) {
+        noise(NoiseKind::VendEmpty, cell);
+        return false;
+    }
     machines_[size_t(it->second)].stock--;
+    noise(NoiseKind::VendDrop, cell);
     return true;
 }
 

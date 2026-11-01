@@ -339,6 +339,7 @@ void Human::drink(World& world) {
         return choose(world);
     thirst = std::max(0.0f, thirst - gulp);
     takeIn(1.0f, 0.0f);
+    world.noise(NoiseKind::Gulp, water_.drinkAt, id);
     if (toilet) {
         float foul = toilet->dirt * TOILET_FOUL;
         if (health > FOUL_SURVIVE) health = std::max(FOUL_SURVIVE, health - FOUL_DAMAGE * foul);

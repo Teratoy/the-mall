@@ -23,6 +23,32 @@ enum class NoiseKind : uint8_t {
     Death,
     /// A shut door's handle tried, rattling against its lock.
     Knob,
+    /// Blood thrown from a blow; size grows with how much flew.
+    Spray,
+    /// A drop of blood falling from a wound, or round a body pooling (size
+    /// more than 1).
+    Drip,
+    /// A bite torn from a body.
+    Bite,
+    /// A punch thrown, landing or not.
+    Swing,
+    /// Piss and feces coming down, on a toilet, into water or on the floor:
+    /// the view tells which from the cell.
+    Piss,
+    Feces,
+    /// A gulp of water from a pool, a basin, a toilet or a tap, and a sip
+    /// from a bottle.
+    Gulp,
+    Sip,
+    /// Someone dropping where they stand, worn through.
+    Collapse,
+    /// A vending machine dropping what was paid for, and one with nothing left.
+    VendDrop,
+    VendEmpty,
+    /// A key or a cake picked up, and a bottle taken from a pile.
+    PickKey,
+    PickCake,
+    PickBottle,
 };
 
 struct Noise {
@@ -30,4 +56,6 @@ struct Noise {
     Vec2i cell;
     /// Whose noise it was, or -1.
     int who = -1;
+    /// How big it was, 1 as usual: the view makes it louder or quieter.
+    float size = 1.0f;
 };

@@ -158,6 +158,14 @@ void play(std::string_view name, float volume, float pan, float pitch, bool muff
     PlaySound(s);
 }
 
+float length(std::string_view name) {
+    if (!opened) return 0.0f;
+    if (!loaded) reload();
+    auto it = table.find(name);
+    if (it == table.end() || it->second.clear.stream.sampleRate == 0) return 0.0f;
+    return float(it->second.clear.frameCount) / float(it->second.clear.stream.sampleRate);
+}
+
 Settings& settings() { return current; }
 
 float gainOf(int step) {

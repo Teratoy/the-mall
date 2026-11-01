@@ -42,7 +42,7 @@ DIRTYSHEET := build/dirty_sheet
 # One human shooting all eight ways, as animation frames (tools/frames_gif.py makes the GIF).
 SHOOTANIM := build/shoot_anim
 
-.PHONY: all run clean trips stuck check golden coverage shot scenarios genprobe genview lightprobe exploreprobe hidef bottlesheet dirtysheet shootanim spritesheet soundsheet musicsheet spriteref fontdump lines sprites sounds trapprobe icon apk install-apk logcat simprofile gprof
+.PHONY: all run clean trips stuck check golden coverage shot scenarios genprobe genview lightprobe exploreprobe hidef bottlesheet dirtysheet shootanim spritesheet soundsheet musicsheet spriteref fontdump lines sprites sounds trapprobe icon apk install-apk logcat simprofile noiseprobe gprof
 
 all: $(BIN)
 
@@ -233,6 +233,15 @@ $(SIMPROFILE): tools/sim_profile.cpp tests/probe.h $(filter-out build/main.o,$(O
 
 simprofile: $(SIMPROFILE)
 	./$(SIMPROFILE) $(SIMPROFILE_ARGS)
+
+# How many of each noise the sim makes for the view to hear (tools/noise_probe.cpp).
+NOISEPROBE := build/noise_probe
+NOISEPROBE_ARGS ?= 6 15 6
+$(NOISEPROBE): tools/noise_probe.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDLIBS)
+
+noiseprobe: $(NOISEPROBE)
+	./$(NOISEPROBE) $(NOISEPROBE_ARGS)
 
 # The same run built with -pg, its gprof flat profile and call graph in
 # build/gprof.txt. The drawing code isn't needed, so it isn't built. It runs

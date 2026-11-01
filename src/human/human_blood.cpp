@@ -24,9 +24,14 @@ constexpr float BODY_HALF_PX = 9.0f;
 constexpr float BODY_HEIGHT_PX = 10.0f;
 constexpr float POOL_SPREAD_PX = 2.0f;
 constexpr float POOL_DROP_MUL = 1.3f;
+/// A drop falling into the pool round a body sounds this much bigger.
+constexpr float POOL_SOUND = 1.4f;
 /// Drops from a hit, and how much more per damage; they fly up to this far.
 constexpr int SPRAY_DROPS = 2;
 constexpr float SPRAY_DROPS_PER_DAMAGE = 25.0f;
+/// A spray of this many drops sounds as loud as a usual one; fewer or more
+/// sound smaller or bigger, between the two limits.
+constexpr float SPRAY_SOUND_DROPS = 8.0f, SPRAY_SOUND_MIN = 0.4f, SPRAY_SOUND_MAX = 1.5f;
 constexpr float SPRAY_REACH_PX = 2.0f * CELL_PX;
 /// Half the angle a spray fans out over, in radians.
 constexpr float SPRAY_FAN = 0.6f;
@@ -270,6 +275,8 @@ void Human::spill(World& world, float dt) {
     for (const Spray& s : gore_.sprays) {
         stain({s.part}, HIT_PIXELS + int(s.damage * HIT_PIXELS_PER_DAMAGE), HIT_INK);
         int n = SPRAY_DROPS + int(s.damage * SPRAY_DROPS_PER_DAMAGE);
+        float big = std::clamp(float(n) / SPRAY_SOUND_DROPS, SPRAY_SOUND_MIN, SPRAY_SOUND_MAX);
+        world.noise(NoiseKind::Spray, cell, id, big);
         float len = std::hypot(s.dx, s.dy);
         float aim = std::atan2(s.dy, s.dx);
         for (int i = 0; i < n; i++) {
@@ -342,6 +349,7 @@ void Human::spill(World& world, float dt) {
         else
             x += rng_.range(-1.5f, 1.5f);
         world.blood().drop(world, x, y, radius, id, rng_);
+        world.noise(NoiseKind::Drip, cell, id, dead() ? POOL_SOUND : 1.0f);
         stain({w->part}, 1, DRIP_INK);
     }
 }

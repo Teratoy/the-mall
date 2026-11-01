@@ -2,6 +2,7 @@
 #include "core/rng.h"
 #include "core/vec.h"
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -38,6 +39,13 @@ private:
     std::unordered_map<int, int> feet_;
     std::unordered_map<int, std::string> lines_;
     uint64_t noisesHeard_ = 0;
+    /// When each sound that goes on is next played again, in seconds of
+    /// real time (GetTime): each human's, and the places'.
+    struct Loops {
+        double chew = 0.0, pant = 0.0, snore = 0.0;
+    };
+    std::unordered_map<int, Loops> loops_;
+    double fliesAt_ = 0.0, humAt_ = 0.0, waterAt_ = 0.0;
     /// The wobble on each sound, for the ear only, never the sim's dice.
     Rng rng_{0x5a17};
 
@@ -47,4 +55,9 @@ private:
     void footsteps(const World& world, const Human& listener, int speed);
     void voices(const World& world, const Human& listener, int speed, bool reveal);
     void noises(const World& world, const Human& listener, int speed);
+    void bodies(const World& world, const Human& listener, int speed);
+    void places(const World& world, const Human& listener, int speed);
+    /// Whether a sound that goes on is due again, and if so when next:
+    /// most of its length from now, and extra seconds more.
+    bool due(double& next, const char* name, float extra = 0.0f);
 };

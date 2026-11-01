@@ -27,6 +27,10 @@ bool reload();
 /// name is reported once and plays nothing.
 void play(std::string_view name, float volume = 1.0f, float pan = 0.5f, float pitch = 1.0f, bool muffled = false);
 
+/// How long a sound lasts in seconds, 0 for one unknown or not loaded:
+/// for sounds played over and over, as a fly's buzz.
+float length(std::string_view name);
+
 Settings& settings();
 /// A volume step as a gain, heard as its square, which sounds more even
 /// across the steps.

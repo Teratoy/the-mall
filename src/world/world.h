@@ -170,7 +170,11 @@ public:
     const std::unordered_map<Vec2i, uint8_t, Vec2iHash>& cables() const { return cables_; }
 
     bool hasKey(Vec2i cell) const { return keys_.count(cell) > 0; }
-    bool takeKey(Vec2i cell) { return keys_.erase(cell) > 0; }
+    bool takeKey(Vec2i cell) {
+        if (!keys_.erase(cell)) return false;
+        noise(NoiseKind::PickKey, cell);
+        return true;
+    }
     const std::unordered_set<Vec2i, Vec2iHash>& keys() const { return keys_; }
     /// Unlocks the door the cell is part of, on both sides, or the slam
     /// room gate it is, for good; or opens the airlock door it is, until it
@@ -178,7 +182,11 @@ public:
     bool unlock(Vec2i cell);
 
     bool hasCake(Vec2i cell) const { return cakes_.count(cell) > 0; }
-    bool takeCake(Vec2i cell) { return cakes_.erase(cell) > 0; }
+    bool takeCake(Vec2i cell) {
+        if (!cakes_.erase(cell)) return false;
+        noise(NoiseKind::PickCake, cell);
+        return true;
+    }
     const std::unordered_set<Vec2i, Vec2iHash>& cakes() const { return cakes_; }
 
     /// What lies put down on a floor cell, if anything.
@@ -223,7 +231,7 @@ public:
     float time() const { return time_; }
     /// Something made a sound the player may hear. For the view only:
     /// nothing in the sim reads noises back, so they change nothing.
-    void noise(NoiseKind kind, Vec2i cell, int who = -1);
+    void noise(NoiseKind kind, Vec2i cell, int who = -1, float size = 1.0f);
     /// The newest noises, oldest first, and how many were ever made, so the
     /// view can tell which it hasn't heard yet.
     const std::deque<Noise>& noises() const { return noises_; }

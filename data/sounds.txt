@@ -126,3 +126,124 @@ sound death gain 1.1
     noise 500 120 gain 0.7 decay 0.35 lowpass 1100
     noise 900 300 gain 0.3 delay 0.35 attack 0.08 hold 0.15 decay 0.5 lowpass 1200 wobble 1
     saw 140 70 gain 0.15 delay 0.35 attack 0.1 hold 0.1 decay 0.5 lowpass 600 wobble 0.4
+
+# Blood thrown from a blow: a wet burst and its splatter.
+sound spray
+    noise 2200 600 gain 0.6 attack 0.003 decay 0.12 lowpass 3000 wobble 0.9
+    noise 900 300 gain 0.4 delay 0.02 decay 0.15 lowpass 1500 repeat 3 gap 0.03 fade 0.6 wobble 1
+    sine 260 120 gain 0.2 decay 0.08
+
+# A drop of blood falling.
+sound drip
+    sine 900 1500 gain 0.35 attack 0.001 decay 0.04
+    noise 1200 gain 0.12 decay 0.02 lowpass 2000
+
+# A bite torn from a body: a wet crunch, and the pull of it.
+sound bite
+    noise 1500 500 gain 0.6 attack 0.005 decay 0.1 lowpass 2600 wobble 1
+    square 160 70 gain 0.3 decay 0.06 duty 0.35
+    noise 700 250 gain 0.4 delay 0.08 attack 0.02 decay 0.2 lowpass 1200 wobble 1
+
+# A punch thrown: the air it cuts.
+sound swing
+    noise 600 2400 gain 0.4 attack 0.06 decay 0.12 lowpass 3500 highpass 400
+
+# --- Bodies.
+
+# Pissing on the floor, into a toilet, into water.
+sound piss
+    noise 2600 2200 gain 0.35 attack 0.15 hold 1.8 decay 0.5 lowpass 3200 highpass 600 wobble 0.5
+
+sound piss_toilet
+    noise 1800 1500 gain 0.35 attack 0.15 hold 1.8 decay 0.5 lowpass 2600 highpass 300 wobble 0.6
+    sine 700 650 gain 0.08 attack 0.15 hold 1.8 decay 0.5 wobble 0.8
+
+sound piss_water
+    noise 1400 1200 gain 0.35 attack 0.15 hold 1.8 decay 0.5 lowpass 2200 highpass 250 wobble 0.7
+    sine 500 450 gain 0.1 attack 0.15 hold 1.8 decay 0.5 wobble 0.9
+
+# Feces coming down: on the floor a wet slap, in a toilet or water a plop.
+sound plop
+    noise 800 300 gain 0.6 attack 0.004 decay 0.12 lowpass 1400 wobble 0.8
+    sine 160 90 gain 0.35 decay 0.1
+
+sound plop_toilet
+    sine 380 900 gain 0.5 attack 0.002 decay 0.08
+    noise 1500 gain 0.25 delay 0.03 decay 0.15 lowpass 2400 wobble 0.6
+
+sound plop_water
+    sine 300 700 gain 0.5 decay 0.1
+    noise 1200 gain 0.3 delay 0.03 decay 0.2 lowpass 2000 wobble 0.6
+
+# A gulp of water, and a sip from a bottle.
+sound gulp
+    sine 220 480 gain 0.45 attack 0.01 decay 0.12 repeat 2 gap 0.35 fade 0.8
+    noise 600 gain 0.15 decay 0.08 lowpass 1000 repeat 2 gap 0.35 fade 0.8
+
+sound sip
+    sine 500 800 gain 0.3 attack 0.01 decay 0.06
+    noise 2500 gain 0.15 attack 0.02 decay 0.1 highpass 1200
+
+# Chewing a cake, over and over while eating.
+sound chew
+    noise 1100 600 gain 0.4 attack 0.01 decay 0.08 lowpass 1800 repeat 3 gap 0.18 fade 0.8 wobble 0.9
+
+# Panting while winded: a breath out and a breath in.
+sound pant
+    noise 1800 1400 gain 0.35 attack 0.06 decay 0.14 lowpass 3000 highpass 600
+    noise 1400 1800 gain 0.3 delay 0.25 attack 0.05 decay 0.15 lowpass 3000 highpass 600
+
+# A snore, deep asleep: the rattle in, the breath out.
+sound snore
+    saw 70 60 gain 0.35 attack 0.4 hold 0.5 decay 0.4 lowpass 500 wobble 0.3
+    noise 300 gain 0.25 attack 0.4 hold 0.5 decay 0.4 lowpass 700 wobble 0.6
+    noise 1600 gain 0.15 delay 1.3 attack 0.3 decay 0.5 highpass 700
+
+# Dropping where it stands, worn through: the body hitting the floor.
+sound collapse
+    square 80 40 gain 0.7 decay 0.25 duty 0.45
+    noise 400 120 gain 0.6 decay 0.3 lowpass 900
+
+# --- Things.
+
+# A vending machine: the motor turning, then what was paid for dropping.
+sound vend_drop
+    square 220 260 gain 0.15 attack 0.05 hold 0.3 decay 0.05 duty 0.3
+    square 140 90 gain 0.5 delay 0.4 decay 0.15 duty 0.4
+    noise 800 gain 0.4 delay 0.4 decay 0.08 lowpass 1500
+    square 1200 gain 0.15 delay 0.45 decay 0.05 duty 0.25
+
+# A vending machine with nothing left: the motor turns, and nothing comes.
+sound vend_empty
+    square 110 gain 0.3 attack 0.01 hold 0.25 decay 0.05
+    square 220 gain 0.1 hold 0.25 decay 0.05
+
+# A key picked up, a cake lifted, a bottle taken from a pile.
+sound pick_key
+    square 2400 2600 gain 0.18 decay 0.04 duty 0.2 repeat 3 gap 0.05 fade 0.7
+
+sound pick_cake
+    noise 1200 gain 0.25 attack 0.01 decay 0.06 lowpass 1600
+    sine 300 400 gain 0.15 decay 0.06
+
+sound pick_bottle
+    square 600 500 gain 0.2 decay 0.04 duty 0.3
+    noise 1600 1000 gain 0.2 delay 0.04 attack 0.03 decay 0.2 lowpass 2200 wobble 0.7
+
+# --- Places. Played over and over while near, each fading in and out.
+
+# Flies over a rotting body or fresh feces.
+sound flies
+    saw 180 190 gain 0.2 attack 0.3 hold 0.8 decay 0.4 wobble 0.4
+    saw 230 220 gain 0.15 attack 0.3 hold 0.8 decay 0.4 wobble 0.5
+
+# The server racks humming.
+sound hum
+    square 60 gain 0.25 attack 0.4 hold 1.2 decay 0.4 lowpass 400
+    sine 120 gain 0.15 attack 0.4 hold 1.2 decay 0.4
+    noise 3000 gain 0.04 attack 0.4 hold 1.2 decay 0.4 highpass 2000
+
+# Water lapping at a pool, a canal or a basin.
+sound water
+    noise 900 600 gain 0.3 attack 0.4 hold 0.6 decay 0.8 lowpass 1200 wobble 0.6
+    noise 1500 1000 gain 0.15 delay 0.6 attack 0.3 decay 0.6 lowpass 2000 wobble 0.6

@@ -162,6 +162,27 @@ needs a new `NoiseKind` and a `world.noise()` call where it happens;
 **view** is for `hearing.cpp` to tell from state frame to frame, as
 footsteps and pops are. New to this plan unless marked (planned).
 
+### Built (2026-11-01): the survey's ten
+
+The user asked for the ten below. New noises, made where it happens
+(`world.noise`, with a `size` the view turns into loudness): `Spray`
+(louder the more drops a blow throws), `Drip` (bigger round a body
+pooling), `Bite` (softer from a rotten body), `Swing` (every punch,
+`landPunch`), `Piss` and `Feces` (relieving, accidents, letting go at
+death; the view picks the toilet, water or floor sound from the cell),
+`Gulp`, `Sip`, `Collapse`, `VendDrop`, `VendEmpty` (in `World::vend`),
+`PickKey`, `PickCake` (`World::takeKey`/`takeCake` and piles),
+`PickBottle`. Heard by the view without noises, played over and over
+while they last (each again at 85% of its length, in real time):
+`chew` while eating, `pant` while winded, `snore` from 3 s into sleep
+(a random wait so sleepers don't snore in step), and for the listener's
+nearest: `flies` over a rotting body or fresh feces (as loud as its
+smell), `hum` from a server rack, `water` from a pool or basin. 24 new
+sounds in `data/sounds.txt` (Violence, then new Bodies, Things and
+Places sections). `make noiseprobe` counts each noise over soak worlds:
+all are made except `Collapse` and `VendEmpty`, which the soak's 90
+minutes never reach. `make check` unchanged. Not listened to in game yet.
+
 The ten that matter most, in order:
 1. Blood spraying from a blow, louder the more blood it throws
    (`spill`, human_blood.cpp). Sim, or a wet layer folded into `hit`.
