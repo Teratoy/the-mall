@@ -52,5 +52,8 @@ std::vector<Def> parse(std::istream& in, const std::string& source);
 /// (Hz, 0 for none) dulls it before the crush, as heard through a wall.
 /// The same def always renders the same samples.
 std::vector<float> render(const Def& def, float lowpass = 0.0f);
+/// Samples at SAMPLE_RATE crushed in place to bits at rate, after gain,
+/// dulled under lowpass Hz first when it isn't 0. render ends with it.
+void crush(std::vector<float>& samples, int bits, float rate, float lowpass = 0.0f, float gain = 1.0f);
 
 } // namespace synth

@@ -23,6 +23,9 @@ constexpr int VOICES = 6;
 /// Through a wall a sound keeps only what is under this, in Hz.
 constexpr float MUFFLE_HZ = 450.0f;
 constexpr const char* SETTINGS_FILE = "settings.txt";
+/// The crush a voice gets: as data/sounds.txt's sounds by default.
+constexpr int VOICE_BITS = 5;
+constexpr float VOICE_RATE = 8000.0f;
 
 /// A sound made ready to play, clear and muffled, each with its voices.
 struct Entry {
@@ -36,6 +39,8 @@ bool loaded = false;
 Settings current;
 std::map<std::string, Entry, std::less<>> table;
 std::set<std::string, std::less<>> missing;
+/// Voices playing, each its own sound, let go once it has finished.
+std::vector<Sound> talking;
 
 /// Where the file may be: named by THEMALL_SOUNDS, beside where the game
 /// was started, or beside the game itself.
@@ -102,6 +107,7 @@ void loadSettings() {
         v = std::clamp(v, 0, VOLUME_STEPS);
         if (key == "master") current.master = v;
         else if (key == "sounds") current.sounds = v;
+        else if (key == "voices") current.voices = v;
     }
 }
 
@@ -118,6 +124,8 @@ void close() {
     if (!opened) return;
     for (auto& [name, e] : table) unload(e);
     table.clear();
+    for (Sound& s : talking) UnloadSound(s);
+    talking.clear();
     CloseAudioDevice();
     opened = false;
 }
@@ -160,11 +168,29 @@ void play(std::string_view name, float volume, float pan, float pitch, bool muff
     PlaySound(s);
 }
 
+void speak(const std::vector<float>& samples, float volume, float pan, bool muffled) {
+    if (!opened || samples.empty()) return;
+    std::erase_if(talking, [](Sound& s) {
+        if (IsSoundPlaying(s)) return false;
+        UnloadSound(s);
+        return true;
+    });
+    float v = volume * gainOf(current.master) * gainOf(current.voices);
+    if (v <= 0.0f) return;
+    std::vector<float> crushed = samples;
+    synth::crush(crushed, VOICE_BITS, VOICE_RATE, muffled ? MUFFLE_HZ : 0.0f);
+    Sound s = soundOf(crushed);
+    SetSoundVolume(s, std::min(v, 1.0f));
+    SetSoundPan(s, std::clamp(pan, 0.0f, 1.0f));
+    PlaySound(s);
+    talking.push_back(s);
+}
+
 Settings& settings() { return current; }
 
 void save() {
     std::ofstream out(files::savePath(SETTINGS_FILE));
-    out << "master " << current.master << "\nsounds " << current.sounds << "\n";
+    out << "master " << current.master << "\nsounds " << current.sounds << "\nvoices " << current.voices << "\n";
 }
 
 } // namespace audio

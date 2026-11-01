@@ -1,5 +1,6 @@
 #include "scenes/config_panel.h"
 #include "audio/audio.h"
+#include "audio/voice.h"
 #include "render/canvas.h"
 #include "ui/pixel_ui.h"
 #include <algorithm>
@@ -13,13 +14,16 @@ constexpr int ROWS_Y = TITLE_Y + 24, ROW_STEP = 22;
 /// The - and + buttons, the pips between them, and the gaps in a row.
 constexpr int STEP_W = 16, STEP_H = 16, PIP_W = 5, PIP_H = 8, PIP_GAP = 2, GAP = 6;
 constexpr int BACK_W = 100, BACK_H = 24, BACK_GAP = 14;
+/// Said when VOICES changes, to hear how loud.
+constexpr const char* SAMPLE_LINE = "HELLO?";
 constexpr Color PIP_ON = ui::BRIGHT, PIP_OFF = ui::GROUND;
 
 struct Row {
     const char* label;
     int audio::Settings::*value;
 };
-constexpr Row ROWS[] = {{"MASTER", &audio::Settings::master}, {"SOUNDS", &audio::Settings::sounds}};
+constexpr Row ROWS[] = {{"MASTER", &audio::Settings::master}, {"SOUNDS", &audio::Settings::sounds},
+                        {"VOICES", &audio::Settings::voices}};
 
 } // namespace
 
@@ -46,7 +50,9 @@ bool ConfigPanel::draw(Vector2 mouse, int width) {
         if (step && std::clamp(v + step, 0, audio::VOLUME_STEPS) != v) {
             v += step;
             audio::save();
-            audio::play("pop");
+            // A voice is set by hearing one.
+            if (r.value == &audio::Settings::voices) audio::speak(voice::speak(voice::Voice{}, SAMPLE_LINE));
+            else audio::play("pop");
         }
         y += ROW_STEP;
     }

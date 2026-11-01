@@ -182,17 +182,21 @@ std::vector<float> render(const Def& def, float lowpass) {
         for (int k = 0; k < l.repeat; k++, loud *= l.fade)
             addLayer(out, l, size_t((l.delay + k * l.gap) * SAMPLE_RATE), loud, rng);
     }
-    // Through a wall, then crushed: held for a whole crushed sample, and
-    // rounded to a few levels.
+    crush(out, def.bits, def.rate, lowpass, def.gain);
+    return out;
+}
+
+// Through a wall, then crushed: held for a whole crushed sample, and
+// rounded to a few levels.
+void crush(std::vector<float>& samples, int bits, float rate, float lowpass, float gain) {
     float lowStep = lowpass > 0.0f ? smoothing(lowpass) : 1.0f, low = 0.0f;
-    float levels = float(1 << std::max(1, def.bits - 1));
-    float every = SAMPLE_RATE / std::max(def.rate, 1.0f), held = 0.0f, since = every;
-    for (float& s : out) {
-        low += (std::clamp(s * def.gain, -1.0f, 1.0f) - low) * lowStep;
+    float levels = float(1 << std::max(1, bits - 1));
+    float every = SAMPLE_RATE / std::max(rate, 1.0f), held = 0.0f, since = every;
+    for (float& s : samples) {
+        low += (std::clamp(s * gain, -1.0f, 1.0f) - low) * lowStep;
         if ((since += 1.0f) >= every) since -= every, held = std::round(low * levels) / levels;
         s = std::clamp(held, -1.0f, 1.0f);
     }
-    return out;
 }
 
 } // namespace synth

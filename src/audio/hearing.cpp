@@ -1,5 +1,6 @@
 #include "audio/hearing.h"
 #include "audio/audio.h"
+#include "audio/human_voice.h"
 #include "human/human.h"
 #include "render/human_sprites.h"
 #include "render/world_view.h"
@@ -37,6 +38,12 @@ constexpr float WET_FRESH = 0.3f, FILTH_FRESH = 0.4f;
 constexpr float POP_LOUD = 0.45f, POP_REACH = 16.0f, POP_PITCH_LOW = 0.85f, POP_PITCH_SPREAD = 0.35f;
 /// A frightened line is a cry, heard through walls.
 constexpr float CRY_LOUD = 0.9f, CRY_REACH = 22.0f;
+/// A line said aloud, at X1: how loud and how far it carries; frightened,
+/// it carries as far as a cry, through walls.
+constexpr float SAY_LOUD = 0.8f, SAY_REACH = 16.0f, SAY_FEAR_LOUD = 1.0f;
+/// Lines made into voices each frame (the rest wait for the next), and
+/// how many made voices are kept to say again.
+constexpr size_t MADE_PER_FRAME = 3, MADE_KEPT = 48;
 
 /// How each of the world's noises sounds: its sound, how loud, how far it
 /// carries in cells, and whether it always plays.
@@ -90,23 +97,31 @@ const char* stepSound(const World& world, Vec2i cell, bool running) {
 
 } // namespace
 
-void Hearing::hear(const World& world, const Human& listener, Vec2i cell, const char* name, float loud, float reach,
-                   bool urgent, int speed) {
+std::optional<Hearing::Heard> Hearing::heardAs(const World& world, const Human& listener, Vec2i cell, float loud,
+                                               float reach, bool urgent, int speed) {
     Vec2i d = cell - listener.cell;
     float dist = std::sqrt(float(d.x * d.x + d.y * d.y));
     float fade = 1.0f - dist / reach;
-    if (fade <= 0.0f) return;
+    if (fade <= 0.0f) return std::nullopt;
     float v = loud * fade * fade;
     int walls = dist > 1.5f ? wallsBetween(world, listener.cell, cell) : 0;
-    if (walls > MAX_WALLS) return;
+    if (walls > MAX_WALLS) return std::nullopt;
     v *= std::pow(WALL_KEEP, float(walls));
     if (listener.state == Human::State::Sleeping) v *= urgent ? ASLEEP_URGENT_KEEP : ASLEEP_KEEP;
     // Fast, the world would roar: what doesn't have to play grows quieter.
     if (!urgent) v /= std::sqrt(float(speed));
-    if (v < QUIET) return;
+    if (v < QUIET) return std::nullopt;
     float pan = 0.5f - std::clamp(d.x / PAN_CELLS, -1.0f, 1.0f) * PAN_WIDTH;
-    float pitch = 1.0f + rng_.range(-PITCH_WOBBLE, PITCH_WOBBLE);
-    queue_.push_back({name, v, pan, pitch, walls > 0, urgent});
+    return Heard{nullptr, v, pan, 1.0f, walls > 0, urgent};
+}
+
+void Hearing::hear(const World& world, const Human& listener, Vec2i cell, const char* name, float loud, float reach,
+                   bool urgent, int speed) {
+    std::optional<Heard> h = heardAs(world, listener, cell, loud, reach, urgent, speed);
+    if (!h) return;
+    h->name = name;
+    h->pitch = 1.0f + rng_.range(-PITCH_WOBBLE, PITCH_WOBBLE);
+    queue_.push_back(*h);
 }
 
 // A step is heard as a foot comes down in the walk or run art, so the
@@ -124,8 +139,9 @@ void Hearing::footsteps(const World& world, const Human& listener, int speed) {
     }
 }
 
-// A new line over a head pops, if the player can see the bubble; one said
-// in fear is a cry, heard bubble or not.
+// At X1 a new line is said aloud, in the speaker's voice, if the
+// listener could hear it. Faster, one over a head pops, if the player can
+// see the bubble, and one said in fear is a cry, heard bubble or not.
 void Hearing::voices(const World& world, const Human& listener, int speed, bool reveal) {
     for (const auto& h : world.humans()) {
         const Human::Speech* s = h->dead() ? nullptr : h->speaking();
@@ -134,7 +150,12 @@ void Hearing::voices(const World& world, const Human& listener, int speed, bool 
         if (fresh || it->second == line) continue;
         it->second = line;
         if (line.empty()) continue;
-        if (s->tone == talk::Tone::Fear) {
+        bool fear = s->tone == talk::Tone::Fear;
+        if (speed == 1) {
+            std::optional<Heard> heard = heardAs(world, listener, h->cell, fear ? SAY_FEAR_LOUD : SAY_LOUD,
+                                                 fear ? CRY_REACH : SAY_REACH, fear, speed);
+            if (heard) said_.push_back({voice::of(*h, s->tone), line, heard->volume, heard->pan, heard->muffled});
+        } else if (fear) {
             hear(world, listener, h->cell, "cry", CRY_LOUD, CRY_REACH, true, speed);
         } else if (shown(listener, *h, reveal)) {
             size_t before = queue_.size();
@@ -143,6 +164,29 @@ void Hearing::voices(const World& world, const Human& listener, int speed, bool 
             if (queue_.size() > before)
                 queue_.back().pitch *= POP_PITCH_LOW + POP_PITCH_SPREAD * float(h->id * 37 % 17) / 17.0f;
         }
+    }
+}
+
+// A line said again in the same voice is played from what was made.
+void Hearing::speak() {
+    for (size_t n = 0; n < MADE_PER_FRAME && !said_.empty(); n++) {
+        const Said& s = said_.front();
+        const voice::Voice& v = s.voice;
+        uint64_t key = 1469598103934665603ULL;
+        auto mix = [&](uint64_t x) { key = (key ^ x) * 1099511628211ULL; };
+        for (unsigned char c : s.text) mix(c);
+        for (float f : {v.pitch, v.speed, v.size, v.brightness, v.variation, v.chirp, v.articulation, v.vowelCue,
+                        v.intonation, v.chop, v.shake, v.volume})
+            mix(uint64_t(std::lround(double(f) * 1000.0)));
+        mix(v.seed), mix(uint64_t(v.kind));
+        auto it = made_.find(key);
+        if (it == made_.end()) {
+            it = made_.emplace(key, voice::speak(v, s.text)).first;
+            madeOrder_.push_back(key);
+            if (madeOrder_.size() > MADE_KEPT) made_.erase(madeOrder_.front()), madeOrder_.pop_front();
+        }
+        audio::speak(it->second, s.volume, s.pan, s.muffled);
+        said_.pop_front();
     }
 }
 
@@ -171,10 +215,12 @@ void Hearing::update(const World& world, const Human& listener, int speed, bool 
         if (i >= MAX_PER_FRAME && !h.urgent) break;
         audio::play(h.name, h.volume, h.pan, h.pitch, h.muffled);
     }
+    speak();
 }
 
 void Hearing::skip(const World& world) {
     noisesHeard_ = world.noiseCount();
+    said_.clear();
     for (const auto& h : world.humans()) {
         feet_[h->id] = h->dead() ? -1 : footfalls(poseOf(*h), h->animTime);
         const Human::Speech* s = h->dead() ? nullptr : h->speaking();

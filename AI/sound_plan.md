@@ -242,6 +242,10 @@ loudest first, besides the urgent ones (cries, slams, spikes, deaths).
 - Urgent moments (`talk::isUrgent`) get their own louder cry instead,
   cutting in like their bubbles.
 
+Voiced since 2026-11-01: see [voice_plan.md](voice_plan.md). At X1
+every line in earshot is said in the speaker's own voice, replacing the
+pop and the cry; faster, the pop and cry below still play.
+
 ### Built early (2026-11-01)
 
 A pop as a bubble the player can see opens, pitched by the speaker's id.
