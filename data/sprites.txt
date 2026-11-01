@@ -93,10 +93,10 @@ oN
 sprite ammo box
 # A box of rounds on a table or the floor, seen from above, the lid on: as
 # it lies until someone opens it.
-ink l 8a8a6a lid lit
-ink L 6c6e52 lid
-ink w c8c4a8 label
-ink d 4a4c38 front
+ink l b2b880 lid lit
+ink L 7a8044 lid
+ink w f0ead0 label
+ink d 2c2e1a front
 ......
 .llll.
 .LwwL.
@@ -108,12 +108,12 @@ sprite ammo box open
 # Opened, the lid standing up behind, the rounds' brass tops in rows, in
 # two shades so each shows. The game shows as many rounds (b and c) as are
 # left, taking the last ones first; the rest show the box's inside (i).
-ink L 6c6e52 lid
-ink k 8a8a6a rim
-ink b b4a064 round
-ink c 8a7848 round, shade
-ink i 2e3024 inside
-ink d 4a4c38 front
+ink L 7a8044 lid
+ink k b2b880 rim
+ink b dcc070 round
+ink c a08438 round, shade
+ink i 16170e inside
+ink d 2c2e1a front
 .LLLL.
 .kkkk.
 .bcbc.
