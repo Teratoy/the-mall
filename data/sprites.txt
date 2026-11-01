@@ -1919,6 +1919,331 @@ AAAAAAAAAAAAAvvvvC
 kkkkkkkkkkkkkktTcC
 kk............tTcC
 
+group Shelves
+
+sprite shelf wood
+# An empty oak bookcase, two cells wide, seen from the front against a wall: three bare boards
+# and the floor of it, the dark back planks showing between. Not drawn by the game yet.
+ink T c89a62 wood lit
+ink W b0844e wood
+ink w 7c5630 wood shade
+ink g 9a7040 grain
+ink B 5e4024 back
+ink b 4a3420 back seam
+ink s 3e2618 under a board
+ink K 4a2e1e plinth
+TTTTTTTTTTTT
+WWWgWWWWWgWw
+Wssssssssssw
+WBBBBBbBBBBw
+WBBBBBbBBBBw
+WBBBBBbBBBBw
+WTTTTTTTTTTw
+WWWWgWWWWWWw
+Wssssssssssw
+WBBBBBbBBBBw
+WBBBBBbBBBBw
+WBBBBBbBBBBw
+WTTTTTTTTTTw
+WWWWWWWWgWWw
+Wssssssssssw
+WBBBBBbBBBBw
+WBBBBBbBBBBw
+WBBBBBbBBBBw
+WTTTTTTTTTTw
+WWgWWWWWWWWw
+WKKKKKKKKKKw
+
+sprite shelf wood narrow
+# The oak bookcase one cell wide, with a board more.
+ink T c89a62 wood lit
+ink W b0844e wood
+ink w 7c5630 wood shade
+ink g 9a7040 grain
+ink B 5e4024 back
+ink s 3e2618 under a board
+ink K 4a2e1e plinth
+TTTTTT
+WWgWWw
+Wssssw
+WBBBBw
+WBBBBw
+WTTTTw
+WWWgWw
+Wssssw
+WBBBBw
+WBBBBw
+WTTTTw
+WgWWWw
+Wssssw
+WBBBBw
+WBBBBw
+WTTTTw
+WWWWgw
+Wssssw
+WBBBBw
+WTTTTw
+WKKKKw
+
+sprite shelf wood low
+# A low oak sideboard, three cells wide and waist high, split down the middle, empty.
+ink T c89a62 wood lit
+ink W b0844e wood
+ink w 7c5630 wood shade
+ink g 9a7040 grain
+ink B 5e4024 back
+ink b 4a3420 back seam
+ink s 3e2618 under a board
+ink K 4a2e1e plinth
+TTTTTTTTTTTTTTTTTT
+WWWgWWWWWWWWWgWWWw
+WsssssssWssssssssw
+WBBBbBBBWBBBBbBBBw
+WBBBbBBBWBBBBbBBBw
+WTTTTTTTTTTTTTTTTw
+WWWWWWgWWWWWWWWWWw
+WsssssssWssssssssw
+WBBBbBBBWBBBBbBBBw
+WBBBbBBBWBBBBbBBBw
+WTTTTTTTTTTTTTTTTw
+WKKKKKKKKKKKKKKKKw
+
+sprite shelf wood side
+# The oak bookcase seen from its end, against a west wall with its front toward the right;
+# mirrored against an east wall. Only the side panel shows, its front edge lit.
+ink T c89a62 wood lit
+ink W b0844e wood
+ink w 7c5630 wood shade
+ink g 9a7040 grain
+ink K 4a2e1e plinth
+TTTTT
+WWWWT
+WgWWT
+WgWWT
+WgWWT
+WWWgT
+WWWgT
+WWWWT
+WWWWT
+WgWWT
+WgWWT
+WWWWT
+WWgWT
+WWgWT
+WWgWT
+WWWWT
+WWWWT
+WWWgT
+WgWgT
+WWWWT
+KKKKw
+
+sprite shelf store
+# Empty shop shelving, two cells wide, seen from the front: steel boards on a pegboard back,
+# each with its strip for prices, where a tag or two was left behind. Not drawn by the game yet.
+ink T dfe2e6 steel lit
+ink S b8bcc4 steel
+ink s 8a8e98 steel shade
+ink P 6c707a pegboard
+ink o 4a4e56 peg hole
+ink d 3a3c44 under a board
+ink L f0eee0 price strip
+ink y f0d040 price tag
+ink r e04848 sale tag
+TTTTTTTTTTTT
+SSSSSSSSSSSs
+Sdddddddddds
+SPPoPPPoPPPs
+SPPPPPPPPPPs
+SPPoPPPoPPPs
+STTTTTTTTTTs
+SLLyLLLLLLLs
+Sdddddddddds
+SPPoPPPoPPPs
+SPPPPPPPPPPs
+SPPoPPPoPPPs
+STTTTTTTTTTs
+SLLLLLLrLLLs
+Sdddddddddds
+SPPoPPPoPPPs
+SPPPPPPPPPPs
+SPPoPPPoPPPs
+STTTTTTTTTTs
+SLLLLLLLLLLs
+Ssssssssssss
+
+sprite shelf store long
+# The shop shelving three cells wide, two bays on one middle upright.
+ink T dfe2e6 steel lit
+ink S b8bcc4 steel
+ink s 8a8e98 steel shade
+ink P 6c707a pegboard
+ink o 4a4e56 peg hole
+ink d 3a3c44 under a board
+ink L f0eee0 price strip
+ink y f0d040 price tag
+ink r e04848 sale tag
+TTTTTTTTTTTTTTTTTT
+SSSSSSSSSSSSSSSSSs
+SddddddddSddddddds
+SPPoPPPoPSPoPPPoPs
+SPPPPPPPPSPPPPPPPs
+SPPoPPPoPSPoPPPoPs
+STTTTTTTTSTTTTTTTs
+SLLyLLLLLSLLLLLLLs
+SddddddddSddddddds
+SPPoPPPoPSPoPPPoPs
+SPPPPPPPPSPPPPPPPs
+SPPoPPPoPSPoPPPoPs
+STTTTTTTTSTTTTTTTs
+SLLLLLLLLSLLLrLLLs
+SddddddddSddddddds
+SPPoPPPoPSPoPPPoPs
+SPPPPPPPPSPPPPPPPs
+SPPoPPPoPSPoPPPoPs
+STTTTTTTTSTTTTTTTs
+SLLLLLyLLSLLLLLyLs
+SssssssssSssssssss
+
+sprite shelf store low
+# A low run of the shop shelving, two cells wide and waist high.
+ink T dfe2e6 steel lit
+ink S b8bcc4 steel
+ink s 8a8e98 steel shade
+ink P 6c707a pegboard
+ink o 4a4e56 peg hole
+ink d 3a3c44 under a board
+ink L f0eee0 price strip
+ink y f0d040 price tag
+TTTTTTTTTTTT
+SSSSSSSSSSSs
+Sdddddddddds
+SPPoPPPoPPPs
+SPPPPPPPPPPs
+SPPoPPPoPPPs
+STTTTTTTTTTs
+SLLLLyLLLLLs
+Sdddddddddds
+SPPoPPPoPPPs
+STTTTTTTTTTs
+Ssssssssssss
+
+sprite shelf store side
+# The shop shelving seen from its end, against a west wall with its front toward the right; mirrored
+# against an east wall. The slots of the front upright, and the boards' price strips sticking out.
+ink T dfe2e6 steel lit
+ink S b8bcc4 steel
+ink s 8a8e98 steel shade
+ink o 4a4e56 slot
+ink L f0eee0 price strip
+TTTTT.
+SSSSs.
+SSSos.
+SSSSs.
+SSSos.
+SSSSs.
+SSSosT
+SSSSsL
+SSSos.
+SSSSs.
+SSSos.
+SSSSs.
+SSSosT
+SSSSsL
+SSSos.
+SSSSs.
+SSSos.
+SSSSs.
+SSSosT
+SSSSsL
+sssss.
+
+sprite shelf wire
+# An empty chrome wire rack, two cells wide, seen from the front: four wire shelves on four posts,
+# the wall showing through. Not drawn by the game yet.
+ink C e4e8ee chrome lit
+ink c 9ca2ac chrome
+ink w 6e747e wire
+ink f 3a3c44 foot
+CCCCCCCCCCCC
+Cw.w.w.w.w.c
+C..........c
+C..........c
+C..........c
+C..........c
+CCCCCCCCCCCc
+Cw.w.w.w.w.c
+C..........c
+C..........c
+C..........c
+C..........c
+CCCCCCCCCCCc
+Cw.w.w.w.w.c
+C..........c
+C..........c
+C..........c
+C..........c
+CCCCCCCCCCCc
+Cw.w.w.w.w.c
+f..........f
+
+sprite shelf wire narrow
+# The wire rack one cell wide.
+ink C e4e8ee chrome lit
+ink c 9ca2ac chrome
+ink w 6e747e wire
+ink f 3a3c44 foot
+CCCCCC
+Cw.w.c
+C....c
+C....c
+C....c
+C....c
+CCCCCc
+Cw.w.c
+C....c
+C....c
+C....c
+C....c
+CCCCCc
+Cw.w.c
+C....c
+C....c
+C....c
+C....c
+CCCCCc
+Cw.w.c
+f....f
+
+sprite shelf wire side
+# The wire rack seen from its end, against a west wall with its front toward the right; mirrored
+# against an east wall: the back post, the front post lit, the shelves between.
+ink C e4e8ee chrome lit
+ink c 9ca2ac chrome
+ink w 6e747e wire
+ink f 3a3c44 foot
+cCCCC
+cw.wC
+c...C
+c...C
+c...C
+c...C
+cCCCC
+cw.wC
+c...C
+c...C
+c...C
+c...C
+cCCCC
+cw.wC
+c...C
+c...C
+c...C
+c...C
+cCCCC
+cw.wC
+f...f
+
 group Map
 
 sprite map you
