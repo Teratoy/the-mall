@@ -71,5 +71,8 @@ public:
 private:
     float levels_, every_, held_ = 0.0f, since_;
 };
+/// Samples at SAMPLE_RATE crushed in place to bits at rate, after gain,
+/// dulled under lowpass Hz first when it isn't 0: how voices are crushed.
+void crush(std::vector<float>& samples, int bits, float rate, float lowpass = 0.0f, float gain = 1.0f);
 
 } // namespace synth

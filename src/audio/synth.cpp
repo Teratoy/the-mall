@@ -200,14 +200,18 @@ float Crush::operator()(float s) {
 
 std::vector<float> render(const Def& def, float lowpass) {
     std::vector<float> out = layers(def, seedOf(def.name));
-    // Through a wall, then crushed.
+    crush(out, def.bits, def.rate, lowpass, def.gain);
+    return out;
+}
+
+// Through a wall, then crushed.
+void crush(std::vector<float>& samples, int bits, float rate, float lowpass, float gain) {
     float lowStep = lowpass > 0.0f ? smoothing(lowpass) : 1.0f, low = 0.0f;
-    Crush crush(def.bits, def.rate);
-    for (float& s : out) {
-        low += (std::clamp(s * def.gain, -1.0f, 1.0f) - low) * lowStep;
+    Crush crush(bits, rate);
+    for (float& s : samples) {
+        low += (std::clamp(s * gain, -1.0f, 1.0f) - low) * lowStep;
         s = crush(low);
     }
-    return out;
 }
 
 } // namespace synth

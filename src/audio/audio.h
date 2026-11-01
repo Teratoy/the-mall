@@ -1,9 +1,11 @@
 #pragma once
 #include <string_view>
+#include <vector>
 
 /// The game's sound: the sounds of data/sounds.txt, rendered once and
 /// played at a volume, pan and pitch, clear or muffled as through a wall
-/// (the music is in audio/music.h); and the volumes the player set in CONFIGURATION, kept between runs.
+/// (the music is in audio/music.h); humans' voices, made for each line;
+/// and the volumes the player set in CONFIGURATION, kept between runs.
 /// Where there is no sound device, or it was never opened (the tools),
 /// nothing plays and nothing fails.
 namespace audio {
@@ -14,6 +16,7 @@ inline constexpr int VOLUME_STEPS = 10;
 struct Settings {
     int master = 8;
     int sounds = 8;
+    int voices = 8;
     int music = 6;
 };
 
@@ -26,6 +29,11 @@ bool reload();
 /// in the middle, 1 all left, 0 all right, pitch 1 as made. An unknown
 /// name is reported once and plays nothing.
 void play(std::string_view name, float volume = 1.0f, float pan = 0.5f, float pitch = 1.0f, bool muffled = false);
+/// Plays a voice: samples at synth::SAMPLE_RATE before the crush, which
+/// it gets here, muffled as through a wall or not; volume 0 to 1 before
+/// the settings (VOICES rather than SOUNDS), pan as for play. Any number
+/// may talk at once.
+void speak(const std::vector<float>& samples, float volume = 1.0f, float pan = 0.5f, bool muffled = false);
 
 /// How long a sound lasts in seconds, 0 for one unknown or not loaded:
 /// for sounds played over and over, as a fly's buzz.
