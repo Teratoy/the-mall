@@ -54,6 +54,10 @@ public:
     /// to the chest; lying down, nothing does.
     void draw(Vector2 feet, Pose pose, float animTime, bool flip, int scale = 1, Color tint = WHITE,
               int cakes = 0, const Bottle* bottle = nullptr, bool inHand = false) const;
+    /// Shooting, the screen point the spent casing of the shot comes to rest
+    /// at (drawn as it flies by draw, for CASING_TIME after the shot), for the
+    /// floor to take it; drawn as draw would at feet. False when not shooting.
+    bool casingRest(Vector2 feet, Pose pose, bool flip, int scale, Vector2& rest) const;
     /// Redraws every frame with this blood on the body, unless it already shows it.
     void bloody(const BodyBlood& blood);
     /// The same for the feces and the piss on it, painted over the blood.
@@ -122,6 +126,11 @@ private:
     /// Whether t is drawn eaten and rotten: the dead body, curled if it
     /// died asleep.
     bool showsRemains(const Texture2D* t) const;
+    /// Shooting, where the spent casing leaves the gun (the fired frame's
+    /// slide, on screen), the way it flies over the floor, out to the gun's
+    /// right, and the sprite pixels down to the floor under it. False when
+    /// not shooting.
+    bool casingOut(Vector2 feet, Pose pose, bool flip, int scale, Vector2& port, Vector2& side, float& drop) const;
     /// Curled up asleep or just woken, turned onto its side; asleep, z's
     /// rise from the head, sleepTime counting from lying down.
     void drawCurled(Vector2 feet, const Texture2D& tex, bool flip, int scale, Color tint, float sleepTime) const;

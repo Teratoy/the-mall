@@ -90,6 +90,44 @@ ink o 2a2c30 muzzle
 nn
 oN
 
+sprite ammo box
+# A box of rounds on a table or the floor, seen from above, the lid on: as
+# it lies until someone opens it.
+ink l 8a8a6a lid lit
+ink L 6c6e52 lid
+ink w c8c4a8 label
+ink d 4a4c38 front
+......
+.llll.
+.LwwL.
+.LLLL.
+.dddd.
+......
+
+sprite ammo box open
+# Opened, the lid standing up behind, the rounds' brass tops in rows, in
+# two shades so each shows. The game shows as many rounds (b and c) as are
+# left, taking the last ones first; the rest show the box's inside (i).
+ink L 6c6e52 lid
+ink k 8a8a6a rim
+ink b b4a064 round
+ink c 8a7848 round, shade
+ink i 2e3024 inside
+ink d 4a4c38 front
+.LLLL.
+.kkkk.
+.bcbc.
+.cbcb.
+.dddd.
+......
+
+sprite casing
+# A spent casing, lying along; the game turns it a quarter to lie across,
+# and tumbling as it flies out of the gun. g is its open end.
+ink g c2ae78 mouth
+ink b 9a8650 brass
+gb
+
 group Traps
 
 sprite spikes
