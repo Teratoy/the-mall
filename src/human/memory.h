@@ -8,6 +8,7 @@
 #include "world/vending.h"
 #include <algorithm>
 #include <array>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -40,6 +41,26 @@ public:
         was = t;
         if (!hearsay.empty()) hearsay.erase(cell);
     }
+    /// How lit a cell was when it last saw it, to draw it so; the sim
+    /// doesn't plan on it yet.
+    struct SeenLight {
+        int level;
+        LightKind from;
+    };
+    void seeLight(Vec2i cell, int level, LightKind from) {
+        auto& slot = lightSlots_[slotOf(cell)];
+        if (slot.empty()) slot.assign(CHUNK * CHUNK, 0);
+        slot[index(cell)] = uint8_t(1 + level + (int(from) << 2));
+    }
+    /// Nothing for a cell it has never seen lit or dark, only heard of.
+    std::optional<SeenLight> lightSeen(Vec2i cell) const {
+        auto it = lightSlots_.find(slotOf(cell));
+        if (it == lightSlots_.end()) return {};
+        uint8_t v = it->second[index(cell)];
+        if (v == 0) return {};
+        return SeenLight{(v - 1) & 3, LightKind((v - 1) >> 2)};
+    }
+
     /// Learns a cell's tile from someone else: it is planned on all the
     /// same, but unless it saw the cell itself, it stays in hearsay until seen.
     void hear(Vec2i cell, Tile t) {
@@ -141,6 +162,9 @@ public:
 
 private:
     std::unordered_map<Vec2i, std::vector<Tile>, Vec2iHash> slots_;
+    /// How lit each cell was when last seen, 0 where never seen, else 1 +
+    /// its level + its source's kind times 4.
+    std::unordered_map<Vec2i, std::vector<uint8_t>, Vec2iHash> lightSlots_;
     /// Cells by the tile it knows them to be (Void's count runs negative).
     std::array<int, 256> known_{};
     /// The slot last looked up, kept at hand since searches ask for cell

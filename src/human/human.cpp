@@ -431,6 +431,7 @@ bool Human::observe(const World& world) {
                 if (drinkable(t) && thirsty()) foundWater();
             }
             memory.see(c, t);
+            memory.seeLight(c, world.light(c), world.lightFrom(c));
             if (drinkable(t)) seeTint(world, c);
         }
         // Fresh feces of someone else's, first seen, sicken the modest a little.

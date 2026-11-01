@@ -196,7 +196,29 @@ differently from each other.
   sight is darker than memory. In step 4 dark cells beyond a few steps
   drop out of sight anyway.
 - Humans and tall art are shaded by the cells they stand over.
-- Not yet: fittings drawn as glyphs, flicker, light over remembered cells.
+- Not yet: fittings drawn as glyphs, flicker.
+
+### Sight, memory and light as one layer (2026-11-01)
+User: integrate vision and light better, graphically. The light layer now
+does all three shadings that were separate:
+- **Memory keeps the light.** `Memory::seeLight` stores each seen cell's
+  level and source kind (the sim doesn't plan on it yet; `make check`
+  unchanged). Remembered cells are greyed by the light they were seen
+  in, at `MEMORY_DIM`, never below `MEMORY_DARK` (half) of remembered
+  light, so a dark place stays readable on the way back. Cells only heard
+  of are drawn as lit.
+- **The edge of sight fades into memory**, not into black: the last two
+  rings mix a quarter and three quarters toward how the cell will be
+  remembered. The black `SIGHT_FADE` pass in `world_view.cpp` is gone.
+- **Eyes get used to the dark:** a glow round the viewer, 4 cells out,
+  as bright as dim light, so in a dark place the human makes out a small
+  circle round itself. Step 4 should make `DARK_SIGHT` match it.
+- Art out of sight is still drawn dim by each art function; each pixel
+  of the layer is divided by how dim its own cell's art is, so the layer
+  can darken but never brighten memory, and the fade happens on the side
+  in sight.
+- Until step 4, a dark place in sight beyond the glow looks about as dark
+  as remembered dark; then those cells drop out of sight.
 
 ### 4. Light limits sight
 - `Sight::look` marks a cell seen only if it is lit, or within

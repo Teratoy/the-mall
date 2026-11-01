@@ -59,11 +59,6 @@ constexpr Color HURT_TINT = {255, 90, 90, 255};
 constexpr Color GHOST_TINT = {255, 255, 255, 110};
 /// Remembered but out of sight: drawn at this brightness.
 constexpr float MEMORY_DIM = 0.45f;
-/// The edge of sight fades into memory over its last two rings of cells:
-/// in each 2x2 block of pixels, the inner ring darkens one to how
-/// remembered ones look, the outer ring three, in this order.
-constexpr int SIGHT_FADE[2][2] = {{0, 2}, {3, 1}};
-constexpr int SIGHT_FADE_INNER = 1, SIGHT_FADE_OUTER = 3;
 /// Statues are looked for this many rows below the screen, as the tallest
 /// rise into it from there.
 constexpr int STATUE_REACH = 28;
@@ -531,26 +526,8 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
     }
     if (viewerHidden) drawHuman(viewer, GHOST_TINT);
 
-    // Light over everything standing in it, before the edge of sight fades.
+    // Light over everything standing in it; the edge of sight fades into memory in it too.
     drawLight(world, viewer, reveal, x0, y0, x1, y1, left, top);
-
-    // The edge of sight fades into memory, so the circle in sight has no hard
-    // rim. The pattern is fixed to the world, so it doesn't crawl as the
-    // camera moves.
-    if (!reveal) {
-        const Color shade{0, 0, 0, (unsigned char)std::lround(255.0f * (1.0f - MEMORY_DIM))};
-        const Vec2i eye = viewer.sight.eye();
-        const float r = float(viewer.sight.radius());
-        for (int y = y0; y <= y1; y++)
-            for (int x = x0; x <= x1; x++) {
-                float d = std::hypot(float(x - eye.x), float(y - eye.y));
-                if (d <= r - 2.0f || !viewer.sight.sees({x, y})) continue;
-                int level = d > r - 1.0f ? SIGHT_FADE_OUTER : SIGHT_FADE_INNER;
-                for (int py = y * CELL_PX; py < (y + 1) * CELL_PX; py++)
-                    for (int px = x * CELL_PX; px < (x + 1) * CELL_PX; px++)
-                        if (SIGHT_FADE[py & 1][px & 1] < level) DrawPixel(px - left, py - top, shade);
-            }
-    }
 
     // Darts over everyone, as a short streak trailing back toward their wall.
     for (const Dart& d : world.darts()) {
