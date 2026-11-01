@@ -1,6 +1,8 @@
 #include "human/human.h"
+#include "human/human_tuning.h"
 #include "world/world.h"
 #include <algorithm>
+#include <set>
 
 namespace {
 
@@ -21,6 +23,8 @@ constexpr float SMELL_STEP_COST = 60.0f;
 /// this many seconds after.
 constexpr int PUT_OFF_RANGE = 8;
 constexpr float PUT_OFF_AGAIN = 30.0f;
+/// It tells the same one they smell again only after this many seconds.
+constexpr float COMPLAIN_AGAIN = 180.0f;
 
 } // namespace
 
@@ -40,6 +44,7 @@ void Human::sniff(const World& world, float dt) {
         grime_.smelly = true;
         note("STARTED TO SMELL");
         sayLater(talk::Moment::Stink);
+        if (wantsScrub()) rethink_ = true;
     }
     if (!grime_.dirty) grime_.smelly = false;
     if ((nose_.sniffIn -= dt) > 0.0f) return;
@@ -85,7 +90,50 @@ bool Human::leaveStench(World& world) {
     startWalking(Goal::Avoid, *p);
     note("MOVED AWAY FROM A SMELL TO EAT");
     sayLater(talk::Moment::PutOff);
+    // Whoever smells, seeing it go, knows why.
+    std::set<int> stinkers;
+    for (const auto& [c, w] : memory.smells)
+        if (w.kind == SmellKind::Human && cheb(c, cell) <= 1) stinkers.insert(w.who);
+    for (int who : stinkers) {
+        Human& o = world.human(who);
+        if (!o.dead() && o.state != State::Sleeping && o.sight.sees(cell)) o.noticeShunned(*this);
+    }
     return true;
+}
+
+// In order of who, so it is the same whichever way the smells are kept.
+void Human::complainOfSmell(World& world) {
+    if (dead() || state == State::Sleeping || isErratic() || fight_.fear > 0.0f || fight_.foe >= 0) return;
+    std::set<int> smelt;
+    for (const auto& [c, w] : memory.smells)
+        if (w.kind == SmellKind::Human && w.at == clock_) smelt.insert(w.who);
+    for (int who : smelt) {
+        Human& o = world.human(who);
+        if (o.dead() || o.state == State::Sleeping) continue;
+        if (trust(o.id) < TRUST_CONFIDE || o.trust(id) < TRUST_CONFIDE) continue;
+        auto it = nose_.complainedAt.find(o.id);
+        if (it != nose_.complainedAt.end() && clock_ - it->second < COMPLAIN_AGAIN) continue;
+        nose_.complainedAt[o.id] = clock_;
+        note("TOLD @ THEY SMELL", o.id);
+        sayLater(talk::Moment::SmellComplain, o.id);
+        o.toldSmelly(*this);
+    }
+}
+
+void Human::toldSmelly(const Human& o) {
+    note("@ SAID I SMELL", o.id);
+    sayLater(talk::Moment::SmellAnswer, o.id);
+    if (isErratic()) return;
+    grime_.shame = 1.0f;
+    if (wantsScrub()) rethink_ = true;
+}
+
+void Human::noticeShunned(const Human& o) {
+    if (!grime_.smelly || !washesForLooks()) return;
+    note("@ KEPT AWAY FROM MY SMELL", o.id);
+    sayLater(talk::Moment::Shunned);
+    grime_.shame = 1.0f;
+    if (wantsScrub()) rethink_ = true;
 }
 
 bool Human::smellsOfDeath(Vec2i c) const {

@@ -158,6 +158,51 @@ Also as asked before: feces smell until they dry; feces footprints don't.
   `make shot SHOT_ARGS="--smells"` leaves fresh feces by the human for the
   flies.
 
+## Washing off the smell (2026-11-01)
+
+Before this, smell never fed back on the smelly human: those with
+modesty under 0.3 and the erratic smelt for good, and nothing checked a
+smelly human getting clean.
+
+### User's answers (2026-11-01)
+
+- **The shameless wash only if a friend complains** about the smell.
+  Shunning and their own smell don't move them.
+- **Noticing others keep away pushes it** to wash (those who wash for
+  looks).
+- **How hard**: up to `GRIME_WASH` (0.5) more by smell strength, like
+  dirt at full modesty.
+- **Friend** here: trust `TRUST_CONFIDE` (0.15) or more both ways, the
+  gossip bar, since true friends (0.4) are rare.
+- **The complaint is a remark** on smelling it, not a chit-chat topic:
+  once, again only after a few minutes. The smelly one answers.
+- **The push fades over a few minutes**: not got to wash by then, it
+  forgets until the next complaint.
+- **The erratic never** wash for smell, complaint or not.
+
+### How it works
+
+- **Its own smell**: one who washes for looks (modesty 0.3+, not
+  erratic) no longer puts up with grime once it smells: smelly is enough
+  to want to wash, adding `GRIME_WASH` × strength × 0.5.
+- **Shame** (`grime_.shame`): set to 1 by a complaint, or (for those who
+  wash for looks) by being shunned; fades to 0 over `SHAME_FADE` (180 s).
+  While it lasts, the smelly want to wash, adding `GRIME_WASH` × strength
+  × shame (for those who wash for looks, × (0.5 + 0.5 shame)).
+- **Complaining** (`Human::complainOfSmell`): awake, not erratic,
+  frightened or fighting, a human smelling a confidant (it knows the smell
+  is theirs) who is awake complains: moment `smell_complain`, note
+  `TOLD @ THEY SMELL`; not again to the same one for `COMPLAIN_AGAIN`
+  (180 s). The smelly one hears it: note `@ SAID I SMELL`, moment
+  `smell_answer`, shame unless erratic.
+- **Shunned**: walking off from a smell to eat (`leaveStench`), each
+  smelly human whose smell it walks from, if it sees that one go, notices:
+  note `@ KEPT AWAY FROM MY SMELL`, moment `shunned`, shame (only those
+  who wash for looks; the others don't note it).
+- **Tests**: scenarios `smell-wash` (a modest smelly human washes clean),
+  `smell-complaint` (a shameless smelly human, told by a confidant, washes
+  clean), `smell-shameless` (no complaint, the shameless stays smelly).
+
 ## Open questions on the look
 
 1. **Hunched / claws**: a hunched head or clawed hands would move pixels

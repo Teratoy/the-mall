@@ -2435,6 +2435,32 @@ erratic                 | SNIFF, SNIFF. THERE YOU ARE.
                         | UGH. SOMEWHERE ELSE.
 greedy                  | NOT LETTING THAT RUIN MY CAKE.
 
+# Smelling someone it trusts, telling them so, said to that one.
+[smell_complain]
+                        | YOU NEED A WASH. SORRY.
+                        | THE FLIES LIKE YOU MORE THAN I DO.
+                        | I SAY THIS AS A FRIEND. WASH.
+friend                  | I LOVE YOU. GO WASH.
+sociable                | NOBODY WILL SIT WITH YOU LIKE THIS.
+timid                   | UM... HAVE YOU... NEAR WATER LATELY?
+brave                   | YOU REEK. FIX IT.
+
+# Told it smells, said back to the one who told it.
+[smell_answer 0.8]
+                        | THAT BAD?
+                        | ...FINE. FINE.
+                        | I HADN'T NOTICED.
+brave                   | YOU'RE NO ROSE EITHER.
+timid                   | OH NO. SORRY. SORRY.
+erratic                 | THE FLIES DON'T COMPLAIN.
+
+# Seeing someone walk off from its smell, said to nobody.
+[shunned 0.6]
+                        | IT'S ME, ISN'T IT.
+                        | I'D WALK OFF FROM ME TOO.
+timid                   | THEY ALL KNOW.
+sociable                | I CAN'T GO ON LIKE THIS.
+
 # ---- Vending machines ------------------------------------------------------
 
 # The first vending machine it ever sees, lit up behind its glass, said to
@@ -2932,7 +2958,7 @@ parched                 | WATER... MAYBE OVER THERE.
 hopeless                | LIKE A MOTH.
 
 # Lying down to sleep in the dark, out of sight. Said to nobody, in place
-# of sleep_now.
+# of sleep.
 [sleep_dark 0.6]
                         | NOBODY'LL FIND ME HERE.
                         | THE DARK KEEPS ITS OWN.
@@ -2942,7 +2968,7 @@ loner                   | JUST ME AND THE DARK.
 hurt                    | LET IT HEAL WHERE NOTHING LOOKS.
 
 # Lying down to sleep under a light. Said to nobody, in place of
-# sleep_now.
+# sleep.
 [sleep_lit 0.6]
                         | I NEED TO SEE THEM COMING.
                         | LEAVE IT ON. PLEASE.

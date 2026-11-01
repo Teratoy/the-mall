@@ -225,7 +225,7 @@ enum class Moment {
     // (all to nobody).
     FirstDark, IntoDark, OutOfDark, TowardLight,
     // Lying down to sleep in the dark, out of sight, as the bold would; under
-    // a light, as the timid would (to nobody, in place of sleep_now).
+    // a light, as the timid would (to nobody, in place of sleep).
     SleepDark, SleepLit,
     // Hiding in the dark: the modest going where it hides them; making a
     // stash where no light falls (both to nobody).
@@ -252,6 +252,10 @@ enum class Moment {
     // (to nobody, but it carries through the walls); hearing someone bang
     // on a door out of sight, the first time from each (to nobody).
     BangDoor, HearBang,
+    // Smell: telling someone it trusts they smell, and the answer, told it
+    // smells (both to that one); seeing someone walk off from its smell (to
+    // nobody).
+    SmellComplain, SmellAnswer, Shunned,
     Count
 };
 

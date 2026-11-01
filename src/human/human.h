@@ -2113,6 +2113,9 @@ private:
         bool dirty = false;
         /// Dirty long enough to smell (SMELL_GRIME), until washed clean.
         bool smelly = false;
+        /// Told it smells, or seeing others keep away from it: 1, fading to 0
+        /// over SHAME_FADE. While it lasts the smelly want to wash.
+        float shame = 0.0f;
     };
     Grime grime_;
     /// Smelling (human_smell.cpp).
@@ -2123,6 +2126,8 @@ private:
         float putOffAt = -1e9f;
         /// Bodies it has smelt unseen, and those whose smell it set off after.
         std::unordered_set<int> smeltDead, followed;
+        /// Clock time it last told each one it smells.
+        std::unordered_map<int, float> complainedAt;
     };
     Nose nose_;
     /// Every SNIFF_EVERY, learns the smells within their reach of it, walls
@@ -2137,6 +2142,14 @@ private:
     /// Hungry with a cake by a smell: walks off to eat away from it, unless it
     /// did so lately. False if it won't, or there is nowhere.
     bool leaveStench(World& world);
+    /// Smelling someone it trusts and is trusted by, it tells them they
+    /// smell, now and then.
+    void complainOfSmell(World& world);
+    /// Told by o that it smells: unless erratic, it is ashamed, and wants
+    /// to wash for a while.
+    void toldSmelly(const Human& o);
+    /// Seeing o walk off from its smell: the modest are ashamed of it.
+    void noticeShunned(const Human& o);
     /// Knows a rotting or bloody body by its smell at the cell.
     bool smellsOfDeath(Vec2i c) const;
     /// Hungry enough for flesh with no body it knows to eat: sets off after
@@ -2150,6 +2163,10 @@ private:
     /// Dirty, and modest enough to wash for it now: the most modest as
     /// soon as it turns dirty, the less modest only once far grimier.
     bool wantsScrub() const;
+    /// How much smelling adds to wanting to wash: by how strongly it
+    /// smells, for those who wash for looks, more when ashamed; for the
+    /// shameless, only while ashamed.
+    float smellWash() const;
     /// Scrubs a little more grime off at the water. False once it is clean.
     bool scrub();
     /// Bladder and bowels filling over dt; human_relief.cpp, like the rest

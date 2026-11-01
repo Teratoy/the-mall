@@ -219,6 +219,12 @@ bool modest(const Traits& t) { return (t.sociable + 1.0f - t.brave) / 2.0f >= 0.
 bool shameless(const Traits& t) { return (t.sociable + 1.0f - t.brave) / 2.0f < 0.27f; }
 /// Shameless, but neither so bold nor so curious it puts washing off.
 bool shamelessMeek(const Traits& t) { return shameless(t) && t.brave <= 0.62f && t.curious < 0.3f; }
+/// Modest enough to wash for grime, but not so modest it washes as soon as
+/// it turns dirty: only its smell moves it.
+bool middling(const Traits& t) {
+    float m = (t.sociable + 1.0f - t.brave) / 2.0f;
+    return m >= 0.35f && m < 0.5f && t.curious < 0.5f;
+}
 
 /// This line in h's own log, or (with yes false) not.
 Check own(const Human& h, std::string line, bool yes = true) {
@@ -2069,6 +2075,57 @@ const std::vector<Scenario> SCENARIOS = {
          s.run(40);
          return Checks{own(smelly, "STARTED TO SMELL"), own(eater, "MOVED AWAY FROM A SMELL TO EAT"),
                        own(eater, "ATE A CAKE")};
+     }},
+    {"smell-wash", "smelling, one modest enough to wash for looks washes clean", seedWhere(middling, 12500),
+     [](Stage& s) {
+         if (!s.basin()) return Checks{{"room for a basin near the spawn", [](const Stage&) { return false; }}};
+         Human& h = s.first();
+         P::knowChunk(s.world, h);
+         calm(h);
+         h.bladder = h.bowels = 0.0f;
+         P::setGrime(h, 1.6f);
+         s.run(60);
+         return Checks{own(h, "STARTED TO SMELL"), own(h, "WASHED OFF DIRT"), own(h, "WASHED CLEAN")};
+     }},
+    {"smell-shameless", "smelling, the shameless don't wash unless told", seedWhere(shameless, 12000),
+     [](Stage& s) {
+         if (!s.basin()) return Checks{{"room for a basin near the spawn", [](const Stage&) { return false; }}};
+         Human& h = s.first();
+         P::knowChunk(s.world, h);
+         calm(h);
+         h.bladder = h.bowels = 0.0f;
+         P::setGrime(h, 2.0f);
+         s.run(60);
+         return Checks{own(h, "STARTED TO SMELL"), own(h, "WASHED OFF DIRT", false)};
+     }},
+    {"smell-complaint", "told by one it trusts that it smells, even the shameless wash clean",
+     seedWhere(shamelessMeek, 12000), [](Stage& s) {
+         if (!s.basin()) return Checks{{"room for a basin near the spawn", [](const Stage&) { return false; }}};
+         Human& smelly = s.first();
+         Human& pal = s.add(seedWhere(plain, 12500), 1);
+         for (Human* h : {&smelly, &pal}) {
+             P::knowChunk(s.world, *h);
+             calm(*h);
+             h->bladder = h->bowels = 0.0f;
+         }
+         P::setTrust(smelly, pal, 0.3f);
+         P::setTrust(pal, smelly, 0.3f);
+         P::setGrime(smelly, 2.0f);
+         s.run(60);
+         return Checks{own(pal, "TOLD @ THEY SMELL"), own(smelly, "@ SAID I SMELL"), own(smelly, "WASHED OFF DIRT"),
+                       own(smelly, "WASHED CLEAN")};
+     }},
+    {"shunned", "seeing someone walk off from its smell to eat, the modest are ashamed", seedWhere(modest, 12500),
+     [](Stage& s) {
+         Human& eater = s.first();
+         Human& smelly = s.add(seedWhere(middling, 12000), 1);
+         calm(eater);
+         calm(smelly);
+         eater.hunger = 0.75f;
+         eater.cakes = 1;
+         P::setGrime(smelly, 2.8f);
+         s.run(40);
+         return Checks{own(eater, "MOVED AWAY FROM A SMELL TO EAT"), own(smelly, "@ KEPT AWAY FROM MY SMELL")};
      }},
     {"smell-death", "a body walled in out of sight is smelt through the wall", 1,
      [](Stage& s) {
