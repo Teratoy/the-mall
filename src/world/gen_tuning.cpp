@@ -182,7 +182,7 @@ void set(size_t knob, const std::vector<float>& values) {
 
 // Each knob's line is written again from its name, values and range, with
 // whatever comment followed it; every other line is kept as it was.
-bool save() {
+bool save(const std::string& to) {
     if (source().empty()) return false;
     std::ifstream in(from);
     if (!in) return false;
@@ -226,7 +226,7 @@ bool save() {
         out += written + "  " + tokens.back() + tail + "\n";
     }
     in.close();
-    std::ofstream file(from, std::ios::trunc);
+    std::ofstream file(to.empty() ? from : to, std::ios::trunc);
     file << out;
     return bool(file);
 }

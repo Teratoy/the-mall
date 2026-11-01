@@ -31,10 +31,11 @@ const std::string& source();
 /// Gives a knob new values, as many as it has, for chunks grown from now
 /// on (tools/genview.cpp).
 void set(size_t knob, const std::vector<float>& values);
-/// Writes every knob's values back into source(), its comments, order
-/// and ranges kept, and a value written as a fraction kept as written
-/// while it still holds. False if it could not be written.
-bool save();
+/// Writes every knob's values back into source(), or into another file
+/// as a copy of it, its comments, order and ranges kept, and a value
+/// written as a fraction kept as written while it still holds. False if
+/// it could not be written.
+bool save(const std::string& to = {});
 
 namespace detail {
 /// The knob's place in all(), looked up by name the first time. A knob the

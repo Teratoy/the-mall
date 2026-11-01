@@ -294,7 +294,7 @@ int main(int argc, char** argv) {
                 World w(uint64_t(seed) * 7919);
                 Rng looks{uint64_t(seed)};
                 w.makeSpawn(HumanLook::random(looks), uint64_t(seed));
-                const Vec2i entry = GenViewProbe::spawnDoor(w).second;
+                const Vec2i entry = w.spawnEntry();
                 const Chunk* c = GenViewProbe::grow(w, kind, s.parts);
                 given++;
                 Tally t;

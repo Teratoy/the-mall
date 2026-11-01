@@ -254,6 +254,23 @@ A window, PC only. The knob panel on the left, the chunk on the right.
 
 - Opens the game on that seed with the edited values, for a look in play.
 
+### Built (2026-11-01)
+
+- P Play (top bar) opens the game on the seed shown, the chunk shown
+  grown past the spawn's door before anyone walks, so it is the same chunk
+  to the cell; with the kind rolled, the chunk the game rolls there. You
+  play a human grown from the seed (the spawn's own in genview).
+- The knobs go as they are in genview, saved or not: written to
+  `build/genview-worldgen.txt` (`tune::save` to a copy) and handed to the
+  game by `THEMALL_WORLDGEN`, so F5 in that game reads them again.
+- The game takes `--seed N` and `--chunk KIND x,y;x,y;...` (main.cpp),
+  goes straight into the world past the menu, and keeps that world out of
+  the obituary (my call: a look from the editor is not a life to count;
+  say if it should count).
+- Growing past the spawn moved from `GenViewProbe` into World
+  (`spawnEntry`, `growPastSpawn`), as the game uses it now.
+- `make genview` builds the game too.
+
 ## User's decisions (2026-11-01)
 
 1. **What it's for:** tuning the knobs that exist, for now. No hand-made

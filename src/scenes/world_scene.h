@@ -1,4 +1,5 @@
 #pragma once
+#include <optional>
 #include "render/floor_tiles.h"
 #include "render/human_sprites.h"
 #include "render/statue_art.h"
@@ -43,6 +44,12 @@ public:
     /// An empty name gives the one grown from humanSeed.
     WorldScene(const HumanLook& look, uint64_t humanSeed, uint64_t seed, const std::string& name = {});
     ~WorldScene() override;
+
+    /// Opened from tools/genview.cpp for a look in play: the chunk it showed,
+    /// this kind on this footprint, grown past the spawn before anyone walks
+    /// (or, with no kind, the one the game rolls there), and the world kept
+    /// out of the obituary.
+    void tryOut(std::optional<ChunkKind> kind, const Footprint& parts);
 
     void update(float dt, const Canvas& canvas) override;
     void draw(const Canvas& canvas) override;

@@ -392,37 +392,13 @@ struct SoakProbe {
 };
 
 /// What tools/genview.cpp asks of the world: one chunk of the kind and
-/// footprint it is told, grown as the game would grow it, beside the spawn.
+/// footprint it is told, grown as the game would grow it, past the spawn.
 struct GenViewProbe {
     /// Whether the game ever grows this kind on this footprint.
     static bool grows(ChunkKind kind, const Footprint& parts) { return World::grows(kind, parts); }
-    /// The spawn's door, and the cell just past it in the slot beyond,
-    /// where whoever goes through first steps.
-    static std::pair<Door, Vec2i> spawnDoor(const World& w) {
-        const auto& [key, d] = *std::min_element(w.doors_.begin(), w.doors_.end(), [](const auto& a, const auto& b) {
-            return std::tuple(a.first.slot.y, a.first.slot.x, int(a.first.side)) <
-                   std::tuple(b.first.slot.y, b.first.slot.x, int(b.first.side));
-        });
-        const Vec2i into = w.generated(d.slot) ? d.other() : d.slot;
-        return {d, d.cellsIn(into)[size_t(d.width / 2)]};
-    }
-    /// Grows a chunk of this kind on the footprint through the door out of
-    /// the spawn, which w must have and nothing more: placed so the slot past
-    /// the door is one of its own, the first that keeps it off the spawn.
-    /// Kind Spawn gives the spawn itself. Nothing when the game never grows
-    /// this kind on this footprint.
-    static const Chunk* grow(World& w, ChunkKind kind, const Footprint& parts) {
-        if (kind == ChunkKind::Spawn) return w.chunks_.front().get();
-        if (!World::grows(kind, parts) || w.chunks_.size() != 1) return nullptr;
-        const Vec2i entry = spawnDoor(w).second, into = World::slotOf(entry);
-        for (Vec2i on : parts) {
-            const Vec2i origin = into - on;
-            if (std::any_of(parts.begin(), parts.end(), [&](Vec2i p) { return w.generated(origin + p); })) continue;
-            w.grow(kind, origin, parts, entry, false);
-            return w.chunks_.back().get();
-        }
-        return nullptr;
-    }
+    /// Grows a chunk of this kind on the footprint past the spawn's door
+    /// (World::growPastSpawn).
+    static const Chunk* grow(World& w, ChunkKind kind, const Footprint& parts) { return w.growPastSpawn(kind, parts); }
     /// A human waking at a cell as every human does, a bottle on the floor
     /// a step or two away.
     static Human& wake(World& w, const HumanLook& look, Vec2i cell, uint64_t seed) {
@@ -438,7 +414,7 @@ struct GenViewProbe {
     /// The chunk the game would grow through the spawn's door, its kind and
     /// footprint rolled.
     static const Chunk* rolled(World& w) {
-        w.ensureGenerated(spawnDoor(w).second);
+        w.ensureGenerated(w.spawnEntry());
         return w.chunks_.back().get();
     }
 };

@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <deque>
+#include <tuple>
 #include <utility>
 
 namespace {
@@ -288,6 +289,28 @@ bool World::grows(ChunkKind kind, const Footprint& parts) {
     if (kind == ChunkKind::Plaza) return box.x == box.y && int(parts.size()) == box.x * box.y;
     if (kind == ChunkKind::Maze || kind == ChunkKind::WaterMaze) return int(parts.size()) <= MAZE_SLOTS_MAX;
     return kind != ChunkKind::Spawn;
+}
+
+Vec2i World::spawnEntry() const {
+    const auto& [key, d] = *std::min_element(doors_.begin(), doors_.end(), [](const auto& a, const auto& b) {
+        return std::tuple(a.first.slot.y, a.first.slot.x, int(a.first.side)) <
+               std::tuple(b.first.slot.y, b.first.slot.x, int(b.first.side));
+    });
+    const Vec2i into = generated(d.slot) ? d.other() : d.slot;
+    return d.cellsIn(into)[size_t(d.width / 2)];
+}
+
+const Chunk* World::growPastSpawn(ChunkKind kind, const Footprint& parts) {
+    if (kind == ChunkKind::Spawn) return chunks_.front().get();
+    if (!grows(kind, parts) || chunks_.size() != 1) return nullptr;
+    const Vec2i entry = spawnEntry(), into = slotOf(entry);
+    for (Vec2i on : parts) {
+        const Vec2i origin = into - on;
+        if (std::any_of(parts.begin(), parts.end(), [&](Vec2i p) { return generated(origin + p); })) continue;
+        grow(kind, origin, parts, entry, false);
+        return chunks_.back().get();
+    }
+    return nullptr;
 }
 
 // The data centre's dice are rolled even when the kind is given, so the

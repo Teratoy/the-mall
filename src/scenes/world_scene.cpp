@@ -292,6 +292,14 @@ WorldScene::WorldScene(const HumanLook& look, uint64_t humanSeed, uint64_t seed,
     world_.makeSpawn(look, humanSeed, name);
 }
 
+void WorldScene::tryOut(std::optional<ChunkKind> kind, const Footprint& parts) {
+    if (kind)
+        world_.growPastSpawn(*kind, parts);
+    else
+        world_.ensureGenerated(world_.spawnEntry());
+    recorded_ = true;
+}
+
 // Leaving the world any way at all, even closing the window, counts as
 // leaving them behind.
 WorldScene::~WorldScene() { record(); }

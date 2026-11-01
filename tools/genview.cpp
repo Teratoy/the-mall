@@ -20,6 +20,10 @@
 //              the changed ones; or nine seeds at once (G), click one to
 //              take its seed
 //   Save (S)   writes the changed values into data/worldgen.txt
+//   Play (P)   opens the game on this seed, the chunk shown grown past the
+//              spawn's door and the knobs as they are here, saved or not
+//              (they go to build/genview-worldgen.txt for it); you play a
+//              human grown from the seed, and it stays out of the obituary
 // The view pans with a drag and zooms with the wheel; F fits the chunk.
 // Second row, overlays, any together (or keys 1 to 5):
 //   1 doors and keys   open doors orange, locked red; keys yellow, cakes
@@ -83,6 +87,10 @@ namespace {
 /// Where what the window shows is saved, for Claude to look at.
 constexpr const char* SHOT_PATH = "build/genview.png";
 constexpr const char* STATE_PATH = "build/genview.txt";
+/// The game opened on the chunk reads its knobs from here: the file's,
+/// with those changed here and not saved.
+constexpr const char* PLAY_KNOBS = "build/genview-worldgen.txt";
+constexpr const char* GAME = "build/themall";
 /// The window saves itself this long after the last change.
 constexpr double SHOT_DELAY = 0.6;
 /// How often the file is looked at for changes, in seconds.
@@ -107,11 +115,16 @@ struct KindPick {
     const char* name;
     ChunkKind kind;
     bool rolled;
+    /// What the game's --chunk calls it.
+    const char* arg;
 };
-const KindPick KINDS[] = {{"rolled", ChunkKind::Rooms, true},     {"spawn", ChunkKind::Spawn, false},
-                          {"rooms", ChunkKind::Rooms, false},     {"maze", ChunkKind::Maze, false},
-                          {"water maze", ChunkKind::WaterMaze, false}, {"plaza", ChunkKind::Plaza, false},
-                          {"data centre", ChunkKind::DataCentre, false}};
+const KindPick KINDS[] = {{"rolled", ChunkKind::Rooms, true, ""},
+                          {"spawn", ChunkKind::Spawn, false, "spawn"},
+                          {"rooms", ChunkKind::Rooms, false, "rooms"},
+                          {"maze", ChunkKind::Maze, false, "maze"},
+                          {"water maze", ChunkKind::WaterMaze, false, "watermaze"},
+                          {"plaza", ChunkKind::Plaza, false, "plaza"},
+                          {"data centre", ChunkKind::DataCentre, false, "datacentre"}};
 constexpr int KIND_COUNT = int(sizeof KINDS / sizeof KINDS[0]);
 
 const char* kindName(ChunkKind k) {
@@ -651,6 +664,34 @@ private:
         dirty_ = true;
         status_ = "Undid " + tune::all()[k].name;
     }
+    /// Opens the game on the seed and the chunk shown, with the knobs as
+    /// they are here, saved or not; the human you play grown from the seed.
+    void play() {
+        if (!std::filesystem::exists(GAME)) {
+            status_ = std::string("No ") + GAME + ": make builds it";
+            return;
+        }
+        use(false);
+        if (!tune::save(PLAY_KNOBS)) {
+            status_ = std::string("Couldn't write ") + PLAY_KNOBS;
+            return;
+        }
+        std::string cmd = std::string("THEMALL_WORLDGEN=") + PLAY_KNOBS + " ./" + GAME + " --seed " +
+                          std::to_string(seed_);
+        const KindPick& pick = KINDS[kind_];
+        if (!pick.rolled) {
+            cmd += std::string(" --chunk ") + pick.arg + " '";
+            for (Vec2i p : footprint()) cmd += std::to_string(p.x) + "," + std::to_string(p.y) + ";";
+            cmd += "'";
+        }
+        cmd += " > /dev/null 2>&1 &";
+        if (std::system(cmd.c_str()) != 0) {
+            status_ = "Couldn't start the game";
+            return;
+        }
+        status_ = "Playing seed " + std::to_string(seed_) + ": you wake in the spawn, the chunk past its door";
+    }
+
     void save() {
         use(false);
         if (!tune::save()) {
@@ -809,7 +850,7 @@ private:
         g->world->makeSpawn(HumanLook::random(looks), seed);
         const KindPick& pick = KINDS[kind_];
         const Footprint parts = footprint();
-        g->entry = GenViewProbe::spawnDoor(*g->world).second;
+        g->entry = g->world->spawnEntry();
         g->chunk = pick.rolled ? GenViewProbe::rolled(*g->world) : GenViewProbe::grow(*g->world, pick.kind, parts);
         if (!g->chunk) {
             g->note = std::string("The game never grows ") + pick.name + " on " + SHAPES[size_t(shape_)].name;
@@ -1157,6 +1198,7 @@ private:
         x += PAD;
         int n = changedCount();
         if (button(x, n ? "Save " + std::to_string(n) : "Save", n > 0)) save();
+        if (button(x, "P Play")) play();
         barY_ = BAR_ROW;
         x = PAD;
         for (int o = 0; o < OVERLAYS; o++)
@@ -1360,6 +1402,7 @@ private:
         if (IsKeyPressed(KEY_F)) fit();
         if (IsKeyPressed(KEY_T)) readout_ = !readout_;
         if (IsKeyPressed(KEY_H)) toggleRun();
+        if (IsKeyPressed(KEY_P)) play();
         if (IsKeyPressed(KEY_J)) heat_ = (heat_ + 1) % HEATS;
         for (int o = 0; o < OVERLAYS; o++)
             if (IsKeyPressed(KeyboardKey(KEY_ONE + o))) shown_[o] = !shown_[o];

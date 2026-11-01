@@ -101,7 +101,8 @@ genprobe: $(GENPROBE)
 $(GENVIEW): tools/genview.cpp tools/chunk_checks.h tests/probe.h $(filter-out build/main.o,$(OBJ))
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDLIBS)
 
-genview: $(GENVIEW)
+# It opens the game on the chunk it shows (P), so the game is built too.
+genview: $(GENVIEW) $(BIN)
 	./$(GENVIEW)
 
 $(LIGHTPROBE): tools/light_probe.cpp $(filter-out build/main.o,$(OBJ))

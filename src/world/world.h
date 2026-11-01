@@ -52,6 +52,17 @@ public:
     /// one grown from seed.
     Human& makeSpawn(const HumanLook& look, uint64_t seed, const std::string& name = {});
 
+    /// The cell just past the spawn's door, in the slot beyond, where
+    /// whoever goes through it first steps.
+    Vec2i spawnEntry() const;
+    /// Grows a chunk of this kind on the footprint through the spawn's door,
+    /// in a world with the spawn and nothing more yet, as the game would grow
+    /// it had it rolled them: placed so the slot past the door is one of its
+    /// own, the first that keeps it off the spawn. Kind Spawn gives the spawn
+    /// itself; nothing when the game never grows this kind on this footprint.
+    /// For tools/genview.cpp, and the game it opens on that chunk.
+    const Chunk* growPastSpawn(ChunkKind kind, const Footprint& parts);
+
     static Vec2i slotOf(Vec2i cell) { return {floorDiv(cell.x, CHUNK), floorDiv(cell.y, CHUNK)}; }
     bool generated(Vec2i slot) const { return slotChunk_.count(slot) > 0; }
     /// The id of the chunk over a cell; -1 where nothing is generated.
