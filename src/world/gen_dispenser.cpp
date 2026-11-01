@@ -1,4 +1,5 @@
 #include "world/world.h"
+#include "world/gen_tuning.h"
 #include <vector>
 
 // Every server room, closets too, has one water dispenser against its back
@@ -9,10 +10,11 @@
 
 namespace {
 
-/// Water a dispenser is made with, in thirst bars (user).
-constexpr float START_MIN = 1.0f, START_MAX = DISPENSER_HOLDS;
+/// Water a dispenser is made with, in thirst bars (user), up to full.
+tune::Float START_MIN{"dispenser", "START_MIN"};
+constexpr float START_MAX = DISPENSER_HOLDS;
 /// It keeps this many cells from the inner door.
-constexpr int DOOR_GAP = 2;
+tune::Int DOOR_GAP{"dispenser", "DOOR_GAP"};
 /// Rows its jug rises over above its own cell, against a side wall: kept
 /// clear like those behind statues.
 constexpr int RISE_SIDE = 2;

@@ -1,5 +1,6 @@
 #include "render/cable_art.h"
 #include "world/gen.h"
+#include "world/gen_tuning.h"
 #include "world/world.h"
 #include <algorithm>
 
@@ -20,33 +21,31 @@
 namespace {
 
 /// The three sizes of a server room's floor (user: closet, room, hall),
-/// each a range of widths and depths, and how likely each is in a room
+/// each a range of widths then depths, and how likely each is in a room
 /// network and in a data centre.
-struct Size {
-    int wMin, wMax, hMin, hMax;
-};
-constexpr Size SIZES[] = {{6, 8, 5, 6}, {10, 13, 8, 10}, {15, 20, 12, 14}};
-const std::vector<float> ROOMS_SIZE_WEIGHTS = {0.5f, 0.35f, 0.15f};
-const std::vector<float> CENTRE_SIZE_WEIGHTS = {0.35f, 0.4f, 0.25f};
+tune::List SIZES[] = {{"server", "CLOSET_SIZE", 4, true}, {"server", "ROOM_SIZE", 4, true},
+                      {"server", "HALL_SIZE", 4, true}};
+tune::List ROOMS_SIZE_WEIGHTS{"server", "ROOMS_SIZE_WEIGHTS", 3};
+tune::List CENTRE_SIZE_WEIGHTS{"server", "CENTRE_SIZE_WEIGHTS", 3};
 /// Cells of lobby between the two doors.
 constexpr int LOBBY = 2;
 /// The corridor from the outer door reaches floor within this many cells.
-constexpr int SERVER_CORRIDOR_MAX = 10;
+tune::Int SERVER_CORRIDOR_MAX{"server", "SERVER_CORRIDOR_MAX"};
 /// Tries at a spot for each room wanted.
-constexpr int SERVER_TRIES = 60;
+tune::Int SERVER_TRIES{"server", "SERVER_TRIES"};
 /// Rows of racks stand this far apart, so the aisle between shows over the
 /// front row's tops (a rack hides the four rows behind it).
-constexpr int RACK_ROW_PITCH = 6;
+tune::Int RACK_ROW_PITCH{"server", "RACK_ROW_PITCH"};
 /// A row of racks this long or longer leaves a gap in its middle, this wide.
-constexpr int RACK_RUN_GAP_FROM = 12, RACK_RUN_GAP = 2;
+tune::Int RACK_RUN_GAP_FROM{"server", "RACK_RUN_GAP_FROM"}, RACK_RUN_GAP{"server", "RACK_RUN_GAP"};
 /// The desk stands on the back wall in rooms at least this wide and deep.
-constexpr int DESK_ROOM_W = 8, DESK_ROOM_H = 7;
+tune::Int DESK_ROOM_W{"server", "DESK_ROOM_W"}, DESK_ROOM_H{"server", "DESK_ROOM_H"};
 /// One terminal, then one more for each this many cells of floor.
-constexpr int TERMINAL_FLOOR = 90;
+tune::Int TERMINAL_FLOOR{"server", "TERMINAL_FLOOR"};
 /// The raised floor: a seam round every cell, in grey.
 constexpr Floor SERVER_FLOOR{FloorPattern::Grid, 0};
 /// The data centre's corridors: this wide, laid out on a grid this far apart.
-constexpr int CENTRE_CORRIDOR = 4, CENTRE_PITCH_X = 28, CENTRE_PITCH_Y = 24;
+tune::Int CENTRE_CORRIDOR{"server", "CENTRE_CORRIDOR"}, CENTRE_PITCH_X{"server", "CENTRE_PITCH_X"}, CENTRE_PITCH_Y{"server", "CENTRE_PITCH_Y"};
 
 constexpr Vec2i SIDES[] = {{0, -1}, {1, 0}, {0, 1}, {-1, 0}};
 constexpr uint8_t LINKS[] = {CABLE_N, CABLE_E, CABLE_S, CABLE_W};
@@ -79,8 +78,8 @@ int World::placeServerRooms(Chunk& c, Rng& dice, int count, const std::vector<ge
     const Floor paint = c.paint;
     int made = 0;
     for (int t = 0; t < SERVER_TRIES * count && made < count; t++) {
-        const Size& s = SIZES[size_t(dice.weighted(weights))];
-        int w = dice.range(s.wMin, s.wMax), h = dice.range(s.hMin, s.hMax);
+        tune::List& s = SIZES[size_t(dice.weighted(weights))];
+        int w = dice.range(s[0], s[1]), h = dice.range(s[2], s[3]);
         int x = dice.range(2, c.w - 3 - w), y = dice.range(2, c.h - 3 - h);
         // The way in: south, east or west, never through the back wall.
         Vec2i in = SIDES[size_t(dice.range(1, 3))] * -1;

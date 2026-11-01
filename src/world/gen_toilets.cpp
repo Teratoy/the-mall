@@ -1,4 +1,5 @@
 #include "world/gen.h"
+#include "world/gen_tuning.h"
 #include "world/world.h"
 
 // Toilets are rare: one now and then in a room network, against a straight
@@ -12,35 +13,35 @@
 namespace {
 
 /// Chance a room network has a toilet, or two in a big one; and a maze.
-constexpr float ROOMS_TOILET_CHANCE = 0.2f;
-constexpr float MAZE_TOILET_CHANCE = 0.15f;
+tune::Float ROOMS_TOILET_CHANCE{"toilets", "ROOMS_TOILET_CHANCE"};
+tune::Float MAZE_TOILET_CHANCE{"toilets", "MAZE_TOILET_CHANCE"};
 /// Tries at a spot for each.
-constexpr int TOILET_TRIES = 300;
+tune::Int TOILET_TRIES{"toilets", "TOILET_TRIES"};
 
 constexpr Vec2i SIDES[] = {{0, -1}, {1, 0}, {0, 1}, {-1, 0}};
 
 /// Chance per slot a maze has a restroom, its size either way round, and
 /// the cells between its toilets.
-constexpr float RESTROOM_CHANCE = 0.4f;
-constexpr int RESTROOM_LONG_MIN = 14, RESTROOM_LONG_MAX = 22;
-constexpr int RESTROOM_SHORT_MIN = 11, RESTROOM_SHORT_MAX = 15;
-constexpr int RESTROOM_SPACING = 2;
+tune::Float RESTROOM_CHANCE{"toilets", "RESTROOM_CHANCE"};
+tune::Int RESTROOM_LONG_MIN{"toilets", "RESTROOM_LONG_MIN"}, RESTROOM_LONG_MAX{"toilets", "RESTROOM_LONG_MAX"};
+tune::Int RESTROOM_SHORT_MIN{"toilets", "RESTROOM_SHORT_MIN"}, RESTROOM_SHORT_MAX{"toilets", "RESTROOM_SHORT_MAX"};
+tune::Int RESTROOM_SPACING{"toilets", "RESTROOM_SPACING"};
 /// Floor kept between the middle partition's toilets and the hall's edge.
-constexpr int RESTROOM_AISLE = 3;
+tune::Int RESTROOM_AISLE{"toilets", "RESTROOM_AISLE"};
 /// Restrooms keep at least this far apart.
-constexpr int RESTROOM_GAP = 4;
-constexpr int RESTROOM_TRIES = 40;
+tune::Int RESTROOM_GAP{"toilets", "RESTROOM_GAP"};
+tune::Int RESTROOM_TRIES{"toilets", "RESTROOM_TRIES"};
 /// Restroom floors are tiles in clean colours.
 constexpr FloorPattern RESTROOM_PATTERNS[] = {FloorPattern::Grid, FloorPattern::BigGrid, FloorPattern::Chess,
                                               FloorPattern::ChessSmall};
 constexpr uint8_t RESTROOM_PALETTES[] = {2, 5, 7};
 /// Share of the spots that fit a toilet in a toilet plaza that get one.
-constexpr float PLAZA_TOILET_FILL = 0.7f;
+tune::Float PLAZA_TOILET_FILL{"toilets", "PLAZA_TOILET_FILL"};
 /// A data centre's washroom: this many toilets, a cell apart along its
 /// back wall, and this many rows of floor in front of them.
-constexpr int WASHROOM_TOILETS_MIN = 2, WASHROOM_TOILETS_MAX = 3;
-constexpr int WASHROOM_DEPTH = 3;
-constexpr int WASHROOM_TRIES = 200;
+tune::Int WASHROOM_TOILETS_MIN{"toilets", "WASHROOM_TOILETS_MIN"}, WASHROOM_TOILETS_MAX{"toilets", "WASHROOM_TOILETS_MAX"};
+tune::Int WASHROOM_DEPTH{"toilets", "WASHROOM_DEPTH"};
+tune::Int WASHROOM_TRIES{"toilets", "WASHROOM_TRIES"};
 
 } // namespace
 

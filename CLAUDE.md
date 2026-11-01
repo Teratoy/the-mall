@@ -101,6 +101,12 @@ lost, and several useful probes already have been.
   F5 reloads it. The sprite editor writes it. Art drawn from letters goes
   here, not in a glyph array in code; humans and other procedural art stay
   in code.
+- `data/worldgen.txt`: the knobs that shape what is grown (kind mix, room
+  sizes, plazas, water, traps, machines, toilets, statues), read through
+  `tune::Int`/`Float`/`List` handles in `world/gen_tuning.h`; F5 reloads it
+  for chunks grown from then on. A new generation knob goes here, named
+  at the top of the file that uses it, not as a `constexpr`. Timings the
+  sim runs on (smell, spikes, darts, airlocks) stay in code.
 - `data/lines_review.json` and `data/lines_drafts.json`: the lines editor's
   review marks, and rewrites Claude drafts for the user to accept or reject
   there (format at the top of `tools/lines_editor.py`). Draft rewrites go in

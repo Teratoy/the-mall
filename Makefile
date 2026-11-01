@@ -62,7 +62,7 @@ stuck: $(STUCK)
 
 # The soak's output, remade only when the soak or what it reads has changed,
 # so make golden after a failed make check copies it instead of running it again.
-build/soak.txt: $(STUCK) data/lines.txt data/names.txt Makefile
+build/soak.txt: $(STUCK) data/lines.txt data/names.txt data/worldgen.txt Makefile
 	./$(STUCK) $(SOAK_ARGS) > $@.tmp && mv $@.tmp $@
 
 # The scenarios run on a spare core while the soak runs, and print after it.

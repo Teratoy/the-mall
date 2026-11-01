@@ -53,6 +53,34 @@ a world without a visible window.
   (`SMELL_EVERY`, `SPIKES_UP_TIME`, `DART_RELOAD_TIME`, airlock and so on)
   stay in code.
 
+### Built (2026-11-01)
+
+- `data/worldgen.txt` holds 177 knobs (226 values, with the lists) over
+  ten sections (world, maze, rooms, plaza, water, traps, vending,
+  dispenser, server, toilets), each with its range and the comment above
+  it. A value may be written as a fraction (`MACHINE_CHANCE 1/3`), worked
+  out in floats as the code did.
+- `world/gen_tuning.{h,cpp}`: `tune::Int`, `tune::Float` and `tune::List`
+  handles, each named by section and name at the top of the file that uses
+  it, in place of its `constexpr`. A handle finds its knob the first time
+  it is read and keeps its place, so reading one costs what a constant
+  did. A reload keeps every knob where it was. A knob the file lacks, or
+  with the wrong count of values, stops the game with a message saying
+  which.
+- Lists: `KIND_WEIGHTS`, the table and statue weights, `SHAPE_WEIGHTS`
+  (the footprints stay in code, in the order the comment names), the
+  server room sizes (`CLOSET_SIZE`, `ROOM_SIZE`, `HALL_SIZE`: widths then
+  depths) and their weights.
+- Left in code: timings the sim runs on (smell, spikes, darts, airlock),
+  the wake bottle, the dispenser's fill up to full, what is tied to the
+  art (how far a machine or dispenser rises over the cells behind it) or
+  to the layout's shape (`LOBBY`, the facings, restroom tiles, the
+  raised floor).
+- F5 in game reads it with lines and sprites. The soak reruns when it
+  changes, and the APK ships it.
+- `make check` passes unchanged, and `genprobe 20 png` gives the same
+  output and pictures as before on every footprint and kind.
+
 ### Step 2: growing one chunk on demand
 
 - `World` gets a way to grow a given kind on a given footprint at a slot,

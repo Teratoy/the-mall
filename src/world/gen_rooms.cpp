@@ -1,4 +1,5 @@
 #include "world/gen.h"
+#include "world/gen_tuning.h"
 #include <algorithm>
 #include <climits>
 #include <cmath>
@@ -9,39 +10,39 @@ namespace gen {
 namespace {
 
 /// Rooms wanted per slot.
-constexpr int ROOMS_MIN = 3, ROOMS_MAX = 14;
-constexpr int ROOM_MIN = 6;
+tune::Int ROOMS_MIN{"rooms", "ROOMS_MIN"}, ROOMS_MAX{"rooms", "ROOMS_MAX"};
+tune::Int ROOM_MIN{"rooms", "ROOM_MIN"};
 /// The biggest room side is rolled per chunk in this range, so some
 /// networks are many small rooms and others a few big halls.
-constexpr int ROOM_MAX_LO = 12, ROOM_MAX_HI = 32;
+tune::Int ROOM_MAX_LO{"rooms", "ROOM_MAX_LO"}, ROOM_MAX_HI{"rooms", "ROOM_MAX_HI"};
 /// Least wall between two rooms' boxes.
-constexpr int ROOM_GAP = 3;
-constexpr int CORRIDOR_MIN = 3, CORRIDOR_MAX = 4;
+tune::Int ROOM_GAP{"rooms", "ROOM_GAP"};
+tune::Int CORRIDOR_MIN{"rooms", "CORRIDOR_MIN"}, CORRIDOR_MAX{"rooms", "CORRIDOR_MAX"};
 /// Chance each room gets one more corridor beyond the spanning tree.
-constexpr float LOOP_CHANCE = 0.3f;
+tune::Float LOOP_CHANCE{"rooms", "LOOP_CHANCE"};
 /// Each chunk rolls this many floors and gives each room one of them, so
 /// rooms repeat each other's floors like shops along one wing.
-constexpr int ROOM_FLOORS_MIN = 2, ROOM_FLOORS_MAX = 4;
+tune::Int ROOM_FLOORS_MIN{"rooms", "ROOM_FLOORS_MIN"}, ROOM_FLOORS_MAX{"rooms", "ROOM_FLOORS_MAX"};
 /// The same for walls. Walls further from a room than WALL_REACH keep the
 /// chunk's own style, and so do those along corridors.
-constexpr int ROOM_WALLS_MIN = 2, ROOM_WALLS_MAX = 4;
-constexpr int WALL_REACH = 2;
-constexpr float CANAL_CHANCE = 0.35f;
+tune::Int ROOM_WALLS_MIN{"rooms", "ROOM_WALLS_MIN"}, ROOM_WALLS_MAX{"rooms", "ROOM_WALLS_MAX"};
+tune::Int WALL_REACH{"rooms", "WALL_REACH"};
+tune::Float CANAL_CHANCE{"rooms", "CANAL_CHANCE"};
 /// Pools tried per slot; they only fit in rooms roomy enough.
-constexpr int POOLS_MAX = 3;
+tune::Int POOLS_MAX{"rooms", "POOLS_MAX"};
 /// Rooms at least this big each way may get a grid of pillars, this often.
-constexpr int PILLAR_ROOM_MIN = 16;
-constexpr float PILLAR_CHANCE = 0.4f;
+tune::Int PILLAR_ROOM_MIN{"rooms", "PILLAR_ROOM_MIN"};
+tune::Float PILLAR_CHANCE{"rooms", "PILLAR_CHANCE"};
 /// Pillars are 1 or 2 cells across, with this much floor between them,
 /// keep this far in from the room's box, and leave its centre clear.
-constexpr int PILLAR_GAP_MIN = 3, PILLAR_GAP_MAX = 5;
-constexpr int PILLAR_MARGIN = 3;
-constexpr int PILLAR_CLEAR = 4;
+tune::Int PILLAR_GAP_MIN{"rooms", "PILLAR_GAP_MIN"}, PILLAR_GAP_MAX{"rooms", "PILLAR_GAP_MAX"};
+tune::Int PILLAR_MARGIN{"rooms", "PILLAR_MARGIN"};
+tune::Int PILLAR_CLEAR{"rooms", "PILLAR_CLEAR"};
 /// Rectangular rooms this long may get a wall across them, this often,
 /// with one or two gaps of this width.
-constexpr int PARTITION_ROOM_MIN = 14;
-constexpr float PARTITION_CHANCE = 0.3f;
-constexpr int PARTITION_GAP = 3;
+tune::Int PARTITION_ROOM_MIN{"rooms", "PARTITION_ROOM_MIN"};
+tune::Float PARTITION_CHANCE{"rooms", "PARTITION_CHANCE"};
+tune::Int PARTITION_GAP{"rooms", "PARTITION_GAP"};
 
 /// Donut is a ring round a solid core; U and T are bars, turned any way.
 enum class Shape { Rect, L, Cross, Disk, Octagon, Donut, U, T, Rounded, Diamond, Count };

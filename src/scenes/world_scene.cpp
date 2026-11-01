@@ -10,6 +10,7 @@
 #include "render/sprites.h"
 #include "render/world_view.h"
 #include "scenes/menu_scene.h"
+#include "world/gen_tuning.h"
 #include "ui/pixel_ui.h"
 #include <algorithm>
 #include <cctype>
@@ -357,9 +358,12 @@ void WorldScene::update(float dt, const Canvas& canvas) {
         setDither(Dither((int(dither()) + 1) % DITHER_COUNT));
         TraceLog(LOG_INFO, "light dither: %s", ditherName(dither()));
     }
+    // F5 reads the data files again: lines, sprites, and the world's knobs
+    // for chunks grown from now on.
     if (IsKeyPressed(KEY_F5)) {
         talk::reload();
         sprites::reload();
+        tune::reload();
     }
     int step = zoomStep_;
     zoomStep_ = 0;

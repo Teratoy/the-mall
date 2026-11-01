@@ -1,4 +1,5 @@
 #include "world/gen.h"
+#include "world/gen_tuning.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
@@ -11,49 +12,49 @@ namespace gen {
 namespace {
 
 /// Solid wall left between the hall and the chunk's border.
-constexpr int MARGIN_MIN = 3, MARGIN_MAX = 7;
+tune::Int MARGIN_MIN{"plaza", "MARGIN_MIN"}, MARGIN_MAX{"plaza", "MARGIN_MAX"};
 /// The inlaid band: this far in from the hall's edge, and this wide.
-constexpr int BAND_IN_MIN = 2, BAND_IN_MAX = 4;
-constexpr int BAND_WIDTH_MIN = 1, BAND_WIDTH_MAX = 2;
+tune::Int BAND_IN_MIN{"plaza", "BAND_IN_MIN"}, BAND_IN_MAX{"plaza", "BAND_IN_MAX"};
+tune::Int BAND_WIDTH_MIN{"plaza", "BAND_WIDTH_MIN"}, BAND_WIDTH_MAX{"plaza", "BAND_WIDTH_MAX"};
 /// Columns 2 cells across, this far apart, this far in from the hall's edge.
-constexpr float COLONNADE_CHANCE = 0.6f;
-constexpr int COLUMN = 2;
-constexpr int COLUMN_PITCH_MIN = 8, COLUMN_PITCH_MAX = 12;
-constexpr int COLUMN_IN = 6;
+tune::Float COLONNADE_CHANCE{"plaza", "COLONNADE_CHANCE"};
+tune::Int COLUMN{"plaza", "COLUMN"};
+tune::Int COLUMN_PITCH_MIN{"plaza", "COLUMN_PITCH_MIN"}, COLUMN_PITCH_MAX{"plaza", "COLUMN_PITCH_MAX"};
+tune::Int COLUMN_IN{"plaza", "COLUMN_IN"};
 /// The pool round the island is at least this wide per slot across, and
 /// has a quay of the band's floor this wide round it.
-constexpr int MOAT_MIN = 2, MOAT_MAX = 3;
-constexpr int QUAY = 2;
-constexpr float ROUND_POOL_CHANCE = 0.5f;
+tune::Int MOAT_MIN{"plaza", "MOAT_MIN"}, MOAT_MAX{"plaza", "MOAT_MAX"};
+tune::Int QUAY{"plaza", "QUAY"};
+tune::Float ROUND_POOL_CHANCE{"plaza", "ROUND_POOL_CHANCE"};
 
 /// Plazas this many slots across are big: avenues and quarters.
-constexpr int BIG_SLOTS = 3;
+tune::Int BIG_SLOTS{"plaza", "BIG_SLOTS"};
 /// Half the width of each avenue, open floor from the fountain to the band.
-constexpr int AVENUE_HALF_MIN = 6, AVENUE_HALF_MAX = 8;
+tune::Int AVENUE_HALF_MIN{"plaza", "AVENUE_HALF_MIN"}, AVENUE_HALF_MAX{"plaza", "AVENUE_HALF_MAX"};
 /// Beyond each avenue's edge, a strip this wide where statues line it,
 /// standing this far out, this far apart. The courts keep out of it.
-constexpr int LINING = 16;
-constexpr int LINING_OUT = 8;
-constexpr int LINING_PITCH_MIN = 20, LINING_PITCH_MAX = 30;
+tune::Int LINING{"plaza", "LINING"};
+tune::Int LINING_OUT{"plaza", "LINING_OUT"};
+tune::Int LINING_PITCH_MIN{"plaza", "LINING_PITCH_MIN"}, LINING_PITCH_MAX{"plaza", "LINING_PITCH_MAX"};
 /// Courts keep this far from the grand fountain's quay and the hall's edge.
-constexpr int COURT_GAP = 4;
+tune::Int COURT_GAP{"plaza", "COURT_GAP"};
 /// How far a court's things spread from the quarter's centre.
-constexpr int COURT_SPREAD = 30;
+tune::Int COURT_SPREAD{"plaza", "COURT_SPREAD"};
 /// A colonnade court is a ring of columns this far out, this far apart
 /// along it, or a grid this far apart.
-constexpr int COURT_RING_MIN = 12, COURT_RING_MAX = 22;
-constexpr int COURT_RING_STEP_MIN = 6, COURT_RING_STEP_MAX = 8;
-constexpr int COURT_GRID_MIN = 8, COURT_GRID_MAX = 12;
+tune::Int COURT_RING_MIN{"plaza", "COURT_RING_MIN"}, COURT_RING_MAX{"plaza", "COURT_RING_MAX"};
+tune::Int COURT_RING_STEP_MIN{"plaza", "COURT_RING_STEP_MIN"}, COURT_RING_STEP_MAX{"plaza", "COURT_RING_STEP_MAX"};
+tune::Int COURT_GRID_MIN{"plaza", "COURT_GRID_MIN"}, COURT_GRID_MAX{"plaza", "COURT_GRID_MAX"};
 /// Kiosks in a cluster, tries to fit them, and open floor kept round each.
-constexpr int KIOSKS_MIN = 3, KIOSKS_MAX = 6;
-constexpr int KIOSK_TRIES = 80;
-constexpr int KIOSK_GAP = 2;
+tune::Int KIOSKS_MIN{"plaza", "KIOSKS_MIN"}, KIOSKS_MAX{"plaza", "KIOSKS_MAX"};
+tune::Int KIOSK_TRIES{"plaza", "KIOSK_TRIES"};
+tune::Int KIOSK_GAP{"plaza", "KIOSK_GAP"};
 /// A booth walls in this much floor, with an opening this wide; a stall
 /// is two walls this long meeting in a corner.
-constexpr float BOOTH_CHANCE = 0.5f;
-constexpr int BOOTH_LONG = 5, BOOTH_SHORT = 4;
-constexpr int BOOTH_OPENING = 2;
-constexpr int STALL_ARM = 5;
+tune::Float BOOTH_CHANCE{"plaza", "BOOTH_CHANCE"};
+tune::Int BOOTH_LONG{"plaza", "BOOTH_LONG"}, BOOTH_SHORT{"plaza", "BOOTH_SHORT"};
+tune::Int BOOTH_OPENING{"plaza", "BOOTH_OPENING"};
+tune::Int STALL_ARM{"plaza", "STALL_ARM"};
 
 enum class Hall { Rect, Octagon, Oval };
 
@@ -187,7 +188,7 @@ void bigPlaza(Chunk& c, Rng& rng, Plaza& p, const Outline& hall, int reach, int 
     // Statues stand in pairs, one each side, from past the fountain's quay
     // (or the grand statue, when there is none) out to the hall's edge.
     const int pitch = rng.range(LINING_PITCH_MIN, LINING_PITCH_MAX);
-    const int from = std::max(reach + QUAY, LINING) + pitch / 2;
+    const int from = std::max<int>(reach + QUAY, LINING) + pitch / 2;
     for (Vec2i d : DIRS4) {
         const Vec2i across{d.y, d.x};
         for (int t = from;; t += pitch) {

@@ -1,4 +1,5 @@
 #include "world/gen.h"
+#include "world/gen_tuning.h"
 #include "world/world.h"
 #include <algorithm>
 
@@ -18,27 +19,27 @@
 namespace {
 
 /// Chance per slot of a room network or plaza that it has a machine (user).
-constexpr float MACHINE_CHANCE = 1.0f / 3.0f;
+tune::Float MACHINE_CHANCE{"vending", "MACHINE_CHANCE"};
 /// Chance a machine stands with a second beside it.
-constexpr float PAIR_CHANCE = 0.25f;
+tune::Float PAIR_CHANCE{"vending", "PAIR_CHANCE"};
 /// Items a machine is made with, of its six (user).
-constexpr int STOCK_MIN = 2, STOCK_MAX = 6;
+tune::Int STOCK_MIN{"vending", "STOCK_MIN"}, STOCK_MAX{"vending", "STOCK_MAX"};
 /// Tries at a spot for each.
-constexpr int MACHINE_TRIES = 300;
+tune::Int MACHINE_TRIES{"vending", "MACHINE_TRIES"};
 /// A machine keeps this many cells from any door, and from a slam room's gate.
-constexpr int MACHINE_DOOR_GAP = 3;
+tune::Int MACHINE_DOOR_GAP{"vending", "MACHINE_DOOR_GAP"};
 /// Rows of cells its body rises over: behind it against a north wall,
 /// above it against a side wall.
 constexpr int RISE_FRONT = 3, RISE_SIDE = 2;
 /// The ways a machine may face: away from a north, a west and an east wall.
 constexpr Vec2i FACINGS[] = {{0, 1}, {1, 0}, {-1, 0}};
 /// Machine spots wanted per slot of a data centre (user: commoner there).
-constexpr int CENTRE_MACHINES_PER_SLOT = 1;
+tune::Int CENTRE_MACHINES_PER_SLOT{"vending", "CENTRE_MACHINES_PER_SLOT"};
 /// Chance a data centre's machine stands with a second beside it (user: usually).
-constexpr float CENTRE_PAIR_CHANCE = 0.75f;
+tune::Float CENTRE_PAIR_CHANCE{"vending", "CENTRE_PAIR_CHANCE"};
 /// Cells of solid wall behind an alcove, so the niche opens on nothing else
 /// and the machine's body rises over wall.
-constexpr int ALCOVE_BACK = 3;
+tune::Int ALCOVE_BACK{"vending", "ALCOVE_BACK"};
 
 bool sameFloor(Floor a, Floor b) { return a.pattern == b.pattern && a.palette == b.palette; }
 
