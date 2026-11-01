@@ -523,6 +523,1743 @@ SSSSs.
 SSSSs.
 sssss.
 
+group Air ducts
+
+sprite duct
+# A lone piece of duct, joining nothing.
+# Two cells by two, seen from above: its front face shows to the south where nothing joins it.
+ink L e8ecee lip, lit
+ink l c4cacf metal lit
+ink m a6adb3 metal
+ink e 8a9298 west edge
+ink E 6c737a east edge
+ink g d6dce0 flange lit
+ink G 7e868c flange shade
+ink b 4a5056 bolt
+ink f 8c9399 face, top
+ink F 70777d face
+ink K 4a4f55 face, foot
+ink r b6bcc2 rivet
+.LLLLLLLLLL.
+ellllllllllE
+emmmmmmmmmmE
+emmbggggbmmE
+emmgmmmmGmmE
+emmgmmmmGmmE
+emmgmmmmGmmE
+emmbGGGGbmmE
+emmmmmmmmmmE
+FffffffffffK
+FFrFFrFFrFFK
+.KKKKKKKKKK.
+
+sprite duct n
+# The capped end of a duct run going on to the north.
+# Two cells by two, seen from above: its front face shows to the south where nothing joins it.
+ink m a6adb3 metal
+ink e 8a9298 west edge
+ink E 6c737a east edge
+ink g d6dce0 flange lit
+ink G 7e868c flange shade
+ink b 4a5056 bolt
+ink f 8c9399 face, top
+ink F 70777d face
+ink K 4a4f55 face, foot
+ink r b6bcc2 rivet
+egbggggggbgE
+eGGGGGGGGGGE
+emmmmmmmmmmE
+emmmmmmmmmmE
+emmmmmmmmmmE
+emmmmmmmmmmE
+emmmmmmmmmmE
+eGGGGGGGGGGE
+emmmmmmmmmmE
+FffffffffffK
+FFrFFrFFrFFK
+.KKKKKKKKKK.
+
+sprite duct e
+# The capped end of a duct run going on to the east.
+# Two cells by two, seen from above: its front face shows to the south where nothing joins it.
+ink L e8ecee lip, lit
+ink l c4cacf metal lit
+ink m a6adb3 metal
+ink e 8a9298 west edge
+ink G 7e868c flange shade
+ink f 8c9399 face, top
+ink F 70777d face
+ink K 4a4f55 face, foot
+ink r b6bcc2 rivet
+.LLLLLLLLLLL
+elllllllllll
+emGmmmmmmmmm
+emGmmmmmmmmm
+emGmmmmmmmmm
+emGmmmmmmmmm
+emGmmmmmmmmm
+emGmmmmmmmmm
+emGmmmmmmmmm
+Ffffffffffff
+FFrFFrFFrFFF
+.KKKKKKKKKKK
+
+sprite duct s
+# The capped end of a duct run going on to the south.
+# Two cells by two, seen from above: its front face shows to the south where nothing joins it.
+ink L e8ecee lip, lit
+ink l c4cacf metal lit
+ink m a6adb3 metal
+ink e 8a9298 west edge
+ink E 6c737a east edge
+ink G 7e868c flange shade
+.LLLLLLLLLL.
+ellllllllllE
+eGGGGGGGGGGE
+emmmmmmmmmmE
+emmmmmmmmmmE
+emmmmmmmmmmE
+emmmmmmmmmmE
+emmmmmmmmmmE
+emmmmmmmmmmE
+emmmmmmmmmmE
+emmmmmmmmmmE
+emmmmmmmmmmE
+
+sprite duct w
+# The capped end of a duct run going on to the west.
+# Two cells by two, seen from above: its front face shows to the south where nothing joins it.
+ink L e8ecee lip, lit
+ink l c4cacf metal lit
+ink m a6adb3 metal
+ink E 6c737a east edge
+ink g d6dce0 flange lit
+ink G 7e868c flange shade
+ink b 4a5056 bolt
+ink f 8c9399 face, top
+ink F 70777d face
+ink K 4a4f55 face, foot
+ink r b6bcc2 rivet
+gGLLLLLLLLL.
+gGlllllllllE
+bGmmmmmmmGmE
+gGmmmmmmmGmE
+gGmmmmmmmGmE
+gGmmmmmmmGmE
+bGmmmmmmmGmE
+gGmmmmmmmGmE
+gGmmmmmmmGmE
+gGfffffffffK
+gGFrFFrFFrFK
+KKKKKKKKKKK.
+
+sprite duct ne
+# The duct joining north and east.
+# Two cells by two, seen from above: its front face shows to the south where nothing joins it.
+ink m a6adb3 metal
+ink e 8a9298 west edge
+ink g d6dce0 flange lit
+ink G 7e868c flange shade
+ink b 4a5056 bolt
+ink f 8c9399 face, top
+ink F 70777d face
+ink K 4a4f55 face, foot
+ink r b6bcc2 rivet
+egbggggggbgg
+eGGGGGGGGGGG
+emmmmmmmmmmm
+emmbggggbmmm
+emmgmmmmGmmm
+emmgmmmmGmmm
+emmgmmmmGmmm
+emmbGGGGbmmm
+emmmmmmmmmmm
+Ffffffffffff
+FFrFFrFFrFFF
+.KKKKKKKKKKK
+
+sprite duct ns
+# The duct joining north and south.
+# Two cells by two, seen from above: its front face shows to the south where nothing joins it.
+ink m a6adb3 metal
+ink x bac1c6 crease lit
+ink X 959ca2 crease shade
+ink e 8a9298 west edge
+ink E 6c737a east edge
+ink g d6dce0 flange lit
+ink G 7e868c flange shade
+ink b 4a5056 bolt
+egbggggggbgE
+eGGGGGGGGGGE
+exmmmmmmmmXE
+emxmmmmmmXmE
+emmxmmmmXmmE
+emmmxmmXmmmE
+emmmmxXmmmmE
+emmmmXxmmmmE
+emmmXmmxmmmE
+emmXmmmmxmmE
+emXmmmmmmxmE
+eXmmmmmmmmxE
+
+sprite duct nw
+# The duct joining north and west.
+# Two cells by two, seen from above: its front face shows to the south where nothing joins it.
+ink m a6adb3 metal
+ink E 6c737a east edge
+ink g d6dce0 flange lit
+ink G 7e868c flange shade
+ink b 4a5056 bolt
+ink f 8c9399 face, top
+ink F 70777d face
+ink K 4a4f55 face, foot
+ink r b6bcc2 rivet
+ggbggggggbgE
+gGGGGGGGGGGE
+bGmmmmmmmmmE
+gGmbggggbmmE
+gGmgmmmmGmmE
+gGmgmmmmGmmE
+bGmgmmmmGmmE
+gGmbGGGGbmmE
+gGmmmmmmmmmE
+gGfffffffffK
+gGFrFFrFFrFK
+KKKKKKKKKKK.
+
+sprite duct es
+# The duct joining east and south.
+# Two cells by two, seen from above: its front face shows to the south where nothing joins it.
+ink L e8ecee lip, lit
+ink l c4cacf metal lit
+ink m a6adb3 metal
+ink e 8a9298 west edge
+ink g d6dce0 flange lit
+ink G 7e868c flange shade
+ink b 4a5056 bolt
+.LLLLLLLLLLL
+elllllllllll
+emmmmmmmmmmm
+emmbggggbmmm
+emmgmmmmGmmm
+emmgmmmmGmmm
+emmgmmmmGmmm
+emmbGGGGbmmm
+emmmmmmmmmmm
+emmmmmmmmmmm
+emmmmmmmmmmm
+emmmmmmmmmmm
+
+sprite duct ew
+# The duct joining east and west.
+# Two cells by two, seen from above: its front face shows to the south where nothing joins it.
+ink L e8ecee lip, lit
+ink l c4cacf metal lit
+ink m a6adb3 metal
+ink x bac1c6 crease lit
+ink X 959ca2 crease shade
+ink g d6dce0 flange lit
+ink G 7e868c flange shade
+ink b 4a5056 bolt
+ink f 8c9399 face, top
+ink F 70777d face
+ink K 4a4f55 face, foot
+ink r b6bcc2 rivet
+gGLLLLLLLLLL
+gGllllllllll
+bGxmmmmmmmXm
+gGmxmmmmmXmm
+gGmmxxmXXmmm
+gGmmmmxmmmmm
+bGmmXXmxxmmm
+gGmXmmmmmxmm
+gGXmmmmmmmxm
+gGffffffffff
+gGFrFFrFFrFF
+KKKKKKKKKKKK
+
+sprite duct sw
+# The duct joining south and west.
+# Two cells by two, seen from above: its front face shows to the south where nothing joins it.
+ink L e8ecee lip, lit
+ink l c4cacf metal lit
+ink m a6adb3 metal
+ink E 6c737a east edge
+ink g d6dce0 flange lit
+ink G 7e868c flange shade
+ink b 4a5056 bolt
+gGLLLLLLLLL.
+gGlllllllllE
+bGmmmmmmmmmE
+gGmbggggbmmE
+gGmgmmmmGmmE
+gGmgmmmmGmmE
+gGmgmmmmGmmE
+gGmbGGGGbmmE
+gGmmmmmmmmmE
+bGmmmmmmmmmE
+gGmmmmmmmmmE
+gGmmmmmmmmmE
+
+sprite duct nes
+# The duct joining north, east and south.
+# Two cells by two, seen from above: its front face shows to the south where nothing joins it.
+ink m a6adb3 metal
+ink e 8a9298 west edge
+ink g d6dce0 flange lit
+ink G 7e868c flange shade
+ink b 4a5056 bolt
+egbggggggbgg
+eGGGGGGGGGGG
+emmmmmmmmmmm
+emmbggggbmmm
+emmgmmmmGmmm
+emmgmmmmGmmm
+emmgmmmmGmmm
+emmbGGGGbmmm
+emmmmmmmmmmm
+emmmmmmmmmmm
+emmmmmmmmmmm
+emmmmmmmmmmm
+
+sprite duct new
+# The duct joining north, east and west.
+# Two cells by two, seen from above: its front face shows to the south where nothing joins it.
+ink m a6adb3 metal
+ink g d6dce0 flange lit
+ink G 7e868c flange shade
+ink b 4a5056 bolt
+ink f 8c9399 face, top
+ink F 70777d face
+ink K 4a4f55 face, foot
+ink r b6bcc2 rivet
+ggbggggggbgg
+gGGGGGGGGGGG
+bGmmmmmmmmmm
+gGmbggggbmmm
+gGmgmmmmGmmm
+gGmgmmmmGmmm
+bGmgmmmmGmmm
+gGmbGGGGbmmm
+gGmmmmmmmmmm
+gGffffffffff
+gGFrFFrFFrFF
+KKKKKKKKKKKK
+
+sprite duct nsw
+# The duct joining north, south and west.
+# Two cells by two, seen from above: its front face shows to the south where nothing joins it.
+ink m a6adb3 metal
+ink E 6c737a east edge
+ink g d6dce0 flange lit
+ink G 7e868c flange shade
+ink b 4a5056 bolt
+ggbggggggbgE
+gGGGGGGGGGGE
+bGmmmmmmmmmE
+gGmbggggbmmE
+gGmgmmmmGmmE
+gGmgmmmmGmmE
+gGmgmmmmGmmE
+gGmbGGGGbmmE
+gGmmmmmmmmmE
+bGmmmmmmmmmE
+gGmmmmmmmmmE
+gGmmmmmmmmmE
+
+sprite duct esw
+# The duct joining east, south and west.
+# Two cells by two, seen from above: its front face shows to the south where nothing joins it.
+ink L e8ecee lip, lit
+ink l c4cacf metal lit
+ink m a6adb3 metal
+ink g d6dce0 flange lit
+ink G 7e868c flange shade
+ink b 4a5056 bolt
+gGLLLLLLLLLL
+gGllllllllll
+bGmmmmmmmmmm
+gGmbggggbmmm
+gGmgmmmmGmmm
+gGmgmmmmGmmm
+gGmgmmmmGmmm
+gGmbGGGGbmmm
+gGmmmmmmmmmm
+bGmmmmmmmmmm
+gGmmmmmmmmmm
+gGmmmmmmmmmm
+
+sprite duct nesw
+# The duct joining north, east, south and west.
+# Two cells by two, seen from above: its front face shows to the south where nothing joins it.
+ink m a6adb3 metal
+ink g d6dce0 flange lit
+ink G 7e868c flange shade
+ink b 4a5056 bolt
+ggbggggggbgg
+gGGGGGGGGGGG
+bGmmmmmmmmmm
+gGmbggggbmmm
+gGmgmmmmGmmm
+gGmgmmmmGmmm
+gGmgmmmmGmmm
+gGmbGGGGbmmm
+gGmmmmmmmmmm
+bGmmmmmmmmmm
+gGmmmmmmmmmm
+gGmmmmmmmmmm
+
+sprite duct down n
+# The duct coming in from the north and bending down into the floor, through a bolted collar.
+ink L e8ecee lip, lit
+ink l c4cacf metal lit
+ink m a6adb3 metal
+ink e 8a9298 west edge
+ink E 6c737a east edge
+ink g d6dce0 flange lit
+ink G 7e868c flange shade
+ink b 4a5056 bolt
+ink f 8c9399 face, top
+ink F 70777d face
+ink K 4a4f55 face, foot
+ink r b6bcc2 rivet
+ink c 5c6064 floor collar
+ink C 3a3d40 floor collar shade
+ink n 9aa0a6 collar bolt
+ink o 141618 hole
+egbggggggbgE
+eGGGGGGGGGGE
+emmmmmmmmmmE
+emmmmmmmmmmE
+emmmmmmmmmmE
+ellllllllllE
+eLLLLLLLLLLE
+FffffffffffK
+FFrFFrFFrFFK
+CFFFFFFFFFFC
+CooooooooooC
+cncccnccccnc
+
+sprite duct down e
+# The duct coming in from the east and bending down into the floor, through a bolted collar.
+ink L e8ecee lip, lit
+ink l c4cacf metal lit
+ink m a6adb3 metal
+ink f 8c9399 face, top
+ink F 70777d face
+ink K 4a4f55 face, foot
+ink r b6bcc2 rivet
+ink d 858c92 bending down
+ink D 62686e bending down, far
+ink c 5c6064 floor collar
+ink n 9aa0a6 collar bolt
+ink o 141618 hole
+coDdlLLLLLLL
+noDdllllllll
+coDdlmmmmmmm
+coDdlmmmmmmm
+coDdlmmmmmmm
+noDdlmmmmmmm
+coDdlmmmmmmm
+coDdlmmmmmmm
+coDdlmmmmmmm
+coffffffffff
+norFFrFFrFFF
+coKKKKKKKKKK
+
+sprite duct down s
+# The duct coming in from the south and bending down into the floor, through a bolted collar.
+ink l c4cacf metal lit
+ink m a6adb3 metal
+ink e 8a9298 west edge
+ink E 6c737a east edge
+ink d 858c92 bending down
+ink D 62686e bending down, far
+ink c 5c6064 floor collar
+ink n 9aa0a6 collar bolt
+ink o 141618 hole
+cncccnccccnc
+oooooooooooo
+DDDDDDDDDDDD
+dddddddddddd
+llllllllllll
+emmmmmmmmmmE
+emmmmmmmmmmE
+emmmmmmmmmmE
+emmmmmmmmmmE
+emmmmmmmmmmE
+emmmmmmmmmmE
+emmmmmmmmmmE
+
+sprite duct down w
+# The duct coming in from the west and bending down into the floor, through a bolted collar.
+ink L e8ecee lip, lit
+ink l c4cacf metal lit
+ink m a6adb3 metal
+ink g d6dce0 flange lit
+ink G 7e868c flange shade
+ink b 4a5056 bolt
+ink f 8c9399 face, top
+ink F 70777d face
+ink K 4a4f55 face, foot
+ink r b6bcc2 rivet
+ink d 858c92 bending down
+ink D 62686e bending down, far
+ink C 3a3d40 floor collar shade
+ink n 9aa0a6 collar bolt
+ink o 141618 hole
+gGLLLLLldDoC
+gGlllllldDon
+bGmmmmmldDoC
+gGmmmmmldDoC
+gGmmmmmldDoC
+gGmmmmmldDon
+bGmmmmmldDoC
+gGmmmmmldDoC
+gGmmmmmldDoC
+gGffffffffoC
+gGFrFFrFFron
+KKKKKKKKKKoC
+
+sprite duct ew vent
+# A straight duct with a vent in its top. v and V, the dark between the slats, trade colours as the air stirs.
+ink L e8ecee lip, lit
+ink l c4cacf metal lit
+ink m a6adb3 metal
+ink x bac1c6 crease lit
+ink X 959ca2 crease shade
+ink g d6dce0 flange lit
+ink G 7e868c flange shade
+ink b 4a5056 bolt
+ink f 8c9399 face, top
+ink F 70777d face
+ink K 4a4f55 face, foot
+ink r b6bcc2 rivet
+ink v 16181c vent dark
+ink V 2c3036 vent dark, stirred
+ink w d0d6da vent slat
+blink v V
+gGLLLLLLLLLL
+gGllllllllll
+bGxggggggGXm
+gGmgvvVvvGmm
+gGmgwwwwwGmm
+gGmgvvVvvGmm
+bGmgwwwwwGmm
+gGmGGGGGGGmm
+gGXmmmmmmmxm
+gGffffffffff
+gGFrFFrFFrFF
+KKKKKKKKKKKK
+
+sprite duct ns vent
+# A straight duct with a vent in its top. v and V, the dark between the slats, trade colours as the air stirs.
+ink m a6adb3 metal
+ink x bac1c6 crease lit
+ink X 959ca2 crease shade
+ink e 8a9298 west edge
+ink E 6c737a east edge
+ink g d6dce0 flange lit
+ink G 7e868c flange shade
+ink b 4a5056 bolt
+ink v 16181c vent dark
+ink V 2c3036 vent dark, stirred
+ink w d0d6da vent slat
+blink v V
+egbggggggbgE
+eGGGGGGGGGGE
+exmmmmmmmmXE
+emgggggggGmE
+emgVvvVvvGmE
+emgwwwwwwGmE
+emgVvvVvvGmE
+emgwwwwwwGmE
+emgVvvVvvGmE
+emGGGGGGGGmE
+emXmmmmmmxmE
+eXmmmmmmmmxE
+
+group Water pipes
+
+sprite pipe
+# A lone piece of water pipe, joining nothing.
+# Two cells by two, seen from above, lying on the floor; a straight run wears a green band.
+ink l a6c8de pipe lit
+ink p 7aa4c4 pipe
+ink P 5a82a2 pipe shade
+ink D 3e5e7a pipe dark
+ink K 2a3e52 pipe underside
+ink q c2c8ce flange lit
+ink Q 7c848c flange shade
+ink s 00000050 shadow
+.qq.....qq..
+.qq.....qq..
+.qqlllllqq..
+.qqlllllqq..
+.qqpppppqqs.
+.qqpppppqqs.
+.qqPPPPPqqs.
+.QQDDDDDQQs.
+.QQKKKKKQQs.
+.QQsssssQQs.
+.QQsssssQQs.
+............
+
+sprite pipe n
+# The capped end of a water pipe run going on to the north.
+# Two cells by two, seen from above, lying on the floor; a straight run wears a green band.
+ink p 7aa4c4 pipe
+ink P 5a82a2 pipe shade
+ink D 3e5e7a pipe dark
+ink q c2c8ce flange lit
+ink Q 7c848c flange shade
+ink b 3c4248 bolt
+ink s 00000050 shadow
+qbqqqqqQQQb.
+qqqqqqqQQQQ.
+..ppppPPDs..
+..ppppPPDs..
+..ppppPPDs..
+..ppppPPDs..
+qqqqqqqQQQQ.
+qqqqqqqQQQQ.
+...sssssss..
+...sssssss..
+............
+............
+
+sprite pipe e
+# The capped end of a water pipe run going on to the east.
+# Two cells by two, seen from above, lying on the floor; a straight run wears a green band.
+ink l a6c8de pipe lit
+ink p 7aa4c4 pipe
+ink P 5a82a2 pipe shade
+ink D 3e5e7a pipe dark
+ink K 2a3e52 pipe underside
+ink q c2c8ce flange lit
+ink Q 7c848c flange shade
+ink s 00000050 shadow
+...qq.......
+...qq.......
+...qqlllllll
+...qqlllllll
+...qqppppppp
+...qqppppppp
+...qqPPPPPPP
+...QQDDDDDDD
+...QQKKKKKKK
+...QQsssssss
+...QQsssssss
+............
+
+sprite pipe s
+# The capped end of a water pipe run going on to the south.
+# Two cells by two, seen from above, lying on the floor; a straight run wears a green band.
+ink p 7aa4c4 pipe
+ink P 5a82a2 pipe shade
+ink D 3e5e7a pipe dark
+ink q c2c8ce flange lit
+ink Q 7c848c flange shade
+ink s 00000050 shadow
+............
+............
+............
+qqqqqqqQQQQ.
+qqqqqqqQQQQ.
+..ppppPPDs..
+..ppppPPDs..
+..ppppPPDs..
+..ppppPPDs..
+..ppppPPDs..
+..ppppPPDs..
+..ppppPPDs..
+
+sprite pipe w
+# The capped end of a water pipe run going on to the west.
+# Two cells by two, seen from above, lying on the floor; a straight run wears a green band.
+ink l a6c8de pipe lit
+ink p 7aa4c4 pipe
+ink P 5a82a2 pipe shade
+ink D 3e5e7a pipe dark
+ink K 2a3e52 pipe underside
+ink q c2c8ce flange lit
+ink Q 7c848c flange shade
+ink b 3c4248 bolt
+ink s 00000050 shadow
+qq....qq....
+bq....qq....
+qqllllqq....
+qqllllqq....
+qqppppqqs...
+qqppppqqs...
+qqPPPPqqs...
+QQDDDDQQs...
+QQKKKKQQs...
+QQssssQQs...
+bQssssQQs...
+............
+
+sprite pipe ne
+# The water pipe joining north and east.
+# Two cells by two, seen from above, lying on the floor; a straight run wears a green band.
+ink l a6c8de pipe lit
+ink p 7aa4c4 pipe
+ink P 5a82a2 pipe shade
+ink D 3e5e7a pipe dark
+ink K 2a3e52 pipe underside
+ink q c2c8ce flange lit
+ink Q 7c848c flange shade
+ink b 3c4248 bolt
+ink s 00000050 shadow
+qbqqqqqQQQb.
+qqqqqqqQQQQ.
+..ppppPPDlll
+..ppppPPllll
+..ppppPppppp
+..pppppppppp
+..pppPPPPPPP
+..PPPDDDDDDD
+...DDKKKKKKK
+...sssssssss
+....ssssssss
+............
+
+sprite pipe ns
+# The water pipe joining north and south.
+# Two cells by two, seen from above, lying on the floor; a straight run wears a green band.
+ink p 7aa4c4 pipe
+ink P 5a82a2 pipe shade
+ink D 3e5e7a pipe dark
+ink q c2c8ce flange lit
+ink Q 7c848c flange shade
+ink b 3c4248 bolt
+ink a 6cb878 green band
+ink A 3e7a4a green band shade
+ink s 00000050 shadow
+qbqqqqqQQQb.
+qqqqqqqQQQQ.
+..ppppPPDs..
+..ppppPPDs..
+..ppppPPDs..
+..ppppPPDs..
+..ppppPPDs..
+..aaaaAAAs..
+..aaaaAAAs..
+..ppppPPDs..
+..ppppPPDs..
+..ppppPPDs..
+
+sprite pipe nw
+# The water pipe joining north and west.
+# Two cells by two, seen from above, lying on the floor; a straight run wears a green band.
+ink l a6c8de pipe lit
+ink p 7aa4c4 pipe
+ink P 5a82a2 pipe shade
+ink D 3e5e7a pipe dark
+ink K 2a3e52 pipe underside
+ink q c2c8ce flange lit
+ink Q 7c848c flange shade
+ink b 3c4248 bolt
+ink s 00000050 shadow
+qbqqqqqQQQb.
+qqqqqqqQQQQ.
+qqppppPPDs..
+qqlpppPPDs..
+qqppppPPDs..
+qqppppPPDs..
+qqPPPPPDKs..
+QQDDDDDKKs..
+QQKKKKKKss..
+QQssssssss..
+bQsssssss...
+............
+
+sprite pipe es
+# The water pipe joining east and south.
+# Two cells by two, seen from above, lying on the floor; a straight run wears a green band.
+ink h e4f2fa shine
+ink l a6c8de pipe lit
+ink p 7aa4c4 pipe
+ink P 5a82a2 pipe shade
+ink D 3e5e7a pipe dark
+ink K 2a3e52 pipe underside
+ink s 00000050 shadow
+............
+............
+...hhlllllll
+..lhllllllll
+..lllppppppp
+..pppppppppp
+..ppppPPPPPP
+..ppppPDDDDD
+..ppppPPKKKK
+..ppppPPDsss
+..ppppPPDsss
+..ppppPPDs..
+
+sprite pipe ew
+# The water pipe joining east and west.
+# Two cells by two, seen from above, lying on the floor; a straight run wears a green band.
+ink l a6c8de pipe lit
+ink p 7aa4c4 pipe
+ink P 5a82a2 pipe shade
+ink D 3e5e7a pipe dark
+ink K 2a3e52 pipe underside
+ink q c2c8ce flange lit
+ink Q 7c848c flange shade
+ink b 3c4248 bolt
+ink a 6cb878 green band
+ink A 3e7a4a green band shade
+ink s 00000050 shadow
+qq..........
+bq..........
+qqlllllaalll
+qqlllllaalll
+qqpppppaappp
+qqpppppaappp
+qqPPPPPAAPPP
+QQDDDDDAADDD
+QQKKKKKAAKKK
+QQssssssssss
+bQssssssssss
+............
+
+sprite pipe sw
+# The water pipe joining south and west.
+# Two cells by two, seen from above, lying on the floor; a straight run wears a green band.
+ink l a6c8de pipe lit
+ink p 7aa4c4 pipe
+ink P 5a82a2 pipe shade
+ink D 3e5e7a pipe dark
+ink q c2c8ce flange lit
+ink Q 7c848c flange shade
+ink b 3c4248 bolt
+ink s 00000050 shadow
+qq..........
+bq..........
+qqllllpp....
+qqllllppP...
+qqpppppPD...
+qqppppPPDs..
+qqPPppPPDs..
+QQDpppPPDs..
+QQppppPPDs..
+QQppppPPDs..
+bQppppPPDs..
+..ppppPPDs..
+
+sprite pipe nes
+# The water pipe joining north, east and south.
+# Two cells by two, seen from above, lying on the floor; a straight run wears a green band.
+ink l a6c8de pipe lit
+ink p 7aa4c4 pipe
+ink P 5a82a2 pipe shade
+ink D 3e5e7a pipe dark
+ink K 2a3e52 pipe underside
+ink q c2c8ce flange lit
+ink Q 7c848c flange shade
+ink b 3c4248 bolt
+ink s 00000050 shadow
+qbqqqqqQQQb.
+qqqqqqqQQQQ.
+..ppppPPDlll
+..ppppPPllll
+..ppppPppppp
+..pppppppppp
+..ppppPPPPPP
+..ppppPDDDDD
+..ppppPPKKKK
+..ppppPPDsss
+..ppppPPDsss
+..ppppPPDs..
+
+sprite pipe new
+# The water pipe joining north, east and west.
+# Two cells by two, seen from above, lying on the floor; a straight run wears a green band.
+ink l a6c8de pipe lit
+ink p 7aa4c4 pipe
+ink P 5a82a2 pipe shade
+ink D 3e5e7a pipe dark
+ink K 2a3e52 pipe underside
+ink q c2c8ce flange lit
+ink Q 7c848c flange shade
+ink b 3c4248 bolt
+ink s 00000050 shadow
+qbqqqqqQQQb.
+qqqqqqqQQQQ.
+qqppppPPDlll
+qqlpppPPllll
+qqppppPppppp
+qqpppppppppp
+qqPPPPPPPPPP
+QQDDDDDDDDDD
+QQKKKKKKKKKK
+QQssssssssss
+bQssssssssss
+............
+
+sprite pipe nsw
+# The water pipe joining north, south and west.
+# Two cells by two, seen from above, lying on the floor; a straight run wears a green band.
+ink l a6c8de pipe lit
+ink p 7aa4c4 pipe
+ink P 5a82a2 pipe shade
+ink D 3e5e7a pipe dark
+ink q c2c8ce flange lit
+ink Q 7c848c flange shade
+ink b 3c4248 bolt
+ink s 00000050 shadow
+qbqqqqqQQQb.
+qqqqqqqQQQQ.
+qqppppPPDs..
+qqlpppPPDs..
+qqppppPPDs..
+qqppppPPDs..
+qqPPppPPDs..
+QQDpppPPDs..
+QQppppPPDs..
+QQppppPPDs..
+bQppppPPDs..
+..ppppPPDs..
+
+sprite pipe esw
+# The water pipe joining east, south and west.
+# Two cells by two, seen from above, lying on the floor; a straight run wears a green band.
+ink l a6c8de pipe lit
+ink p 7aa4c4 pipe
+ink P 5a82a2 pipe shade
+ink D 3e5e7a pipe dark
+ink K 2a3e52 pipe underside
+ink q c2c8ce flange lit
+ink Q 7c848c flange shade
+ink b 3c4248 bolt
+ink s 00000050 shadow
+qq..........
+bq..........
+qqllllllllll
+qqllllllllll
+qqpppppppppp
+qqpppppppppp
+qqPPppPPPPPP
+QQDpppPDDDDD
+QQppppPPKKKK
+QQppppPPDsss
+bQppppPPDsss
+..ppppPPDs..
+
+sprite pipe nesw
+# The water pipe joining north, east, south and west.
+# Two cells by two, seen from above, lying on the floor; a straight run wears a green band.
+ink l a6c8de pipe lit
+ink p 7aa4c4 pipe
+ink P 5a82a2 pipe shade
+ink D 3e5e7a pipe dark
+ink K 2a3e52 pipe underside
+ink q c2c8ce flange lit
+ink Q 7c848c flange shade
+ink b 3c4248 bolt
+ink s 00000050 shadow
+qbqqqqqQQQb.
+qqqqqqqQQQQ.
+qqppppPPDlll
+qqlpppPPllll
+qqppppPppppp
+qqpppppppppp
+qqPPppPPPPPP
+QQDpppPDDDDD
+QQppppPPKKKK
+QQppppPPDsss
+bQppppPPDsss
+..ppppPPDs..
+
+sprite pipe down n
+# The pipe coming in from the north and bending down into the floor, through a bolted collar.
+ink p 7aa4c4 pipe
+ink P 5a82a2 pipe shade
+ink D 3e5e7a pipe dark
+ink K 2a3e52 pipe underside
+ink q c2c8ce flange lit
+ink Q 7c848c flange shade
+ink b 3c4248 bolt
+ink c 6a6e72 floor collar
+ink C 3c3f42 floor collar shade
+ink n a4aaae collar bolt
+ink o 121416 hole
+ink s 00000050 shadow
+qbqqqqqQQQb.
+qqqqqqqQQQQ.
+.cppppPPDn..
+coppppPPDoC.
+coppppPPDoC.
+coppppPPDoC.
+copppPPDKoC.
+coPPPDDKKoC.
+.coDDKKKoC..
+.CnoooooCn..
+...CCCCCs...
+............
+
+sprite pipe down e
+# The pipe coming in from the east and bending down into the floor, through a bolted collar.
+ink h e4f2fa shine
+ink l a6c8de pipe lit
+ink p 7aa4c4 pipe
+ink P 5a82a2 pipe shade
+ink D 3e5e7a pipe dark
+ink K 2a3e52 pipe underside
+ink c 6a6e72 floor collar
+ink C 3c3f42 floor collar shade
+ink n a4aaae collar bolt
+ink o 121416 hole
+ink s 00000050 shadow
+...ccccc....
+.ccooooocC..
+.cnhhlllllll
+colhllllllll
+colllppppppp
+copppppppppp
+copppPPPPPPP
+coPPPDDDDDDD
+.coDDKKKKKKK
+.CnoooooCnss
+...CCCCCssss
+............
+
+sprite pipe down s
+# The pipe coming in from the south and bending down into the floor, through a bolted collar.
+ink h e4f2fa shine
+ink l a6c8de pipe lit
+ink p 7aa4c4 pipe
+ink P 5a82a2 pipe shade
+ink D 3e5e7a pipe dark
+ink c 6a6e72 floor collar
+ink C 3c3f42 floor collar shade
+ink n a4aaae collar bolt
+ink o 121416 hole
+ink s 00000050 shadow
+...ccccc....
+.ccooooocC..
+.cnhhlppon..
+colhllppPoC.
+colllppPDoC.
+coppppPPDoC.
+coppppPPDoC.
+coppppPPDoC.
+.cppppPPDC..
+.CppppPPDn..
+..ppppPPDs..
+..ppppPPDs..
+
+sprite pipe down w
+# The pipe coming in from the west and bending down into the floor, through a bolted collar.
+ink l a6c8de pipe lit
+ink p 7aa4c4 pipe
+ink P 5a82a2 pipe shade
+ink D 3e5e7a pipe dark
+ink K 2a3e52 pipe underside
+ink q c2c8ce flange lit
+ink Q 7c848c flange shade
+ink b 3c4248 bolt
+ink c 6a6e72 floor collar
+ink C 3c3f42 floor collar shade
+ink n a4aaae collar bolt
+ink o 121416 hole
+ink s 00000050 shadow
+qq.ccccc....
+bqcooooocC..
+qqllllppon..
+qqllllppPoC.
+qqpppppPDoC.
+qqppppPPDoC.
+qqPPPPPDKoC.
+QQDDDDDKKoC.
+QQKKKKKKoC..
+QQnoooooCn..
+bQsCCCCCs...
+............
+
+sprite pipe ew valve
+# A straight pipe with a red handwheel on it, to shut the water off.
+ink l a6c8de pipe lit
+ink p 7aa4c4 pipe
+ink P 5a82a2 pipe shade
+ink D 3e5e7a pipe dark
+ink K 2a3e52 pipe underside
+ink q c2c8ce flange lit
+ink Q 7c848c flange shade
+ink b 3c4248 bolt
+ink a 6cb878 green band
+ink A 3e7a4a green band shade
+ink s 00000050 shadow
+ink w d04040 wheel
+ink W 8a2626 wheel shade
+ink t c8ccd0 valve stem
+qq..www.....
+bqwwwwwww...
+qwwllwlawWll
+qwlllwlaaWll
+qwwwtttWWWpp
+qwwwtttWWWpp
+qwPPPWPAAWPP
+QwwDDWDAWWDD
+QQwWWWWWWKKK
+QQssWWWsssss
+bQssssssssss
+............
+
+sprite pipe ns valve
+# A straight pipe with a red handwheel on it, to shut the water off.
+ink p 7aa4c4 pipe
+ink P 5a82a2 pipe shade
+ink D 3e5e7a pipe dark
+ink q c2c8ce flange lit
+ink Q 7c848c flange shade
+ink b 3c4248 bolt
+ink a 6cb878 green band
+ink A 3e7a4a green band shade
+ink s 00000050 shadow
+ink w d04040 wheel
+ink W 8a2626 wheel shade
+ink t c8ccd0 valve stem
+qbqqwwwQQQb.
+qqwwwwwwwQQ.
+.wwppwPPwW..
+.wpppwPPDW..
+.wwwtttWWW..
+.wwwtttWWW..
+.wpppWPPDW..
+.wwaaWAAWW..
+..wWWWWWWs..
+..ppWWWPDs..
+..ppppPPDs..
+..ppppPPDs..
+
+sprite pipe ew leaking
+# A straight pipe dripping into a puddle. u and U, the drop forming and fallen, trade colours
+# on every other blink.
+ink l a6c8de pipe lit
+ink p 7aa4c4 pipe
+ink P 5a82a2 pipe shade
+ink D 3e5e7a pipe dark
+ink K 2a3e52 pipe underside
+ink q c2c8ce flange lit
+ink Q 7c848c flange shade
+ink b 3c4248 bolt
+ink a 6cb878 green band
+ink A 3e7a4a green band shade
+ink s 00000050 shadow
+ink u 6cc4f4 drop
+ink U 6cc4f450 drop, fallen
+ink y 5cb4ec50 puddle
+blink u U
+qq..........
+bq..........
+qqlllllaalll
+qqlllllaalll
+qqpppppaappp
+qqpppppaappp
+qqPPPPPAAPPP
+QQDDDDDAADDD
+QQKKKKKAAKKK
+QQssssssssss
+bQsssussssss
+...yyUyyyy..
+
+sprite pipe ns leaking
+# A straight pipe dripping into a puddle. u and U, the drop forming and fallen, trade colours
+# on every other blink.
+ink p 7aa4c4 pipe
+ink P 5a82a2 pipe shade
+ink D 3e5e7a pipe dark
+ink q c2c8ce flange lit
+ink Q 7c848c flange shade
+ink b 3c4248 bolt
+ink a 6cb878 green band
+ink A 3e7a4a green band shade
+ink s 00000050 shadow
+ink u 6cc4f4 drop
+ink U 6cc4f450 drop, fallen
+ink y 5cb4ec50 puddle
+blink u U
+qbqqqqqQQQb.
+qqqqqqqQQQQ.
+..ppppPPDs..
+..ppppPPDs..
+..ppppPPDs.y
+..ppppPPDs.y
+..ppppPPDsuy
+..aaaaAAAs.U
+..aaaaAAAs.y
+..ppppPPDs.y
+..ppppPPDs..
+..ppppPPDs..
+
+group Shelves
+
+sprite shelf wood
+# An empty oak bookcase, two cells wide, seen from the front against a wall: three bare boards
+# and the floor of it, the dark back planks showing between. Not drawn by the game yet.
+ink T c89a62 wood lit
+ink W b0844e wood
+ink w 7c5630 wood shade
+ink g 9a7040 grain
+ink B 5e4024 back
+ink b 4a3420 back seam
+ink s 3e2618 under a board
+ink K 4a2e1e plinth
+TTTTTTTTTTTT
+WWWgWWWWWgWw
+Wssssssssssw
+WBBBBBbBBBBw
+WBBBBBbBBBBw
+WBBBBBbBBBBw
+WTTTTTTTTTTw
+WWWWgWWWWWWw
+Wssssssssssw
+WBBBBBbBBBBw
+WBBBBBbBBBBw
+WBBBBBbBBBBw
+WTTTTTTTTTTw
+WWWWWWWWgWWw
+Wssssssssssw
+WBBBBBbBBBBw
+WBBBBBbBBBBw
+WBBBBBbBBBBw
+WTTTTTTTTTTw
+WWgWWWWWWWWw
+WKKKKKKKKKKw
+
+sprite shelf wood narrow
+# The oak bookcase one cell wide, with a board more.
+ink T c89a62 wood lit
+ink W b0844e wood
+ink w 7c5630 wood shade
+ink g 9a7040 grain
+ink B 5e4024 back
+ink s 3e2618 under a board
+ink K 4a2e1e plinth
+TTTTTT
+WWgWWw
+Wssssw
+WBBBBw
+WBBBBw
+WTTTTw
+WWWgWw
+Wssssw
+WBBBBw
+WBBBBw
+WTTTTw
+WgWWWw
+Wssssw
+WBBBBw
+WBBBBw
+WTTTTw
+WWWWgw
+Wssssw
+WBBBBw
+WTTTTw
+WKKKKw
+
+sprite shelf wood low
+# A low oak sideboard, three cells wide and waist high, split down the middle, empty.
+ink T c89a62 wood lit
+ink W b0844e wood
+ink w 7c5630 wood shade
+ink g 9a7040 grain
+ink B 5e4024 back
+ink b 4a3420 back seam
+ink s 3e2618 under a board
+ink K 4a2e1e plinth
+TTTTTTTTTTTTTTTTTT
+WWWgWWWWWWWWWgWWWw
+WsssssssWssssssssw
+WBBBbBBBWBBBBbBBBw
+WBBBbBBBWBBBBbBBBw
+WTTTTTTTTTTTTTTTTw
+WWWWWWgWWWWWWWWWWw
+WsssssssWssssssssw
+WBBBbBBBWBBBBbBBBw
+WBBBbBBBWBBBBbBBBw
+WTTTTTTTTTTTTTTTTw
+WKKKKKKKKKKKKKKKKw
+
+sprite shelf wood side
+# The oak bookcase seen from its end, against a west wall with its front toward the right;
+# mirrored against an east wall. Only the side panel shows, its front edge lit.
+ink T c89a62 wood lit
+ink W b0844e wood
+ink w 7c5630 wood shade
+ink g 9a7040 grain
+ink K 4a2e1e plinth
+TTTTT
+WWWWT
+WgWWT
+WgWWT
+WgWWT
+WWWgT
+WWWgT
+WWWWT
+WWWWT
+WgWWT
+WgWWT
+WWWWT
+WWgWT
+WWgWT
+WWgWT
+WWWWT
+WWWWT
+WWWgT
+WgWgT
+WWWWT
+KKKKw
+
+sprite shelf store
+# Empty shop shelving, two cells wide, seen from the front: steel boards on a pegboard back,
+# each with its strip for prices, where a tag or two was left behind. Not drawn by the game yet.
+ink T dfe2e6 steel lit
+ink S b8bcc4 steel
+ink s 8a8e98 steel shade
+ink P 6c707a pegboard
+ink o 4a4e56 peg hole
+ink d 3a3c44 under a board
+ink L f0eee0 price strip
+ink y f0d040 price tag
+ink r e04848 sale tag
+TTTTTTTTTTTT
+SSSSSSSSSSSs
+Sdddddddddds
+SPPoPPPoPPPs
+SPPPPPPPPPPs
+SPPoPPPoPPPs
+STTTTTTTTTTs
+SLLyLLLLLLLs
+Sdddddddddds
+SPPoPPPoPPPs
+SPPPPPPPPPPs
+SPPoPPPoPPPs
+STTTTTTTTTTs
+SLLLLLLrLLLs
+Sdddddddddds
+SPPoPPPoPPPs
+SPPPPPPPPPPs
+SPPoPPPoPPPs
+STTTTTTTTTTs
+SLLLLLLLLLLs
+Ssssssssssss
+
+sprite shelf store long
+# The shop shelving three cells wide, two bays on one middle upright.
+ink T dfe2e6 steel lit
+ink S b8bcc4 steel
+ink s 8a8e98 steel shade
+ink P 6c707a pegboard
+ink o 4a4e56 peg hole
+ink d 3a3c44 under a board
+ink L f0eee0 price strip
+ink y f0d040 price tag
+ink r e04848 sale tag
+TTTTTTTTTTTTTTTTTT
+SSSSSSSSSSSSSSSSSs
+SddddddddSddddddds
+SPPoPPPoPSPoPPPoPs
+SPPPPPPPPSPPPPPPPs
+SPPoPPPoPSPoPPPoPs
+STTTTTTTTSTTTTTTTs
+SLLyLLLLLSLLLLLLLs
+SddddddddSddddddds
+SPPoPPPoPSPoPPPoPs
+SPPPPPPPPSPPPPPPPs
+SPPoPPPoPSPoPPPoPs
+STTTTTTTTSTTTTTTTs
+SLLLLLLLLSLLLrLLLs
+SddddddddSddddddds
+SPPoPPPoPSPoPPPoPs
+SPPPPPPPPSPPPPPPPs
+SPPoPPPoPSPoPPPoPs
+STTTTTTTTSTTTTTTTs
+SLLLLLyLLSLLLLLyLs
+SssssssssSssssssss
+
+sprite shelf store low
+# A low run of the shop shelving, two cells wide and waist high.
+ink T dfe2e6 steel lit
+ink S b8bcc4 steel
+ink s 8a8e98 steel shade
+ink P 6c707a pegboard
+ink o 4a4e56 peg hole
+ink d 3a3c44 under a board
+ink L f0eee0 price strip
+ink y f0d040 price tag
+TTTTTTTTTTTT
+SSSSSSSSSSSs
+Sdddddddddds
+SPPoPPPoPPPs
+SPPPPPPPPPPs
+SPPoPPPoPPPs
+STTTTTTTTTTs
+SLLLLyLLLLLs
+Sdddddddddds
+SPPoPPPoPPPs
+STTTTTTTTTTs
+Ssssssssssss
+
+sprite shelf store side
+# The shop shelving seen from its end, against a west wall with its front toward the right; mirrored
+# against an east wall. The slots of the front upright, and the boards' price strips sticking out.
+ink T dfe2e6 steel lit
+ink S b8bcc4 steel
+ink s 8a8e98 steel shade
+ink o 4a4e56 slot
+ink L f0eee0 price strip
+TTTTT.
+SSSSs.
+SSSos.
+SSSSs.
+SSSos.
+SSSSs.
+SSSosT
+SSSSsL
+SSSos.
+SSSSs.
+SSSos.
+SSSSs.
+SSSosT
+SSSSsL
+SSSos.
+SSSSs.
+SSSos.
+SSSSs.
+SSSosT
+SSSSsL
+sssss.
+
+sprite shelf wire
+# An empty chrome wire rack, two cells wide, seen from the front: four wire shelves on four posts,
+# the wall showing through. Not drawn by the game yet.
+ink C e4e8ee chrome lit
+ink c 9ca2ac chrome
+ink w 6e747e wire
+ink f 3a3c44 foot
+CCCCCCCCCCCC
+Cw.w.w.w.w.c
+C..........c
+C..........c
+C..........c
+C..........c
+CCCCCCCCCCCc
+Cw.w.w.w.w.c
+C..........c
+C..........c
+C..........c
+C..........c
+CCCCCCCCCCCc
+Cw.w.w.w.w.c
+C..........c
+C..........c
+C..........c
+C..........c
+CCCCCCCCCCCc
+Cw.w.w.w.w.c
+f..........f
+
+sprite shelf wire narrow
+# The wire rack one cell wide.
+ink C e4e8ee chrome lit
+ink c 9ca2ac chrome
+ink w 6e747e wire
+ink f 3a3c44 foot
+CCCCCC
+Cw.w.c
+C....c
+C....c
+C....c
+C....c
+CCCCCc
+Cw.w.c
+C....c
+C....c
+C....c
+C....c
+CCCCCc
+Cw.w.c
+C....c
+C....c
+C....c
+C....c
+CCCCCc
+Cw.w.c
+f....f
+
+sprite shelf wire side
+# The wire rack seen from its end, against a west wall with its front toward the right; mirrored
+# against an east wall: the back post, the front post lit, the shelves between.
+ink C e4e8ee chrome lit
+ink c 9ca2ac chrome
+ink w 6e747e wire
+ink f 3a3c44 foot
+cCCCC
+cw.wC
+c...C
+c...C
+c...C
+c...C
+cCCCC
+cw.wC
+c...C
+c...C
+c...C
+c...C
+cCCCC
+cw.wC
+c...C
+c...C
+c...C
+c...C
+cCCCC
+cw.wC
+f...f
+
+group Plant
+
+sprite boiler
+# An electric boiler, three cells wide, seen from the front: power in by a conduit from above,
+# the readout, the isolator, the gauge, the high-voltage sign. o, the heating light, blinks.
+# Flow and return leave both sides over the bottom two cells, collared, to join east-west pipes.
+ink Z f6f6f2 enamel lit
+ink E e2e2da enamel
+ink e bcbcb4 enamel shade
+ink K 3c4046 edge
+ink k 1e2024 plinth
+ink S 6a7078 steel
+ink s a0a6ae steel lit
+ink R c83c3c red band
+ink r 8a2828 red band shade
+ink Y f0c828 warning
+ink B 1a1a1a warning print
+ink d 142014 display
+ink G 60e070 digits
+ink o ffa020 heating light
+ink O 5a3a10 heating light, off
+ink W f0eee6 dial
+ink n d02020 needle
+ink v 2a2e34 vent slot
+ink c 8a9096 conduit
+ink C 5a6066 conduit shade
+ink y c8a040 brass
+ink w d04040 switch
+ink x f4f4f4 switch lit
+ink 2 a6c8de pipe lit
+ink 3 7aa4c4 pipe
+ink 4 5a82a2 pipe shade
+ink 5 3e5e7a pipe dark
+ink 6 2a3e52 pipe underside
+ink 7 c2c8ce flange lit
+ink 8 7c848c flange shade
+ink 9 3c4248 bolt
+ink 0 00000050 shadow
+blink o O
+..........cC......
+....SSSS..cC......
+.....yy.ssssss....
+.....yy.SySSyS....
+.....yy.SSSSSS....
+...ZZZZZZZZZZZZ...
+...ZZEEEEEEEEEe...
+...RRRRRRRRRRRR...
+...rrrrrrrrrrrr...
+...ZZEEEEEEEEEe...
+...ZZddddddExwe...
+...ZZdGGdGdEwwe...
+...ZZddddddEwwe...
+...ZZEEEEEEEEEe...
+...ZZKKKEEEYEEe...
+...ZKWWnKEYBYEe...
+...ZKWnWKYYBYYe...
+...ZKWWWKYBYYYe...
+..7ZZKKKEYYYYYe77.
+..9ZZEEEEEEEEEe97.
+227ZZEEEEEEEEEe772
+227ZZEvvvvvvEEe772
+337ZZEEEEEEEEEe773
+337ZZEvvvvvvEEe773
+447ZZEEEEEEEEEe774
+558ZZEvvvvvvEEe885
+668ZZEEEEEEEEEe886
+008eeeeeeeeeeee880
+009kkKKKKKKKKkk980
+...kkkkkkkkkkkk...
+
+sprite boiler side
+# The electric boiler seen from its right, its front toward the right.
+# Its outlet runs off the bottom from the second cell in, to join a north-south pipe.
+ink Z f6f6f2 enamel lit
+ink E e2e2da enamel
+ink e bcbcb4 enamel shade
+ink K 3c4046 edge
+ink k 1e2024 plinth
+ink S 6a7078 steel
+ink s a0a6ae steel lit
+ink R c83c3c red band
+ink r 8a2828 red band shade
+ink v 2a2e34 vent slot
+ink c 8a9096 conduit
+ink C 5a6066 conduit shade
+ink y c8a040 brass
+ink 3 7aa4c4 pipe
+ink 4 5a82a2 pipe shade
+ink 5 3e5e7a pipe dark
+ink 7 c2c8ce flange lit
+ink 8 7c848c flange shade
+ink 9 3c4248 bolt
+ink 0 00000050 shadow
+............cC....
+..SSSS......cC....
+...yy.....ssssss..
+...yy.....SySSyS..
+...yy.....SSSSSS..
+.ZZZZZZZZZZZZZZZZ.
+.ZZEEEEEEEEEEEEEe.
+.RRRRRRRRRRRRRRRR.
+.rrrrrrrrrrrrrrrr.
+.ZZEEEEEEEEEEEEEe.
+.ZZEvvvvvvvvvvEEe.
+.ZZEEEEEEEEEEEEEe.
+.ZZEvvvvvvvvvvEEe.
+.ZZEEEEEEEEEEEEEe.
+.ZZEvvvvvvvvvvEEe.
+.ZZEEEEEEEEEEEEEe.
+.ZZEEEEEEEEEEEEEe.
+.ZZyyyyyEEEEEEEEe.
+.ZZyyy79777778889.
+.ZZyyy77777778888.
+.ZZEEEEE33334450e.
+.ZZEEEEE33334450e.
+.ZZEEEEE33334450e.
+.ZZEEEEE33334450e.
+.ZZEEEEE33334450e.
+.ZZEEEEE33334440e.
+.ZZEEEEE33334440e.
+.eeeeeee33334450e.
+.kkKKKKK33334450k.
+.kkkkkkk33334450k.
+
+sprite air handler
+# An air handling unit, three cells wide, seen from the front: the fan behind its window,
+# the controls, the filter door and the coil's drain. x and X, the blades, trade colours as
+# it turns. Supply and return leave both sides over the bottom two cells, to join
+# east-west ducts.
+ink P cfcbbe panel
+ink p aeaa9c panel shade
+ink q e8e4d8 panel lit
+ink A 8a9096 frame
+ink a b8bec4 frame lit
+ink K 3a3e44 edge
+ink k 22252a rail dark
+ink D 1a1c22 fan housing
+ink x c4cad0 blade
+ink X 40464e blade, turned
+ink h e0e4e8 hub
+ink w eceff2 latch
+ink e 50e070 LED
+ink r f0a030 LED, amber
+ink s 202428 screen
+ink y e8c547 label
+ink Y 2a2a2a label print
+ink c 6a9ac4 drain pipe
+ink 1 e8ecee lip, lit
+ink 2 c4cacf metal lit
+ink 3 a6adb3 metal
+ink 8 d6dce0 flange lit
+ink 9 7e868c flange shade
+ink 0 4a5056 bolt
+ink f 8c9399 face, top
+ink F 70777d face
+ink Z 4a4f55 face, foot
+ink R b6bcc2 rivet
+blink x X
+..................
+..................
+.....A......A.....
+....A.A....A.A....
+...aaaaaaaaaaaK...
+...aqqqqqqqqqpK...
+...aqPPDDDDPPpK...
+...aqPDxDDXDPpK...
+...aqDXDxXDxDpK...
+...aqDDXhhxDDpK...
+...aqDDxhhXDDpK...
+...aqDxDXxDXDpK...
+...aqPDXDDxDPpK...
+...aqPPDDDDPPpK...
+...aqpppppppppK...
+...aqqqqqqqqqpK...
+...aqeessPPKKpK...
+...aqsssrPPPPpK...
+118aqpppppppppK891
+228aqqqqqqqqqpK892
+330aqPPPPPPPPpK093
+338aqPyYyYyPwpK893
+338aqPyYYyYPPpK893
+338aqPPPPPPPPpK893
+330aqcPPPPPPwpK093
+338aqcPPPPPPPpK893
+338aqcppppppppK893
+ff8AAcAAAAAAAAA89f
+RF8kkckkkkkkkkk89F
+ZZZkkc.......kkZZZ
+
+sprite air handler side
+# The air handling unit seen from its right, its front toward the right: the louvred
+# intake and the access door. Its outlet runs off the bottom from the second cell in,
+# to join a north-south duct.
+ink P cfcbbe panel
+ink p aeaa9c panel shade
+ink q e8e4d8 panel lit
+ink A 8a9096 frame
+ink a b8bec4 frame lit
+ink K 3a3e44 edge
+ink k 22252a rail dark
+ink w eceff2 latch
+ink l 16181c louvre gap
+ink 3 a6adb3 metal
+ink 4 bac1c6 crease lit
+ink 5 959ca2 crease shade
+ink 6 8a9298 west edge
+ink 7 6c737a east edge
+ink 8 d6dce0 flange lit
+ink 9 7e868c flange shade
+ink 0 4a5056 bolt
+..................
+..................
+..A............A..
+.A.A..........A.A.
+aaaaaaaaaaaaaaaaaK
+aqqqqqqqqqqqqqqqpK
+aqAaaaaaaaaaaaaApK
+aqAllllllllllllApK
+aqAaaaaaaaaaaaaApK
+aqAllllllllllllApK
+aqAaaaaaaaaaaaaApK
+aqAllllllllllllApK
+aqAaaaaaaaaaaaaApK
+aqAAAAAAAAAAAAAApK
+aqpppppppppppppppK
+aqqqqqqqqqqqqqqqpK
+aKPKwKPPPPPPPPPPpK
+aqPKKKPPPPPPPPPwpK
+aqPPPP680888888087
+aKPPPP699999999997
+aqPPPP643333333357
+aqPPPP634333333537
+aqPPPP633433335337
+aqPPPP633343353337
+aqPPPP633334533337
+aqPPPP633335433337
+aqpppp633353343337
+AAAAAA633533334337
+kkkkkk635333333437
+kk....653333333347
+
 group Map
 
 sprite map you

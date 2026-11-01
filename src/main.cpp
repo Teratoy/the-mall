@@ -1,3 +1,4 @@
+#include "audio/audio.h"
 #include "core/rng.h"
 #include "human/human_look.h"
 #include "render/canvas.h"
@@ -79,6 +80,7 @@ int main(int argc, char** argv) {
     UnloadImage(icon);
     SetExitKey(KEY_NULL);
     SetTargetFPS(60);
+    audio::open();
     {
         Canvas canvas;
         std::unique_ptr<Scene> scene = tryOut(argc, argv);
@@ -97,5 +99,6 @@ int main(int argc, char** argv) {
             EndDrawing();
         }
     }
+    audio::close();
     CloseWindow();
 }

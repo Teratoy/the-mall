@@ -131,7 +131,9 @@ void Human::move(World& world, Vec2i next) {
     bool news = observe(world);
     // A hidden trap beside it may catch its eye.
     for (Vec2i d : DIRS8)
-        if (const Trap* t = world.trap(cell + d); t && !memory.traps.count(cell + d) && rng_.chance(NOTICE_TRAP_CHANCE)) {
+        if (const Trap* t = world.trap(cell + d);
+            t && !memory.traps.count(cell + d) &&
+            rng_.chance(NOTICE_TRAP_CHANCE * (world.light(cell + d) > 0 ? 1.0f : NOTICE_TRAP_DARK))) {
             news |= memory.traps.emplace(cell + d, t->kind).second;
             note(std::string("SPOTTED HIDDEN ") + trapWord(t->kind));
             rememberAt(cell + d, Episode::What::Spotted, EPISODE_SPOTTED, -1, -1, int(t->kind));

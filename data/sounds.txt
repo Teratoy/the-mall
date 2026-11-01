@@ -1,0 +1,122 @@
+# Every sound in the game, made from a few numbers (src/audio/synth.h).
+# F5 in the game reads this file again. `make soundsheet` renders each
+# sound to build/sounds/NAME.wav to listen to.
+#
+#   crush BITS RATE     every sound after this is crushed to BITS bits a
+#                       sample at RATE samples a second: the old-console sound
+#   sound NAME [gain G] [bits B] [rate R]
+#                       starts a sound; the code plays it by NAME
+#   WAVE FROM [TO] [key value ...]
+#                       a layer of the sound above. WAVE is square, triangle,
+#                       saw, sine or noise. FROM and TO are Hz, slid from one
+#                       to the other (noise takes a new value twice a period:
+#                       low rumbles, high hisses). Keys, in seconds and Hz:
+#                         gain      how loud, 0 to 1 (0.5)
+#                         delay     wait before it starts (0)
+#                         attack    rise (0.002)  hold  held (0)  decay  fall (0.1)
+#                         lowpass   keep only what is under this (none)
+#                         highpass  keep only what is over this (none)
+#                         duty      a square's share high, 0 to 1 (0.5)
+#                         repeat    played this many times (1), gap apart (0.1),
+#                         gap fade  each fade times as loud as the last (1)
+#                         wobble    pitch wandering at random, 0 to 1: crunch
+#
+# Heard through a wall, a sound is dulled before the crush.
+
+crush 5 8000
+
+# --- Feet. One step per cell walked onto.
+
+sound step
+    noise 1400 600 gain 0.5 decay 0.035 lowpass 2600
+    square 140 70 gain 0.25 decay 0.03 duty 0.3
+
+sound run gain 1.2
+    noise 1800 700 gain 0.55 decay 0.04 lowpass 3000
+    square 150 60 gain 0.35 decay 0.04 duty 0.3
+
+# Fresh piss or poured water underfoot.
+sound step_wet
+    noise 2600 900 gain 0.5 attack 0.005 decay 0.08 lowpass 3500 highpass 400 wobble 0.4
+    sine 500 260 gain 0.2 decay 0.05
+
+# Wet blood underfoot: tacky, and a little suck as the foot lifts.
+sound step_blood
+    noise 900 400 gain 0.5 attack 0.004 decay 0.07 lowpass 1800 wobble 0.6
+    sine 300 160 gain 0.3 decay 0.05
+    noise 2400 1200 gain 0.2 delay 0.07 attack 0.01 decay 0.04 lowpass 3000
+
+# Fresh feces underfoot.
+sound step_filth
+    noise 700 250 gain 0.6 attack 0.006 decay 0.1 lowpass 1300 wobble 0.8
+    sine 180 90 gain 0.35 decay 0.08
+
+# --- Voices.
+
+# A bubble opening.
+sound pop
+    sine 520 900 gain 0.45 attack 0.003 decay 0.06
+    square 1040 1800 gain 0.08 decay 0.03 duty 0.25
+
+# A line said in fear: a short wail.
+sound cry gain 0.9
+    saw 620 420 gain 0.4 attack 0.02 hold 0.12 decay 0.25 lowpass 2200 wobble 0.15
+    square 930 640 gain 0.12 attack 0.02 hold 0.1 decay 0.2 duty 0.2
+
+# --- Doors.
+
+# A key turned and a lock giving.
+sound unlock
+    square 1800 1500 gain 0.25 decay 0.02 duty 0.2
+    noise 3000 gain 0.3 delay 0.06 decay 0.02 repeat 2 gap 0.04 fade 0.7
+    square 220 160 gain 0.35 delay 0.13 decay 0.07 duty 0.4
+
+# A server room's airlock: a hiss as it gives, and as it seals.
+sound airlock_open
+    noise 3600 2200 gain 0.35 attack 0.03 hold 0.1 decay 0.25 highpass 800
+    square 90 70 gain 0.2 decay 0.12
+
+sound airlock_shut
+    noise 2400 3600 gain 0.3 attack 0.02 hold 0.06 decay 0.15 highpass 800
+    square 110 55 gain 0.45 delay 0.2 decay 0.12 duty 0.4
+    noise 400 gain 0.3 delay 0.2 decay 0.1 lowpass 900
+
+# A slam room's gate falling: a heavy bang and its ring.
+sound slam gain 1.2
+    noise 600 120 gain 0.9 decay 0.35 lowpass 1600
+    square 70 38 gain 0.7 decay 0.4 duty 0.45
+    triangle 330 320 gain 0.18 delay 0.03 attack 0.01 decay 0.7
+
+# --- Traps.
+
+# Spikes up through a foot: steel, then the wet of it.
+sound spikes gain 1.1
+    square 2600 1900 gain 0.3 decay 0.12 duty 0.15
+    noise 5000 1500 gain 0.45 decay 0.08 highpass 1200
+    noise 800 250 gain 0.6 delay 0.05 attack 0.01 decay 0.22 lowpass 1500 wobble 0.9
+    sine 220 90 gain 0.35 delay 0.06 decay 0.18
+
+# A dart let fly, and one going in.
+sound dart_fire
+    noise 4000 1800 gain 0.35 attack 0.01 decay 0.1 highpass 1500
+    square 900 400 gain 0.12 decay 0.06 duty 0.2
+
+sound dart_hit
+    noise 1600 600 gain 0.55 decay 0.06 lowpass 2400
+    noise 700 300 gain 0.4 delay 0.03 attack 0.01 decay 0.12 lowpass 1200 wobble 0.8
+
+# --- Violence.
+
+# A blow landing: a thud with a crunch in it, and something wet.
+sound hit gain 1.1
+    square 120 50 gain 0.6 decay 0.12 duty 0.4
+    noise 1300 400 gain 0.6 decay 0.09 lowpass 2400 wobble 0.7
+    noise 3200 2000 gain 0.25 delay 0.01 decay 0.03 highpass 1000 repeat 3 gap 0.02 fade 0.6
+    noise 500 200 gain 0.25 delay 0.07 attack 0.01 decay 0.12 lowpass 900 wobble 1
+
+# Someone falling dead: the body down, then a last wet breath.
+sound death gain 1.1
+    square 90 40 gain 0.6 decay 0.3 duty 0.45
+    noise 500 120 gain 0.7 decay 0.35 lowpass 1100
+    noise 900 300 gain 0.3 delay 0.35 attack 0.08 hold 0.15 decay 0.5 lowpass 1200 wobble 1
+    saw 140 70 gain 0.15 delay 0.35 attack 0.1 hold 0.1 decay 0.5 lowpass 600 wobble 0.4

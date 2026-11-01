@@ -2869,3 +2869,87 @@ often                   | MY BODY'S STOPPED FIGHTING IT.
 timid                   | WHAT WOULD THEY THINK OF ME? BEFORE?
 erratic                 | GOOD. IT'S GOOD.
 hopeless                | THERE'S NOTHING LEFT TO SINK TO.
+
+# The first time it stands where no light falls. Said to nobody.
+[first_dark]
+                        | WHERE DID THE LIGHT GO?
+                        | STAY CLOSE TO THE WALL.
+timid                   | DON'T. DON'T. DON'T.
+timid                   | SOMETHING'S BREATHING. IS IT ME?
+brave                   | JUST SHADOWS. KEEP MOVING.
+curious                 | WHAT DO THEY KEEP IN HERE, IN THE DARK?
+dazed                   | MY EYES... OR IS IT ME?
+hopeless                | OF COURSE. OF COURSE IT IS.
+
+# Going into the dark again after a while in light. Said to nobody.
+[into_dark 0.4]
+                        | HERE WE GO AGAIN.
+                        | ONE HAND ON THE WALL.
+timid                   | COUNT THE STEPS. JUST COUNT.
+timid                   | DON'T LOOK BEHIND YOU.
+brave                   | NOTHING IN HERE BUT ME.
+scared                  | I SHOULDN'T BE IN HERE.
+hopeless                | IT'S ALL GOING DARK.
+
+# Coming out of a long spell in the dark. Said to nobody.
+[out_of_dark 0.6]
+                        | THERE. BREATHE.
+                        | MY EYES HURT.
+timid                   | NEVER AGAIN. NOT IN THERE.
+brave                   | THAT WASN'T SO BAD.
+hurt                    | LET ME SEE HOW BAD IT IS.
+sociable                | IS ANYONE ELSE OUT HERE?
+
+# In the dark, making for light it saw. Said to nobody.
+[toward_light 0.7]
+                        | THAT WAY. WHERE IT'S BRIGHT.
+                        | THE LIGHT. GO TO THE LIGHT.
+timid                   | PLEASE LET THERE BE SOMEONE THERE.
+parched                 | WATER... MAYBE OVER THERE.
+hopeless                | LIKE A MOTH.
+
+# Lying down to sleep in the dark, out of sight. Said to nobody, in place
+# of sleep_now.
+[sleep_dark 0.6]
+                        | NOBODY'LL FIND ME HERE.
+                        | THE DARK KEEPS ITS OWN.
+                        | NOT A SOUND. GOOD.
+cakes                   | MINE STAY MINE. NOBODY SEES.
+loner                   | JUST ME AND THE DARK.
+hurt                    | LET IT HEAL WHERE NOTHING LOOKS.
+
+# Lying down to sleep under a light. Said to nobody, in place of
+# sleep_now.
+[sleep_lit 0.6]
+                        | I NEED TO SEE THEM COMING.
+                        | LEAVE IT ON. PLEASE.
+                        | AT LEAST HERE I'LL SEE.
+scared                  | ONE EYE OPEN.
+sociable                | SOMEONE MIGHT FIND ME HERE.
+hopeless                | NOT IN THE DARK. NOT ALONE IN THE DARK.
+
+# The modest, going where the dark hides them. Said to nobody.
+[relief_dark 0.5]
+                        | NOBODY NEEDS TO SEE THIS.
+                        | QUICK. WHILE IT'S DARK.
+timid                   | PLEASE DON'T LET ANYONE COME.
+sociable                | AT LEAST THERE'S THAT.
+filthy                  | WHAT HAVE I BECOME?
+
+# Making a stash where no light falls. Said to nobody.
+[stash_dark 0.6]
+                        | WHO'D LOOK HERE?
+                        | THE DARK KEEPS SECRETS.
+greedy                  | ALL MINE. ALL HIDDEN.
+hungry                  | REMEMBER THE SPOT. REMEMBER IT.
+loner                   | NOBODY ELSE KNOWS. GOOD.
+
+# Stepping in feces it couldn't see for the dark. Said to nobody, in place
+# of stepped_in.
+[stepped_in_dark]
+                        | WARM. WHY IS IT WARM?
+                        | NO. NO NO NO.
+                        | OF COURSE. OF COURSE IT IS.
+timid                   | WHAT ELSE IS DOWN HERE?
+erratic                 | HA. HA HA.
+filthy                  | WHAT'S A LITTLE MORE.

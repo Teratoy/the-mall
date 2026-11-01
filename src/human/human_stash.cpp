@@ -48,6 +48,9 @@ constexpr int STASH_RANGE = 30;
 /// open cells round a spot, the more each costs, in tenths of a cell.
 constexpr int STASH_SPOT_REACH = 10;
 constexpr int STASH_SHY = 40;
+/// A spot in full light shows a stash as much as this many open cells round
+/// it (AI/light_plan.md step 5).
+constexpr float STASH_LIT_OPEN = 4.0f;
 /// Stashing, it keeps this many cakes on it, and its bottle.
 constexpr int STASH_KEEP = 1;
 /// A pile looks as big as it can get with this much water in it, or
@@ -195,7 +198,7 @@ bool Human::seekStash(World& world) {
         }, true, [&](Vec2i c) {
             int n = 0;
             for (Vec2i d : DIRS8) n += open(c + d);
-            return 1 + n * STASH_SHY;
+            return 1 + n * STASH_SHY + int(STASH_LIT_OPEN * float(STASH_SHY) * litSeen(c));
         });
         if (!p) return false;
         stash_.spot = p->empty() ? cell : p->back();
@@ -214,6 +217,10 @@ bool Human::stashHere() {
     if (!isMine(cell)) {
         stash_.mine.push_back(cell);
         note("MADE A STASH");
+        if (auto seen = memory.lightSeen(cell); seen && seen->level == 0) {
+            note("HID IT IN THE DARK");
+            sayLater(talk::Moment::StashDark);
+        }
     }
     startPutting(n, {});
     stash_.stashing = true;

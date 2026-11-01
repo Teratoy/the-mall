@@ -41,9 +41,11 @@ toolbox run -c claude-build make check        # soak vs golden output (~75 s)
 | `make apk` (on the host, not the toolbox) | Builds `build/TheMall-debug.apk` for the phone with the Android NDK. See `android/apk.mk` and [AI/android_plan.md](AI/android_plan.md) |
 | `make lines` (host or toolbox), or `./lines.sh` (the "The Mall Lines" desktop shortcut) | The lines editor: a local web page at http://localhost:8765 for rewriting `data/lines.txt`, with the game's bubble drawn beside each line. See [AI/lines_editor_plan.md](AI/lines_editor_plan.md) |
 | `make sprites` (host or toolbox), or `./sprites.sh` | The sprite editor: a local web page at http://localhost:8766 for redrawing `data/sprites.txt`. See [AI/sprite_editor_plan.md](AI/sprite_editor_plan.md) |
+| `make soundsheet` | Renders every sound from `data/sounds.txt` to `build/sounds/NAME.wav`, clear and muffled. See [AI/sound_plan.md](AI/sound_plan.md) |
 | `make spritesheet` | Draws every sprite from `data/sprites.txt` in all the ways the game does, at 1x, to `build/sprite-sheet.png`: `cmp` it before and after an art refactor. `make spriteref` remakes the sprite editor's human and machine slots |
 | `make simprofile` / `make gprof` | Times the sim alone on one soak seed (`SIMPROFILE_ARGS="seed minutes crowd"`); `gprof` writes a profile to `build/gprof.txt`. See [AI/sim_speed_plan.md](AI/sim_speed_plan.md) |
 | `make trips` | How walks for needs go in the soak's worlds: finished or dropped on the way, and for what; how far water was when it got thirsty; what the thirsty who know no water do. `TRIPS_TRACE=seed:id` follows one human (pass it with `toolbox run -c claude-build env TRIPS_TRACE=...`, since `toolbox run` drops the environment). See [AI/needs_planning_plan.md](AI/needs_planning_plan.md) |
+| `python3 tools/conduit_art.py --write`, then `python3 tools/sprite_preview.py` (on the host) | Grows the air duct and water pipe sprites (12x12, one per way a piece joins its neighbours, and the ones bending into the floor) into `data/sprites.txt`, over any hand edits to them; the preview draws them, and a map of runs, to `build/sprite-preview.png`. `tools/plant_art.py --write` does the same for the boiler and air handler, whose outlets are cut from those pieces so runs join them; `sprite_preview.py build/plant-preview.png Plant` shows them joined |
 | `make shot SHOT_ARGS="..."` | Saves `build/shot.png` without a visible window. See `tools/shot.cpp` for the options (`--scene`, `--seconds`, `--seed`, `--zoom`, `--stats`, `--log`, `--reveal`, `--wide`) |
 
 **The sim is deterministic.** Same seeds, same output, byte for byte. So:
@@ -108,6 +110,13 @@ lost, and several useful probes already have been.
   for chunks grown from then on. A new generation knob goes here, named
   at the top of the file that uses it, not as a `constexpr`. Timings the
   sim runs on (smell, spikes, darts, airlocks) stay in code.
+- `data/sounds.txt`: every sound, as a few synth numbers per layer (its
+  header explains them); F5 reloads it. `src/audio/`: the synth, the
+  player, and `Hearing`, which plays what the followed human hears from
+  the world's noises (`World::noise`, for the view only: nothing in the
+  sim reads them).
+- `data/settings.txt`: the player's CONFIGURATION (volumes). Not tracked
+  by git, like the obituary.
 - `data/lines_review.json` and `data/lines_drafts.json`: the lines editor's
   review marks, and rewrites Claude drafts for the user to accept or reject
   there (format at the top of `tools/lines_editor.py`). Draft rewrites go in

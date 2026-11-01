@@ -313,6 +313,7 @@ bool Human::seekSleep(World& world) {
         if (loner && near(anyone, c)) k += LONER_CROWD;
         if (!loner && !company.empty() && !near(company, c)) k += SLEEP_COMPANY * traits.sociable;
         if (base && !atBase(c)) k += SLEEP_UNFAMILIAR;
+        k += sleepLightCost(c);
         return int(k * humShare(c) * CELL_COST);
     };
     auto p = search(world, done, true, cost);
@@ -341,7 +342,7 @@ void Human::startSleeping(World& world, bool collapsed) {
     if (hum) note("THE MACHINES HUMMED IT TO SLEEP");
     if (hum) sayLater(talk::Moment::SleepHum);
     if (hum) keepWaterHere();
-    else if (!collapsed && !askToWatch(world)) sayLater(talk::Moment::SleepNow);
+    else if (!collapsed && !askToWatch(world)) sayLater(sleptAsLiked(world).value_or(talk::Moment::SleepNow));
     server_.seeking = false;
     server_.staying = false;
     auto base = sleepBase();

@@ -1,11 +1,13 @@
 #pragma once
-#include <optional>
+#include "audio/hearing.h"
 #include "render/floor_tiles.h"
 #include "render/human_sprites.h"
 #include "render/statue_art.h"
+#include "scenes/config_panel.h"
 #include "scenes/scene.h"
 #include "world/world.h"
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -27,10 +29,10 @@ class Human;
 /// moves it to the nearest living human, or starts over if nobody is
 /// left. Over the world, what the humans in view are saying shows in
 /// bubbles. The pause button under the speed (or ESC) stops the world
-/// and offers RESUME or MAIN MENU. The human you made goes into the
+/// and offers RESUME, CONFIGURATION or MAIN MENU. The human you made goes into the
 /// obituary when they die, or as left behind if the world is left with
 /// them alive. Debug keys: 1-5 set the speed, TAB reveals everything, F5
-/// reads data/lines.txt and data/sprites.txt again.
+/// reads data/lines.txt, data/sprites.txt and data/sounds.txt again.
 ///
 /// In a window wider than tall it takes the PC layout instead: the world in
 /// a square, with the stats and log side by side left of it, the name,
@@ -120,6 +122,11 @@ private:
     bool paused_ = false;
     bool pauseToggle_ = false;
     bool toMenu_ = false;
+    /// What the followed human hears, played as the world runs.
+    Hearing hearing_;
+    /// CONFIGURATION is open over the pause menu.
+    bool configOpen_ = false;
+    ConfigPanel config_;
     /// The human you made is in the obituary already.
     bool recorded_ = false;
 

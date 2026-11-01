@@ -71,6 +71,10 @@ constexpr const char* MOMENTS[] = {
     "top_up", "turn_back", "seek_water", "seek_food", "while_here", "errand_back",
     "cakes_again", "bodies_again", "water_again", "doors_again", "traps_again", "blood_again", "fights_again",
     "going_again", "sleep_again", "quiet_again", "faces_again", "low_again",
+    "first_dark", "into_dark", "out_of_dark", "toward_light",
+    "sleep_dark", "sleep_lit",
+    "relief_dark", "stash_dark",
+    "stepped_in_dark",
 };
 static_assert(std::size(MOMENTS) == size_t(Moment::Count));
 

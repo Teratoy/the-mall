@@ -1732,7 +1732,7 @@ const std::vector<Scenario> SCENARIOS = {
          Human& leader = s.first();
          Human& follower = s.add(seedWhere([](const Traits& t) { return t.sociable >= 0.75f; }, 17500), 2);
          lostPair(s, leader, follower);
-         Check lying = runSeeingLying(s, 80);
+         Check lying = runSeeingLying(s, 120);
          return Checks{logged({"@ KNEW OF NO WATER EITHER"}), askedOnce(),
                        logged({"NO WATER ANYWHERE. LYING BY A LOCKED DOOR, CALLING FOR HELP"}), lying,
                        unlogged("LEFT @. THEY KNOW NO MORE THAN I DO")};
@@ -2169,6 +2169,105 @@ const std::vector<Scenario> SCENARIOS = {
          return Checks{{"sees the cake beside it", [&h, near](const Stage&) { return h.memory.cakes.count(near) > 0; }},
                        {"not the one in the dark", [&h, dark](const Stage&) { return h.memory.cakes.count(dark) == 0; }},
                        {"sees the lit one", [&h, lit](const Stage&) { return h.memory.cakes.count(lit) > 0; }}};
+     }},
+    {"dark-fear", "the timid, put in the dark, marks it and grows uneasy; the brave hardly",
+     seedWhere([](const Traits& t) { return t.brave < 0.2f; }, 27000), [](Stage& s) {
+         Human& timid = s.first();
+         Human& brave = s.add(seedWhere([](const Traits& t) { return t.brave > 0.8f; }, 27500), 3);
+         P::clearChunk(s.world, timid.cell);
+         calm(timid);
+         calm(brave);
+         s.run(45);
+         P::setDread(timid, 0.0f);
+         P::setDread(brave, 0.0f);
+         P::darkenChunk(s.world, timid.cell);
+         s.run(20);
+         return Checks{loggedBy(timid, "STOOD IN THE DARK"),
+                       {"the timid uneasy", [&timid](const Stage&) { return timid.dread() > 0.15f; }},
+                       {"the brave less so", [&timid, &brave](const Stage&) { return brave.dread() < timid.dread() / 2; }}};
+     }},
+    {"toward-light", "timid in the dark, it makes for a light it sees rather than feel its way on",
+     seedWhere([](const Traits& t) { return t.brave < 0.2f; }, 28000), [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         calm(h);
+         s.run(45);
+         P::darkenChunk(s.world, h.cell);
+         P::forget(h);
+         P::hangLight(s.world, s.farFrom(h.cell, 12));
+         s.run(20);
+         return Checks{loggedBy(h, "MADE FOR THE LIGHT")};
+     }},
+    {"sleep-dark", "tired and bold, it lies down in the dark half of the room, out of sight",
+     seedWhere([](const Traits& t) { return t.brave > 0.85f; }, 29000), [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         calm(h);
+         s.run(45);
+         // The light from the lit half reaches a couple of cells past it, so dark lies close by.
+         const int edge = h.cell.x + 5;
+         P::putOutLights(s.world, [edge](Vec2i c) { return c.x < edge; });
+         P::forget(h);
+         h.tiredness = 0.6f;
+         s.run(30);
+         return Checks{loggedBy(h, "LAY DOWN IN THE DARK, OUT OF SIGHT")};
+     }},
+    {"sleep-lit", "tired and timid, it lies down in the lit half of the room, where it can see",
+     seedWhere([](const Traits& t) { return t.brave < 0.15f; }, 29500), [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         calm(h);
+         s.run(45);
+         const int edge = h.cell.x;
+         P::putOutLights(s.world, [edge](Vec2i c) { return c.x < edge; });
+         P::forget(h);
+         h.tiredness = 0.6f;
+         s.run(30);
+         return Checks{loggedBy(h, "LAY DOWN WHERE THE LIGHT IS")};
+     }},
+    {"relief-dark", "modest, needing to go, it goes in the dark half of the room, where nobody would see",
+     seedWhere(modest, 30000), [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         calm(h);
+         s.run(45);
+         const int edge = h.cell.x + 5;
+         P::putOutLights(s.world, [edge](Vec2i c) { return c.x < edge; });
+         P::forget(h);
+         h.bladder = 0.95f;
+         s.run(30);
+         return Checks{loggedBy(h, "WENT WHERE THE DARK HID ME")};
+     }},
+    {"stash-dark", "a grasping loner with full pockets hides its stash in the dark half of the room",
+     seedWhere([](const Traits& t) { return t.greedy >= 0.8f && t.sociable <= 0.3f; }, 30500), [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         calm(h);
+         s.run(45);
+         const int edge = h.cell.x + 5;
+         P::putOutLights(s.world, [edge](Vec2i c) { return c.x < edge; });
+         P::forget(h);
+         h.cakes = h.carryMax();
+         // More to be had in plain sight, on the lit side, than it can carry.
+         P::addCake(s.world, s.freeNear(h.cell + Vec2i{8, 0}, 0));
+         s.run(120);
+         return Checks{loggedBy(h, "HID IT IN THE DARK")};
+     }},
+    {"stepped-dark", "hungry in the dark, walking out of a box to a lit cake, it steps in feces it never saw",
+     seedWhere(plain, 31000), [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         calm(h);
+         s.run(45);
+         P::darkenChunk(s.world, h.cell);
+         P::wallIn(s.world, h.cell, Vec2i{2, 0});
+         P::dropFeces(s.world, h.cell + Vec2i{2, 0});
+         const Vec2i cake = h.cell + Vec2i{12, 0};
+         P::addCake(s.world, cake);
+         P::hangLight(s.world, cake);
+         h.hunger = 0.7f;
+         s.run(20);
+         return Checks{loggedBy(h, "STEPPED IN SHIT IN THE DARK")};
      }},
     {"airlock-surprise", "with keys and nowhere else to go, it opens a server room's outer door and finds another behind",
      seedWhere(plain, 23000), [](Stage& s) {

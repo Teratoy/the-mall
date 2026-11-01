@@ -545,6 +545,10 @@ constexpr float DOOR_URGE_HUNGRY = 0.2f;
 constexpr float DOOR_URGE_FEAR = 0.6f;
 /// Chance, each step, to spot a hidden trap on a cell beside it.
 constexpr float NOTICE_TRAP_CHANCE = 0.35f;
+/// In the dark it notices one only this much as often (AI/light_plan.md step 5).
+constexpr float NOTICE_TRAP_DARK = 0.3f;
+/// In the dark it makes out mess on the floor only this many cells off.
+constexpr int DARK_FLOOR = 1;
 /// Leading someone wounded to water, it waits for them once they fall this
 /// far behind, for a moment at a time.
 constexpr int ESCORT_GAP = 3;

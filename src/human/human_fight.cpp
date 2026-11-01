@@ -309,6 +309,7 @@ void Human::creditKill(World& world, Human& by, bool witnesses) {
 void Human::takeHit(World& world, Human& from, float damage) {
     if (dead()) return;
     bool asleep = state == State::Sleeping;
+    world.noise(NoiseKind::Hit, cell, id);
     health -= damage;
     hurtTime = HURT_TIME;
     regard(from.id, TRUST_HIT);

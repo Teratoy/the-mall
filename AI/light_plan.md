@@ -288,6 +288,81 @@ User asked for other dithering: crossed, hatched, and lines.
 - A cake across a dark room is missed until it is near.
 - A scenario per behaviour in `tests/scenarios.cpp`.
 
+### Built: fear and making for light (2026-11-01)
+- `human_dark.cpp`, `dark_`: standing where no light falls (its own cell,
+  which it sees), dread rises by `DARK_DREAD` (0.012/s) swayed by
+  bravery, up to `DARK_DREAD_MOST` (0.45) from the dark alone. Not asleep
+  or still waking.
+- Lines (to nobody): `first_dark` the first time ("STOOD IN THE DARK");
+  `into_dark` going back in after 60 s in light; `out_of_dark` after 20 s
+  or more in it; `toward_light` (below).
+- Exploring **from the dark**, a frontier it remembers dark costs up to
+  `DARK_FRONTIER_COST` (20 cells) by `darkFear()`: 1 - brave, +0.4
+  parched, +0.3 by gloom. Making for a lit frontier from the dark, a timid
+  enough human says so once a spell ("MADE FOR THE LIGHT"). At first the
+  cost applied in light too, and whole groups funnelled to the same lit
+  frontier and jammed in a corridor (4 loops in the soak); only from the
+  dark, the soak has none.
+- Scenarios `dark-fear`, `toward-light`. `parched-lost` now runs 120 s
+  (was 80): whether a parched human lies or sits by the door is a coin
+  toss, and the new lines moved the dice. `bottle-lie` and `hard-no-sell`
+  pass again; `bottle-sell` is still known.
+- Soak: 13 still, 0 flips, 0 loops (was 18, 5, 0).
+
+### Built: where to sleep (2026-11-01)
+- `sleepDark()`: (brave - 0.45) x 2, clamped to -1..1: the bold would
+  sooner sleep in the dark, out of sight, the timid where they can see.
+- `seekSleep` adds `sleepLightCost`: a spot's remembered light costs the
+  bold up to 6 cells more lit, the timid up to 6 more dark. Spots it never
+  saw lit or dark cost nothing either way.
+- Lying down where it wanted (minding at least 0.4; dark, or lit 2 or
+  more), it notes "LAY DOWN IN THE DARK, OUT OF SIGHT" or "LAY DOWN WHERE
+  THE LIGHT IS" and says `sleep_dark` or `sleep_lit` in place of
+  `sleep_now`.
+- Scenarios `sleep-dark`, `sleep-lit`: half the spawn room put out
+  (`P::putOutLights`), what it saw forgotten, then tired.
+- Soak: 13 still, 2 flips, 0 loops.
+
+### Built: hiding in the dark (2026-11-01)
+- Relief: a spot it remembers in full light counts as 4 more open cells
+  round it (`RELIEF_LIT_OPEN`), by the same shyness as open cells. The
+  modest (0.55 and up) going in the dark away from a toilet note "WENT
+  WHERE THE DARK HID ME" and say `relief_dark`.
+- Stash: a spot in full light counts as 4 more open cells
+  (`STASH_LIT_OPEN`). A new stash on a cell it saw dark: "HID IT IN THE
+  DARK", `stash_dark`.
+- `litSeen(c)`: the light it last saw on a cell, 0 to 1 (0 if never seen
+  lit or dark).
+- Not built: the cunning waiting in the dark.
+- Scenarios `relief-dark`, `stash-dark`.
+- **Fix found by the soak:** a human that kept away from someone it shuns
+  walked straight back up to them once out of sight, as in the dark they
+  are seen only close (a 231-step loop). It now keeps clear of where it
+  last kept away from them for 20 s (`SHUN_REMEMBER`, `gore_.shunned`),
+  unless they become the one it goes for or walks up to.
+- "MADE FOR THE LIGHT" was said again and again on the edge of the
+  light; now again only after a minute in light.
+- `bottle-lie` and `hard-no-sell` are known again beside `bottle-sell`:
+  all three share `askForWater`, and every change moves whether the
+  asker asks before it is parched and told off. Walling the two in
+  together made the grasping holder rob the asker instead. For the user:
+  accept, or rework that setup.
+- Soak: 16 still, 0 flips, 0 loops.
+
+### Built: blind trouble (2026-11-01)
+- In the dark it makes out mess on the floor only underfoot or beside it
+  (`DARK_FLOOR` 1), though walls and the rest show 4 cells off: a path
+  planned through dark mess it never saw walks into it. Stepping in fresh
+  feces in the dark notes "STEPPED IN SHIT IN THE DARK" and says
+  `stepped_in_dark` in place of `stepped_in`.
+- A hidden trap beside it is noticed only 0.3 as often in the dark
+  (`NOTICE_TRAP_DARK`).
+- A cake across a dark room is missed until within 4 cells: that came
+  with step 4. The lost and parched making for light: step 5a.
+- Scenario `stepped-dark`: walled in a box in the dark with feces in its
+  one way out, it walks out to a lit cake and steps in them.
+- Soak: 16 still, 1 flip, 0 loops.
+
 ### 6. The mall clock and its bells
 - The world keeps the mall's time of day, from the world's start (no
   dice). At closing time the ceiling fittings go out mall-wide but for a

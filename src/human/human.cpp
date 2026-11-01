@@ -226,6 +226,7 @@ void Human::live(World& world, float dt) {
     press(dt);
     soil(dt);
     sniff(world, dt);
+    darkness(world, dt);
     if (hunger >= 1.0f) health -= STARVE_RATE * dt;
     if (thirst >= 1.0f) {
         health -= PARCH_RATE * dt;
@@ -435,7 +436,9 @@ bool Human::observe(const World& world) {
             if (drinkable(t)) seeTint(world, c);
         }
         // Fresh feces of someone else's, first seen, sicken the modest a little.
-        if (const std::vector<int>* m = world.mess().at(c))
+        // In the dark, what lies on the floor it makes out only underfoot.
+        const std::vector<int>* m = world.light(c) > 0 || cheb(c, cell) <= DARK_FLOOR ? world.mess().at(c) : nullptr;
+        if (m)
             for (int i : *m) {
                 const Dropping& d = world.mess().all()[size_t(i)];
                 if (d.kind == MessKind::Print && d.who != id) firstSight(talk::Moment::FirstPrints, c, d.who);
@@ -887,8 +890,11 @@ bool Human::pursue(World& world, Want w) {
         // or somewhere else, rather than wait on them.
         if (auto p = search(world, [&](Vec2i c) {
                 return (c != cell && isFrontier(c)) || openDoorBeside(c).has_value();
-            }, errand_.seeking, [&](Vec2i c) { return hunchCost(c, openDoorBeside(c) ? HUNCH_DOOR_COST : HUNCH_COST); })) {
+            }, errand_.seeking, [&](Vec2i c) {
+                return hunchCost(c, openDoorBeside(c) ? HUNCH_DOOR_COST : HUNCH_COST) + darkCost(c);
+            })) {
             if (errand_.seeking) noteSeeking();
+            makeForLight(world, *p);
             startWalking(Goal::Explore, *p);
             return true;
         }
@@ -966,6 +972,7 @@ bool Human::doorUrge() {
 
 // The body stays where it fell, out of the way, with all it carried on it.
 void Human::die(World& world) {
+    world.noise(NoiseKind::Death, cell, id);
     for (Wound& w : wounds) w.healLeft = std::min(w.healLeft, CORPSE_BLEED_TIME);
     sleep_.diedAsleep = state == State::Sleeping;
     state = State::Dead;

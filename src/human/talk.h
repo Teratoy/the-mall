@@ -219,6 +219,20 @@ enum class Moment {
     // or foul water).
     CakesAgain, BodiesAgain, WaterAgain, DoorsAgain, TrapsAgain, BloodAgain, FightsAgain, GoingAgain, SleepAgain,
     QuietAgain, FacesAgain, LowAgain,
+    // The dark (AI/light_plan.md step 5): the first time it stands where no
+    // light falls; going into the dark again after a while in light; coming
+    // out of a long spell in it; making for light it sees from the dark
+    // (all to nobody).
+    FirstDark, IntoDark, OutOfDark, TowardLight,
+    // Lying down to sleep in the dark, out of sight, as the bold would; under
+    // a light, as the timid would (to nobody, in place of sleep_now).
+    SleepDark, SleepLit,
+    // Hiding in the dark: the modest going where it hides them; making a
+    // stash where no light falls (both to nobody).
+    ReliefDark, StashDark,
+    // Stepping in feces it couldn't see for the dark (to nobody, in place of
+    // stepped_in).
+    SteppedInDark,
     Count
 };
 

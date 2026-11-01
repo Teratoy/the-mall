@@ -6,9 +6,9 @@
 #include <raylib.h>
 
 /// The first screen: the game's name, ENTER THE MALL to make a human
-/// (or ENTER), and OBITUARY for the humans you made whose runs are over.
-/// Behind them an empty mall, grown fresh each time, scrolls slowly south
-/// for ever.
+/// (or ENTER), OBITUARY for the humans you made whose runs are over, and
+/// CONFIGURATION for the settings. Behind them an empty mall, grown fresh
+/// each time, scrolls slowly south for ever.
 class MenuScene : public Scene {
 public:
     MenuScene();
@@ -26,4 +26,5 @@ private:
     Vector2 focus_{};
     bool enter_ = false;
     bool obituary_ = false;
+    bool configuration_ = false;
 };

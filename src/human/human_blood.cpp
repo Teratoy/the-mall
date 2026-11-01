@@ -85,6 +85,10 @@ constexpr float POOL_FEAR_TIME = 12.0f;
 constexpr float SUSPECT_BLOOD = 0.01f;
 constexpr float SUSPECT_TIME = 30.0f;
 constexpr int SUSPECT_DIST = 5;
+/// Seconds it keeps clear of where it last kept away from someone, though
+/// they have gone out of sight: in the dark they are seen only close, and
+/// it would walk straight back up to them.
+constexpr float SHUN_REMEMBER = 20.0f;
 /// Dried blood is old news when there's little of it: under DRY_MIN it
 /// counts for nothing, and it weighs more the more there is, as much as
 /// fresh blood from DRY_FULL on. The weight scales trust, dread and how
@@ -597,6 +601,9 @@ std::function<bool(Vec2i)> Human::shunZone(const World& world, Vec2i start) cons
     std::vector<Vec2i> them;
     for (const auto& o : world.humans())
         if (shuns(*o)) them.push_back(o->cell);
+    // Unless it now goes for them, or up to them.
+    if (clock_ < gore_.shunnedUntil && gore_.shunned != fight_.foe && gore_.shunned != social_.partner)
+        them.push_back(gore_.shunnedAt);
     if (them.empty()) return nullptr;
     return [them, start](Vec2i c) {
         for (Vec2i o : them)
@@ -624,8 +631,15 @@ bool Human::keepAway(World& world) {
     } else {
         for (const auto& o : world.humans()) {
             if (!shuns(*o) || cheb(cell, o->cell) >= SUSPECT_DIST) continue;
-            if (!dist || cheb(cell, o->cell) < cheb(cell, from)) from = o->cell;
+            if (!dist || cheb(cell, o->cell) < cheb(cell, from)) {
+                from = o->cell;
+                gore_.shunned = o->id;
+            }
             dist = SUSPECT_DIST + 1;
+        }
+        if (dist) {
+            gore_.shunnedAt = from;
+            gore_.shunnedUntil = clock_ + SHUN_REMEMBER;
         }
     }
     if (!dist) return false;
