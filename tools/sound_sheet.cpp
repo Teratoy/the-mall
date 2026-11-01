@@ -2,12 +2,18 @@
 // muffled (as through a wall), to listen to, and to cmp before and after a
 // change to the synth. Prints each sound's name and length.
 //   build/sound_sheet [sounds.txt] [out dir]
+// The sound editor (tools/sound_editor.py) uses its other way: the first
+// sound in what comes in on stdin, as a .wav on stdout, dulled under
+// LOWPASS Hz when given. Lines it can't make out go to stderr.
+//   build/sound_sheet --one [LOWPASS] < sound.txt > sound.wav
+// No raylib, so it runs on the host as well as in the toolbox.
 #include "audio/synth.h"
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -16,13 +22,11 @@ namespace {
 /// The muffled copy keeps only what is under this, as the game's does.
 constexpr float MUFFLE_HZ = 450.0f;
 
-void put16(std::ofstream& out, uint16_t v) { out.put(char(v & 0xff)).put(char(v >> 8)); }
-void put32(std::ofstream& out, uint32_t v) { put16(out, uint16_t(v & 0xffff)), put16(out, uint16_t(v >> 16)); }
+void put16(std::ostream& out, uint16_t v) { out.put(char(v & 0xff)).put(char(v >> 8)); }
+void put32(std::ostream& out, uint32_t v) { put16(out, uint16_t(v & 0xffff)), put16(out, uint16_t(v >> 16)); }
 
 /// A 16-bit mono .wav at the synth's rate.
-bool writeWav(const std::filesystem::path& path, const std::vector<float>& samples) {
-    std::ofstream out(path, std::ios::binary);
-    if (!out) return false;
+bool writeWav(std::ostream& out, const std::vector<float>& samples) {
     uint32_t bytes = uint32_t(samples.size() * 2);
     out << "RIFF";
     put32(out, 36 + bytes);
@@ -40,9 +44,25 @@ bool writeWav(const std::filesystem::path& path, const std::vector<float>& sampl
     return bool(out);
 }
 
+bool writeWav(const std::filesystem::path& path, const std::vector<float>& samples) {
+    std::ofstream out(path, std::ios::binary);
+    return out && writeWav(out, samples);
+}
+
+/// The first sound on stdin to stdout, for the sound editor.
+int renderOne(float lowpass) {
+    std::vector<synth::Def> defs = synth::parse(std::cin, "stdin");
+    if (defs.empty()) {
+        std::fprintf(stderr, "no sound on stdin\n");
+        return 1;
+    }
+    return writeWav(std::cout, synth::render(defs[0], lowpass)) ? 0 : 1;
+}
+
 } // namespace
 
 int main(int argc, char** argv) {
+    if (argc > 1 && std::string(argv[1]) == "--one") return renderOne(argc > 2 ? std::stof(argv[2]) : 0.0f);
     std::string from = argc > 1 ? argv[1] : "data/sounds.txt";
     std::filesystem::path dir = argc > 2 ? argv[2] : "build/sounds";
     std::ifstream in(from);

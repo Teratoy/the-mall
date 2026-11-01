@@ -41,7 +41,7 @@ DIRTYSHEET := build/dirty_sheet
 # One human shooting all eight ways, as animation frames (tools/frames_gif.py makes the GIF).
 SHOOTANIM := build/shoot_anim
 
-.PHONY: all run clean trips stuck check golden coverage shot scenarios genprobe genview lightprobe hidef bottlesheet dirtysheet shootanim spritesheet soundsheet spriteref fontdump lines sprites trapprobe icon apk install-apk logcat simprofile gprof
+.PHONY: all run clean trips stuck check golden coverage shot scenarios genprobe genview lightprobe hidef bottlesheet dirtysheet shootanim spritesheet soundsheet spriteref fontdump lines sprites sounds trapprobe icon apk install-apk logcat simprofile gprof
 
 all: $(BIN)
 
@@ -149,8 +149,9 @@ shootanim: $(SHOOTANIM)
 # Every sound from data/sounds.txt rendered to build/sounds/*.wav, clear and muffled (tools/sound_sheet.cpp).
 SOUNDSHEET := build/sound_sheet
 
+# No raylib, so the sound editor can run it on the host.
 $(SOUNDSHEET): tools/sound_sheet.cpp build/audio/synth.o
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@ $(LDLIBS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@ -lm
 
 soundsheet: $(SOUNDSHEET)
 	./$(SOUNDSHEET) data/sounds.txt build/sounds
@@ -172,6 +173,10 @@ spriteref: $(SPRITESHEET)
 # Python only, so it runs on the host too.
 sprites:
 	python3 tools/sprite_editor.py
+
+# The sound editor (tools/sound_editor.py): renders with build/sound_sheet.
+sounds: $(SOUNDSHEET)
+	python3 tools/sound_editor.py
 
 # raylib's default font, saved for the lines editor (tools/font_dump.cpp).
 FONTDUMP := build/font_dump

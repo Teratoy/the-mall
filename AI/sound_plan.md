@@ -196,7 +196,8 @@ tone and breath), and death (silence).
 ## 8. Later
 
 - `make sounds`: a sound editor page beside the lines and sprite
-  editors, playing each sound as it is changed.
+  editors, playing each sound as it is changed. Built: see
+  [sound_editor_plan.md](sound_editor_plan.md).
 - Humans hearing the mall (a sim feature, see the ground rules).
 
 ## Build order
