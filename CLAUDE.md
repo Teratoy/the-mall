@@ -40,7 +40,8 @@ toolbox run -c claude-build make check        # soak vs golden output (~75 s)
 | `make exploreprobe` | Follows the waker until it leaves the spawn room and draws its walk and each explore target (`EXPLOREPROBE_ARGS="seed seconds"`; `WHY=1` before it prints why each target). See [AI/explore_heading_plan.md](AI/explore_heading_plan.md) |
 | `make lightprobe` | Grows the chunks round a spawn and prints its light: sources by kind, floor by light level, and an ASCII map. `LIGHTPROBE_ARGS="seed width height source"` centres it on a source. See [AI/light_plan.md](AI/light_plan.md) |
 | `make apk` (on the host, not the toolbox) | Builds `build/TheMall-debug.apk` for the phone with the Android NDK. See `android/apk.mk` and [AI/android_plan.md](AI/android_plan.md) |
-| `make lines` (host or toolbox), or `./lines.sh` (the "The Mall Lines" desktop shortcut) | The lines editor: a local web page at http://localhost:8765 for rewriting `data/lines.txt`, with the game's bubble drawn beside each line. See [AI/lines_editor_plan.md](AI/lines_editor_plan.md) |
+| `make lines` (host or toolbox), or `./lines.sh` (the "The Mall Lines" desktop shortcut) | The lines editor: a local web page at http://localhost:8765 for rewriting `data/lines.txt`, with the game's bubble drawn beside each line. See [AI/lines_editor_plan.md](AI/lines_editor_plan.md). Its DIAGRAM tab (`t`) shows every moment: what makes it said (the code's `sayLater` places, and `data/talk_flow.txt`), what it does, and what can follow, and edits `data/talk_flow.txt`. See [AI/talk_diagram_plan.md](AI/talk_diagram_plan.md) |
+| `make talkcounts` | Counts which talk moment follows which in soak-like worlds (`TALKCOUNTS_ARGS="seeds minutes crowd"`), to `build/talk_flow_counts.json`, which the DIAGRAM tab shows beside each branch. `make coverage` also writes `build/coverage.json` for it |
 | `make sprites` (host or toolbox), or `./sprites.sh` | The sprite editor: a local web page at http://localhost:8766 for redrawing `data/sprites.txt`. See [AI/sprite_editor_plan.md](AI/sprite_editor_plan.md) |
 | `make sounds` (host), or `./sounds.sh` (the "The Mall Sounds" desktop shortcut) | The sound editor: a local web page at http://localhost:8767 for tweaking `data/sounds.txt` (and, on its MUSIC tab, `data/music.txt`), each sound rendered by the game's synth (`build/sound_sheet --one`, which sounds.sh builds in the toolbox). See [AI/sound_editor_plan.md](AI/sound_editor_plan.md) |
 | `make soundsheet` | Renders every sound from `data/sounds.txt` to `build/sounds/NAME.wav`, clear and muffled. See [AI/sound_plan.md](AI/sound_plan.md) |
@@ -125,6 +126,10 @@ lost, and several useful probes already have been.
   sim reads them).
 - `data/settings.txt`: the player's CONFIGURATION (volumes). Not tracked
   by git, like the obituary.
+- `data/talk_flow.txt`: for each talk moment, who it is said to, what makes
+  it said, what it does and which moments can follow, for the lines editor's
+  DIAGRAM tab. Nothing in the game reads it. A new moment shows there as not
+  described yet; add its section (in the tab or by hand) with its lines.
 - `data/lines_review.json` and `data/lines_drafts.json`: the lines editor's
   review marks, and rewrites Claude drafts for the user to accept or reject
   there (format at the top of `tools/lines_editor.py`). Draft rewrites go in

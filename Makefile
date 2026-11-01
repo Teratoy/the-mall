@@ -42,7 +42,7 @@ DIRTYSHEET := build/dirty_sheet
 # One human shooting all eight ways, as animation frames (tools/frames_gif.py makes the GIF).
 SHOOTANIM := build/shoot_anim
 
-.PHONY: all run clean trips stuck check golden coverage shot scenarios genprobe genview lightprobe exploreprobe hidef bottlesheet dirtysheet shootanim spritesheet soundsheet musicsheet voicesheet spriteref fontdump lines sprites sounds trapprobe icon apk install-apk logcat simprofile noiseprobe logsize gprof
+.PHONY: all run clean trips stuck check golden coverage talkcounts shot scenarios genprobe genview lightprobe exploreprobe hidef bottlesheet dirtysheet shootanim spritesheet soundsheet musicsheet voicesheet spriteref fontdump lines sprites sounds trapprobe icon apk install-apk logcat simprofile noiseprobe logsize gprof
 
 all: $(BIN)
 
@@ -262,6 +262,17 @@ $(NOISEPROBE): tools/noise_probe.cpp tests/probe.h $(filter-out build/main.o,$(O
 
 noiseprobe: $(NOISEPROBE)
 	./$(NOISEPROBE) $(NOISEPROBE_ARGS)
+
+# Which talk moment follows which in soak-like worlds, for the lines editor's DIAGRAM tab
+# (tools/talk_said.cpp, then tools/talk_counts.py, writing build/talk_flow_counts.json).
+TALKSAID := build/talk_said
+TALKCOUNTS_ARGS ?= 6 15 6
+$(TALKSAID): tools/talk_said.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDLIBS)
+
+talkcounts: $(TALKSAID)
+	./$(TALKSAID) $(TALKCOUNTS_ARGS) > build/talk_said.tsv
+	python3 tools/talk_counts.py build/talk_said.tsv --args "$(TALKCOUNTS_ARGS)"
 
 # The same run built with -pg, its gprof flat profile and call graph in
 # build/gprof.txt. The drawing code isn't needed, so it isn't built. It runs

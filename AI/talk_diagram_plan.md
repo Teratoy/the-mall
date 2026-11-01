@@ -194,6 +194,33 @@ like the line drafts.
    the tab shows the share beside each branch's word, and lists pairs
    the soak shows often that the flow file has no branch for.
 
+### Built (2026-11-02, step 5)
+
+- `make talkcounts` (`TALKCOUNTS_ARGS`, by default 6 worlds of 15
+  minutes with a crowd of 6). `tools/talk_said.cpp` runs the worlds and
+  reads every human's log each tick, printing each line said: when, by
+  whom, to whom, where it stood, and the words. `tools/talk_counts.py`
+  puts each line back to its moment by its words. A line word for word
+  beats one with a name filled in; words more than one moment has are
+  left out (8% of lines today). It then counts what follows each moment
+  within 8 seconds. Said to someone, it counts the same two either way.
+  Said to nobody, it counts the same one, anyone talking to it, or
+  anyone within 24 cells (as far as a call carries) also saying
+  something to nobody. Written to `build/talk_flow_counts.json`.
+- The tab shows "soak n of m" beside each branch, in the panel and on
+  focus arrows touching the middle, and how often the soak said each
+  moment. Follows the soak sees at least 3 times and after at least a
+  quarter of a moment's sayings, with no branch for them, are flagged.
+  They are listed under "Seen following it in the soak, no branch", each
+  with "+ add as branch", its chance word guessed from the share.
+- First counts: 40 such follows, the clearest being the waking order
+  (wake_stir, wake, first_human, see_bottle, wake_stand) and help to
+  bang_door and help_steps. Some drafted branches the soak never sees
+  within 8 seconds, such as help to help_coming (help_coming is said 3
+  times in all). Rare moments need longer runs.
+- `make check` was not needed: only tools changed, and nothing in the
+  sim.
+
 ## Open questions
 
 None.

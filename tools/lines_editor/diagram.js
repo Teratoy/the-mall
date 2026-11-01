@@ -26,12 +26,25 @@ function dsave() {
 function dm(name) { return dia && dia.byName[name]; }
 function outOf(name) { const m = dm(name); return m && m.flow ? m.flow.branches : []; }
 function intoOf(name) { return dia.into[name] || []; }
+/// How often the soak saw one moment follow another: "19 of 25", or "" with no counts.
+function soakShare(from, to) {
+  const m = dm(from);
+  if (!m || m.counted === null || m.counted === undefined) return "";
+  const n = m.countedFollows[to] || 0;
+  return m.counted ? `${n} of ${m.counted}` : "never said";
+}
+/// The chance word a share in the soak would earn, offered when a follow is added as a branch.
+function chanceFor(n, of) {
+  const r = of ? n / of : 0;
+  return r >= 0.9 ? "always" : r >= 0.5 ? "often" : r >= 0.2 ? "sometimes" : "seldom";
+}
 function codeShows(from, to) { return dia.follows.some(f => f.from === from && f.to === to); }
 function flagsOf(m) {
   const c = dia.checks, out = [];
   if (c.missing.includes(m.name)) out.push("no section in talk_flow.txt: not described yet");
   if (c.stranded.includes(m.name)) out.push("no when, and nothing leads here");
   for (const f of c.unwritten) if (f.from === m.name) out.push(`the code shows it leads to ${f.to} (${f.at}); no branch for it`);
+  for (const f of c.soakOnly || []) if (f.from === m.name) out.push(`the soak saw ${f.to} follow it ${f.count} of ${f.of} times; no branch for it`);
   if (m.flow) for (const b of m.flow.branches) if (!dm(b.to)) out.push(`a branch to ${b.to}, which isn't a moment`);
   if (!m.inFile) out.push("no section in data/lines.txt");
   if (!m.uses.some(u => u.kind === "say")) out.push("never said by name in the code");
@@ -120,11 +133,12 @@ function drender() {
 }
 function dtoolbar() {
   const c = dia.checks;
-  const counts = [["missing", c.missing.length], ["stranded", c.stranded.length], ["unwritten", c.unwritten.length],
+  const counts = [["missing", c.missing.length], ["seen only in the soak", (c.soakOnly || []).length], ["stranded", c.stranded.length], ["unwritten", c.unwritten.length],
                   ["unknown", c.unknown.length], ["bad rows", c.bad.length]].filter(([, n]) => n);
   const unreached = dia.moments.filter(m => m.said === 0).length;
   $("dstats").innerHTML = `${dia.moments.length} moments · ${dia.moments.reduce((n, m) => n + (m.flow ? m.flow.branches.length : 0), 0)} branches · `
     + (dia.coverage ? `<b>${unreached}</b> never reached (coverage ${esc(dia.coverage.replace("T", " "))})` : "no coverage yet: run make coverage")
+    + (dia.counts ? ` · follows counted ${esc(dia.counts.made.replace("T", " "))} (${esc(dia.counts.args)})` : " · no follow counts yet: run make talkcounts")
     + (counts.length ? ` · <span class="flagw">${counts.map(([k, n]) => n + " " + k).join(", ")}</span>` : " · flow checks clean");
   $("dmode").textContent = dview.mode === "focus" ? "◂ Overview (o)" : "Focus ◎ (f)";
   $("dback").style.display = dview.mode === "focus" && dview.back.length ? "" : "none";
@@ -223,7 +237,8 @@ function dfocus() {
     // Only between neighbouring columns, or to and from the middle, so the picture stays readable.
     if (Math.abs(dt - df) !== 1 && df !== 0 && dt !== 0) continue;
     const touches = from === c || b.to === c;
-    paths += edge(root, from, b.to, b.chance, dt > df ? "out" : "in", touches ? b.chance : "");
+    const sh = touches ? soakShare(from, b.to) : "";
+    paths += edge(root, from, b.to, b.chance, dt > df ? "out" : "in", touches ? (b.chance || "?") + (sh ? " · " + sh : "") : "");
   }
   svg.innerHTML = paths;
 }
@@ -246,11 +261,13 @@ function dpanel() {
     const code = other === "to" ? codeShows(m.name, b.to) : codeShows(b.from, m.name);
     const name = other === "to" ? b.to : b.from;
     return `<li class="er"><a data-go="${name}">${name}</a> <span class="chw c-${b.chance || "none"}">${b.chance || "—"}</span>
-      ${code ? '<span class="code" title="the code shows this follow">code</span>' : ""}${other === "to" ? acts("branch", i) : ""}<div class="bw">${esc(b.when)}</div></li>`;
+      ${code ? '<span class="code" title="the code shows this follow">code</span>' : ""}
+      ${(() => { const sh = other === "to" ? soakShare(m.name, b.to) : soakShare(b.from, m.name);
+                 return sh ? `<span class="soak" title="how often the soak saw it follow">soak ${sh}</span>` : ""; })()}${other === "to" ? acts("branch", i) : ""}<div class="bw">${esc(b.when)}</div></li>`;
   };
   const branches = () => {
     const items = (f ? f.branches : []).map((b, i) => branch(b, "to", i));
-    if (ed && ed.kind === "branch" && ed.i < 0) items.push(`<li>${editor("branch", null)}</li>`);
+    if (ed && ed.kind === "branch" && ed.i < 0) items.push(`<li>${editor("branch", ed.preset || null)}</li>`);
     return (items.length ? `<ul class="br">${items.join("")}</ul>` : '<p class="none">nothing</p>')
       + (f && !(ed && ed.kind === "branch") ? `<button class="addr" data-add="branch">+ branch</button>` : "");
   };
@@ -276,6 +293,7 @@ function dpanel() {
       <span>said</span><b>${whoPick}</b>
       <span>lines</span><b>${m.lines} (${m.reviewed} reviewed)</b>
       <span>say-chance</span><b>${m.chance === null ? "always said" : m.chance}</b>
+      <span>in the soak</span><b>${m.counted === null || m.counted === undefined ? "not counted: run make talkcounts" : m.counted ? "said " + m.counted + " times" : "never said"}</b>
       <span>in tests</span><b>${m.said === null || m.said === undefined ? "unknown: run make coverage" : m.said ? "said " + m.said + " times" : '<span class="flagw">never said</span>'}</b>
     </div>
     ${flags.length ? `<ul class="flags">${flags.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
@@ -284,6 +302,12 @@ function dpanel() {
     <h3>Does</h3>${rows(f ? f.does : [], "does")}
     ${tones ? `<h3>Tones</h3><ul class="tones">${tones}</ul>` : ""}
     <h3>Leads to</h3>${branches()}
+    ${(() => {
+      const only = (dia.checks.soakOnly || []).filter(x => x.from === m.name);
+      return only.length && f ? `<h3>Seen following it in the soak, no branch</h3><ul class="br">${only.map(x =>
+        `<li><a data-go="${x.to}">${x.to}</a> <span class="soak">soak ${x.count} of ${x.of}</span>
+         <button class="addr" data-addsoak="${x.to}:${chanceFor(x.count, x.of)}">+ add as branch</button></li>`).join("")}</ul>` : "";
+    })()}
     <h3>Comes after</h3>${intoOf(m.name).length ? `<ul class="br">${intoOf(m.name).map(b => branch(b, "from")).join("")}</ul>` : '<p class="none">nothing</p>'}
     <h3>In the code</h3>${uses ? `<ul class="uses">${uses}</ul>` : '<p class="none">never named in the code</p>'}`;
   if (sample && ink) $("dpanel").querySelector(".sample").appendChild(drawBubble(sample.text, sample.tone));
@@ -291,7 +315,8 @@ function dpanel() {
     $("dWho").onchange = () => flowOp({ op: "who", moment: m.name, who: $("dWho").value, about: $("dAbout").checked });
     $("dAbout").onchange = $("dWho").onchange;
   }
-  const first = $("dpanel").querySelector(".fed input, .fed select");
+  // Added from the soak, the moment and chance are filled in: only the when is left to write.
+  const first = dview.editing && dview.editing.preset ? $("edText") : $("dpanel").querySelector(".fed input, .fed select");
   if (first) { first.focus(); if (first.select && first.type === "text") first.select(); }
 }
 /// The form for one row of talk_flow.txt: words for a when or does; for a branch the moment it
@@ -429,6 +454,7 @@ window.diagramKeys = e => {
 #dpanel a { color: var(--bright); cursor: pointer; text-decoration: underline dotted; }
 #dpanel .bw { color: var(--dim); font-size: 12px; }
 #dpanel .chw { font-size: 11px; padding: 0 4px; border-radius: 3px; background: var(--raise); }
+#dpanel .soak { font-size: 10px; color: var(--plead); border: 1px solid var(--plead); border-radius: 3px; padding: 0 3px; }
 #dpanel .code { font-size: 10px; color: var(--good); border: 1px solid var(--good); border-radius: 3px; padding: 0 3px; }
 #dpanel ul.uses { list-style: none; padding: 0; }
 #dpanel .use { padding: 5px 0; border-top: 1px solid var(--line); }
@@ -496,6 +522,12 @@ window.diagramKeys = e => {
   $("dpanel").addEventListener("click", e => {
     if (e.target.closest("[data-save]")) return saveEdit();
     if (e.target.closest("[data-cancel]")) return cancelEdit();
+    const as = e.target.closest("[data-addsoak]");
+    if (as) {
+      const [to, chance] = as.dataset.addsoak.split(":");
+      dview.editing = { moment: dview.pick, kind: "branch", i: -1, preset: { to, chance, when: "" } };
+      return dpanel();
+    }
     const a = e.target.closest("[data-add]");
     if (a) { dview.editing = { moment: dview.pick, kind: a.dataset.add, i: -1 }; return dpanel(); }
     const ed = e.target.closest("[data-ed]");

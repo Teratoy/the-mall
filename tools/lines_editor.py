@@ -23,7 +23,9 @@ Beside the lines file it keeps:
 
 For the DIAGRAM tab, /api/diagram gives every moment with what the code says
 of it (tools/talk_map.py), its lines, reviewed and tones, its say-chance, and
-how often the tests said it (build/coverage.json, from make coverage), with
+how often the tests said it (build/coverage.json, from make coverage), how often
+each moment followed it in soak-like worlds (build/talk_flow_counts.json, from
+make talkcounts), with
 its section of data/talk_flow.txt (tools/talk_flow.py) and that file's checks.
 POST /api/flow makes one edit to talk_flow.txt (talk_flow.apply says which).
 """
@@ -46,6 +48,11 @@ TALK = os.path.join(ROOT, "src", "human", "talk.cpp")
 PAGE = os.path.join(ROOT, "tools", "lines_editor")
 MEANINGS = os.path.join(PAGE, "conditions.txt")
 COVERAGE = os.path.join(ROOT, "build", "coverage.json")
+COUNTS = os.path.join(ROOT, "build", "talk_flow_counts.json")
+# A follow the soak counts this often, and after at least this share of the moment's
+# sayings, is listed when the flow file has no branch for it.
+SOAK_FOLLOW_MIN = 3
+SOAK_FOLLOW_SHARE = 0.25
 FLOW = talk_flow.FLOW
 
 # Conditions and tone stand in a column this wide before the bar, as in the file.
@@ -212,7 +219,7 @@ def stamp(path):
 
 
 def version():
-    return f"{stamp(LINES)}-{stamp(REVIEW)}-{stamp(DRAFTS)}-{stamp(TALK)}-{stamp(MEANINGS)}-{stamp(COVERAGE)}-{stamp(FLOW)}"
+    return f"{stamp(LINES)}-{stamp(REVIEW)}-{stamp(DRAFTS)}-{stamp(TALK)}-{stamp(MEANINGS)}-{stamp(COVERAGE)}-{stamp(FLOW)}-{stamp(COUNTS)}"
 
 
 def book():
@@ -247,6 +254,7 @@ def diagram():
     sections = {m["name"]: m for m in parse(rows, tones)}
     review = read_json(REVIEW, {})
     coverage = read_json(COVERAGE, None)
+    counts = read_json(COUNTS, None)
     code = talk_map.talk_map()
     flow = talk_flow.read()
     flows = {f["name"]: f for f in flow["sections"]}
@@ -260,12 +268,22 @@ def diagram():
         m["reviewed"] = sum(1 for line in lines if line["key"] in review)
         m["tones"] = {t: n for t in tones if (n := sum(1 for line in lines if line["tone"] == t))}
         m["said"] = coverage["said"].get(m["name"]) if coverage else None
+        m["counted"] = counts["said"].get(m["name"], 0) if counts else None
+        m["countedFollows"] = counts["follows"].get(m["name"], {}) if counts else {}
+    checks = talk_flow.checks(flow, code)
+    branches = {(m["name"], b["to"]) for m in code["moments"] if m["flow"] for b in m["flow"]["branches"]}
+    checks["soakOnly"] = [
+        {"from": m["name"], "to": b, "count": n, "of": m["counted"]}
+        for m in code["moments"] for b, n in m["countedFollows"].items()
+        if b != m["name"] and (m["name"], b) not in branches and n >= SOAK_FOLLOW_MIN
+        and n >= SOAK_FOLLOW_SHARE * m["counted"]]
     return {
         "version": version(),
         "moments": code["moments"],
         "follows": code["follows"],
         "coverage": coverage["made"] if coverage else None,
-        "checks": talk_flow.checks(flow, code),
+        "checks": checks,
+        "counts": {k: counts[k] for k in ("made", "args", "window", "unsure")} if counts else None,
         "who": talk_flow.WHO,
         "chances": talk_flow.CHANCES,
     }
