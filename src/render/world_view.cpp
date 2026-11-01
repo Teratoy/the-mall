@@ -59,6 +59,15 @@ constexpr Color HURT_TINT = {255, 90, 90, 255};
 constexpr Color GHOST_TINT = {255, 255, 255, 110};
 /// Remembered but out of sight: drawn at this brightness.
 constexpr float MEMORY_DIM = 0.45f;
+/// Cells the viewer has never seen are dark snow, like a dead screen: a tile
+/// of SNOW_PX world pixels a side (whole cells, so each cell takes a piece of
+/// it whole), SNOW_FRAMES of it, flicked through SNOW_FPS times a second.
+constexpr int SNOW_PX = 48, SNOW_FRAMES = 8;
+constexpr float SNOW_FPS = 12.0f;
+/// Most of the snow is black; a grain in SNOW_GRAIN lights up to between
+/// SNOW_DIM and SNOW_BRIGHT, and one in SNOW_SPARK of those to SNOW_SPARK_LEVEL.
+constexpr float SNOW_GRAIN = 0.35f;
+constexpr int SNOW_DIM = 2, SNOW_BRIGHT = 9, SNOW_SPARK = 12, SNOW_SPARK_LEVEL = 15;
 /// Statues are looked for this many rows below the screen, as the tallest
 /// rise into it from there.
 constexpr int STATUE_REACH = 28;
@@ -198,6 +207,32 @@ Vector2 feetOf(const Human& h) {
             (h.prev.y + (h.cell.y - h.prev.y) * t) * CELL_PX + CELL_PX};
 }
 
+int floorMod(int a, int b) { return a - floorDiv(a, b) * b; }
+
+/// The snow's frames side by side, grown once from a hash of each pixel so it
+/// is the same every run and takes nothing from the sim's dice.
+const Texture2D& snowTexture() {
+    static Texture2D tex{};
+    if (tex.id != 0) return tex;
+    Image img = GenImageColor(SNOW_PX * SNOW_FRAMES, SNOW_PX, BLACK);
+    auto* px = static_cast<Color*>(img.data);
+    for (int i = 0; i < img.width * img.height; i++) {
+        uint32_t h = uint32_t(i) * 2654435761u;
+        h ^= h >> 15;
+        h *= 2246822519u;
+        h ^= h >> 13;
+        h *= 3266489917u;
+        h ^= h >> 16;
+        if (float(h & 0xffff) / 65536.0f >= SNOW_GRAIN) continue;
+        int level = SNOW_DIM + int((h >> 16) % uint32_t(SNOW_BRIGHT - SNOW_DIM + 1));
+        if ((h >> 24) % SNOW_SPARK == 0) level = SNOW_SPARK_LEVEL;
+        px[i] = {(unsigned char)level, (unsigned char)level, (unsigned char)level, 255};
+    }
+    tex = LoadTextureFromImage(img);
+    UnloadImage(img);
+    return tex;
+}
+
 Vector2 drawnFeet(const Human& h, float zoom) {
     Vector2 feet = feetOf(h);
     return {std::round(feet.x * zoom) / zoom, std::round(feet.y * zoom) / zoom};
@@ -236,6 +271,17 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
             if (tile == Tile::Void) continue;
             drawCell(x * CELL_PX - left, y * CELL_PX - top, tile, known(c + Vec2i{0, -1}),
                      known(c + Vec2i{0, 1}), world.floor(c), world.wall(c), reveal || viewer.sight.sees(c));
+        }
+    // What the viewer has never seen is snow, in a pass of its own so the
+    // texture is bound once.
+    const Texture2D& snow = snowTexture();
+    const int snowFrame = int(GetTime() * SNOW_FPS) % SNOW_FRAMES;
+    for (int y = y0; y <= y1; y++)
+        for (int x = x0; x <= x1; x++) {
+            if (known({x, y}) != Tile::Void) continue;
+            Rectangle src{float(snowFrame * SNOW_PX + floorMod(x * CELL_PX, SNOW_PX)),
+                          float(floorMod(y * CELL_PX, SNOW_PX)), float(CELL_PX), float(CELL_PX)};
+            DrawTextureRec(snow, src, {float(x * CELL_PX - left), float(y * CELL_PX - top)}, WHITE);
         }
     const int frame = int(GetTime() * WATER_FPS);
     for (int y = y0; y <= y1; y++)
