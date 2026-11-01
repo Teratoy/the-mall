@@ -431,6 +431,7 @@ bool Human::observe(const World& world) {
                 if (drinkable(t) && thirsty()) foundWater();
             }
             memory.see(c, t);
+            if (drinkable(t)) seeTint(world, c);
         }
         // Fresh feces of someone else's, first seen, sicken the modest a little.
         if (const std::vector<int>* m = world.mess().at(c))
@@ -585,6 +586,13 @@ bool Human::observe(const World& world) {
 void Human::choose(World& world) {
     rethink_ = false;
     sleep_.robbee = -1;
+    // An errand left too long is given up; one not walked on just now was
+    // turned aside from (human_errand.cpp).
+    if (errand_.want != Want::Count && clock_ - errand_.since > ERRAND_KEEP) errand_.want = Want::Count;
+    if (errand_.want != Want::Count && !(state == State::Walking && errandGoal(goal))) errand_.aside = true;
+    const bool errandOn = errand_.want != Want::Count;
+    if (!thirsty()) errand_.seekWaterNoted = false;
+    if (!hungry()) errand_.seekFoodNoted = false;
     if (goal != Goal::OpenDoor) urged_ = false;
     takeInReach(world);
     if (dead()) return;
@@ -629,9 +637,12 @@ void Human::choose(World& world) {
     if (guardHome(world)) return;
     if (givePrivacy(world)) return;
     if (keepWatch(world)) return;
-    if (!hungry() && !thirsty() && !needsToGo() && waitForCompany(world)) return;
+    // Water by the way, and the other need while it is here (human_errand.cpp).
+    if (topUp(world) || whileHere(world)) return;
+    // Out on an errand, nothing new to look at, nobody to wait for.
+    if (!errandOn && !hungry() && !thirsty() && !needsToGo() && waitForCompany(world)) return;
     // Something seen for the first time it goes and looks at.
-    if (inspectNext(world, false)) return;
+    if (!errandOn && inspectNext(world, false)) return;
 
     // Someone new to greet, unless hungry or thirsty, when nobody is.
     bool needy = hungry() || thirsty() || needsToGo();
@@ -659,7 +670,22 @@ void Human::choose(World& world) {
         want(Want::Food, drive);
         want(Want::Track, drive);
     }
-    if (thirsty()) want(Want::Drink, std::max(0.0f, (thirst - THIRSTY) / (1.0f - THIRSTY)));
+    float thirstDrive = std::max(0.0f, (thirst - THIRSTY) / (1.0f - THIRSTY));
+    if (thirsty())
+        want(Want::Drink, thirstDrive);
+    // Gone as far from water as it lets itself, or on its way back: back to
+    // drink before it is thirsty (human_errand.cpp).
+    else if (errand_.want == Want::Drink || rangeUsed() >= 1.0f)
+        want(Want::Drink, -TURN_BACK_BELOW);
+    // Thirsty or hungry and knowing of no water or cake at all, exploring is
+    // as much a way to get it as any, tried once those have failed; not
+    // while someone in sight carries water it might ask for.
+    float seek = -1.0f;
+    bool noWater = !memory.known(Tile::Water) && !memory.known(Tile::Basin) && !knowsCooler() &&
+                   !askableInSight(world);
+    if (thirsty() && noWater) seek = WANTING[size_t(Want::Drink)].base + thirstDrive - SEEK_BELOW;
+    if (hungry() && memory.cakes.empty()) seek = std::max(seek, WANTING[size_t(Want::Food)].base + drive - SEEK_BELOW);
+    errand_.seeking = false;
     // Tired, it wants to sleep; drowsy far from where it means to, to go
     // back there first.
     if (tired() || sleepsWithGroup(world))
@@ -714,13 +740,37 @@ void Human::choose(World& world) {
         // Keeping company, it leaves the looking to whoever leads.
         want(Want::Explore, OUT_EXPLORE * outDrive() - DREAD_EXPLORE * dread_ -
                                 (social_.companion >= 0 && social_.leader < 0 ? COMPANY_STAY : 0.0f) - waterTether() - sleepTether());
+        if (wishes.back().score < seek) wishes.back().score = seek, errand_.seeking = true;
         if (keys > 0) want(Want::OpenDoor, OUT_EXPLORE * outDrive() - sleepTether());
         if (rng_.chance(CHECK_DOOR_CHANCE * sway(traits.curious, CHECK_DOOR_CURIOUS))) want(Want::CheckDoor);
     }
+    // Settled, it still goes looking for what it needs.
+    else if (seek >= 0.0f) {
+        wishes.push_back({Want::Explore, seek});
+        errand_.seeking = true;
+    }
     want(Want::Wander, DREAD_WANDER * dread_ + DESPAIR_WANDER * gloom());
+    // An errand it gave up, turned aside too often, waits unless need presses.
+    if (errand_.restWant != Want::Count && clock_ < errand_.restUntil) {
+        Want rest = errand_.restWant;
+        bool presses = (rest == Want::Drink && thirsty()) || (rest == Want::Food && hungry());
+        if (!presses) std::erase_if(wishes, [&](const Wish& w) { return w.want == rest; });
+    }
+    // On an errand, it keeps to it: what it would not turn aside for waits.
+    if (errandOn) {
+        if (std::none_of(wishes.begin(), wishes.end(), [&](const Wish& w) { return w.want == errand_.want; }))
+            errand_.want = Want::Count;
+        else
+            std::erase_if(wishes, [&](const Wish& w) { return !turnsAsideFor(w.want, errand_.seeking); });
+    }
     std::stable_sort(wishes.begin(), wishes.end(), [](const Wish& a, const Wish& b) { return a.score > b.score; });
-    for (const Wish& w : wishes)
-        if (pursue(world, w.want)) return;
+    for (const Wish& w : wishes) {
+        if (pursue(world, w.want)) {
+            onErrand(w.want);
+            return;
+        }
+        if (w.want == errand_.want) errand_.want = Want::Count;
+    }
     rest();
 }
 
@@ -729,6 +779,7 @@ bool Human::pursue(World& world, Want w) {
     case Want::Food:
         return seekFood(world);
     case Want::Drink:
+        if (!thirsty()) return turnBack(world);
         return seekWater(world) || buyBottle(world);
     case Want::Relieve:
         return seekRelief(world);
@@ -828,9 +879,12 @@ bool Human::pursue(World& world, Want w) {
     case Want::Company:
         return keepCompany(world);
     case Want::Explore:
+        // Looking for water or food, it goes round whoever stands in the way,
+        // or somewhere else, rather than wait on them.
         if (auto p = search(world, [&](Vec2i c) {
                 return (c != cell && isFrontier(c)) || openDoorBeside(c).has_value();
-            }, false, [&](Vec2i c) { return hunchCost(c, openDoorBeside(c) ? HUNCH_DOOR_COST : HUNCH_COST); })) {
+            }, errand_.seeking, [&](Vec2i c) { return hunchCost(c, openDoorBeside(c) ? HUNCH_DOOR_COST : HUNCH_COST); })) {
+            if (errand_.seeking) noteSeeking();
             startWalking(Goal::Explore, *p);
             return true;
         }

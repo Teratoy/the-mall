@@ -206,6 +206,11 @@ enum class Moment {
     // console desk it tries, and every later one, each locked by a password
     // (all to nobody); seeing someone else at the keys (to nobody, about them).
     TryTerminal, TryDesk, TryAgain, WatchTyping,
+    // Looking after its needs (AI/needs_planning_plan.md): drinking at water
+    // it passes before it is thirsty; turning back, too far from water;
+    // exploring for water, for food, it knows none of; the other need while
+    // there; going back to an errand it was turned aside from (all to nobody).
+    TopUp, TurnBack, SeekWater, SeekFood, WhileHere, ErrandBack,
     Count
 };
 

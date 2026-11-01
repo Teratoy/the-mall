@@ -1,141 +1,135 @@
   s1 t=  37.2 STILL30 #6 Greeting/Inspect @(50,49) tgt(50,49) path0 partner4 leader-1 foe-1 keys0 cakes0 hunger0.16 
   s1 t=  40.5 STILL30 #4 Greeting/Company @(50,47) tgt(50,47) path0 partner6 leader-1 foe-1 keys0 cakes0 hunger0.26 
   s1 t=  60.0 STILL30 #3 Greeting/Meet @(49,44) tgt(50,47) path0 partner6 leader-1 foe-1 keys0 cakes0 hunger0.26 
-  s1 t= 181.4 STILL30 #4 Greeting/Company @(25,74) tgt(28,71) path0 partner6 leader-1 foe2 keys0 cakes0 hunger0.04 
-seed 1: 17 humans (10 alive), 11 chunks, 6 bodies gone through (5 empty), starving spells 6, lessons: 4 hoard, 5 keys first
-   flesh: 5 meals (0 rotten), 2 hunts, 2 killed to eat, eaters 0 guilty / 3 craving, 0 broken by guilt, 7 snapped, 2 saw it
-   kills: 5 by a last blow, 6 known at once, 0 learnt at the body
-   thirst: 6 parched spells, 25 drinks; died of thirst 1, starved 0, bled 1, other 5
-   sleep: 5 slept, 0 collapsed, 0 exhausted spells, 0 woken by a blow, 0 learnt to sleep safe
-   asleep: 2 robbed unseen (2 blamed someone), 1 caught robbing, 0 hit, 0 woken by noise, 0 died
-   watch: 2 kept, 0 asked (0 refused, 0 paid), 0 alarms, 0 turns, 0 slept on it, 0 robbed on it, 0 blamed
-   going: 7 pissed, 3 shat, 27 left lying; 0 stepped in it, 0 filthy at the end, 0 washed it off, 0 sick from foul water
-   dirty: 7 turned dirty, 0 washed for it, 0 washed clean, 5 dirty at the end
-   smell: 2 started to smell, 0 smelt death unseen, 0 followed it, 0 walked off to eat
-   water tips: 0 told, 0 over spikes, 0 asks of the group said, 0 led to drink; 5 learnt to keep near water
-   guarded water: 1 homes by water, 0 let drink, 0 asked a cake (0 paid, 0 cheated), 0 turned away
-   accidents: 0 wet, 0 soiled, 8 wet in fright; seen going 0, accident seen 1, going in water seen 0, mocked 0
-   toilets: 98, 0 uses, 0 misses, dirtiest 0.00, 0 waits
-   water: 104 cells foul, 0 >= 0.3, 0 >= 0.5, worst 0.24; 5 foul gulps
-   machines: 9, 41 items left, 8 found, 1 cakes and 0 bottles bought, 0 found empty, 0 told of
-   dispensers: 10, 21.2 bars left, 0 found, 0 drinks, 0 bottles filled, 0 found dry, 0 kept, 0 poured in
+  s1 t= 150.1 STILL30 #4 Greeting/Meet @(24,93) tgt(24,90) path0 partner6 leader-1 foe-1 keys0 cakes0 hunger0.47 
+  s1 t= 875.1 FLIP    #7 Walking/Explore @(4,169) tgt(23,50) path182 partner-1 leader-1 foe-1 keys4 cakes0 hunger0.97 8 target changes among 3
+seed 1: 17 humans (14 alive), 11 chunks, 5 bodies gone through (5 empty), starving spells 7, lessons: 5 hoard, 2 keys first
+   flesh: 6 meals (0 rotten), 3 hunts, 3 killed to eat, eaters 0 guilty / 2 craving, 0 broken by guilt, 4 snapped, 0 saw it
+   kills: 3 by a last blow, 3 known at once, 0 learnt at the body
+   thirst: 4 parched spells, 32 drinks; died of thirst 0, starved 0, bled 0, other 3
+   sleep: 8 slept, 0 collapsed, 0 exhausted spells, 0 woken by a blow, 0 learnt to sleep safe
+   asleep: 0 robbed unseen (0 blamed someone), 0 caught robbing, 0 hit, 0 woken by noise, 0 died
+   watch: 0 kept, 0 asked (0 refused, 0 paid), 0 alarms, 0 turns, 0 slept on it, 0 robbed on it, 0 blamed
+   going: 12 pissed, 3 shat, 40 left lying; 0 stepped in it, 0 filthy at the end, 0 washed it off, 0 sick from foul water
+   dirty: 8 turned dirty, 2 washed for it, 2 washed clean, 5 dirty at the end
+   smell: 5 started to smell, 0 smelt death unseen, 0 followed it, 0 walked off to eat
+   water tips: 2 told, 0 over spikes, 2 asks of the group said, 1 led to drink; 3 learnt to keep near water
+   guarded water: 0 homes by water, 0 let drink, 0 asked a cake (0 paid, 0 cheated), 0 turned away
+   accidents: 0 wet, 0 soiled, 4 wet in fright; seen going 0, accident seen 0, going in water seen 0, mocked 0
+   toilets: 45, 0 uses, 0 misses, dirtiest 0.00, 0 waits
+   water: 596 cells foul, 1 >= 0.3, 0 >= 0.5, worst 0.32; 0 foul gulps
+   machines: 9, 40 items left, 4 found, 0 cakes and 0 bottles bought, 0 found empty, 0 told of
+   dispensers: 25, 46.5 bars left, 0 found, 0 drinks, 0 bottles filled, 0 found dry, 0 kept, 0 poured in
   s2 t=  38.6 STILL30 #6 Greeting/Meet @(50,48) tgt(48,48) path0 partner4 leader-1 foe-1 keys0 cakes0 hunger0.09 
   s2 t=  39.8 STILL30 #5 Greeting/Meet @(51,51) tgt(51,49) path0 partner0 leader-1 foe-1 keys0 cakes0 hunger0.33 
   s2 t=  91.3 STILL30 #2 Greeting/Meet @(40,50) tgt(40,53) path0 partner0 leader-1 foe-1 keys0 cakes0 hunger0.36 
   s2 t= 111.5 STILL30 #5 Greeting/Meet @(43,52) tgt(43,54) path0 partner0 leader-1 foe-1 keys0 cakes0 hunger0.45 
-  s2 t= 173.4 LOOP    #2 Idle/Company @(46,55) tgt(46,55) path0 partner-1 leader-1 foe-1 keys0 cakes0 hunger0.49 56 steps over 8 cells
-seed 2: 8 humans (2 alive), 2 chunks, 2 bodies gone through (1 empty), starving spells 3, lessons: 3 hoard, 2 keys first
-   flesh: 5 meals (1 rotten), 4 hunts, 2 killed to eat, eaters 0 guilty / 3 craving, 0 broken by guilt, 6 snapped, 0 saw it
+seed 2: 13 humans (7 alive), 7 chunks, 6 bodies gone through (3 empty), starving spells 6, lessons: 4 hoard, 2 keys first
+   flesh: 14 meals (6 rotten), 3 hunts, 2 killed to eat, eaters 0 guilty / 3 craving, 0 broken by guilt, 6 snapped, 1 saw it
    kills: 3 by a last blow, 3 known at once, 0 learnt at the body
-   thirst: 9 parched spells, 6 drinks; died of thirst 2, starved 0, bled 1, other 3
-   sleep: 2 slept, 0 collapsed, 0 exhausted spells, 0 woken by a blow, 0 learnt to sleep safe
+   thirst: 11 parched spells, 8 drinks; died of thirst 2, starved 0, bled 1, other 3
+   sleep: 3 slept, 0 collapsed, 0 exhausted spells, 0 woken by a blow, 0 learnt to sleep safe
    asleep: 0 robbed unseen (0 blamed someone), 0 caught robbing, 0 hit, 0 woken by noise, 0 died
    watch: 0 kept, 0 asked (0 refused, 0 paid), 0 alarms, 0 turns, 0 slept on it, 0 robbed on it, 0 blamed
-   going: 2 pissed, 2 shat, 7 left lying; 0 stepped in it, 0 filthy at the end, 0 washed it off, 0 sick from foul water
-   dirty: 3 turned dirty, 0 washed for it, 0 washed clean, 2 dirty at the end
-   smell: 2 started to smell, 0 smelt death unseen, 0 followed it, 0 walked off to eat
-   water tips: 0 told, 0 over spikes, 4 asks of the group said, 0 led to drink; 7 learnt to keep near water
+   going: 3 pissed, 3 shat, 14 left lying; 0 stepped in it, 0 filthy at the end, 0 washed it off, 0 sick from foul water
+   dirty: 4 turned dirty, 0 washed for it, 0 washed clean, 2 dirty at the end
+   smell: 3 started to smell, 0 smelt death unseen, 0 followed it, 0 walked off to eat
+   water tips: 0 told, 0 over spikes, 0 asks of the group said, 0 led to drink; 7 learnt to keep near water
    guarded water: 0 homes by water, 0 let drink, 0 asked a cake (0 paid, 0 cheated), 0 turned away
-   accidents: 0 wet, 0 soiled, 2 wet in fright; seen going 0, accident seen 0, going in water seen 0, mocked 1
-   toilets: 9, 1 uses, 0 misses, dirtiest 0.09, 0 waits
+   accidents: 0 wet, 0 soiled, 2 wet in fright; seen going 0, accident seen 0, going in water seen 0, mocked 0
+   toilets: 22, 0 uses, 0 misses, dirtiest 0.00, 0 waits
    water: 0 cells foul, 0 >= 0.3, 0 >= 0.5, worst 0.00; 0 foul gulps
-   machines: 5, 19 items left, 5 found, 0 cakes and 1 bottles bought, 0 found empty, 0 told of
-   dispensers: 18, 39.8 bars left, 2 found, 1 drinks, 2 bottles filled, 0 found dry, 1 kept, 1 poured in
+   machines: 5, 19 items left, 6 found, 0 cakes and 1 bottles bought, 0 found empty, 0 told of
+   dispensers: 18, 40.2 bars left, 1 found, 1 drinks, 1 bottles filled, 0 found dry, 0 kept, 0 poured in
   s3 t=  38.5 STILL30 #2 Greeting/Meet @(43,55) tgt(46,52) path0 partner6 leader-1 foe-1 keys0 cakes0 hunger0.13 
   s3 t=  59.8 STILL30 #0 Greeting/Meet @(45,58) tgt(46,57) path0 partner2 leader-1 foe-1 keys0 cakes0 hunger0.34 
   s3 t=  60.0 STILL30 #3 Greeting/Explore @(47,57) tgt(48,71) path0 partner6 leader-1 foe-1 keys0 cakes0 hunger0.17 
   s3 t=  91.9 STILL30 #4 Greeting/Meet @(40,35) tgt(39,35) path0 partner0 leader-1 foe-1 keys1 cakes0 hunger0.26 
   s3 t= 149.1 FLIP    #3 Greeting/Explore @(38,36) tgt(34,33) path0 partner5 leader4 foe-1 keys0 cakes0 hunger0.35 34 target changes among 3
-  s3 t= 194.4 STILL30 #6 Idle/Company @(65,45) tgt(65,45) path0 partner-1 leader-1 foe-1 keys0 cakes0 hunger0.34 
-  s3 t= 201.7 STILL30 #2 Greeting/Company @(63,43) tgt(63,43) path0 partner5 leader-1 foe-1 keys0 cakes0 hunger0.42 
-  s3 t= 209.9 FLIP    #5 Walking/Company @(62,43) tgt(68,49) path6 partner-1 leader-1 foe-1 keys0 cakes0 hunger0.59 8 target changes among 3
-  s3 t= 327.6 STILL30 #7 Greeting/Meet @(148,128) tgt(149,128) path0 partner0 leader-1 foe-1 keys0 cakes0 hunger0.48 
-seed 3: 8 humans (0 alive), 2 chunks, 4 bodies gone through (2 empty), starving spells 4, lessons: 4 hoard, 4 keys first
-   flesh: 5 meals (0 rotten), 2 hunts, 1 killed to eat, eaters 0 guilty / 3 craving, 0 broken by guilt, 5 snapped, 2 saw it
-   kills: 1 by a last blow, 2 known at once, 1 learnt at the body
-   thirst: 8 parched spells, 0 drinks; died of thirst 4, starved 0, bled 3, other 1
-   sleep: 1 slept, 0 collapsed, 0 exhausted spells, 0 woken by a blow, 0 learnt to sleep safe
-   asleep: 0 robbed unseen (0 blamed someone), 0 caught robbing, 0 hit, 0 woken by noise, 1 died
+  s3 t= 187.1 STILL30 #4 Greeting/Flee @(62,48) tgt(62,56) path0 partner1 leader-1 foe-1 keys1 cakes0 hunger0.43 
+  s3 t= 188.3 STILL30 #1 Greeting/Follow @(60,46) tgt(60,46) path0 partner4 leader4 foe-1 keys0 cakes0 hunger0.22 
+seed 3: 8 humans (1 alive), 2 chunks, 11 bodies gone through (9 empty), starving spells 2, lessons: 2 hoard, 6 keys first
+   flesh: 5 meals (0 rotten), 3 hunts, 3 killed to eat, eaters 0 guilty / 4 craving, 0 broken by guilt, 6 snapped, 3 saw it
+   kills: 5 by a last blow, 5 known at once, 0 learnt at the body
+   thirst: 6 parched spells, 0 drinks; died of thirst 2, starved 0, bled 0, other 5
+   sleep: 0 slept, 0 collapsed, 0 exhausted spells, 0 woken by a blow, 0 learnt to sleep safe
+   asleep: 0 robbed unseen (0 blamed someone), 0 caught robbing, 0 hit, 0 woken by noise, 0 died
    watch: 0 kept, 0 asked (0 refused, 0 paid), 0 alarms, 0 turns, 0 slept on it, 0 robbed on it, 0 blamed
-   going: 0 pissed, 0 shat, 12 left lying; 0 stepped in it, 0 filthy at the end, 0 washed it off, 0 sick from foul water
-   dirty: 3 turned dirty, 0 washed for it, 0 washed clean, 0 dirty at the end
-   smell: 0 started to smell, 0 smelt death unseen, 0 followed it, 0 walked off to eat
-   water tips: 0 told, 0 over spikes, 10 asks of the group said, 0 led to drink; 7 learnt to keep near water
+   going: 0 pissed, 0 shat, 8 left lying; 0 stepped in it, 0 filthy at the end, 0 washed it off, 0 sick from foul water
+   dirty: 2 turned dirty, 0 washed for it, 0 washed clean, 0 dirty at the end
+   smell: 1 started to smell, 0 smelt death unseen, 0 followed it, 0 walked off to eat
+   water tips: 0 told, 0 over spikes, 14 asks of the group said, 0 led to drink; 5 learnt to keep near water
    guarded water: 0 homes by water, 0 let drink, 0 asked a cake (0 paid, 0 cheated), 0 turned away
-   accidents: 0 wet, 0 soiled, 1 wet in fright; seen going 0, accident seen 0, going in water seen 0, mocked 0
+   accidents: 0 wet, 0 soiled, 0 wet in fright; seen going 0, accident seen 0, going in water seen 0, mocked 0
    toilets: 0, 0 uses, 0 misses, dirtiest 0.00, 0 waits
    water: 0 cells foul, 0 >= 0.3, 0 >= 0.5, worst 0.00; 0 foul gulps
-   machines: 1, 6 items left, 8 found, 0 cakes and 0 bottles bought, 0 found empty, 0 told of
+   machines: 1, 6 items left, 2 found, 0 cakes and 0 bottles bought, 0 found empty, 0 told of
    dispensers: 0, 0.0 bars left, 0 found, 0 drinks, 0 bottles filled, 0 found dry, 0 kept, 0 poured in
   s4 t=  78.7 STILL30 #0 Greeting/Meet @(49,55) tgt(48,52) path0 partner1 leader-1 foe-1 keys0 cakes0 hunger0.17 
   s4 t=  99.3 STILL30 #3 Greeting/Meet @(38,55) tgt(36,53) path0 partner0 leader-1 foe-1 keys0 cakes0 hunger0.34 
-  s4 t= 318.9 STILL30 #5 Greeting/Ask @(63,-13) tgt(64,-13) path0 partner6 leader-1 foe-1 keys0 cakes0 hunger0.23 
-  s4 t= 319.2 STILL30 #0 Idle/Escort @(67,-13) tgt(73,-40) path0 partner5 leader5 foe-1 keys0 cakes0 hunger0.19 
-seed 4: 10 humans (3 alive), 4 chunks, 7 bodies gone through (7 empty), starving spells 4, lessons: 4 hoard, 3 keys first
-   flesh: 8 meals (0 rotten), 5 hunts, 0 killed to eat, eaters 0 guilty / 4 craving, 0 broken by guilt, 6 snapped, 5 saw it
-   kills: 0 by a last blow, 0 known at once, 0 learnt at the body
-   thirst: 3 parched spells, 15 drinks; died of thirst 2, starved 3, bled 2, other 0
+seed 4: 9 humans (4 alive), 3 chunks, 13 bodies gone through (10 empty), starving spells 6, lessons: 5 hoard, 4 keys first
+   flesh: 9 meals (2 rotten), 4 hunts, 1 killed to eat, eaters 0 guilty / 4 craving, 0 broken by guilt, 5 snapped, 5 saw it
+   kills: 0 by a last blow, 1 known at once, 1 learnt at the body
+   thirst: 2 parched spells, 15 drinks; died of thirst 0, starved 1, bled 4, other 0
    sleep: 5 slept, 0 collapsed, 0 exhausted spells, 0 woken by a blow, 0 learnt to sleep safe
-   asleep: 0 robbed unseen (0 blamed someone), 0 caught robbing, 0 hit, 0 woken by noise, 0 died
+   asleep: 0 robbed unseen (0 blamed someone), 0 caught robbing, 2 hit, 0 woken by noise, 0 died
    watch: 0 kept, 0 asked (0 refused, 0 paid), 0 alarms, 0 turns, 0 slept on it, 0 robbed on it, 0 blamed
-   going: 6 pissed, 0 shat, 25 left lying; 0 stepped in it, 0 filthy at the end, 0 washed it off, 0 sick from foul water
-   dirty: 4 turned dirty, 0 washed for it, 1 washed clean, 0 dirty at the end
-   smell: 1 started to smell, 0 smelt death unseen, 0 followed it, 0 walked off to eat
-   water tips: 1 told, 0 over spikes, 0 asks of the group said, 2 led to drink; 1 learnt to keep near water
-   guarded water: 0 homes by water, 0 let drink, 0 asked a cake (0 paid, 0 cheated), 0 turned away
-   accidents: 0 wet, 0 soiled, 3 wet in fright; seen going 0, accident seen 1, going in water seen 0, mocked 0
+   going: 4 pissed, 1 shat, 25 left lying; 0 stepped in it, 0 filthy at the end, 1 washed it off, 0 sick from foul water
+   dirty: 4 turned dirty, 0 washed for it, 3 washed clean, 1 dirty at the end
+   smell: 2 started to smell, 0 smelt death unseen, 0 followed it, 0 walked off to eat
+   water tips: 0 told, 0 over spikes, 0 asks of the group said, 1 led to drink; 1 learnt to keep near water
+   guarded water: 2 homes by water, 0 let drink, 0 asked a cake (0 paid, 0 cheated), 0 turned away
+   accidents: 0 wet, 0 soiled, 5 wet in fright; seen going 0, accident seen 1, going in water seen 0, mocked 0
    toilets: 22, 0 uses, 0 misses, dirtiest 0.00, 0 waits
-   water: 31 cells foul, 1 >= 0.3, 0 >= 0.5, worst 0.32; 3 foul gulps
-   machines: 1, 6 items left, 0 found, 0 cakes and 0 bottles bought, 0 found empty, 0 told of
+   water: 31 cells foul, 1 >= 0.3, 0 >= 0.5, worst 0.37; 0 foul gulps
+   machines: 0, 0 items left, 0 found, 0 cakes and 0 bottles bought, 0 found empty, 0 told of
    dispensers: 0, 0.0 bars left, 0 found, 0 drinks, 0 bottles filled, 0 found dry, 0 kept, 0 poured in
   s5 t=  39.0 STILL30 #6 Greeting/Meet @(47,47) tgt(48,49) path0 partner3 leader-1 foe-1 keys0 cakes0 hunger0.12 
-seed 5: 10 humans (4 alive), 4 chunks, 8 bodies gone through (5 empty), starving spells 3, lessons: 3 hoard, 3 keys first
-   flesh: 4 meals (0 rotten), 2 hunts, 1 killed to eat, eaters 0 guilty / 2 craving, 0 broken by guilt, 7 snapped, 0 saw it
-   kills: 2 by a last blow, 2 known at once, 0 learnt at the body
-   thirst: 5 parched spells, 9 drinks; died of thirst 2, starved 0, bled 2, other 2
-   sleep: 2 slept, 0 collapsed, 0 exhausted spells, 0 woken by a blow, 0 learnt to sleep safe
-   asleep: 0 robbed unseen (0 blamed someone), 0 caught robbing, 0 hit, 0 woken by noise, 0 died
+  s5 t= 331.1 FLIP    #1 Walking/Explore @(29,179) tgt(38,178) path40 partner-1 leader-1 foe-1 keys0 cakes0 hunger0.49 81 target changes among 3
+seed 5: 14 humans (8 alive), 8 chunks, 14 bodies gone through (12 empty), starving spells 2, lessons: 2 hoard, 6 keys first
+   flesh: 1 meals (0 rotten), 1 hunts, 0 killed to eat, eaters 0 guilty / 1 craving, 0 broken by guilt, 4 snapped, 1 saw it
+   kills: 3 by a last blow, 3 known at once, 0 learnt at the body
+   thirst: 4 parched spells, 14 drinks; died of thirst 1, starved 0, bled 2, other 3
+   sleep: 4 slept, 0 collapsed, 0 exhausted spells, 0 woken by a blow, 0 learnt to sleep safe
+   asleep: 1 robbed unseen (0 blamed someone), 0 caught robbing, 0 hit, 0 woken by noise, 0 died
    watch: 0 kept, 0 asked (0 refused, 0 paid), 0 alarms, 0 turns, 0 slept on it, 0 robbed on it, 0 blamed
-   going: 3 pissed, 1 shat, 13 left lying; 0 stepped in it, 0 filthy at the end, 1 washed it off, 0 sick from foul water
-   dirty: 6 turned dirty, 1 washed for it, 2 washed clean, 1 dirty at the end
-   smell: 2 started to smell, 0 smelt death unseen, 0 followed it, 0 walked off to eat
-   water tips: 0 told, 0 over spikes, 1 asks of the group said, 0 led to drink; 5 learnt to keep near water
+   going: 3 pissed, 3 shat, 25 left lying; 0 stepped in it, 0 filthy at the end, 0 washed it off, 0 sick from foul water
+   dirty: 5 turned dirty, 0 washed for it, 0 washed clean, 3 dirty at the end
+   smell: 3 started to smell, 0 smelt death unseen, 0 followed it, 0 walked off to eat
+   water tips: 2 told, 0 over spikes, 5 asks of the group said, 1 led to drink; 4 learnt to keep near water
    guarded water: 0 homes by water, 0 let drink, 0 asked a cake (0 paid, 0 cheated), 0 turned away
-   accidents: 0 wet, 0 soiled, 1 wet in fright; seen going 0, accident seen 0, going in water seen 0, mocked 0
-   toilets: 1, 0 uses, 1 misses, dirtiest 0.00, 0 waits
-   water: 177 cells foul, 1 >= 0.3, 0 >= 0.5, worst 0.31; 0 foul gulps
-   machines: 0, 0 items left, 0 found, 0 cakes and 0 bottles bought, 0 found empty, 0 told of
+   accidents: 0 wet, 0 soiled, 2 wet in fright; seen going 0, accident seen 1, going in water seen 0, mocked 1
+   toilets: 2, 0 uses, 0 misses, dirtiest 0.00, 0 waits
+   water: 225 cells foul, 1 >= 0.3, 0 >= 0.5, worst 0.37; 2 foul gulps
+   machines: 2, 7 items left, 1 found, 0 cakes and 0 bottles bought, 0 found empty, 0 told of
    dispensers: 0, 0.0 bars left, 0 found, 0 drinks, 0 bottles filled, 0 found dry, 0 kept, 0 poured in
   s6 t=  39.9 STILL30 #0 Greeting/Inspect @(48,49) tgt(48,49) path0 partner6 leader-1 foe-1 keys0 cakes0 hunger0.30 
   s6 t=  43.9 STILL30 #5 Greeting/Meet @(49,50) tgt(48,52) path0 partner4 leader-1 foe-1 keys0 cakes0 hunger0.29 
-  s6 t= 285.1 FLIP    #1 Washing/Wash @(72,141) tgt(72,141) path0 partner-1 leader-1 foe-1 keys1 cakes0 hunger0.25 32 target changes among 3
-  s6 t= 295.3 LOOP    #2 Walking/Avoid @(56,149) tgt(55,149) path1 partner-1 leader-1 foe-1 keys0 cakes0 hunger0.19 25 steps over 8 cells
-seed 6: 11 humans (8 alive), 5 chunks, 2 bodies gone through (2 empty), starving spells 1, lessons: 1 hoard, 4 keys first
-   flesh: 6 meals (0 rotten), 3 hunts, 2 killed to eat, eaters 0 guilty / 3 craving, 0 broken by guilt, 9 snapped, 5 saw it
-   kills: 1 by a last blow, 3 known at once, 0 learnt at the body
-   thirst: 1 parched spells, 27 drinks; died of thirst 0, starved 0, bled 2, other 1
-   sleep: 5 slept, 0 collapsed, 0 exhausted spells, 0 woken by a blow, 0 learnt to sleep safe
+seed 6: 16 humans (11 alive), 10 chunks, 0 bodies gone through (0 empty), starving spells 1, lessons: 1 hoard, 2 keys first
+   flesh: 4 meals (0 rotten), 2 hunts, 2 killed to eat, eaters 0 guilty / 2 craving, 0 broken by guilt, 6 snapped, 2 saw it
+   kills: 4 by a last blow, 5 known at once, 0 learnt at the body
+   thirst: 0 parched spells, 27 drinks; died of thirst 0, starved 0, bled 1, other 4
+   sleep: 6 slept, 0 collapsed, 0 exhausted spells, 0 woken by a blow, 0 learnt to sleep safe
    asleep: 0 robbed unseen (0 blamed someone), 0 caught robbing, 0 hit, 0 woken by noise, 0 died
-   watch: 1 kept, 0 asked (0 refused, 0 paid), 0 alarms, 0 turns, 0 slept on it, 0 robbed on it, 0 blamed
-   going: 7 pissed, 4 shat, 48 left lying; 0 stepped in it, 0 filthy at the end, 0 washed it off, 0 sick from foul water
-   dirty: 8 turned dirty, 2 washed for it, 4 washed clean, 3 dirty at the end
-   smell: 2 started to smell, 0 smelt death unseen, 0 followed it, 0 walked off to eat
-   water tips: 2 told, 0 over spikes, 8 asks of the group said, 3 led to drink; 0 learnt to keep near water
+   watch: 1 kept, 1 asked (0 refused, 0 paid), 0 alarms, 0 turns, 0 slept on it, 0 robbed on it, 0 blamed
+   going: 9 pissed, 6 shat, 45 left lying; 0 stepped in it, 1 filthy at the end, 0 washed it off, 0 sick from foul water
+   dirty: 7 turned dirty, 1 washed for it, 5 washed clean, 2 dirty at the end
+   smell: 5 started to smell, 0 smelt death unseen, 0 followed it, 1 walked off to eat
+   water tips: 1 told, 0 over spikes, 0 asks of the group said, 0 led to drink; 0 learnt to keep near water
    guarded water: 0 homes by water, 0 let drink, 0 asked a cake (0 paid, 0 cheated), 0 turned away
-   accidents: 0 wet, 0 soiled, 8 wet in fright; seen going 0, accident seen 2, going in water seen 0, mocked 1
-   toilets: 7, 0 uses, 0 misses, dirtiest 0.00, 0 waits
-   water: 459 cells foul, 0 >= 0.3, 0 >= 0.5, worst 0.18; 0 foul gulps
-   machines: 5, 22 items left, 2 found, 0 cakes and 0 bottles bought, 0 found empty, 0 told of
-   dispensers: 11, 25.4 bars left, 0 found, 0 drinks, 0 bottles filled, 0 found dry, 0 kept, 0 poured in
+   accidents: 0 wet, 0 soiled, 5 wet in fright; seen going 0, accident seen 3, going in water seen 0, mocked 2
+   toilets: 50, 0 uses, 0 misses, dirtiest 0.00, 0 waits
+   water: 580 cells foul, 4 >= 0.3, 0 >= 0.5, worst 0.49; 0 foul gulps
+   machines: 29, 129 items left, 8 found, 0 cakes and 1 bottles bought, 0 found empty, 0 told of
+   dispensers: 103, 214.3 bars left, 0 found, 0 drinks, 0 bottles filled, 0 found dry, 0 kept, 0 poured in
 
-== 549 human-minutes ==
-asleep 4.0% of the time
-made way 32 times; blocked 0.20% of time, 82 give-ups, 0 mutual blocks, 0 blocks >=5s
-went 35 times, 5 in someone's sight (5 of those erratic or bursting)
-unmoved >=30s (not sitting): 22   loops (25+ steps on <=8 cells in 60s): 2   target flips: 3
-still by:  Greeting/Ask=1  Greeting/Company=3  Greeting/Explore=1  Greeting/Inspect=2  Greeting/Meet=13  Idle/Company=1  Idle/Escort=1
-loop by:  Avoid=1  Company=1
-flip by:  Company=1  Explore=1  Wash=1
-goals never seen: Rescue
-states never seen: Typing
-goal time (blocked share):  Explore 39.5%(0%)  FetchKey 1.6%(0%)  OpenDoor 2.9%(1%)  PassDoor 0.2%(0%)  Wander 10.8%(0%)  Meet 10.3%(0%)  Follow 0.7%(3%)  Company 4.8%(2%)  FetchCake 3.2%(0%)  Drink 4.4%(0%)  Relieve 0.6%(0%)  Fight 2.0%(0%)  Flee 0.3%(0%)  Share 0.0%(0%)  CheckDoor 1.3%(0%)  Wash 2.0%(0%)  Avoid 1.2%(0%)  Escort 0.4%(0%)  Escorted 0.1%(1%)  Track 1.4%(0%)  GiveWay 0.3%(0%)  Loot 1.4%(0%)  Feed 1.0%(0%)  Sleep 4.2%(0%)  Rob 0.0%(0%)  Watch 0.2%(0%)  Fill 0.6%(0%)  Ask 0.3%(0%)  Pick 1.5%(0%)  Stash 0.3%(0%)  Vend 0.0%(0%)  Voice 0.1%(0%)  Inspect 2.6%(0%)
+== 617 human-minutes ==
+asleep 5.0% of the time
+made way 2 times; blocked 0.01% of time, 3 give-ups, 0 mutual blocks, 0 blocks >=5s
+went 47 times, 8 in someone's sight (8 of those erratic or bursting)
+unmoved >=30s (not sitting): 19   loops (25+ steps on <=8 cells in 60s): 0   target flips: 3
+still by:  Greeting/Company=1  Greeting/Explore=1  Greeting/Flee=1  Greeting/Follow=1  Greeting/Inspect=2  Greeting/Meet=13
+flip by:  Explore=3
+goals never seen: Watch Rescue
+states never seen: Pouring Typing
+goal time (blocked share):  Explore 41.2%(0%)  FetchKey 1.5%(0%)  OpenDoor 3.8%(0%)  PassDoor 0.2%(0%)  Wander 7.4%(0%)  Meet 10.0%(0%)  Follow 0.5%(0%)  Company 1.9%(0%)  FetchCake 3.4%(0%)  Drink 4.1%(0%)  Relieve 0.6%(0%)  Fight 2.2%(0%)  Flee 0.4%(0%)  Share 0.0%(0%)  CheckDoor 1.9%(0%)  Wash 2.8%(0%)  Avoid 1.3%(0%)  Escort 0.1%(0%)  Escorted 0.0%(0%)  Track 1.7%(0%)  GiveWay 0.0%(0%)  Loot 2.4%(0%)  Feed 1.5%(0%)  Sleep 5.2%(0%)  Rob 0.0%(0%)  Fill 0.9%(0%)  Ask 0.1%(0%)  Pick 1.7%(0%)  Stash 0.2%(0%)  Vend 0.1%(0%)  Voice 0.1%(0%)  Inspect 2.5%(0%)

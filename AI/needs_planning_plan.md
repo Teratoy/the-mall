@@ -109,3 +109,81 @@ look for water when it knows of none, and finish the errand it set out on.
 
 Steps 3 (looking for water) and 4 (sticking to it) apply to everyone, from
 the start.
+
+## Built (2026-11-01)
+
+All in `src/human/human_errand.cpp` (state in `Human::Errand`, `errand_`),
+with hooks in `choose()`, `pursue()`, `arrive()` and `startDrinking()`.
+
+- **Step 4, sticking to it.** A walk for Food, Drink, Fetch or Fill is an
+  errand. While it lasts, choose() leaves out every want but the needs
+  (food, drink, relief, sleep, flesh, hunt, track), a first greeting
+  (Meet) and the errand's own; the reflexes for danger stay first, and
+  looking at something new or waiting for company are skipped. After
+  being turned aside it goes back to the same errand: "WENT BACK FOR THE
+  WATER" / "... THE CAKE" / "WENT BACK TO FILL MY BOTTLE", moment
+  `errand_back`. Ends on arrival, when the want goes, when it can't be
+  pursued, or after ERRAND_KEEP (90 s). Turned aside more than
+  ERRAND_ASIDES (2) times, it stops keeping to it, and that want waits
+  ERRAND_REST (30 s) unless thirst or hunger press. Without this rest, a
+  human went back and forth between filling its bottle and keeping away
+  from blood beside the water.
+- **Step 3, looking for water and food.** Thirsty and knowing no water at
+  all (no water, basin or dispenser seen), with nobody in sight it could
+  ask for a drink, Explore takes the thirst drive, scored SEEK_BELOW (0.2)
+  under drinking; hungry and knowing no cake, the same. This is for the
+  settled too. It searches around whoever stands in the way rather than
+  waiting on them. "LOOKING FOR WATER" / "LOOKING FOR FOOD", moments
+  `seek_water`, `seek_food`. (Seeking when known water was only out of
+  reach for a moment made a human step back and forth by water beside a
+  suspect, so it is for no water known at all.)
+- **Step 1, topping up.** `topUpLine()`: only with the near-water lesson;
+  THIRSTY − TOP_UP_EARLY (0.35) × lesson, sooner for the timid, later for
+  the brave and curious (TOP_UP_BOLD 0.5), never below 0.15. Past it,
+  beside water or within TOP_UP_REACH (6) cells, it drinks: "DRANK WHILE
+  I COULD", moment `top_up`.
+- **Step 2, range.** `rangeUsed()`: only with the lesson and a last drink
+  known. The walk back to where it last drank (1.5 × the straight-line
+  cells) against the steps of thirst left before parched, bottles counted,
+  times RANGE_REACH (0.6), further for the bold (RANGE_BOLD 0.4), shorter by
+  the lesson (RANGE_LESSON 0.4). `waterTether()` now grows with it; at 1 it
+  turns back to the nearest water before it is thirsty: "TOO FAR FROM
+  WATER. TURNING BACK", moment `turn_back`.
+- **Step 5, two errands.** Built as "while here" rather than planned from
+  the start of a trip: within CHAIN_TIME (30 s) of a drink, a cake within
+  CHAIN_REACH (15) cells is fetched if it has none, or has room for one and
+  is CHAIN_HUNGER (0.25) hungry; after taking a cake, water that near, by
+  those who would top up. "FETCHING A CAKE WHILE I'M HERE" / "DRINKING
+  WHILE I'M HERE", moment `while_here`.
+- **Fixed on the way.** Red water out of sight was taken as drinkable,
+  since only seen water was judged; it is now remembered (`water_.red`).
+  The water search tries again through a crowd before it gives up.
+- **Scenarios:** top-up, top-up-unlearned, turn-back, while-here,
+  seek-water, seek-food.
+
+### Measured
+
+`make trips`, before → after:
+
+| | before | after |
+|---|---|---|
+| walks to water dropped (of ~100) | 30 | 22 |
+| steps lost on dropped water walks | 2424 | 518 |
+| walks to cake dropped | 67 of 121 | 34 of 86 |
+| cake walks set off again within 30 s | 38 | 13 |
+| thirsty, no water known, not boxed in: standing about | 23% | 9% |
+
+Soak (`tests/golden/soak.txt`): died of thirst 11 → 5, starved 3 → 1,
+alive at the end 27 of 64 → 45 of 77; unmoved 30 s 22 → 19, loops 2 → 0.
+
+### Still open
+
+- A suspect by the water makes the way there open and shut step by step
+  (`shunZone` is measured from where the search starts, and both move), so
+  a human near that water steps back and forth for up to 15 s. Older than
+  this plan.
+- In a world with almost no cake, looking for food walks off hunger
+  faster than sitting would (seed 4 of an earlier run starved 6). Fine
+  for now; worth watching.
+- Rescue (a cry from someone shut in) no longer turns a human off an
+  errand, per decision 3. Say if it should.

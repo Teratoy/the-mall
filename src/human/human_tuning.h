@@ -525,6 +525,14 @@ constexpr Wanting WANTING[] = {
     {0.05f, 0.0f, 0.0f, 0.0f, 0.0f}, // Wander
 };
 static_assert(std::size(WANTING) == size_t(Human::Want::Count));
+/// An errand for a need is given up after this many seconds, got there or
+/// not (human_errand.cpp).
+constexpr float ERRAND_KEEP = 90.0f;
+/// Thirsty or hungry and knowing nowhere to drink or eat, exploring is
+/// wanted this much below drinking or eating; gone too far from water,
+/// turning back this much below drinking.
+constexpr float SEEK_BELOW = 0.2f;
+constexpr float TURN_BACK_BELOW = 0.5f;
 /// Hungry with nothing to eat, or frightened, a key holder weighs this
 /// often whether to make for a locked door before exploring: at least
 /// DOOR_URGE_HUNGRY likely when hungry, sure when starving, and up to

@@ -444,6 +444,14 @@ bool Human::bottleRage(World& world) {
 
 // Only when nothing it would drink is near; never a foe, or whoever it is
 // afraid of. The answer comes when the asking is said (human_speech.cpp).
+bool Human::askableInSight(const World& world) const {
+    for (const auto& o : world.humans())
+        if (o.get() != this && !o->dead() && o->state != State::Sleeping && o->bottleWater() >= ASK_WATER_MIN &&
+            sight.sees(o->cell) && cheb(cell, o->cell) <= ASK_SEEN && !isFoe(o->id))
+            return true;
+    return false;
+}
+
 bool Human::askForDrink(World& world) {
     if (!thirsty() || sippable() >= 0) {
         water_.askee = -1;

@@ -71,7 +71,7 @@ lost, and several useful probes already have been.
 
 - `src/human/human.h`: the Human class. Each system's state is a struct
   beside that system's methods (`voice_`, `chat_`, `social_`, `fight_`,
-  `deaths_`, `mind_`, `rescue_`, `escape_`, `gore_`, `escorting_`,
+  `deaths_`, `mind_`, `rescue_`, `escape_`, `gore_`, `escorting_`, `errand_`,
   `water_`, `sleep_`, `relief_`). State the core loop uses everywhere
   stays loose (`rng_`, `clock_`, `path_`, `rethink_`, `dread_`, ...). New
   state for a system goes in its struct.
@@ -87,6 +87,7 @@ lost, and several useful probes already have been.
   - fight: cakes, fights, hits, looting
   - speech: lines and the log
   - blood, thirst, bottle, relief, grime, smell, sleep, flesh, hope, rescue, company, chat, topic, episode
+  - errand: keeping to a walk for a need, topping up, turning back, looking for water or food, the other need while there
 - `src/world/`: chunks and generation (`gen_*.cpp`), blood, mess, traps,
   tables, statues, toilets.
 - `src/render/`: pixel art drawn in code; `src/scenes/`: menu, create,

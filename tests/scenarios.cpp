@@ -2424,6 +2424,84 @@ const std::vector<Scenario> SCENARIOS = {
          s.run(30);
          return Checks{loggedBy(finder, "WENT CLOSER TO LOOK AT A BODY"), loggedBy(finder, "FOUND @ DEAD")};
      }},
+    // Planning for needs (AI/needs_planning_plan.md).
+    {"top-up", "having learnt to keep near water, a human not yet thirsty drinks at a basin a few steps off",
+     seedWhere(plain, 9000),
+     [](Stage& s) {
+         Human& h = s.first();
+         if (!s.basin()) return Checks{{"a basin near the spawn", [](const Stage&) { return false; }}};
+         calm(h);
+         h.bottles.clear();
+         h.lessons.nearWater = 1.0f;
+         h.thirst = 0.4f;
+         s.run(20);
+         return Checks{loggedBy(h, "DRANK WHILE I COULD"), loggedBy(h, "DRANK WATER")};
+     }},
+    {"top-up-unlearned", "not having learnt to keep near water, a human not yet thirsty leaves the basin be",
+     seedWhere(plain, 9000),
+     [](Stage& s) {
+         Human& h = s.first();
+         if (!s.basin()) return Checks{{"a basin near the spawn", [](const Stage&) { return false; }}};
+         calm(h);
+         h.bottles.clear();
+         h.thirst = 0.4f;
+         s.run(20);
+         return Checks{loggedBy(h, "DRANK WHILE I COULD", false), loggedBy(h, "DRANK WATER", false)};
+     }},
+    {"turn-back", "having learnt to keep near water, a human far from where it last drank turns back to drink",
+     seedWhere(plain, 9000),
+     [](Stage& s) {
+         Human& h = s.first();
+         auto b = s.basin();
+         if (!b) return Checks{{"a basin near the spawn", [](const Stage&) { return false; }}};
+         calm(h);
+         h.bottles.clear();
+         h.lessons.nearWater = 1.0f;
+         // It has looked at the water and gone on before it thinks of it.
+         s.run(25);
+         // As if it last drank far off, where it came from.
+         P::setLastWater(h, h.cell + Vec2i{500, 0});
+         s.run(30);
+         return Checks{loggedBy(h, "TOO FAR FROM WATER. TURNING BACK"), loggedBy(h, "DRANK WATER")};
+     }},
+    {"while-here", "just drunk, a human with no cake fetches one from a table close by",
+     seedWhere(plain, 9000),
+     [](Stage& s) {
+         Human& h = s.first();
+         auto b = s.basin();
+         if (!b) return Checks{{"a basin near the spawn", [](const Stage&) { return false; }}};
+         P::clearChunk(s.world, h.cell);
+         P::addCake(s.world, s.freeNear(*b, 4));
+         calm(h);
+         h.bottles.clear();
+         h.cakes = 0;
+         h.thirst = 0.7f;
+         h.hunger = 0.3f;
+         s.run(50);
+         return Checks{loggedBy(h, "DRANK WATER"), loggedBy(h, "FETCHING A CAKE WHILE I'M HERE"),
+                       loggedBy(h, "PICKED UP A CAKE")};
+     }},
+    {"seek-water", "thirsty and knowing no water, a human goes looking for some",
+     seedWhere(plain, 9000),
+     [](Stage& s) {
+         Human& h = s.first();
+         calm(h);
+         h.bottles.clear();
+         h.thirst = 0.6f;
+         s.run(20);
+         return Checks{loggedBy(h, "LOOKING FOR WATER")};
+     }},
+    {"seek-food", "hungry and knowing no cake, a human goes looking for some",
+     seedWhere(plain, 9000),
+     [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         calm(h);
+         h.cakes = 0;
+         h.hunger = 0.6f;
+         s.run(20);
+         return Checks{loggedBy(h, "LOOKING FOR FOOD")};
+     }},
 };
 
 } // namespace

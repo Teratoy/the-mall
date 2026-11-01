@@ -1091,11 +1091,74 @@ private:
         /// It has run its bottle dry or filled it once, and seen that water
         /// is scarce.
         bool scarce = false;
+        /// Water it last saw too red to drink, until it sees it clear.
+        std::unordered_set<Vec2i, Vec2iHash> red;
     };
     Water water_;
+    /// Looking after its needs with some foresight (human_errand.cpp,
+    /// AI/needs_planning_plan.md).
+    struct Errand {
+        /// The need it is out walking for (Food, Drink, Fetch or Fill;
+        /// Want::Count none), and since when. Danger and a first greeting may
+        /// turn it aside; afterwards it goes back to it.
+        Want want = Want::Count;
+        float since = 0.0f;
+        /// Turned aside from it since it set out, how often, and said so
+        /// going back.
+        bool aside = false, backNoted = false;
+        int asides = 0;
+        /// Given up for being turned aside too often: that want it leaves
+        /// alone until then, unless need presses (Want::Count none).
+        Want restWant = Want::Count;
+        float restUntil = 0.0f;
+        /// What it last got (a drink, Want::Drink; a cake, Want::Fetch), when,
+        /// and whether it has looked round for the other while there.
+        Want got = Want::Count;
+        float gotAt = -1e9f;
+        bool lookedNear = true;
+        /// Said so this spell: looking for water, for food; turning back.
+        bool seekWaterNoted = false, seekFoodNoted = false, turnBackNoted = false;
+        /// This choice, exploring is for a need it knows nowhere to meet.
+        bool seeking = false;
+    };
+    Errand errand_;
+    /// While set, searches go no farther than this many cells from where
+    /// they start (searchNear()).
+    mutable int searchReach_ = 0;
+    /// The wants an errand is kept for.
+    static bool errandWant(Want w);
+    /// The goals of walks for those wants.
+    static bool errandGoal(Goal g);
+    /// Set out on w (or went straight to it), as choose() picked it.
+    void onErrand(Want w);
+    /// An errand under way leaves out wants it wouldn't turn aside for;
+    /// seeking, Explore is a need's.
+    bool turnsAsideFor(Want w, bool seeking) const;
+    /// Has just got w's thing (a drink, a cake): it may look for the other.
+    void gotFor(Want w);
+    /// Thirst from which, having learnt to keep near water, it drinks at
+    /// water it passes before it is thirsty; above 1 it never does.
+    float topUpLine() const;
+    /// Beside water, or a few steps from it, past that line: drinks.
+    bool topUp(World& world);
+    /// How much of the way it lets itself go a walk back to the water it
+    /// last drank at would take: 1 or more, time to turn back. 0 for one
+    /// who hasn't learnt to keep near water.
+    float rangeUsed() const;
+    /// Gone too far from water: walks back to drink before it is thirsty.
+    bool turnBack(World& world);
+    /// Exploring for water or food it knows none of: says so, once a spell.
+    void noteSeeking();
+    /// Just drank, or just took a cake: the other, if near, while here.
+    bool whileHere(World& world);
+    /// A search kept within reach cells of where it stands.
+    std::optional<std::vector<Vec2i>> searchNear(const World& world, const std::function<bool(Vec2i)>& done,
+                                                 int reach) const;
     /// Getting thirsty, and parched (with what that may teach it).
     void gotThirsty();
     void gotParched(const World& world);
+    /// Remembers whether water it sees is too red to drink.
+    void seeTint(const World& world, Vec2i water);
     /// Thirsty, new water seen: a little hope, now and then.
     void foundWater();
     /// Where it strolls from: home if settled; else, as far as it has
@@ -1419,6 +1482,8 @@ private:
     /// Thirsty with nothing to drink: asks someone it sees with water, close
     /// by, walking up to them first. False if it doesn't.
     bool askForDrink(World& world);
+    /// Someone in sight it might yet ask for a drink.
+    bool askableInSight(const World& world) const;
     /// Asked for a drink by asker, out loud: pours them some, sells it for
     /// a cake, lies that it has none, or refuses.
     void answerDrink(World& world, Human& asker);

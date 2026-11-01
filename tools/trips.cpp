@@ -84,9 +84,9 @@ int main(int argc, char** argv) {
                 Trip& k = trip[h.id];
                 if (s == tseed && h.id == tid && !h.dead() && traced != std::pair{int(h.goal), int(h.state)}) {
                     traced = {int(h.goal), int(h.state)};
-                    std::printf("    %6.1f %-9s st%-2d way%-4zu @(%d,%d) hun%.2f thi%.2f tir%.2f bl%.2f | %s\n", t,
+                    std::printf("    %6.1f %-9s st%-2d way%-4zu @(%d,%d) hun%.2f thi%.2f tir%.2f bl%.2f water%d | %s\n", t,
                                 GOAL[int(h.goal)], int(h.state), P::path(h).size(), h.cell.x, h.cell.y, h.hunger,
-                                P::thirstOf(h), h.tiredness, h.bladder,
+                                P::thirstOf(h), h.tiredness, h.bladder, P::waterSteps(w, h),
                                 h.log.entries().empty() ? "" : h.log.entries().back().what.c_str());
                 }
                 bool walking = !h.dead() && h.state == Human::State::Walking;

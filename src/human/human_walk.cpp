@@ -168,6 +168,7 @@ void Human::move(World& world, Vec2i next) {
 }
 
 void Human::arrive(World& world) {
+    if (errandGoal(goal)) errand_.want = Want::Count;
     switch (goal) {
     case Goal::OpenDoor: {
         // Come to let someone out, it opens their gate whatever else is beside it.
@@ -383,6 +384,7 @@ void Human::takeInReach(World& world) {
             cakes++;
             note("PICKED UP A CAKE");
             memory.cakes.erase(c);
+            gotFor(Want::Fetch);
             if (hungry()) rethink_ = true;
         }
     }
@@ -561,6 +563,7 @@ std::optional<std::vector<Vec2i>> Human::searchFrom(const World& world, Vec2i st
         s.judged = stamp;
         s.open = false;
         if (!knownPassable(c) || avoids(c) || (shunned && shunned(c))) return false;
+        if (searchReach_ > 0 && cheb(c, start) > searchReach_) return false;
         Human* o = avoidCrowd ? world.occupant(c) : nullptr;
         s.open = !o || o == this || !sight.sees(c);
         return s.open;
