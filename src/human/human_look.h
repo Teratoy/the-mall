@@ -42,6 +42,15 @@ inline constexpr int SPRITE_PX = SPRITE_W * SPRITE_H;
 inline constexpr Rgba CAKE_TOP = hex(0xecb4c4);
 inline constexpr Rgba CAKE_BASE = hex(0xb07c50);
 inline constexpr int HELD_CAKE_W = 2, HELD_CAKE_H = 2;
+/// A round of ammunition held in the fingers, reloading.
+inline constexpr Rgba ROUND = hex(0xdcc070);
+/// Reloading a round: reaching into the pocket, bringing the round up, at
+/// the gun, pressing it in, and the hand going back down.
+inline constexpr int RELOAD_FRAMES = 5;
+/// Racking the slide once the last round is in: gripping the back of it,
+/// pulling it back, letting go, the gun jumping as it springs home, and
+/// the hand dropping away.
+inline constexpr int RACK_FRAMES = 4;
 
 /// Not part of the body: a cake held, or nothing.
 inline constexpr uint8_t NO_PART = 0xff;
@@ -174,6 +183,15 @@ struct HumanLook {
     /// (drawn flipped), it is the same hand as facing right. Aimed straight
     /// up or south there is no far hand: those face no way to flip.
     SpriteFrame shoot(int aim, bool fire, bool far = false) const;
+    /// Reloading, one of the RELOAD_FRAMES: side on, the gun held low in
+    /// front of the chest, its muzzle down ahead, while the other hand takes
+    /// a round from the hip pocket, brings it up and presses it into the
+    /// gun, which dips as it goes in. far holds the gun in the far hand, as
+    /// shooting does, so facing left it is the same hand.
+    SpriteFrame reload(int frame, bool far = false) const;
+    /// Racking the slide after the last round, one of the RACK_FRAMES, held
+    /// as reloading is.
+    SpriteFrame rack(int frame, bool far = false) const;
     /// At the keys of a computer, the front forearm out level ahead at the
     /// waist: 0 the hand lifted, 1 down on a key.
     SpriteFrame type(int frame) const;
@@ -181,7 +199,7 @@ struct HumanLook {
 private:
     /// What the front arm is doing.
     enum class Arm { Swing, WaveIn, WaveOut, Guard, Punch, Bite, Chew, Offer, Point, PointUp, PointDown, Pillow, Sip, Fill, Pour,
-                     OfferBottle, Aim, TypeUp, TypeDown };
+                     OfferBottle, Aim, TypeUp, TypeDown, Reload };
     struct Stance {
         /// 0 standing, or +1 / -1 for a step with either leg.
         int stride = 0;
@@ -208,8 +226,12 @@ private:
         /// With Arm::Aim, which way (GunSpot::aim), and whether it fires.
         int aim = 0;
         bool fire = false;
-        /// Aiming with the back arm, the far one, rather than the front.
+        /// Aiming or reloading with the gun in the back arm, the far one,
+        /// rather than the front.
         bool farGun = false;
+        /// With Arm::Reload, which of the RELOAD_FRAMES, or past them which
+        /// of the RACK_FRAMES.
+        int reload = 0;
     };
     /// The shade the tucked gun is drawn in: dulled with dirt when dirty.
     float gunDirt_ = 1.0f;

@@ -29,6 +29,15 @@ in. Everything here was asked for and shaped by the user step by step.
   cell, up to 8; more look the same as 8 (user). The first few keep clear
   of each other so they read one by one.
 - **Brass:** muted, to sit with the greyed palette (user).
+- **Reloading:** rounds are pressed into the gun one by one; there is no
+  magazine (user). Side on, the gun held low in front of the chest, muzzle
+  down ahead; the other hand takes a round from the hip pocket, brings it
+  up to the top of the slide and thumbs it in, the gun dipping as it goes
+  in. 1.2 s a round, to vary with traits (user). Facing left the gun stays
+  in the same hand, as shooting.
+- **Racking:** once the last round is in, the slide is racked (user): the
+  loading hand grips the back of it, pulls it back, lets go, and the gun
+  jumps as it springs home.
 
 ## Built (2026-11-01)
 
@@ -40,15 +49,25 @@ in. Everything here was asked for and shaped by the user step by step.
   floor to keep it.
 - `drawAmmoBox(x, y, opened, left, lit)`, `drawCasings(x, y, count, lit)`
   in `render/gun_art`.
+- `HumanLook::reload(frame, far)`, `Pose::Reload`: five frames a round
+  (pocket, bringing it up, at the gun, pressing it in, the hand going back),
+  a round every `RELOAD_ROUND_TIME`; the caller scales the time for a
+  human quicker or slower at it.
+- `HumanLook::rack(frame, far)`, `Pose::Rack`: grip, pull, let go, the
+  hand dropped away (held on), over half a second; the game plays it after
+  the last round.
 - Tools: `make dirtysheet DIRTYSHEET_ARGS="42 4 gun"` (tucked gun on every
   bottom) and `"42 4 shoot"`; `make shootanim` and `tools/frames_gif.py`
-  (one human shooting all eight ways, casings piling up, the ammo boxes);
+  (one human shooting all eight ways, casings piling up, the ammo boxes;
+  `SHOOTANIM_ARGS="42 8 reload"` reloads three rounds and racks the slide
+  each way instead);
   `make spritesheet` has all of it.
 
 ## Still open
 
 - Aiming straight up still points at the ceiling; north is not yet aimed
   into the screen the way south is aimed out of it.
+- Which traits make reloading quicker or slower, and by how much.
 - Gameplay: who finds, carries and shoots guns, what a shot does, where
   ammo boxes lie, whether the floor keeps casings and for how long. None
   of it is decided.
