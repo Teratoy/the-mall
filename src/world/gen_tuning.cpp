@@ -1,5 +1,6 @@
 #include "world/gen_tuning.h"
 #include "core/files.h"
+#include <charconv>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -23,6 +24,8 @@ std::unordered_map<std::string, int>& places() {
 }
 
 bool loaded = false;
+/// The file read last.
+std::string from;
 
 /// Where the file may be: named by THEMALL_WORLDGEN, beside where the game
 /// was started, or beside the game itself.
@@ -90,7 +93,7 @@ std::vector<Knob> read(std::istream& in, const std::string& file) {
         comment.clear();
         words >> k.name;
         std::string word;
-        bool ranged = false, good = true;
+        bool ranged = false, good = true, pointed = false;
         while (words >> word) {
             float v = 0;
             if (size_t dots = word.find(".."); dots != std::string::npos) {
@@ -103,11 +106,13 @@ std::vector<Knob> read(std::istream& in, const std::string& file) {
                 break;
             }
             k.values.push_back(v);
+            if (word.find_first_of("./") != std::string::npos) pointed = true;
         }
         if (!good || !ranged || k.values.empty()) {
             complain("can't make out " + k.name + ": want NAME value... lo..hi");
             continue;
         }
+        k.whole = !pointed;
         for (float v : k.values)
             if (v < k.lo || v > k.hi) complain(k.name + " is outside its range");
         out.push_back(std::move(k));
@@ -152,11 +157,72 @@ bool reload() {
     for (const auto& path : paths()) {
         std::ifstream in(path);
         if (!in) continue;
-        store(read(in, path.string()));
+        from = path.string();
+        store(read(in, from));
         return true;
     }
     std::fprintf(stderr, "no data/worldgen.txt found\n");
     return false;
+}
+
+const std::string& source() {
+    all();
+    return from;
+}
+
+void set(size_t knob, const std::vector<float>& values) {
+    if (knob < knobs().size() && values.size() == knobs()[knob].values.size()) knobs()[knob].values = values;
+}
+
+// Each knob's line is written again from its name, values and range, with
+// whatever comment followed it; every other line is kept as it was.
+bool save() {
+    if (source().empty()) return false;
+    std::ifstream in(from);
+    if (!in) return false;
+    std::string out, row, section;
+    while (std::getline(in, row)) {
+        std::string line = trim(row), tail;
+        if (size_t hash = line.find('#'); hash != std::string::npos && hash > 0) {
+            tail = "  " + line.substr(hash);
+            line = trim(line.substr(0, hash));
+        }
+        if (line.empty() || line.front() == '#') {
+            out += row + "\n";
+            continue;
+        }
+        if (line.front() == '[') {
+            section = trim(line.substr(1, line.find(']') - 1));
+            out += row + "\n";
+            continue;
+        }
+        std::istringstream words(line);
+        std::vector<std::string> tokens;
+        for (std::string w; words >> w;) tokens.push_back(w);
+        auto it = places().find(section + "." + tokens[0]);
+        if (it == places().end() || tokens.size() != knobs()[size_t(it->second)].values.size() + 2) {
+            out += row + "\n";
+            continue;
+        }
+        const Knob& k = knobs()[size_t(it->second)];
+        std::string written = k.name + " ";
+        for (size_t i = 0; i < k.values.size(); i++) {
+            float was = 0;
+            std::string token = tokens[i + 1];
+            if (!number(token, was) || was != k.values[i]) {
+                char buf[32];
+                auto end = std::to_chars(buf, buf + sizeof buf, k.whole ? std::round(k.values[i]) : k.values[i]).ptr;
+                token.assign(buf, end);
+                if (!k.whole && token.find_first_of(".e") == std::string::npos) token += ".0";
+            }
+            written += " " + token;
+        }
+        out += written + "  " + tokens.back() + tail + "\n";
+    }
+    in.close();
+    std::ofstream file(from, std::ios::trunc);
+    file << out;
+    return bool(file);
 }
 
 namespace detail {
@@ -169,11 +235,11 @@ int find(const char* section, const char* name, int count, bool whole) {
         std::exit(1);
     }
     const Knob& k = knobs()[size_t(it->second)];
-    bool fits = int(k.values.size()) == count;
+    bool fits = int(k.values.size()) == count && k.whole == whole;
     for (float v : k.values) fits = fits && (!whole || v == std::floor(v));
     if (!fits) {
         std::fprintf(stderr, "data/worldgen.txt: %s in [%s] wants %d %s\n", name, section, count,
-                     whole ? "whole numbers" : "numbers");
+                     whole ? "whole numbers" : "numbers written with a point, as 2.0");
         std::exit(1);
     }
     return it->second;

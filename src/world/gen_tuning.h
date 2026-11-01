@@ -17,12 +17,24 @@ struct Knob {
     std::vector<float> values;
     float lo = 0, hi = 0;
     std::string comment;
+    /// Written without a point: counted in whole numbers. A knob read as a
+    /// fraction is written with one, as 2.0, so the editor steps it finely.
+    bool whole = false;
 };
 
 /// Every knob, in the file's order.
 const std::vector<Knob>& all();
 /// Reads the file again. False if it could not be found.
 bool reload();
+/// The file read last, as found on disk; empty when it came from the APK.
+const std::string& source();
+/// Gives a knob new values, as many as it has, for chunks grown from now
+/// on (tools/genview.cpp).
+void set(size_t knob, const std::vector<float>& values);
+/// Writes every knob's values back into source(), its comments, order
+/// and ranges kept, and a value written as a fraction kept as written
+/// while it still holds. False if it could not be written.
+bool save();
 
 namespace detail {
 /// The knob's place in all(), looked up by name the first time. A knob the

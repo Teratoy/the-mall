@@ -142,6 +142,37 @@ A window, PC only. The knob panel on the left, the chunk on the right.
 - **Restart in place:** the state file is read back at start, so after a
   rebuild for a code change the tool opens on the same seed and view.
 
+### Built (2026-11-01)
+
+- `tools/genview.cpp`, `make genview`, `./genview.sh` from the host (it
+  runs it in the toolbox). Usage at the top of the file.
+- Knob panel: sections fold; a slider for each value (lists one per value,
+  numbered in the order the comment gives), stepped in whole numbers for
+  knobs written without a point; double-click the value to type one (a
+  fraction too); Left/Right step the knob under the mouse; a changed knob
+  shows yellow with a tick where the file's value is; right-click its name
+  to put it back; Ctrl+Z undoes. The hovered knob's comment shows in the
+  status line.
+- Top bar: kind (rolled as the game does, spawn, rooms, maze, water maze,
+  plaza, data centre), footprint (the nine the game grows, then L3, L4,
+  T4, S4), turn, mirror, seed (< > R), view (V: art or map), mode (one, C
+  before/after, G nine seeds; clicking one of the nine takes its seed),
+  Save (S) with the count of changed knobs. A kind the game never grows on
+  a footprint says so in the pane.
+- The art is the game's own drawWorld, revealed, without humans, drawn
+  once a regrow into a texture the size of the chunk, then panned (drag)
+  and zoomed (wheel, F fits). The map is a pixel a cell, coloured as
+  genprobe's pictures.
+- To tell a knob read as a fraction from a whole one, the file writes
+  fractions with a point (`POOL_SIZE_MAX 7.0`); `tune::` checks every
+  knob is written as the code reads it, and stops with a message if not.
+- `tune::set` and `tune::save`: save writes only the knobs' lines again,
+  keeping comments, ranges and a value written as a fraction while it
+  holds.
+- Watching and the saved view work as planned; tried by changing the file
+  under a running genview (read again, unsaved knob kept), and saving into
+  a copy (only the changed lines differ; saving twice gives the same file).
+
 ### Step 4: overlays and readout
 
 - Overlays, each on its own key: doors and their keys, the sides of the

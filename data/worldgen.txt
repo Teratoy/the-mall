@@ -12,7 +12,8 @@
 #   NAME  value...  lo..hi  its value, or several for a list, and the range
 #                           the editor keeps it in
 # Sizes and distances are in cells (6 px), chances from 0 to 1. A value
-# may be a fraction such as 1/3. Weights are relative: only how they
+# may be a fraction such as 1/3. A knob the code counts in whole numbers is
+# written without a point; one it reads as a fraction with one, as 2.0. Weights are relative: only how they
 # compare matters. Changing a value changes the game, so `make check`
 # fails after it, and `make golden` rewrites the golden output.
 
@@ -57,15 +58,15 @@ SPIKES_MAX  2  0..4
 SPIKE_MARGIN  4  2..8
 SPIKE_GATE_GAP  2  1..4
 # How likely each table shape is, in TableShape order.
-TABLE_SHAPE_WEIGHTS  3 2 2 2 2 1 1  0..6
+TABLE_SHAPE_WEIGHTS  3.0 2.0 2.0 2.0 2.0 1.0 1.0  0..6
 # How likely each table material is, in TableMaterial order.
-TABLE_MATERIAL_WEIGHTS  3 2 2 2 1.5 1 1 1.5  0..6
+TABLE_MATERIAL_WEIGHTS  3.0 2.0 2.0 2.0 1.5 1.0 1.0 1.5  0..6
 # Chance a table is of its chunk's house material rather than any.
 TABLE_HOUSE_CHANCE  0.65  0..1
 # How likely each statue kind is, in StatueKind order.
-STATUE_KIND_WEIGHTS  1 1 1 1 1 1 1 1 1 1  0..2
+STATUE_KIND_WEIGHTS  1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0  0..2
 # How likely each statue material is: marble, bronze, stone, pop.
-STATUE_MATERIAL_WEIGHTS  1 1 0.8 1.2  0..2
+STATUE_MATERIAL_WEIGHTS  1.0 1.0 0.8 1.2  0..2
 # Chance a statue stands on a plinth.
 PLINTH_CHANCE  0.5  0..1
 # Chance a room gets a statue in its middle.
@@ -104,7 +105,7 @@ STATUE_CLEAR_GAP  2  1..4
 # How far from the centre a statue may be nudged to fit.
 STATUE_NUDGE  4  0..8
 # How likely each footprint is: 1x1, 2x1, 1x2, 2x2, 3x1, 1x3, 4x1, 1x4, 3x3.
-SHAPE_WEIGHTS  4 2 2 1 0.6 0.6 0.3 0.3 0.25  0..8
+SHAPE_WEIGHTS  4.0 2.0 2.0 1.0 0.6 0.6 0.3 0.3 0.25  0..8
 
 [maze]
 # Corridor width and wall thickness, rolled per chunk.
@@ -229,13 +230,13 @@ POOL_RING  2  1..4
 POOL_TRIES  80  40..160
 # Half a pool's extent. L, T and C need room for their arms and hollow.
 POOL_SIZE_MIN  2.5  1.25..14
-POOL_SIZE_MAX  7  1.25..14
-ARMED_SIZE_MIN  4  2..8
+POOL_SIZE_MAX  7.0  1.25..14
+ARMED_SIZE_MIN  4.0  2..8
 # Arm thickness; the C's hollow keeps at least this radius.
 ARM_MIN  2.5  1.25..5
 HOLLOW_MIN  2.5  1.25..5
 # The oval's narrow half axis, so a small one is not a ragged sliver.
-MINOR_MIN  2  1..4
+MINOR_MIN  2.0  1..4
 # A canal's width, and the quay along each bank.
 CANAL_WIDTH_MIN  2  1..8
 CANAL_WIDTH_MAX  4  1..8
@@ -278,7 +279,7 @@ ALCOVE_BACK  3  2..6
 
 [dispenser]
 # Least water a dispenser is made with, in thirst bars; the most is full.
-START_MIN  1  0..3
+START_MIN  1.0  0..3
 # It keeps this many cells from the inner door.
 DOOR_GAP  2  1..4
 
