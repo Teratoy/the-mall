@@ -183,6 +183,7 @@ void Human::arrive(World& world) {
             }
             keys--;
             note("UNLOCKED A DOOR");
+            repeated(Repeat::Doors);
             rememberAt(*door, Episode::What::Door, EPISODE_DOOR, id);
             for (const auto& h : world.humans())
                 if (h.get() != this && !h->dead() && h->sight.sees(*door))

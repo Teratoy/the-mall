@@ -326,11 +326,13 @@ void Human::startRelieving(World& world) {
              std::clamp(bowels / 0.8f, 0.4f, 1.2f));
         if (bladder > 0.25f) drop(MessKind::Piss, fx, fy, bladder);
         note("TOOK A SHIT");
+        repeated(Repeat::Going);
     } else {
         // Reaching the water it faces, else short of the wall.
         drop(MessKind::Piss, fx + ahead * (byWater ? PISS_INTO_WATER_PX : PISS_REACH_PX), fy,
              std::clamp(bladder / 0.8f, 0.3f, 1.2f));
         note("PISSED");
+        repeated(Repeat::Going);
     }
     if (toilet) note(missed ? "MISSED THE TOILET" : "USED A TOILET");
     if (toilet && !missed) {

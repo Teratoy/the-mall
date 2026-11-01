@@ -1,6 +1,6 @@
 # Repeat lines: what humans say about what keeps happening
 
-Status: planned (2026-11-01). All questions answered.
+Status: built (2026-11-01): tally, milestones, moments, conditions, body dread and starting lines. Line-writing still to come.
 
 ## The idea
 
@@ -119,6 +119,66 @@ meeting no one new.
 4. **Both kinds of lines**: lines marked `again` (early milestones) or
    `often` (late ones), and plain lines in each moment's pool that fit any
    milestone.
+
+### Built (2026-11-01)
+
+- **Tally**: `Human::repeat_` (`Repeats`, in `human.h`), one count per
+  `Human::Repeat`: Cakes, Bodies, Water, Doors, Traps, Blood, Fights, Going,
+  Sleep, Quiet, Faces, Low. Logic in `src/human/human_repeat.cpp`
+  (`repeated()`, `fought()`, `bodyDread()`). Bumped beside the existing
+  notes:
+  - Cakes: `endEating` ("ATE A CAKE").
+  - Bodies: a body it didn't kill, bones too (`seenDead` insert in
+    `human.cpp`), with the body's id as `about`.
+  - Water: `startDrinking` (basin, dispenser; a toilet too, as it notes
+    "DRANK WATER" there) and `startSipping` (bottle).
+  - Doors: "UNLOCKED A DOOR", and the door to the humming machines.
+  - Traps: a dart, spikes, shut in a slam room.
+  - Blood: washing when bloody ("WASHED OFF BLOOD").
+  - Fights: each landed blow calls `fought()` on both; it counts only when
+    the other is someone new or the last blow between them was more than
+    `REPEAT_FIGHT_GAP` (30 s) ago.
+  - Going: "PISSED", "TOOK A SHIT".
+  - Sleep: every `wakeUp` (not the first waking in the mall, which is
+    another path).
+  - Quiet: each `Quiet` moment.
+  - Faces: a greeting with someone already met ("CAUGHT UP WITH"), about them.
+  - Low: rotten flesh (about the body), a drink from a toilet, foul water
+    noted as foul (`FoulWater`, `FoulAgain`, `FoulWarned`).
+- **Milestones**: `REPEAT_MILESTONES` = 4, 8, 15, 30. Each notes plainly
+  ("ATE MY 15TH CAKE", "FOUND MY 4TH BODY", "HAD MY 8TH DRINK OF WATER",
+  "UNLOCKED MY 4TH DOOR", "CAUGHT BY A TRAP THE 4TH TIME", "WASHED OFF
+  BLOOD THE 8TH TIME", "IN MY 4TH FIGHT", "WENT FOR THE 4TH TIME", "WOKE UP
+  HERE THE 4TH TIME", "ALONE IN THE QUIET THE 4TH TIME", "SAW A FACE I KNEW
+  THE 4TH TIME", "SANK THIS LOW THE 4TH TIME"), then with
+  `REPEAT_SAY_CHANCE` (0.7, through `rng_`) queues the group's moment to
+  nobody. The milestone line is queued after the event's own line (e.g.
+  `FoundBody`, `Sip`), not instead of it.
+- **Moments** (end of `talk::Moment`, in `Repeat` order): `CakesAgain`
+  `cakes_again`, `BodiesAgain` `bodies_again`, `WaterAgain` `water_again`,
+  `DoorsAgain` `doors_again`, `TrapsAgain` `traps_again`, `BloodAgain`
+  `blood_again`, `FightsAgain` `fights_again`, `GoingAgain` `going_again`,
+  `SleepAgain` `sleep_again`, `QuietAgain` `quiet_again`, `FacesAgain`
+  `faces_again`, `LowAgain` `low_again`. Lines in the new "The same again"
+  section at the end of `data/lines.txt`, 6–11 each, with header chances
+  0.4 (going, faces) to 0.8 (bodies, traps).
+- **Conditions**: `again` (the 4th or 8th time) and `often` (the 15th or
+  30th, `OFTEN` = 15 in `talk.cpp`). `Saying::repeat` carries which time it
+  is; `say()` sets `repeat_.saying` only while picking that line
+  (`Human::repeatSaid()`), so the conditions never hold elsewhere and plain
+  lines fit any milestone. Documented in the lines.txt header and
+  `tools/lines_editor/conditions.txt`.
+- **Body dread**: each body's scare is multiplied by `bodyDread()`:
+  `1 - BODY_DREAD_STEP (0.1) * hardness * bodies found before`, clamped to
+  `BODY_DREAD_MIN` 0.6 .. `BODY_DREAD_MAX` 1.4, where hardness =
+  (brave - 0.5) + (0.5 - sociable), -1 to 1. So a brave loner dreads each
+  body about 8% less than the last, down to 0.6 of the first; a timid,
+  sociable one more, up to 1.4; a brave but sociable one about the same. A
+  friend's body is never below 1. Bodies it killed itself aren't counted.
+- **Scenarios**: `repeat-milestones` (tallies at 3: eats its 4th cake and
+  finds its 4th body, both noted), `repeat-harden` (a brave loner's dread
+  at a body after 5 is under 0.9 of its first), `repeat-grieve` (a timid,
+  sociable one's over 1.1).
 
 ## For later: other effects of repeats
 

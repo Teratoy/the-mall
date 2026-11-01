@@ -340,6 +340,14 @@ struct SoakProbe {
     }
     /// h has run a bottle dry once and learnt that water is scarce.
     static void sawScarce(Human& h) { h.water_.scarce = true; }
+    /// What keeps happening (AI/repeat_lines_plan.md): how many times each
+    /// kind has, set as if it had happened that often already.
+    using Repeat = Human::Repeat;
+    static int repeats(const Human& h, Repeat r) { return h.repeat_.count[size_t(r)]; }
+    static void setRepeats(Human& h, Repeat r, int n) { h.repeat_.count[size_t(r)] = n; }
+    static float dread(const Human& h) { return h.dread_; }
+    static void setDread(Human& h, float d) { h.dread_ = d; }
+    static size_t bodiesSeen(const Human& h) { return h.deaths_.seenDead.size(); }
     /// Given up on a way out, at home on home.
     static void settle(Human& h, Vec2i home) {
         h.escape_.settled = true;

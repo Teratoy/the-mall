@@ -259,6 +259,7 @@ void Human::feed(World& world) {
         mind_.sick = SICK_TIME;
         note("THE ROTTEN FLESH MADE ME SICK");
         sayLater(talk::Moment::Sick);
+        repeated(Repeat::Low, b.id);
     }
     if (mind_.guilt > 1.0f) {
         mind_.erratic = std::min(1.0f, mind_.erratic + mind_.guilt - 1.0f);

@@ -122,9 +122,12 @@ void Human::say(World& world, const Saying& s) {
     // Asking where water is of one who has shown since that they know of none.
     if (to && s.moment == talk::Moment::AskWater && water_.knewNone.count(to->id)) return;
     const Human* about = s.about >= 0 ? &world.human(s.about) : nullptr;
+    // Which time this is holds (again, often) only for the line said of it.
+    repeat_.saying = s.repeat;
     auto said = s.quiet ? std::nullopt
                         : talk::pick(s.moment, *this, to, about, rng_, s.topic ? &*s.topic : nullptr, &voice_.chatLines,
                                      world.time());
+    repeat_.saying = 0;
     // A topic is raised once it is said; unsaid, it can come up again.
     if (said && to && s.topic) {
         if (s.topic->turn == 1)

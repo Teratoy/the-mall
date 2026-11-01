@@ -125,6 +125,7 @@ bool Human::seekHum(World& world) {
         if (!world.unlock(*door)) return false;
         keys--;
         note("UNLOCKED A DOOR TO THE HUMMING MACHINES");
+        repeated(Repeat::Doors);
         startPassDoor(*door);
         timer = UNLOCK_TIME;
         return true;

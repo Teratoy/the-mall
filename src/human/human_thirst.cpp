@@ -299,6 +299,7 @@ void Human::startDrinking(Vec2i water) {
         // The first drink after thirst began to kill it: it lived.
         if (water_.thirstHurt) note("DRANK, AFTER NEARLY DYING OF THIRST");
         sayLater(water_.thirstHurt ? talk::Moment::Quenched : tap ? talk::Moment::DispenserDrink : talk::Moment::Drink);
+        repeated(Repeat::Water);
         water_.thirstHurt = false;
         dread_ = std::max(0.0f, dread_ - DRINK_CALM);
         // Found water soon after getting thirsty: keeping near it paid off.
@@ -380,6 +381,7 @@ void Human::swallow(World& world, float foul, float red, std::optional<Vec2i> at
             note(fromBottle ? "DRANK FOUL WATER FROM MY BOTTLE" : again ? "DRANK FOUL WATER AGAIN" : "DRANK FOUL WATER");
             sayLater(again ? talk::Moment::FoulAgain : talk::Moment::FoulWater);
         }
+        repeated(Repeat::Low);
         // Strikes it more the fouler it is.
         if (at)
             rememberAt(*at, Episode::What::FoulWater, std::min(1.0f, foul));
@@ -734,6 +736,7 @@ bool Human::seekToilet(World& world) {
     startDrinking(toilet);
     note("DRANK FROM A TOILET");
     sayLater(talk::Moment::ToiletDrink);
+    repeated(Repeat::Low);
     // Seen at it, it is thought the less of; the cruel say so.
     for (const auto& o : world.humans()) {
         if (o.get() == this || o->dead() || o->isErratic() || !o->sight.sees(cell)) continue;
