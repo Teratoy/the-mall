@@ -68,6 +68,7 @@ bool number(const std::string& s, float& out) {
 std::vector<Knob> read(std::istream& in, const std::string& file) {
     std::vector<Knob> out;
     std::string section, comment, row;
+    int lastKnob = -1;
     for (int n = 1; std::getline(in, row); n++) {
         auto complain = [&](const std::string& what) {
             std::fprintf(stderr, "%s:%d: %s\n", file.c_str(), n, what.c_str());
@@ -89,8 +90,13 @@ std::vector<Knob> read(std::istream& in, const std::string& file) {
             continue;
         }
         std::istringstream words(row);
+        // A knob straight after another with no comment of its own, as the
+        // MAX after a MIN, shares that one's.
+        if (comment.empty() && !out.empty() && lastKnob == n - 1 && out.back().section == section)
+            comment = out.back().comment;
         Knob k{section, "", {}, 0, 0, comment};
         comment.clear();
+        lastKnob = n;
         words >> k.name;
         std::string word;
         bool ranged = false, good = true, pointed = false;

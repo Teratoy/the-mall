@@ -3,7 +3,8 @@
 // time a knob moves, so what changes is that knob's doing, not the dice.
 // See AI/worldgen_editor_plan.md.
 //
-// Usage: build/genview   (or: make genview, or ./genview.sh from the host)
+// Usage: build/genview [--drop]   (or: make genview, or ./genview.sh from the host)
+//   --drop  drops humans on the chunk as soon as it is grown, as H does
 //
 // Knobs: drag a slider, or double-click its value to type one (Enter keeps
 // it, Esc drops it). Left and Right step the knob under the mouse. A knob
@@ -30,6 +31,14 @@
 //   4 traps            spikes red; dart plates pink, their shooters and
 //                      line cyan; slam plates pink, their gates red
 //   5 deep spots       where keys and the chunk's human may start
+//   H drop humans      runs the sim on the chunk shown (both, before and
+//                      after) with this many humans dropped on its floor
+//                      for this long (click the count and the minutes to
+//                      change them), the world round it growing as they
+//                      wander, and paints a heatmap of where they walked,
+//                      slept, got stuck, bled or died (J picks which). It
+//                      runs while the window stays live, and a change to
+//                      the chunk drops it.
 //   T readout          what the chunk has: floor and water, the longest
 //                      walk, keys, cakes, traps, machines... In before/after
 //                      what differs shows yellow; with nine seeds, the
@@ -47,6 +56,7 @@
 #include "../tests/probe.h"
 #include "chunk_checks.h"
 #include "core/rng.h"
+#include "human/human.h"
 #include "human/human_look.h"
 #include "render/floor_tiles.h"
 #include "render/statue_art.h"
@@ -365,6 +375,44 @@ std::string shown(float v) {
     return buf;
 }
 
+enum Heat { WALKED, SLEPT, STUCK, BLED, DIED, HEATS };
+const char* const HEAT_NAMES[] = {"walked", "slept", "stuck", "bled", "died"};
+/// What can be picked for a run: humans dropped, and minutes.
+const int CROWDS[] = {0, 2, 4, 6, 8, 12, 16, 24};
+const int MINUTES[] = {1, 2, 5, 10, 15, 30};
+/// The sim's step, as the soak's.
+constexpr float SIM_DT = 1.0f / 30.0f;
+/// Seconds of each frame spent running the sim, so the window stays live.
+constexpr double SIM_BUDGET = 0.014;
+/// The heatmap is drawn again this often while it runs.
+constexpr double HEAT_EVERY = 0.25;
+/// Rethinks in a row that count a walk as stuck.
+constexpr int STUCK_RETHINKS = 2;
+
+/// Humans dropped in a chunk and the sim run on its world, with the time
+/// spent in each of its cells walking, asleep, stuck or bleeding, and where
+/// they died.
+struct Run {
+    std::vector<float> heat[HEATS];
+    float t = 0, length = 0;
+    /// Seconds of the window's time spent running it.
+    double wall = 0;
+    int dropped = 0, died = 0;
+    /// Deaths in the chunk by what the life log says killed them: thirst,
+    /// hunger, bleeding, anything else.
+    int thirst = 0, starved = 0, bled = 0, other = 0;
+    std::vector<bool> dead;
+    bool drawn = false;
+    double drawnAt = 0;
+    Texture2D tex{};
+    int texHeat = -1;
+
+    ~Run() {
+        if (tex.id) UnloadTexture(tex);
+    }
+    bool done() const { return t >= length; }
+};
+
 /// One chunk grown, with its world, and drawn both ways.
 struct Grown {
     std::unique_ptr<World> world;
@@ -373,6 +421,7 @@ struct Grown {
     Texture2D map{};
     Texture2D overlay[OVERLAYS]{};
     Readout readout;
+    std::unique_ptr<Run> run;
     /// Where it was entered: the cell past the spawn's door.
     Vec2i entry{};
     uint64_t seed = 0;
@@ -391,6 +440,91 @@ struct Grown {
     Vector2 size() const { return chunk ? Vector2{float(chunk->w * CELL_PX), float(chunk->h * CELL_PX)} : Vector2{}; }
 };
 
+/// Drops humans on free floor of the chunk, the dice its seed's own, each
+/// waking beside a bottle as every human does, and starts the run.
+void startRun(Grown& g, int crowd, int minutes) {
+    World& w = *g.world;
+    const Chunk& c = *g.chunk;
+    auto r = std::make_unique<Run>();
+    for (auto& h : r->heat) h.assign(size_t(c.w * c.h), 0.0f);
+    r->length = float(minutes * 60);
+    Rng rng{g.seed ^ 0xA24BAED4963EE407ull};
+    for (int tries = 0; r->dropped < crowd && tries < 5000; tries++) {
+        Vec2i l{rng.range(1, c.w - 2), rng.range(1, c.h - 2)};
+        Vec2i at = c.origin() + l;
+        if (!c.owns(l) || w.tile(at) != Tile::Floor || w.occupant(at) || w.table(at) || w.statue(at)) continue;
+        GenViewProbe::wake(w, HumanLook::random(rng), at, rng.next());
+        r->dropped++;
+    }
+    r->dead.assign(w.humans().size(), false);
+    for (const auto& h : w.humans()) r->dead[size_t(h->id)] = h->dead();
+    g.run = std::move(r);
+}
+
+/// One step of the sim, its time added to the cells of the chunk.
+void stepRun(Grown& g) {
+    World& w = *g.world;
+    const Chunk& c = *g.chunk;
+    Run& r = *g.run;
+    w.update(SIM_DT);
+    r.t += SIM_DT;
+    if (r.dead.size() < w.humans().size()) r.dead.resize(w.humans().size(), false);
+    for (const auto& hp : w.humans()) {
+        const Human& h = *hp;
+        Vec2i l = h.cell - c.origin();
+        if (!c.owns(l)) continue;
+        size_t i = size_t(l.y * c.w + l.x);
+        if (h.dead()) {
+            if (!r.dead[size_t(h.id)]) {
+                r.dead[size_t(h.id)] = true;
+                r.heat[DIED][i] += 1.0f;
+                r.died++;
+                bool thirst = false, starve = false, bled = false;
+                for (const auto& e : h.log.entries()) {
+                    thirst |= e.what == "DIED OF THIRST";
+                    starve |= e.what == "STARVED TO DEATH";
+                    bled |= e.what == "BLED TO DEATH";
+                }
+                (thirst ? r.thirst : starve ? r.starved : bled ? r.bled : r.other)++;
+            }
+            continue;
+        }
+        r.heat[WALKED][i] += SIM_DT;
+        if (h.state == Human::State::Sleeping) r.heat[SLEPT][i] += SIM_DT;
+        if (!h.wounds.empty()) r.heat[BLED][i] += SIM_DT;
+        bool blocked = h.state == Human::State::Walking && !h.moving && !SoakProbe::path(h).empty();
+        const Human* by = blocked ? w.occupant(SoakProbe::path(h).front()) : nullptr;
+        if ((by && by != &h) || SoakProbe::stuck(h) >= STUCK_RETHINKS) r.heat[STUCK][i] += SIM_DT;
+    }
+}
+
+/// The heatmap a pixel a cell: from clear through yellow to red, by the
+/// square root of each cell's share of the most, so the faint shows; where
+/// they died, a ring.
+Texture2D heatMap(const Run& r, const Chunk& c, int heat) {
+    Image img = GenImageColor(c.w, c.h, BLANK);
+    const std::vector<float>& v = r.heat[heat];
+    float most = 0;
+    for (float x : v) most = std::max(most, x);
+    for (int y = 0; y < c.h && most > 0; y++)
+        for (int x = 0; x < c.w; x++) {
+            float f = v[size_t(y * c.w + x)];
+            if (f <= 0) continue;
+            if (heat == DIED) {
+                for (int dy = -1; dy <= 1; dy++)
+                    for (int dx = -1; dx <= 1; dx++)
+                        if (c.owns({x + dx, y + dy})) ImageDrawPixel(&img, x + dx, y + dy, Color{250, 40, 200, 255});
+                continue;
+            }
+            float k = std::sqrt(f / most);
+            ImageDrawPixel(&img, x, y,
+                           Color{250, (unsigned char)(230 - 200 * k), 40, (unsigned char)(90 + 165 * k)});
+        }
+    Texture2D t = LoadTextureFromImage(img);
+    UnloadImage(img);
+    return t;
+}
+
 class GenView {
 public:
     GenView() {
@@ -406,6 +540,7 @@ public:
     void frame() {
         watch();
         if (dirty_) regrow();
+        runs();
         keys();
         BeginDrawing();
         ClearBackground(BG);
@@ -427,6 +562,8 @@ public:
     }
 
     void close() { writeState(); }
+    /// Drops humans as soon as the chunk is grown (--drop).
+    void dropAtStart() { rerun_ = true; }
 
 private:
     enum class Mode { Single, Compare, Grid };
@@ -441,6 +578,9 @@ private:
     int kind_ = 2, shape_ = 0, turns_ = 0;
     bool mirror_ = false, map_ = false, dirty_ = true, readout_ = false;
     bool shown_[OVERLAYS]{};
+    /// What a run drops and for how long, as places in CROWDS and MINUTES,
+    /// and which heatmap shows.
+    int crowd_ = 3, minutes_ = 2, heat_ = WALKED;
     /// The top of the bar row being drawn.
     int barY_ = 0;
     Mode mode_ = Mode::Single;
@@ -454,6 +594,8 @@ private:
     int dragKnob_ = -1, dragValue_ = 0;
     bool panning_ = false;
     int editKnob_ = -1, editValue_ = 0;
+    /// A run asked for once the chunk is grown again.
+    bool rerun_ = false;
     std::string editText_;
     double lastClick_ = 0.0;
     int lastClickKnob_ = -1;
@@ -561,11 +703,13 @@ private:
         out << "seed " << seed_ << "\n";
         out << "kind " << kind_ << " " << KINDS[kind_].name << "\n";
         out << "footprint " << SHAPES[size_t(shape_)].name << " turn " << turns_ << " mirror " << mirror_ << "\n";
-        out << "view " << (map_ ? "map" : "art") << "\n";
+        out << "view " << (map_ ? "map" : "art") << " scale " << scale_ << " centre " << centre_.x << " " << centre_.y
+            << "\n";
         out << "overlays";
         for (int o = 0; o < OVERLAYS; o++)
             if (shown_[o]) out << " " << o + 1;
         out << "\nreadout " << readout_ << "\n";
+        out << "drop " << CROWDS[crowd_] << " humans " << MINUTES[minutes_] << " min heat " << HEAT_NAMES[heat_] << "\n";
         out << "mode " << (mode_ == Mode::Single ? "single" : mode_ == Mode::Compare ? "compare" : "grid") << "\n";
         if (!panes_.empty() && panes_.front()->chunk) {
             const Chunk& c = *panes_.front()->chunk;
@@ -577,6 +721,18 @@ private:
             for (const auto& [name, v] : g->readout.rows) out << " " << name << "=" << shown(v) << ";";
             if (!g->readout.fault.empty()) out << " FAULT " << g->readout.fault;
             out << "\n";
+            if (g->run) {
+                const Run& r = *g->run;
+                out << "run seed " << g->seed << ": " << r.dropped << " dropped, " << shown(r.t) << " of "
+                    << shown(r.length) << " s, " << r.died << " died (" << r.thirst << " thirst, " << r.starved
+                    << " hunger, " << r.bled << " bled, " << r.other << " other); seconds spent in the chunk:";
+                for (int h = 0; h < DIED; h++) {
+                    float sum = 0;
+                    for (float v : r.heat[h]) sum += v;
+                    out << " " << HEAT_NAMES[h] << "=" << shown(sum) << ";";
+                }
+                out << "\n";
+            }
         }
         out << "# Knobs changed here and not yet saved: section, name, values.\n";
         const auto& all = tune::all();
@@ -600,6 +756,17 @@ private:
                 for (int o; w >> o;)
                     if (o >= 1 && o <= OVERLAYS) shown_[o - 1] = true;
             } else if (what == "readout") w >> readout_;
+            else if (what == "drop") {
+                int crowd = 0, minutes = 0;
+                std::string humans, min, heat, name;
+                w >> crowd >> humans >> minutes >> min >> heat >> name;
+                for (int i = 0; i < int(sizeof CROWDS / sizeof CROWDS[0]); i++)
+                    if (CROWDS[i] == crowd) crowd_ = i;
+                for (int i = 0; i < int(sizeof MINUTES / sizeof MINUTES[0]); i++)
+                    if (MINUTES[i] == minutes) minutes_ = i;
+                for (int i = 0; i < HEATS; i++)
+                    if (name == HEAT_NAMES[i]) heat_ = i;
+            }
             else if (what == "kind") w >> kind_;
             else if (what == "view") {
                 std::string v;
@@ -671,6 +838,69 @@ private:
         g->readout = readout(*g->world, c, g->entry);
         overlays(*g->world, c, g->entry, g->overlay);
         return g;
+    }
+
+    bool running() const {
+        for (const auto& g : panes_)
+            if (g->run && !g->run->done()) return true;
+        return false;
+    }
+    bool hasRun() const {
+        for (const auto& g : panes_)
+            if (g->run) return true;
+        return false;
+    }
+    /// Starts a run on every pane but the nine seeds', or stops those
+    /// running.
+    void toggleRun() {
+        if (running()) {
+            for (auto& g : panes_)
+                if (g->run) g->run->length = g->run->t;
+            status_ = "Stopped";
+            return;
+        }
+        if (mode_ == Mode::Grid) {
+            status_ = "Humans are dropped on one chunk, or on before and after, not on nine";
+            return;
+        }
+        for (auto& g : panes_)
+            if (g->chunk) {
+                if (g->run) {
+                    // The world has moved on: grow it again before dropping more.
+                    dirty_ = true;
+                    rerun_ = true;
+                    return;
+                }
+                startRun(*g, CROWDS[crowd_], MINUTES[minutes_]);
+            }
+        status_ = "Running " + std::to_string(CROWDS[crowd_]) + " humans for " + std::to_string(MINUTES[minutes_]) +
+                  " min";
+    }
+    void runs() {
+        if (rerun_ && !dirty_) {
+            rerun_ = false;
+            toggleRun();
+        }
+        const double start = GetTime();
+        while (running() && GetTime() - start < SIM_BUDGET)
+            for (auto& g : panes_)
+                if (g->run && !g->run->done()) {
+                    const double before = GetTime();
+                    stepRun(*g);
+                    g->run->wall += GetTime() - before;
+                }
+        for (auto& g : panes_) {
+            Run* r = g->run.get();
+            if (!r) continue;
+            if (r->texHeat == heat_ && (r->drawn || GetTime() - r->drawnAt < HEAT_EVERY)) continue;
+            if (r->tex.id) UnloadTexture(r->tex);
+            r->tex = heatMap(*r, *g->chunk, heat_);
+            r->texHeat = heat_;
+            r->drawnAt = GetTime();
+            r->drawn = r->done();
+            shotAt_ = GetTime() + SHOT_DELAY;
+            if (r->done() && !running()) status_ = "Run done: J picks the heatmap";
+        }
     }
 
     void regrow() {
@@ -748,11 +978,26 @@ private:
                 if (shown_[o])
                     DrawTexturePro(g.overlay[o], {0, 0, float(g.overlay[o].width), float(g.overlay[o].height)}, dest,
                                    {0, 0}, 0, WHITE);
+            if (g.run && g.run->tex.id) {
+                if (g.run->texHeat != heat_) g.run->drawn = false;
+                DrawTexturePro(g.run->tex, {0, 0, float(g.run->tex.width), float(g.run->tex.height)}, dest, {0, 0},
+                               0, WHITE);
+            }
         } else {
             text(g.note, int(a.x + PAD), int(a.y + a.height / 2), BAD);
         }
         DrawRectangle(int(a.x), int(a.y), int(a.width), ROW, Fade(BLACK, 0.7f));
         text(g.label + "   seed " + std::to_string(g.seed), int(a.x + PAD), int(a.y + 3), INK);
+        if (g.run) {
+            // The run on a line of its own under the chunk's name.
+            const Run& r = *g.run;
+            char buf[160];
+            std::snprintf(buf, sizeof buf, "%d dropped, %d:%02d of %d:00, %d died (%d thirst, %d hunger, %d bled, %d other), x%.0f%s",
+                          r.dropped, int(r.t) / 60, int(r.t) % 60, int(r.length) / 60, r.died, r.thirst, r.starved,
+                          r.bled, r.other, r.wall > 0 ? r.t / r.wall : 0.0, r.done() ? "" : "...");
+            DrawRectangle(int(a.x), int(a.y) + ROW, int(a.width), ROW, Fade(BLACK, 0.7f));
+            text(buf, int(a.x + PAD), int(a.y) + ROW + 3, r.done() ? INK : CHANGED);
+        }
         if (!g.readout.fault.empty()) {
             DrawRectangle(int(a.x), int(a.y + a.height) - ROW, int(a.width), ROW, Fade(BAD, 0.85f));
             text("genprobe would fail it: " + g.readout.fault, int(a.x + PAD), int(a.y + a.height) - ROW + 3, WHITE);
@@ -918,6 +1163,17 @@ private:
             if (button(x, std::to_string(o + 1) + " " + OVERLAY_NAMES[o], shown_[o])) shown_[o] = !shown_[o];
         x += PAD;
         if (button(x, "T Readout", readout_)) readout_ = !readout_;
+        x += PAD;
+        if (button(x, running() ? "H Stop" : "H Drop", running())) toggleRun();
+        if (int d = button(x, std::to_string(CROWDS[crowd_]) + " humans")) {
+            const int n = int(sizeof CROWDS / sizeof CROWDS[0]);
+            crowd_ = (crowd_ + d + n) % n;
+        }
+        if (int d = button(x, std::to_string(MINUTES[minutes_]) + " min")) {
+            const int n = int(sizeof MINUTES / sizeof MINUTES[0]);
+            minutes_ = (minutes_ + d + n) % n;
+        }
+        if (int d = button(x, std::string("J ") + HEAT_NAMES[heat_], hasRun())) heat_ = (heat_ + d + HEATS) % HEATS;
         barY_ = 0;
     }
 
@@ -1103,6 +1359,8 @@ private:
         if (IsKeyPressed(KEY_V)) map_ = !map_;
         if (IsKeyPressed(KEY_F)) fit();
         if (IsKeyPressed(KEY_T)) readout_ = !readout_;
+        if (IsKeyPressed(KEY_H)) toggleRun();
+        if (IsKeyPressed(KEY_J)) heat_ = (heat_ + 1) % HEATS;
         for (int o = 0; o < OVERLAYS; o++)
             if (IsKeyPressed(KeyboardKey(KEY_ONE + o))) shown_[o] = !shown_[o];
         if (IsKeyPressed(KEY_C)) {
@@ -1118,7 +1376,7 @@ private:
 
 } // namespace
 
-int main() {
+int main(int argc, char** argv) {
     SetTraceLogLevel(LOG_WARNING);
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(1600, 960, "The Mall: world generator");
@@ -1126,6 +1384,8 @@ int main() {
     SetTargetFPS(60);
     {
         GenView view;
+        for (int i = 1; i < argc; i++)
+            if (std::string(argv[i]) == "--drop") view.dropAtStart();
         while (!WindowShouldClose()) view.frame();
         view.close();
     }

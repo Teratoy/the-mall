@@ -423,6 +423,13 @@ struct GenViewProbe {
         }
         return nullptr;
     }
+    /// A human waking at a cell as every human does, a bottle on the floor
+    /// a step or two away.
+    static Human& wake(World& w, const HumanLook& look, Vec2i cell, uint64_t seed) {
+        Human& h = w.addHuman(look, cell, seed);
+        w.layBottle(h);
+        return h;
+    }
     /// Where keys and the chunk's human may start: floor deep enough into
     /// the chunk from where it was entered. World cells.
     static std::vector<Vec2i> deepSpots(World& w, const Chunk& c, Vec2i entry) {

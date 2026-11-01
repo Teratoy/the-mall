@@ -223,6 +223,33 @@ A window, PC only. The knob panel on the left, the chunk on the right.
 - How many humans, for how long, and which heatmap shows are picked in
   the tool.
 
+### Built (2026-11-01)
+
+- Second bar row: H Drop (or Stop), the count of humans (0 to 24, click
+  to change), the minutes (1 to 30), and J the heatmap shown: walked,
+  slept, stuck (blocked by someone in the way, or rethinking a walk twice
+  running), bled (time spent with an open wound), died (a ring where each
+  fell).
+- The humans wake on free floor of the chunk shown, picked by the seed's
+  own dice, each beside a bottle as every human in the game does
+  (`GenViewProbe::wake`). The sim runs on that chunk's world at the
+  soak's step, 14 ms of each frame so the window stays live; the world
+  round it grows as they cross doors. Only time in the chunk counts. The
+  heatmap is drawn again every quarter second, yellow to red by the square
+  root of each cell's share of the most.
+- One chunk, or before and after (both run side by side); not with nine
+  seeds. Any change to the chunk drops the run.
+- Under each chunk's name: dropped, time, deaths by cause (thirst, hunger,
+  bled, other, from the life log), and how fast it runs (about x100 to
+  x200 on this machine: 10 minutes of 24 humans in 5 to 7 s).
+- `build/genview.txt` gets a line per run with the same and the seconds
+  spent in the chunk for each heatmap; `genview --drop` starts a run as
+  soon as the chunk is grown, so Claude can run one without a click.
+- What it showed in trying it: 24 humans dropped in a 2x1 maze (seed 4)
+  lose 22 in 10 minutes (thirst 6, hunger 2, bled 6, other 8); in a 2x1
+  room network with a canal, 17 die, 13 of them not of need, most along
+  the canal. Crowds of 24 kill each other; 6 to 8 is a gentler test.
+
 ### Step 6: play this
 
 - Opens the game on that seed with the edited values, for a look in play.
