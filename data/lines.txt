@@ -2524,7 +2524,7 @@ erratic                 | DOORS ALL THE WAY DOWN.
 # The second time: it learns the double doors eat a key each, said to nobody.
 [airlock_lesson 0.7]
                         | NOT FALLING FOR THAT AGAIN.
-                        | I KNOW THIS TRICK NOW.
+                        | ANOTHER ONE OF THOSE DOUBLE DOORS...
                         | IT JUST EATS KEYS.
 greedy                  | NEVER AGAIN. NOT MY KEYS.
 hopeless                | EVEN THE DOORS ARE GREEDY.
