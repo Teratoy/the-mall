@@ -72,6 +72,17 @@ Texture2D toTexture(const SpriteFrame& f) {
     return t;
 }
 
+/// Which way a shooting pose aims (GunSpot::aim), or none when it doesn't shoot.
+constexpr int NO_AIM = 9;
+int shootAim(Pose pose) {
+    return pose == Pose::ShootUp          ? -2
+           : pose == Pose::ShootUpAhead   ? -1
+           : pose == Pose::Shoot          ? 0
+           : pose == Pose::ShootDownAhead ? 1
+           : pose == Pose::ShootDown      ? 2
+                                          : NO_AIM;
+}
+
 } // namespace
 
 template <class F> void HumanSprites::eachFrame(const HumanLook& look, F&& add) {
@@ -248,13 +259,8 @@ void HumanSprites::draw(Vector2 feet, Pose pose, float animTime, bool flip, int 
         drawCurled(feet, tex, flip, scale, tint, -1.0f);
         return;
     }
-    const bool shooting = pose == Pose::Shoot || pose == Pose::ShootUp || pose == Pose::ShootUpAhead ||
-                          pose == Pose::ShootDownAhead || pose == Pose::ShootDown;
-    const int aim = pose == Pose::ShootUp          ? -2
-                    : pose == Pose::ShootUpAhead   ? -1
-                    : pose == Pose::ShootDownAhead ? 1
-                    : pose == Pose::ShootDown      ? 2
-                                                   : 0;
+    const int aim = shootAim(pose);
+    const bool shooting = aim != NO_AIM;
     const Texture2D& seated = sit_[std::fmod(animTime, BLINK_EVERY) < BLINK_EVERY - BLINK_TIME ? 0 : 1];
     const Texture2D& tex = pose == Pose::Walk  ? walk_[size_t(int(animTime * WALK_FPS) % WALK_FRAMES)]
                            : pose == Pose::Run ? run_[size_t(int(animTime * RUN_FPS) % RUN_FRAMES)]
@@ -294,6 +300,9 @@ void HumanSprites::draw(Vector2 feet, Pose pose, float animTime, bool flip, int 
     auto [held, hand, gun] = it->second;
     Vector2 origin{std::round(x), y};
     drawHeldGun(origin, gun, flip, scale, tint);
+    Vector2 port, side;
+    float drop;
+    if (casingOut(feet, pose, flip, scale, port, side, drop)) drawEjectedCasing(port, side, drop, animTime, scale, tint);
     // The cake being eaten is in the front hand, not on the pile.
     int piled = held.valid() ? std::max(0, cakes - (pose == Pose::Eat ? 1 : 0)) : 0;
     for (int i = 0; i < piled; i++) drawHeldCake(origin, held.x, held.y - i * HELD_CAKE_H, flip, scale, tint);
@@ -304,6 +313,36 @@ void HumanSprites::draw(Vector2 feet, Pose pose, float animTime, bool flip, int 
     if (onPile) at.y = int8_t(at.y - piled * HELD_CAKE_H);
     drawBottle(origin, at.x, at.y, at.turn, flip, *bottle, scale, tint);
     if (pose == Pose::Pour) drawPourStream(origin, at.x, at.y, SPRITE_H - 1, flip, *bottle, scale, tint, animTime);
+}
+
+bool HumanSprites::casingOut(Vector2 feet, Pose pose, bool flip, int scale, Vector2& port, Vector2& side,
+                             float& drop) const {
+    const int aim = shootAim(pose);
+    if (aim == NO_AIM) return false;
+    if (aim == -2 || aim == 2) flip = false;
+    // From the frame of the shot, so it leaves from where the gun went off.
+    const Texture2D& fired = flip ? shootFar_[size_t(aim + 1)][1] : shoot_[size_t(aim + 2)][1];
+    GunSpot gun = spots_.at(&fired).gun;
+    // Out of the slide, just over the hand.
+    int px = flip ? SPRITE_W - 1 - gun.x : gun.x, py = gun.y - 1;
+    float x = std::round(std::round(feet.x) - (SPRITE_BASE_X + 0.5f) * scale);
+    float y = std::round(feet.y) - SPRITE_H * scale;
+    port = {x + float(px * scale), y + float(py * scale)};
+    drop = float(SPRITE_H - 1 - py);
+    // Out to the right of the way the gun points, screen y down.
+    float ax = aim == -2 || aim == 2 ? 0.0f : flip ? -1.0f : 1.0f;
+    float ay = aim < 0 ? -1.0f : aim > 0 ? 1.0f : 0.0f;
+    float len = std::sqrt(ax * ax + ay * ay);
+    side = {-ay / len, ax / len};
+    return true;
+}
+
+bool HumanSprites::casingRest(Vector2 feet, Pose pose, bool flip, int scale, Vector2& rest) const {
+    Vector2 port, side;
+    float drop;
+    if (!casingOut(feet, pose, flip, scale, port, side, drop)) return false;
+    rest = ejectedCasingRest(port, side, drop, scale);
+    return true;
 }
 
 void HumanSprites::drawCurled(Vector2 feet, const Texture2D& tex, bool flip, int scale, Color tint,

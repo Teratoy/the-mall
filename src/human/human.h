@@ -1238,8 +1238,9 @@ private:
         RunWhy why = RunWhy::Fight;
         /// 1 full, 0 out of breath.
         float breath = 1.0f;
-        /// Seconds of running a full breath lasts, its own.
-        float lungs = 8.0f;
+        /// Seconds of running a full breath lasts rested, its own; tiredness
+        /// shortens it (LUNGS_EXHAUSTED).
+        float lungs = 15.0f;
         /// Seconds left standing winded.
         float winded = 0.0f;
         /// Ran out: no running again until breath is back over BREATH_AGAIN.

@@ -1,6 +1,7 @@
 // Every sprite drawn from data/sprites.txt, at 1x, in all the ways the game
 // draws it: the machines at every stock and both blinks, the toilet turned
-// to each wall and dirtied, the items and traps lit and dimmed, a sleeper's
+// to each wall and dirtied, the items and traps lit and dimmed, ammo boxes
+// and spent casings piling up, a sleeper's
 // Z's, a human carrying cakes and shooting every way, and the icon. Compare two of these with
 // cmp to check a change drew the same, pixel for pixel.
 //
@@ -78,6 +79,17 @@ void drawSheet(const HumanSprites& human, Texture2D icon) {
             for (float dirt : {0.0f, 1.0f, 3.0f, 8.0f}) drawToilet(tx, y, back, dirt, 0.0f, 7, lit), tx += CELL_PX + GAP;
         y += CELL_PX + GAP;
     }
+    // Ammo boxes shut, then open from full to empty; spent casings piling up
+    // on a cell, one to one past the most shown; lit then dimmed.
+    x = GAP;
+    for (bool lit : {true, false}) {
+        drawAmmoBox(x, y, false, 1.0f, lit), x += CELL_PX + GAP;
+        for (int left = AMMO_SLOTS; left >= 0; left--)
+            drawAmmoBox(x, y, true, float(left) / AMMO_SLOTS, lit), x += CELL_PX + GAP;
+        for (int n = 1; n <= CASINGS_SHOWN + 1; n++) drawCasings(x, y, n, lit), x += CELL_PX + GAP;
+        x += 2 * GAP;
+    }
+    y += CELL_PX + GAP;
     // Water dispensers at every level the jug shows, from the front and both sides, lit then dimmed.
     x = GAP;
     for (bool lit : {true, false})

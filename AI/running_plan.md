@@ -35,7 +35,8 @@ cannibalism (hunting prey), sleep (robbers), dread (`scare()`), bottles
 ### Answers to the open questions (2026-10-31)
 
 1. **Speed**: a running step takes 0.6 of a walking step (`RUN` from 0.7).
-2. **Breath**: 7–9 s of running from full breath (rolled per human, by
+2. **Breath**: 14–16 s of running from full breath fully rested (user,
+   2026-11-01; was 7–9 s), down to 0.3 of that as tiredness nears 1 (rolled per human, by
    `rng_`), then 2–3 s winded.
 3. **Costs**: running makes it thirstier and more tired than walking.
    Being winded costs the same as standing idle (`Action::Rest`).
@@ -77,7 +78,7 @@ through it (`RunWhy::Fight`, `RunWhy::Flee`); `running()` drives the step
 time, `Action::Run` and the pose. `RUN` is 0.6. Run's tiredness row was
 already 4x walking's, so it stays.
 
-Lungs (7–9 s) are rolled from the human's seed, as traits are, not from
+Lungs (14–16 s rested) are rolled from the human's seed, as traits are, not from
 `rng_`: an extra roll there shifted every later die and changed unrelated
 scenarios.
 
@@ -89,8 +90,9 @@ fragile: about a third of nearby seeds pass.
 
 ### 2. Breath and being winded
 
-- Breath drains while running (7–9 s of running from full, the length
-  rolled once per human), refills while walking slowly and faster while standing or sitting
+- Breath drains while running (14–16 s of running from full when rested, the
+  length rolled once per human; tiredness shortens it evenly to
+  `LUNGS_EXHAUSTED` 0.3 of that at 1, ~4.5 s), refills while walking slowly and faster while standing or sitting
   (`BREATH_REST`).
 - At 0: `State::Winded` for `WINDED_TIME` (~2–3 s): standing still, bent
   over. It can't run again until breath is back over `BREATH_AGAIN` (~0.4);

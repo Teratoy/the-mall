@@ -300,8 +300,11 @@ constexpr float PREY_HEALTH = 0.35f;
 constexpr float PREY_HEALTH_GREEDY = 0.25f;
 /// Running steps take this much of a walking step's time.
 constexpr float RUN = 0.6f;
-/// Seconds of running a full breath lasts, rolled for each human.
-constexpr float LUNGS_MIN = 7.0f, LUNGS_MAX = 9.0f;
+/// Seconds of running a full breath lasts fully rested, rolled for each human.
+constexpr float LUNGS_MIN = 14.0f, LUNGS_MAX = 16.0f;
+/// Tired, breath runs out sooner: dropping asleep, a full breath lasts this
+/// share of its rested length, and in between it shortens evenly.
+constexpr float LUNGS_EXHAUSTED = 0.3f;
 /// Mixed into a human's seed to roll its lungs.
 constexpr uint64_t LUNGS_SALT = 0x6c756e6773ULL;
 /// A punch: fist up, then out and landing for some health, then back.
