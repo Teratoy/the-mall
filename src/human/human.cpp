@@ -518,7 +518,9 @@ bool Human::observe(const World& world) {
                 bool known = !o->bones() || o->deaths_.killer == id;
                 if (!known) deaths_.nameless.insert(o->id);
                 bool friendDead = known && isFriend(o->id);
-                scare(o->bones() ? DREAD_BONES : o->spoiled() ? DREAD_CORPSE : DREAD_CORPSE_FRESH);
+                // Each body after the first, the hardened dread less, the timid and sociable more.
+                scare((o->bones() ? DREAD_BONES : o->spoiled() ? DREAD_CORPSE : DREAD_CORPSE_FRESH) *
+                      bodyDread(friendDead));
                 lift(friendDead ? HOPE_FRIEND_DEAD : o->bones() ? HOPE_BONES : HOPE_BODY);
                 if (o->deaths_.killer == id && !o->deaths_.killerSaw) {
                     note("FOUND @ DEAD. MY BEATING DID IT", o->id);
@@ -539,6 +541,7 @@ bool Human::observe(const World& world) {
                     inspect_.body = true;
                     if (!firstBody || !discover({talk::Moment::FoundBody, o->cell, 1, o->id, std::nullopt, true}))
                         sayLater(talk::Moment::FoundBody, -1, o->id);
+                    repeated(Repeat::Bodies, o->id);
                     if (!o->bones() && !o->spoiled()) foundFresh(*o);
                 }
                 news = true;

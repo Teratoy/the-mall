@@ -44,6 +44,10 @@ hopeless      | It is losing hope of ever finding a way out.
 settled       | It has given up on getting out and made itself a home.
 sure          | It feels sure of its hunch about which way is out.
 
+## Something happening again (only in the *_again moments)
+again         | It is saying how it feels that this has happened again: the 4th or 8th time.
+often         | It is saying how it feels that this keeps happening: the 15th or 30th time.
+
 ## How the speaker sees them
 friend        | It counts them as a friend.
 foe           | It counts them as a foe, and lets it show (a cunning speaker hides it).

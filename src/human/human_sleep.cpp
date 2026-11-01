@@ -401,6 +401,7 @@ void Human::sleep(World& world, float dt) {
 // there in time paid off; set on there, it was not, and it is forgotten.
 void Human::wakeUp(World& world, bool abrupt, int by, const char* what) {
     note(what ? what : "WOKE UP", by);
+    repeated(Repeat::Sleep);
     escape_.daze = std::max(escape_.daze, SLEEP_DAZE);
     if (abrupt) {
         if (by >= 0 && sleep_.sleptYet && cheb(sleep_.sleptAt, cell) <= BASE_NEAR) sleep_.sleptYet = false;

@@ -69,6 +69,8 @@ constexpr const char* MOMENTS[] = {
     "toilet_foul", "no_flush",
     "try_terminal", "try_desk", "try_again", "watch_typing",
     "top_up", "turn_back", "seek_water", "seek_food", "while_here", "errand_back",
+    "cakes_again", "bodies_again", "water_again", "doors_again", "traps_again", "blood_again", "fights_again",
+    "going_again", "sleep_again", "quiet_again", "faces_again", "low_again",
 };
 static_assert(std::size(MOMENTS) == size_t(Moment::Count));
 
@@ -81,6 +83,8 @@ enum class Cond {
     Brave, Timid, Greedy, Generous, Curious, Homebody, Sociable, Loner,
     Erratic, Guilty, Craving, Dazed, Hopeless, Settled, Sure,
     Thirsty, Parched, NeedToGo, Bursting, Filthy, Tired, Exhausted, Dreamt,
+    // Saying something happened again: the 4th or 8th time; the 15th or 30th.
+    Again, Often,
     Friend, Foe, Liked, Disliked, Suspect, Afraid,
     TheyHungry, TheyStarving, TheyScared, TheyHurt, TheyBleeding, TheyCakes, TheyKeys, TheyDazed,
     TheyThirsty, TheyParched, TheyFilthy, TheyAsleep,
@@ -107,6 +111,7 @@ constexpr const char* CONDS[] = {
     "brave", "timid", "greedy", "generous", "curious", "homebody", "sociable", "loner",
     "erratic", "guilty", "craving", "dazed", "hopeless", "settled", "sure",
     "thirsty", "parched", "need.to.go", "bursting", "filthy", "tired", "exhausted", "dreamt",
+    "again", "often",
     "friend", "foe", "liked", "disliked", "suspect", "afraid",
     "they.hungry", "they.starving", "they.scared", "they.hurt", "they.bleeding", "they.cakes", "they.keys",
     "they.dazed", "they.thirsty", "they.parched", "they.filthy", "they.asleep",
@@ -140,6 +145,9 @@ constexpr float GUILTY = 0.2f;
 constexpr float CRAVES = 0.3f;
 /// Still dazed from waking up while this much of the daze is left.
 constexpr float DAZED = 0.3f;
+/// Said of something happening again, often from this many times (the
+/// 15th and 30th); before that, again (the 4th and 8th).
+constexpr int OFTEN = 15;
 /// Sure of its hunch of the way out from this much.
 constexpr float SURE = 0.5f;
 /// About to burst from this full; filthy from this much on it.
@@ -382,6 +390,8 @@ bool holds(Cond c, const Human& s, const Human* to, const Human* about, const To
     case Cond::NeedToGo: return s.needsToGo();
     case Cond::Bursting: return std::max(s.bladder, s.bowels) >= BURSTING;
     case Cond::Filthy: return s.filth() >= FILTHY;
+    case Cond::Again: return s.repeatSaid() > 0 && s.repeatSaid() < OFTEN;
+    case Cond::Often: return s.repeatSaid() >= OFTEN;
     default: break;
     }
     // About the one spoken of, if dead: never true of the living or nobody.

@@ -14,6 +14,7 @@
 #include "human/wound.h"
 #include "world/dispenser.h"
 #include "world/vending.h"
+#include <array>
 #include <deque>
 #include <functional>
 #include <initializer_list>
@@ -132,6 +133,9 @@ public:
     bool rousing() const { return sleep_.roused && state == State::Rising; }
     /// Woke from a dream lately, half a memory of before.
     bool dreamt() const;
+    /// Which time it is that something has happened again (the 4th, the
+    /// 15th...) while that is being said; 0 at any other line.
+    int repeatSaid() const { return repeat_.saying; }
     /// Died in its sleep: lies curled as if still asleep.
     bool diedAsleep() const { return sleep_.diedAsleep; }
     /// Kneeling by a sleeper to take a cake off them, not by a body.
@@ -531,6 +535,8 @@ private:
         /// A topic brought up in a chat; kept as raised once said.
         std::optional<Topic> topic;
         bool intro = false, quiet = false, awaited = false;
+        /// Said of something happening again: which time this is (0 for any other line).
+        int repeat = 0;
     };
     /// What it says, in turn (human_speech.cpp).
     struct Voice {
@@ -2178,4 +2184,29 @@ private:
     std::optional<std::vector<Vec2i>> searchFrom(const World& world, Vec2i start,
                                                  const std::function<bool(Vec2i)>& done, bool avoidCrowd,
                                                  const std::function<int(Vec2i)>& goalCost = {}) const;
+
+    /// What keeps happening to it, counted (human_repeat.cpp,
+    /// AI/repeat_lines_plan.md). Each kind has a moment of its own, in this
+    /// order from talk::Moment::CakesAgain.
+    enum class Repeat { Cakes, Bodies, Water, Doors, Traps, Blood, Fights, Going, Sleep, Quiet, Faces, Low, Count };
+    struct Repeats {
+        /// How many times each has happened.
+        std::array<int, size_t(Repeat::Count)> count{};
+        /// Who it last traded blows with, and when (its clock), so a fight is
+        /// counted once and not blow by blow.
+        int fightWith = -1;
+        float fightAt = -1e9f;
+        /// Which time it is of the repeat line being said; 0 at any other.
+        int saying = 0;
+    };
+    Repeats repeat_;
+    /// It happened once more. At the 4th, 8th, 15th and 30th time it notes
+    /// so in its log and may say how that feels, to nobody, about about.
+    void repeated(Repeat what, int about = -1);
+    /// A blow given or taken in a fight with other: counted once per fight.
+    void fought(int other);
+    /// How much more or less a body strikes it than the first did: the
+    /// hardened (brave, loners) dread each one less, the timid and sociable
+    /// more. A friend's body is never softened.
+    float bodyDread(bool friendDead) const;
 };

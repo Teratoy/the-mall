@@ -234,6 +234,7 @@ bool Human::startSipping() {
     if (state != State::Sipping) {
         note("DRANK FROM MY BOTTLE");
         sayLater(talk::Moment::Sip);
+        repeated(Repeat::Water);
     }
     water_.inHand = i;
     state = State::Sipping;

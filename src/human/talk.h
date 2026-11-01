@@ -211,6 +211,14 @@ enum class Moment {
     // exploring for water, for food, it knows none of; the other need while
     // there; going back to an errand it was turned aside from (all to nobody).
     TopUp, TurnBack, SeekWater, SeekFood, WhileHere, ErrandBack,
+    // The same thing again, at the 4th, 8th, 15th and 30th time (all to
+    // nobody; a body's about whose it was), in the order of Human::Repeat:
+    // a cake eaten, a body found, a drink, a door unlocked, caught by a
+    // trap, blood washed off, a fight, going, waking up here, the quiet, a
+    // face caught up with (about them), sinking low (rotten flesh, toilet
+    // or foul water).
+    CakesAgain, BodiesAgain, WaterAgain, DoorsAgain, TrapsAgain, BloodAgain, FightsAgain, GoingAgain, SleepAgain,
+    QuietAgain, FacesAgain, LowAgain,
     Count
 };
 

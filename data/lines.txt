@@ -27,6 +27,9 @@
 #   filthy                   (feces or piss on it)
 #   tired exhausted          (needing sleep; badly)
 #   dreamt                   (woke from a dream of before lately)
+#   again often              (saying something has happened again: the
+#                             4th or 8th time; the 15th or 30th. Only in
+#                             the *_again moments)
 # about how the speaker sees the one it talks to:
 #   friend foe liked disliked
 #   suspect (thinks them a killer)  afraid (they hit it and it ran)
@@ -2728,3 +2731,141 @@ greedy                  | ONE FOR LATER.
                         | RIGHT. BACK TO IT.
                         | NOW, WHERE WAS I GOING?
 dazed                   | WHAT WAS I DOING?
+
+
+# ---- The same again --------------------------------------------------------
+# Said to nobody when something has happened again: the 4th, 8th, 15th and
+# 30th time. "again" lines fit the 4th and 8th, "often" lines the 15th and
+# 30th; lines with neither fit any of them.
+
+# Eating a cake, again.
+[cakes_again 0.6]
+                        | ALWAYS THE SAME TASTE.
+                        | THEY NEVER GO STALE. HOW DO THEY NEVER GO STALE?
+                        | WHO BAKES THESE?
+again                   | SAME CAKE. SAME TABLE. SAME ME.
+often                   | I CAN'T REMEMBER ANY OTHER FOOD.
+often                   | I'M SICK OF CAKE. I'LL EAT IT ANYWAY.
+greedy                  | STILL GOOD. STILL GOOD.
+erratic                 | I WANT SOMETHING ELSE. SOMETHING WARM.
+hopeless often          | I'LL BE EATING THESE FOREVER.
+
+# Finding a body, again; about whose it was.
+[bodies_again 0.8]
+                        | THERE'S ALWAYS ANOTHER.
+brave                   | ANOTHER ONE.
+loner                   | NOTHING. I FEEL NOTHING.
+loner often             | I'VE STOPPED LOOKING AT THEIR FACES.
+brave often             | JUST ONE MORE.
+timid fear              | IT DOESN'T GET EASIER. IT GETS WORSE.
+sociable                | EVERY ONE OF THEM HAD A NAME.
+sociable !body.bones    | {WHO}. I'LL REMEMBER YOU.
+hopeless                | THAT'S ME, ONE DAY. LYING LIKE THAT.
+curious again           | HOW MANY OF US WERE THERE?
+curious often           | I'VE STOPPED COUNTING. NO. I HAVEN'T.
+
+# Drinking water, again.
+[water_again 0.5]
+                        | ALWAYS THE SAME TEPID WATER.
+                        | WHERE DOES IT ALL COME FROM?
+again                   | IT TASTES OF PIPES.
+often                   | I COULD DRINK THIS PLACE DRY. IT WOULD STILL BE HERE.
+curious                 | SOMEONE PUTS IT THERE. SOMEONE.
+hopeless often          | WATER, CAKE, WATER, CAKE.
+thirsty                 | NEVER ENOUGH. NEVER QUITE ENOUGH.
+
+# Unlocking a door, again.
+[doors_again 0.7]
+                        | AND BEHIND IT, MORE OF THE SAME.
+                        | HOW MANY DOORS DOES ONE PLACE NEED?
+again                   | THIS ONE. THIS ONE MIGHT BE IT.
+often                   | I DON'T EVEN HOPE ANY MORE. I JUST TURN THE KEY.
+curious                 | WHAT'S THIS ONE HIDING?
+curious often           | ONE DAY ONE OF THEM WILL OPEN ONTO SKY.
+hopeless                | WHY DO I KEEP DOING THIS?
+homebody                | I WAS FINE WHERE I WAS.
+
+# Caught by a trap, again.
+[traps_again 0.8]
+                        | THE SAME TRICK. EVERY TIME.
+again                   | WILL I NEVER LEARN?
+again brave             | STUPID. STUPID.
+often                   | IT KNOWS ME BY NOW.
+often                   | I DON'T EVEN FLINCH ANY MORE.
+timid                   | EVERYTHING HERE WANTS ME HURT.
+hopeless                | LET IT. WHAT DOES IT MATTER.
+erratic                 | IT'S WATCHING. IT WAITS FOR ME.
+
+# Washing off blood, again.
+[blood_again 0.6]
+                        | IT NEVER QUITE COMES OFF.
+                        | WHOSE IS IT THIS TIME?
+again                   | IT'S IN THE CRACKS OF MY NAILS.
+often                   | MY HANDS DON'T LOOK LIKE MINE ANY MORE.
+guilty                  | I KNOW WHOSE IT IS.
+timid                   | SCRUB. KEEP SCRUBBING.
+brave often             | IT'S ONLY BLOOD. IT'S ALWAYS ONLY BLOOD.
+
+# Fighting, again; about whom.
+[fights_again 0.6]
+                        | WHY DOES IT ALWAYS COME TO THIS?
+again                   | IT'S EASIER EVERY TIME. THAT'S THE WORST OF IT.
+often                   | I DON'T EVEN FEEL THE BLOWS NOW.
+brave                   | LET THEM COME.
+brave often             | THIS PLACE MADE ME HARD.
+timid                   | I CAN'T KEEP DOING THIS.
+sociable                | WE SHOULD BE HELPING EACH OTHER.
+hurt                    | I'M SO TIRED OF HURTING.
+
+# Pissing or shitting, again.
+[going_again 0.4]
+                        | NO FLUSH. NO SINK. NO DIGNITY.
+again                   | LIKE AN ANIMAL.
+often                   | I DON'T EVEN MIND ANY MORE. THAT'S WHAT SCARES ME.
+sociable                | I HOPE NOBODY SAW.
+loner                   | NOBODY TO SEE ANYWAY.
+hopeless often          | THIS IS WHAT I AM NOW.
+
+# Waking up from sleep, again.
+[sleep_again 0.7]
+                        | STILL HERE.
+                        | I HOPED IT WAS A DREAM.
+again                   | EVERY TIME I CLOSE MY EYES I THINK I'LL WAKE UP HOME.
+often                   | I DON'T DREAM OF LEAVING ANY MORE.
+often                   | HOW MANY DAYS IS THIS? WEEKS?
+dreamt                  | IT WAS SO REAL.
+hopeless                | WHY BOTHER WAKING UP?
+settled                 | HOME. I SUPPOSE.
+
+# Alone in the quiet, again.
+[quiet_again 0.6]
+                        | THE SAME SILENCE.
+                        | EVERYTHING LOOKS ALIKE.
+again                   | I'VE BEEN HERE BEFORE. HAVEN'T I?
+often                   | I'VE LOST THE DAYS.
+often                   | THE HUM IS THE ONLY VOICE LEFT.
+sociable                | I'D GIVE ANYTHING FOR A VOICE.
+loner                   | I DON'T MIND IT. I DON'T.
+hopeless                | MAYBE THERE WAS NEVER ANYONE.
+
+# Catching up with someone it knows, again; about them.
+[faces_again 0.4]
+                        | THE SAME FEW FACES.
+                        | IS THERE NOBODY ELSE LEFT?
+again                   | WE KEEP FINDING EACH OTHER.
+often                   | I KNOW EVERY FACE HERE BY NOW.
+sociable                | {WHO}. GOOD. STILL ALIVE.
+loner                   | {WHO} AGAIN.
+hopeless                | WE'LL ALL GROW OLD IN HERE TOGETHER.
+curious often           | WHERE DID EVERYONE ELSE GO?
+
+# Eating rotten flesh, drinking from a toilet or foul water, again.
+[low_again 0.7]
+                        | IT DOESN'T EVEN MAKE ME RETCH NOW.
+                        | LOWER AND LOWER.
+again                   | I SAID NEVER AGAIN. I SAID IT.
+often                   | THIS IS JUST WHAT I DO NOW.
+often                   | MY BODY'S STOPPED FIGHTING IT.
+timid                   | WHAT WOULD THEY THINK OF ME? BEFORE?
+erratic                 | GOOD. IT'S GOOD.
+hopeless                | THERE'S NOTHING LEFT TO SINK TO.

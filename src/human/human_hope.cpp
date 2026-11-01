@@ -198,4 +198,5 @@ void Human::hearQuiet(bool alone) {
     escape_.quietAt = clock_;
     note("ALONE IN THE QUIET");
     sayLater(talk::Moment::Quiet);
+    repeated(Repeat::Quiet);
 }
