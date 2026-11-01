@@ -112,6 +112,27 @@ like the line drafts.
   lines.txt, and its count from coverage.json (null when there is none).
 2. `data/talk_flow.txt`: the format, the parser in the editor, and the
    checks above. Claude drafts it for every moment.
+
+### Built (2026-11-02)
+
+- `data/talk_flow.txt`, its head explaining the format. Who is one of
+  `someone`, `nobody`, `shout` (heard far off) and `wall` (through a wall
+  or a locked door), then `about` when it is about someone else. Chances
+  are `always`, `often`, `sometimes` and `seldom`.
+- `tools/talk_flow.py` parses it and runs the checks. `missing`: moments
+  with no section. `unknown`: sections or branches naming no moment.
+  `bad`: rows it can't read. `stranded`: no `when` and nothing leads
+  there. `unwritten`: follows the code shows with no branch in the file.
+  `python3 tools/talk_flow.py` prints them; nothing fails `make check`.
+- `/api/diagram` gives each moment its flow section, plus the checks and
+  the who and chance words for the tab's pickers.
+- The first version of every section was drafted from the code by
+  Claude, to review in the tab once it is drawn (step 3). Every check
+  came back empty. Most chance words are judged from the code's
+  conditions, not counted: step 5 sets them beside real numbers. The
+  shakiest branches are the ones that only follow later, through another
+  system rather than in the same exchange, such as threat to hit, killed
+  to loot, and help to freed.
 3. The DIAGRAM tab: overview and focus, the side panel, the filters.
 4. Editing the flow file from the tab (add a branch, change a trigger),
    with the same small-operation saving the lines use.

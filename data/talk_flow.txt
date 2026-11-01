@@ -1,0 +1,1300 @@
+# How the talk fits together, for the DIAGRAM tab of the lines editor
+# (make lines). Nothing in the game reads this file: it only says, for
+# each moment in data/lines.txt, what makes a human say it, what saying it
+# does, and which moments can come next. Edit freely, here or in the tab.
+#
+# [moment] who      starts a moment's section. Who it is said to:
+#                     someone   the one it talks to
+#                     nobody    said to itself, or to the room
+#                     shout     shouted, heard far off
+#                     wall      called through a wall or a locked door
+#                   then "about" if it is about someone else (the dead,
+#                   the one gossiped about, the one it blames).
+#
+# Under it, any of these rows, as many as needed:
+#     when | what makes it say this, in plain words, and what has to hold
+#     does | what saying it changes, beyond the tone of the line said:
+#            trust, what the hearer knows, a cake handed over, a fight
+#     -> moment chance | when it leads there
+#            a moment that can come next, said by either of them, and how
+#            often: always often sometimes seldom
+#
+# The tones' own effects (warm, rude, plead, fear, threat) are in the head
+# of data/lines.txt and need not be repeated here.
+#
+# The tab also shows what the code says: where each moment is said, the
+# comments there, and the follows it can see. It flags moments with no
+# section here, branches to moments that don't exist, and moments with no
+# "when" that nothing leads to. None of that fails make check.
+
+[meet] someone
+when | Greeting someone it has not met, once both are willing and close
+does | Both greet; each then may tell the other news, ask the way, give a name
+-> introduce sometimes | each decides whether to say who it is; more for the sociable and friends
+-> tell_cake sometimes | it knows a cake the hungry, cakeless other doesn't (not a stingy one)
+-> tell_key sometimes | the other has no key and it knows one they don't
+-> tell_trap sometimes | it knows a trap they don't
+-> tell_door sometimes | news of the way to a locked door
+-> warn sometimes | trusted both ways, it has a bad opinion of a third person worth passing on
+-> praise sometimes | the same, with a good opinion
+-> ask_way seldom | it is set on getting out and doesn't take them for a foe
+-> lie sometimes | a cunning one greeting a foe it can bait
+
+[catch_up] someone
+when | Greeting someone met before, after a while apart, when it wants a word or has news
+does | Greets, and trust goes up a little
+-> introduce sometimes | if they still don't know its name
+-> tell_cake sometimes | it knows a cake the hungry, cakeless other doesn't
+-> tell_key sometimes | the other has no key and it knows one
+-> tell_trap sometimes | it knows a trap they don't
+-> warn sometimes | confiding, with an opinion of a third person to pass on
+-> praise sometimes | confiding, with a good word to pass on
+-> ask_way seldom | it is set on getting out and doesn't take them for a foe
+
+[introduce] someone
+when | Greeting, it decides to say who it is; a friend always, others by chance, sociable more
+when | More likely when the other has just given their name
+does | The other learns its name, and so does anyone who sees whose it is
+
+[tell_cake] someone
+when | Hungry other with no cake, and it knows a cake they don't; friends, or if it isn't stingy
+does | The hearer learns where the cake is, trusts the teller more, and rethinks what to do
+-> thank_tip always | when the hearer learns something new
+
+[tell_key] someone
+when | The other has no key and it knows where one is that they don't know of
+does | The hearer learns the key's place and trusts the teller more
+-> thank_tip always | when it is news to the hearer
+
+[tell_trap] someone
+when | It knows a trap the other doesn't, and isn't selling it
+does | The hearer learns the trap; trust goes up
+-> thank_tip always | when it is news to the hearer
+
+[tell_door] someone
+when | It knows the way to a locked door the other hasn't seen
+does | The hearer learns the route and its cells; trust goes up
+-> thank_tip always | when it is news to the hearer
+
+[sell_trap] someone
+when | A greedy one, not a friend, tells of a trap only to someone with a cake to spare
+when | Cunning ones sometimes make the trap up to sell
+does | The hearer learns the trap, or a false one, and now owes a cake
+-> thank_tip always | when the hearer learns it
+-> pay sometimes | the buyer still has a cake and is there when the greeting ends
+
+[lie] someone
+when | A cunning one, to a foe: a way over hidden spikes made to sound like the way to a door
+does | The hearer takes it for a true route; walking into the spikes will show it was a lie
+-> thank_tip always | the foe believes it
+-> spiked sometimes | the foe follows the route over the plate
+
+[warn] someone about
+when | Trusted both ways, it has a bad opinion of a third person the other hasn't heard
+does | The hearer hears the opinion and may learn the name; trust of the teller goes up
+
+[praise] someone about
+when | Trusted both ways, it has a good opinion of a third person the other hasn't heard
+does | The hearer hears the opinion and may learn the name; trust of the teller goes up
+
+[thank_tip] someone
+when | Just told something new: a cake, a key, a trap, a door; lies too
+does | If the tip was sold, it owes for it as the greeting ends
+
+[refuse] someone
+when | Someone comes to greet a foe, a suspect, or one it is afraid of
+does | No greeting happens; the one turned away leaves it be for a while
+-> snubbed often | the one turned away answers back
+
+[snubbed] someone
+when | Turned away out loud, the one who came to greet may answer back
+
+[beg] someone
+when | Hungry with no cake and none known on the floor (unless starving), asks a cake holder it sees
+when | Shyer, less sociable or greedier ones beg less; the starving beg more
+does | It waits in place for the answer
+does | A plea may move the holder to share, once per plea
+-> give sometimes | the holder is moved, more if sociable, not greedy or a friend
+-> thanks sometimes | after the cake is given
+
+[give] someone
+when | Handing a cake to someone who begged, or to a starving one it would feed
+does | The cake changes hands and the other's trust goes up; they are let be
+-> thanks always | the one fed thanks it
+
+[thanks] someone
+when | Given a cake, or water, by someone
+does | The giver is trusted more
+
+[pay] someone
+when | A tip bought is paid for as the greeting ends, if still there and with a cake
+does | The cake is handed over, trust goes up
+
+[threat] someone
+when | Hungry after a cake holder it is set to fight, near enough, with no grudge yet
+when | Braver and greedier ones do it more
+does | It waits in place for the answer; the target may hand over or refuse, and others think worse of it
+-> yield often | the threatened has a cake, isn't starving or after it, and is timid or frightened enough
+-> defy sometimes | otherwise; trust drops
+-> hit often | the cake is not handed over and the fight begins
+
+[yield] someone
+when | Threatened, not in a fight or running, with a cake in range of the threatener and not starving
+does | It hands a cake to the threatener, who drops the fight and is held in the wrong
+
+[defy] someone
+when | Threatened and not handing anything over
+does | Trust of the threatener drops further
+-> hit often | the threatener goes on to fight for the cake
+
+[hit] someone
+when | Landing a punch on the one it fights, whether for cakes, water, a grudge or to eat
+does | The blow hurts, the victim's trust drops and it takes a cake or bottle if it can
+-> ouch always | the victim cries out
+-> bottle_taken sometimes | it takes the victim's bottle when thirsty
+-> flee often | the victim, if hurt or not hungry, runs
+-> killed sometimes | the blow kills
+
+[ouch] someone
+when | Hit by another
+does | Trust of the hitter drops and it is scared; if asleep it wakes with a start
+-> flee often | not hungry or too hurt, and not brave enough to stand
+-> give sometimes | hit by a starving one it would feed anyway, it gives the cake
+-> hit sometimes | hungry or cornered, it fights back
+
+[flee] shout
+when | Running from whoever hit it
+does | Carried to anyone who can hear, not the one it runs from; those who aren't distrusted are scared
+
+[killed] nobody about
+when | Beaten to death by its hand, seen by it; one that bled out out of sight is only learnt at the body
+does | It remembers killing; those who saw it remember too
+-> loot sometimes | someone goes through the body
+
+[darted] nobody
+when | Hit by a dart from the wall
+does | Scared, wounded, remembers the trap and grows wary of darts
+
+[spiked] nobody
+when | Steps on spikes
+does | Scared, wounded in the foot or leg and bleeding hard; remembers the trap
+
+[slammed] nobody
+when | Shut in a slam room by a closing gate
+does | Scared; remembers the trap and grows wary of slam rooms
+-> help sometimes | with no key it cries out now and then through the walls
+-> help_steps sometimes | it hears steps beyond the wall
+
+[help] wall
+when | Shut in a slam room with no key, now and then
+does | Anyone close enough hears it and may set off to let them out; it starts banging on the gate
+-> help_coming sometimes | a hearer with a key, more if kind or a friend
+-> freed sometimes | someone opens the gate
+
+[help_coming] nobody about
+when | Heard someone shut in, and set off to let them out, with a key
+does | It means to go to the gate and let them out
+-> freed sometimes | it opens the gate
+
+[freed] someone
+when | Let out of a slam room by someone
+does | Trusts the one who opened it more, hope lifts; with no key, it follows them
+
+[found_body] nobody about
+when | Seeing a dead body it hasn't noted before
+does | Scared; remembers the body and may suspect or blame a bloody one it just saw
+-> blame sometimes | it saw someone bloody lately and ties them to the body
+-> gnawed sometimes | the body has been eaten from
+-> loot sometimes | someone goes through the body
+
+[loot] nobody about
+when | Taking keys, cakes and bottles off a body
+does | Seen doing it, they think worse of it
+-> shame often | the nearest who saw it, not a foe of the dead
+
+[shame] someone about
+when | Seeing someone go through a body, it says so to them
+does | Trust of the looter drops
+
+[pool] nobody
+when | Sees a fresh pool of blood that isn't its own or one it spilled
+does | Scared; the first stares at it; keeps off it for good
+
+[own_pool] nobody
+when | Seeing a fresh pool of its own blood, near enough
+does | It remembers the pool
+
+[escort] someone
+when | Not hungry, sociable, with a cake, seeing someone wounded and bloody it doesn't distrust
+does | It leads them to the nearer known water and waits while they wash
+-> escorted always | the wounded one answers
+
+[escorted] someone
+when | Led to water by another
+does | It goes with them to the water, and washes or drinks
+
+[accuse] someone
+when | Seeing someone near caked in blood with no wound, heavy enough to be damning
+does | Trust of them drops and it is scared
+-> blame sometimes | seen near a body it found just now
+
+[learn_cakes] nobody
+when | Gone starving with no cake in hand
+does | It keeps more cakes from now on and fetches them sooner
+-> learn_again seldom | when the lesson was held and it is learnt again
+
+[learn_keys] nobody
+when | At a dead end at a locked door, with no key
+does | From now on it fetches keys first
+-> learn_again seldom | when the lesson was held and it is learnt again
+
+[snap] nobody
+when | The mind gives way from starving, thirst, dread or despair
+does | From now on it is erratic
+-> hunt sometimes | erratic and hungry, with someone to eat in sight
+
+[hunt] someone
+when | Going for someone to kill and eat them, once, when it first picks them
+does | The fight begins; they are chased wherever they run
+-> hit often | it catches them
+
+[feed] nobody about
+when | Eating from a body for the first time
+does | Guilt or craving grows; feeds trust of anyone who sees it down
+-> saw_eat often | anyone who sees it feeding
+-> sick sometimes | the flesh was rotten
+
+[sick] nobody
+when | The flesh it ate was rotten
+does | Health drops and it is sick for a time
+
+[saw_eat] someone about
+when | Seeing someone eat a body, the first time for that eater
+does | Scared; their trust drops hard; the timid keep away and a brave friend of the dead goes for them
+-> flee sometimes | the timid run from the eater
+-> hit sometimes | a brave friend of the dead goes for them
+
+[gnawed] nobody about
+when | Seeing a half-eaten body, the first time, not mere bones
+does | Scared, and the mind slips a little
+
+[haunted] nobody about
+when | Seeing again a body it ate from, while guilt is heavy enough
+does | Scared by it; no more than every so often
+
+[craving] nobody about
+when | Hungry, craving flesh, at the sight of a body with meat left
+does | No more than every so often
+
+[wake] nobody
+when | Waking up in the mall, remembering nothing, as it sits up
+-> wake_stand always | when it first gets to its feet, still in a fog
+
+[first_key] nobody
+when | Sees a key for the first time; once only
+when | Free to (not hungry, thirsty, tired, fleeing) it walks up to it first, then says it
+does | Dropped if the key is gone before it gets there
+
+[first_cake] nobody
+when | Sees a cake for the first time; once only
+when | Free to, it goes and looks at it first, and remarks on it there
+does | Dropped if the cake is gone before it gets there
+
+[first_door] nobody
+when | Sees a door for the first time; once only
+when | Free to, it walks up to it before remarking on it
+
+[first_water] nobody
+when | Sees water it could drink for the first time; once only
+when | Free to, it walks up to it before remarking on it
+
+[first_human] nobody
+when | Sees another human for the first time; said where it stands, not walked up to
+when | Once only, however many it meets after
+
+[first_prints] nobody about
+when | Sees someone else's footprints in feces for the first time; once only
+when | Needs light to see them; free to, it goes and looks first
+does | Names whose prints they are, if it knows them
+
+[first_toilet] nobody
+when | Sees a toilet for the first time; once only
+when | Free to, it walks up to it before remarking on it
+
+[despair] nobody
+when | Its hope drops below the gloomy mark: starting to think there is no way out
+when | The timid lose hope faster, the fearless slower
+does | Remembers it as an episode of despair, and the gloom slows its chatting
+
+[hope] nobody
+when | Its hope climbs back above the gloomy mark after despair
+does | Remembers it as an episode; it wants out again
+
+[settle] nobody
+when | Hope runs out (the erratic give up sooner): it gives up on a way out and makes a home
+does | Picks a home by water, where it sleeps safely, or by a table; stops looking for the way
+does | Tells no one; a settler later answers "the way" with gloom
+-> guard sometimes | when someone comes into its place and it is brave or grasping
+
+[guard] someone
+when | A settler who is brave or grasping sees a stranger it doesn't trust come into its place
+when | Not said if it let them drink there for a cake, or told them off in the drink exchange
+does | Thinks less of the intruder; if they stay past the grace time it goes for them
+-> hit sometimes | when the intruder stays on after the warning
+-> refuse_drink sometimes | when the intruder came for its water
+
+[ask_way] someone
+when | Still wanting out, at a greeting, it sometimes asks one it doesn't take for a foe the way out
+when | Asks each person only once; or asks back after being answered
+does | The other answers at once
+-> tell_way often | when the other has a hunch it feels sure enough of
+-> no_way_out sometimes | when the other is settled or gloomy
+-> lie_way sometimes | when the other is a cunning foe
+-> no_idea often | when the other is too unsure, or won't say
+-> ask_way sometimes | when the answerer wants out too, it asks back
+
+[tell_way] someone
+when | Answering "which way out", with a hunch it is sure enough of
+does | Turns and points the way as it says it
+does | Pulls the hearer's hunch toward it, as far as they trust the teller; lifts their hope
+-> ask_way sometimes | when the answerer would ask back
+
+[no_way_out] someone
+when | Answering "which way out" when it has settled or is gloomy; told however unsure it is
+does | Spreads gloom: the hearer's hope falls by how sure the teller sounds
+does | The hearer is not told again unless something changed
+-> ask_way sometimes | when the answerer would ask back
+
+[lie_way] someone
+when | A cunning foe is asked the way: it points the opposite way, or at a bait trap
+does | The hearer's hunch is bent; if it points at spikes the hearer can learn it was a lie
+
+[no_idea] someone
+when | Asked the way out when its hunch is too unsure and it has nothing gloomy or false to say
+-> ask_way sometimes | when the answerer would ask back
+
+[join] someone
+when | Free of company, a sociable human who knows someone in sight keeps with them
+when | A stranger only if sociable and it trusts them enough; never a foe, suspect, or someone filthy
+does | Starts keeping with them: follows and waits for them from now on
+-> join_reply always | the other answers out loud
+
+[join_reply] someone
+when | Answering someone who just said they'd keep with it
+does | Its tone shows if it welcomes or rebuffs the company
+
+[follow] someone
+when | After a greeting, with no key of its own, it finds the new friend has one
+when | Not for a foe or one it shuns
+does | Takes them as its leader and follows them
+-> part_own_key sometimes | when it picks up or heads for a key of its own
+-> part_no_keys sometimes | when their keys run out
+-> part_lost sometimes | when it loses sight of them
+
+[part_lost] nobody about
+when | Keeping with or following someone, it reaches where it last saw them and they are gone
+does | Stops keeping with them
+
+[part_turned] someone
+when | Leaving one it keeps with or follows, now it calls them a foe, a suspect or doesn't trust them
+does | Leaves them; the one left thinks the worse of it
+
+[part_filthy] someone
+when | Keeping with someone it sees has become filthy, it leaves until they wash
+does | Stops keeping with them
+
+[part_no_keys] someone
+when | Following someone who it sees now has no keys left, who is alive and not shunned
+does | Stops following them
+
+[part_own_key] someone
+when | Following a leader, it picks up a key, or sets off to fetch one
+does | Stops following the leader
+
+[chat_here] someone
+when | An urge to talk builds with someone it knows in sight, within a few cells, both calm
+when | The urge grows faster in the sociable and with friends; slower when dreading or gloomy
+does | Raises something in sight; the other answers from memory
+-> reply_agree often | when the other thinks the same
+-> reply_add sometimes | when it knows more of it, such as a friend's body
+-> reply_brush sometimes | when the other is a loner, uneasy, or distrusts the speaker
+
+[chat_shared] someone about
+when | Chat urge fires and the thing the two both remember matters most to it
+does | The other tells its own memory of the same thing
+-> reply_agree always | whatever the other remembers, unless it brushes it off
+-> reply_brush sometimes | when the other is a loner, uneasy, or distrusts the speaker
+
+[chat_story] someone about
+when | Chat urge fires and what only it went through or saw matters most to it
+-> reply_add sometimes | when the other has been through the same kind of thing
+-> reply_unheard sometimes | when the other has not
+-> reply_brush sometimes | when the other is a loner, uneasy, or distrusts the speaker
+
+[chat_someone] someone about
+when | Chat urge fires and someone else, out of earshot, comes to its mind
+does | Gives its opinion of them to the other
+-> reply_agree sometimes | when they think alike of that person
+-> reply_disagree sometimes | when they think opposite of them
+-> reply_unheard often | when the other doesn't know them or has no firm view
+-> reply_brush sometimes | when the other is a loner, uneasy, or distrusts the speaker
+
+[chat_feeling] someone
+when | Chat urge fires and how it feels (peckish, dry, footsore, uneasy, gloomy) stands out
+-> reply_agree sometimes | when the other feels the same
+-> reply_add sometimes | when the other feels the opposite and says something kind
+-> reply_disagree seldom | for gloom, when the other is hopeful
+-> reply_brush sometimes | when the other is a loner, uneasy, or distrusts the speaker
+
+[chat_way] someone
+when | Chat urge fires and the way out is what it thinks of
+-> reply_agree sometimes | when the other's hunch points the same way
+-> reply_disagree sometimes | when it points elsewhere, or the other is gloomy
+-> reply_unheard sometimes | when the other has no hunch worth the name
+-> reply_brush sometimes | when the other is a loner, uneasy, or distrusts the speaker
+
+[chat_group] someone
+when | Chat urge fires between two who keep together, about the group they are in
+-> reply_agree always | unless the other brushes it off
+-> reply_brush sometimes | when the other is a loner, uneasy, or distrusts the speaker
+
+[chat_before] someone
+when | Chat urge fires and the lack of any memory from before is on its mind
+-> reply_agree always | unless the other brushes it off
+-> reply_brush sometimes | when the other is a loner, uneasy, or distrusts the speaker
+
+[reply_agree] someone
+when | Answering a chat: it remembers or thinks the same, or something in sight is plain to both
+does | The topic's other side is told back to the one who raised it
+-> chat_follow sometimes | when both are sociable, so the chat runs on
+-> chat_close seldom | after a follow-up, when they are friends or both very sociable
+
+[reply_add] someone
+when | Answering a chat: it has been through the same kind of thing, or has its own side to add
+-> chat_follow sometimes | when both are sociable, so the chat runs on
+-> chat_close seldom | after a follow-up, when they are friends or both very sociable
+
+[reply_disagree] someone
+when | Answering a chat: it thinks otherwise of the person, the way out, or hope
+-> chat_follow sometimes | when both are sociable, so the chat runs on
+-> chat_close seldom | after a follow-up, when they are friends or both very sociable
+
+[reply_unheard] someone
+when | Answering a chat: it knows nothing of it, or has no firm view
+-> chat_follow sometimes | when both are sociable, so the chat runs on
+-> chat_close seldom | after a follow-up, when they are friends or both very sociable
+
+[reply_brush] someone
+when | Answering a chat while uneasy, a loner it doesn't count as a friend, or distrusting the speaker
+does | Ends the chat: there is no follow-up or close
+
+[chat_follow] someone
+when | The one who raised a chat remarks on the answer, if the chat runs a third turn
+when | Only when both are sociable enough, and the answer was not a brush-off
+-> chat_close sometimes | when they are friends or both very sociable
+
+[chat_close] someone
+when | The answerer closes a chat that runs a fourth turn
+when | Only between friends or two very sociable humans, never after a brush-off
+
+[parched] nobody
+when | Thirst grows to parched
+does | Remembers it as an episode; hope falls a little; starts looking for water
+
+[foul_water] nobody
+when | Drinks water fouled with blood, piss or shit, not having known it was foul
+when | A first time only; a repeat or a warned drink has its own moments
+does | Remembers it; at a drinking place it knows that water is foul from now on
+-> foul_again seldom | when it drinks that water again
+-> foul_warned seldom | when it drinks foul water it was warned of
+
+[need_to_go] nobody
+when | Starts needing to piss or shit; the first time the need crosses the mark
+does | It looks for a toilet or a quiet corner
+
+[accident] nobody
+when | Wets or soils itself, from holding too long or in a fright
+does | Shames the modest; hope falls; those who saw it may laugh or look away
+-> seen_going often | when someone sees it
+-> mock sometimes | when one who saw is cruel (grasping and not sociable)
+
+[stepped_in] nobody
+when | Treads in fresh feces on the floor
+when | Not when it did not see it coming in the dark: that is stepped_in_dark
+does | The modest are scared and feet are soiled with prints
+
+[seen_going] someone
+when | Seen by others as it relieves itself or has an accident: said to the nearest who saw
+does | Shames the speaker; those it walks with look away
+-> mock sometimes | when the one who saw is cruel and it was an accident
+-> into_water seldom | when it was going in the water
+
+[into_water] someone
+when | Sees someone go in the water, said to them
+does | Thinks less of them, less so if they walk together
+
+[mock] someone
+when | Sees someone have an accident, and is grasping and unsociable
+does | Thinks less of them
+
+[privacy] someone
+when | Walking with someone who goes to relieve itself, it looks away and waits
+when | Not if it needs to go itself; once for each time they go
+does | Waits beside them
+
+[toilet_wait] someone
+when | Modest and in need, sees someone on the toilet it wants and waits near it
+does | Waits a spell at a short distance
+
+[bloody_water] nobody
+when | Drinks water gone red with blood, from a pool or from its own bottle
+does | Unless it craves flesh, the sight scares it
+
+[fouled] someone
+when | Sees someone wash in water it is thirsty for, or lives by (settled near it)
+when | Not said by the erratic; only once a minute per washer
+does | Thinks less of the washer, more if it was washed in its home water
+-> my_water seldom | the washer may then be turned from the water when it comes to drink
+
+[my_water] someone
+when | A settler is come upon by someone thirsty at the water by its home, and won't share
+when | Not for a friend; the greedy won't let a cakeless or non-parched stranger drink
+does | Turns them away; they keep off that water for a while
+-> snubbed seldom | the turned-away may answer back
+
+[water_free] someone
+when | A settler lets someone thirsty drink its home water: the sociable, or the not greedy if they are parched
+does | They may drink there for a minute or so, free
+-> thanks sometimes | the one let drink is grateful
+
+[water_price] someone
+when | A greedy settler asks a thirsty stranger with a cake for it, at its home water
+does | They may drink; they owe it a cake when done drinking
+-> pay often | the drinker pays a cake after drinking
+-> water_cheat sometimes | the drinker, bold and greedy, walks off without paying
+
+[water_cheat] someone
+when | The one who drank its water for a price, and didn't pay, is still in its sight
+does | Thinks much less of them and sets on them in a fight
+-> hit often | the guard goes for the cheat
+
+[tell_water] someone
+when | At a greeting, to a thirsty one it knows a way to water for that they don't, freely to friends and its group
+when | Strangers too, unless it is stingy and keeps it back
+does | They learn the way to the water
+-> thank_tip always | the hearer thanks the one who told
+
+[sell_water] someone
+when | At a greeting, the grasping tell a thirsty stranger with a cake the way to water, for a cake
+does | They learn the way, and owe a cake as the greeting ends
+-> thank_tip always | the buyer thanks them
+-> pay often | the buyer pays a cake at the end of the greeting, if still near
+
+[lie_water] someone
+when | At a greeting, the cunning (greedy and bold) to a thirsty foe: a way to water over a trap they don't know
+does | They take the way as told; the trap may catch them
+-> thank_tip always | the foe thanks them, taken in
+
+[ask_water] someone
+when | Thirsty, no water it would drink is within reach: asks the nearest it walks with who hasn't said they know none
+when | Once every half minute at most
+does | Waits for an answer
+-> tell_water often | one of the group knows a way and tells it
+-> no_water sometimes | the one asked knows of none and says so
+
+[lead_drink] someone
+when | A sociable, healthy, not hungry friend or one it walks with sees them parched, or thirsty and not heading to water
+does | Leads them to water it would drink itself, and waits there
+-> led_drink always | the one led answers
+
+[led_drink] someone
+when | Being led to water to drink, it answers whoever leads
+does | Follows to the water
+
+[thirsty] nobody
+when | Thirst first passes the point of being thirsty
+
+[drink] nobody
+when | Starts to drink at water, a toilet or a bottle's fill-up spot
+does | Calms its dread a little
+-> bloody_water sometimes | the water is red with blood
+
+[learn_water] nobody
+when | Goes parched with no water it can reach, and learns the hard way to keep near it, the first time
+does | Learns to stay nearer water from then on
+-> learn_again seldom | the lesson learnt again, if it happens once more
+-> learn_max seldom | learnt for good
+
+[toilet_drink] nobody
+when | Parched (or erratic), no water to be had, drinks from a toilet it knows of
+does | Those who see it think less of it
+-> toilet_mock sometimes | a greedy, unsociable onlooker mocks it
+
+[toilet_mock] someone
+when | Sees someone drink from a toilet, being greedy and unsociable (cruel)
+does | Everyone who saw it drink thinks less of the drinker
+
+[tired] nobody
+when | Tiredness first passes the point of being tired
+
+[exhausted] nobody
+when | Tiredness first reaches exhaustion
+
+[sleep] nobody
+when | Lies down to sleep, not collapsed, not among humming machines, and no one to ask to keep watch
+-> watch_me seldom | instead of this, it asks a friend or one it walks with to watch
+
+[woke] nobody
+when | Wakes in its own time, no dream
+does | Slept right through, it gains a little hope and calm
+
+[dream] nobody
+when | Wakes in its own time, sometimes with a dream of before
+does | Its hunch of the way out shifts toward the dream, and grows surer
+
+[robbed_sleep] someone
+when | Woken by someone robbing a cake from it asleep; lighter sleepers wake more
+does | Thinks much less of the thief, hits it as a blow, and a watcher who robbed is dropped as a friend
+-> hit sometimes | it fights back
+
+[cake_gone] nobody about
+when | Wakes with a cake fewer than it fell asleep with, and blames the nearest it saw, or who lay near
+does | Thinks less of whoever it blames
+
+[watch_me] someone
+when | Lying down, light sleepers ask a friend or one in its group in sight to keep watch
+does | Waits for an answer
+-> watch_yes often | the friend or sociable one agrees
+-> watch_cake sometimes | a greedy one agrees for a cake, paid by the asker
+-> watch_no sometimes | one who is neither refuses
+
+[watch_yes] someone
+when | Asked to keep watch by a friend, or being sociable
+does | Sits by the sleeper and watches
+
+[watch_cake] someone
+when | Asked to keep watch by a stranger, being greedy, and the asker has a cake
+does | Takes a cake and sits watch; the asker is out a cake
+
+[watch_no] someone
+when | Asked to keep watch, not a friend, not sociable, not greedy or no cake offered
+does | Won't watch
+
+[wake_up] someone
+when | Keeping watch, sees someone coming that is a threat to the sleeper
+does | Wakes the sleeper and the group and friends near; the watch ends
+
+[your_watch] someone
+when | Keeping watch and tiring: wakes a rested friend or one in its group to take a turn
+does | They are woken, and take up the watch themselves
+
+[failed_watch] someone
+when | Harmed (robbed, hit) asleep, finds the one meant to watch over it asleep or gone
+does | Thinks less of the watcher
+
+[wake_them] nobody about
+when | Finds a body it took for asleep and didn't know was dead
+
+[spilled] nobody about
+when | Comes on a fresh pool of blood it spilled itself, from someone it hit or killed
+
+[blame] shout about
+when | Finds a fresh body, and recalls a bloody one seen lately; curious or bold enough to tie them
+does | Thinks less of the one blamed, takes fright, may flee them or, if bold and a friend died, go for them
+does | Those in earshot who trust the shouter may believe it, and think worse of the one named
+
+[tell_shut_in] someone about
+when | At a greeting, tells one who doesn't know of someone heard calling shut in, before other news
+when | Only if it cares for the shut in and the hearer isn't a foe
+does | They learn where, the way there, and weigh going to help
+-> thank_tip always | the hearer thanks the one who told
+
+[call_back] wall about
+when | Goes toward a cry for help with no key, reaches as near as it can, and calls back through the wall
+does | The one shut in hears it if close enough; it waits a while there
+-> heard_back often | the one shut in hears, if within earshot
+
+[heard_back] nobody
+when | Shut in, hears someone call back through the wall
+does | Lifts its hope
+
+[key_for_shut_in] nobody
+when | Goes after a key it knows of, to let someone shut in out
+does | Walks off to fetch the key
+
+[lost_shut_in] nobody about
+when | With a key, gets as near the voice as it can and finds no gate to the room
+does | Gives up and forgets the cry
+
+[sip] nobody
+when | Starts a sip from its bottle
+
+[bottle_dry] nobody
+when | The sip empties its bottle, unless it has seen water is scarce
+-> scarce seldom | when water is scarce it says that instead
+
+[fill_bottle] nobody
+when | Kneels to fill a bottle at water, a toilet or a dispenser, unless water is scarce
+
+[pour_out] nobody
+when | Pours out a bottle foul or bloodier than the water here, unless it is parched or erratic
+
+[ask_drink] someone
+when | Thirsty with no bottle to sip, no water near, walks up to one in sight holding water and asks
+when | Never a foe; likelier sociable, parched or a friend
+does | Waits for an answer
+-> give_drink often | a friend, one it walks with, or a sociable and not greedy one pours
+-> sell_drink sometimes | a greedy one with water, if the asker has a cake
+-> bottle_lie seldom | a greedy, bold stranger says it is empty
+-> caught_bottle_lie seldom | lied to, the asker can see water in the bottle
+-> refuse_drink sometimes | else it says no
+
+[give_drink] someone
+when | Asked for a drink by a friend or one it walks with, or a sociable not greedy one, and not thirsty itself
+does | Pours some of its water into their bottle, or hands a friend its whole bottle
+does | Those who see it think better of the giver
+-> thanks always | the one given to thanks
+
+[sell_drink] someone
+when | Asked for a drink by a greedy one, not thirsty itself, and the asker has a cake
+does | Pours some for a cake: the asker pays one, trust rises on both sides
+
+[bottle_lie] someone
+when | Asked for a drink by a greedy, bold stranger, and says its bottle is empty
+does | The asker, seeing through the glass, catches it
+-> caught_bottle_lie always | the asker sees the water
+
+[caught_bottle_lie] someone
+when | Told its bottle is empty, and sees the water in it, said to the liar
+does | Thinks much less of the liar and remembers the lie
+
+[refuse_drink] someone
+when | Asked for a drink and neither kind nor lying: just says no
+does | Both note it; no water given
+
+[bottle_taken] someone
+when | Hit by someone thirsty who takes its bottle in the fight
+does | Loses the bottle to them, and a cake is not taken
+-> hit always | the one who hit says its own line
+
+[put_down] nobody
+when | It kneels and puts cakes or bottles down on the floor, in plain sight, not as a stash
+does | The pile is in its memory; others who see it may take it
+
+[pick_up] nobody
+when | It kneels by a pile that is nobody's stash and takes cakes or a bottle it wants
+does | A cake it needs makes it rethink what to do; a bottle it takes to drink
+
+[stash] nobody
+when | A hoarder with pockets full and more cakes known puts its load down in a tucked-away nook
+does | Anyone who sees it knows the pile is its stash
+-> saw_stash often | an onlooker who sees it stash and didn't know the stash
+
+[from_stash] nobody
+when | At its own stash, hungry with no cake, or thirsty with no water, it takes what it needs
+when | Or it empties a stash that was found out, to move it
+does | Anyone who sees it take learns the stash is its
+-> saw_stash sometimes | an onlooker who sees it take and didn't know the stash
+
+[saw_stash] nobody about
+when | It sees someone stash things or take from their own stash, a stash it didn't know
+does | It now knows the pile is theirs and that it was seen made, so a denial won't fool it
+-> resent sometimes | hungry with no cake, no stash of its own, and the stash holds 3 or more cakes
+
+[stash_robbed] nobody about
+when | Back at its own stash, it finds cakes or a bottle gone since it left it
+does | Blames whoever it last saw beside the stash and thinks less of them; moves the stash
+does | The stash is marked found out, to be emptied and made anew somewhere else
+
+[steal_stash] nobody about
+when | Greedy, bold or desperate enough, it takes from a stash that isn't its own, unseen unless desperate
+does | Onlookers think less of it; with the owner in sight, the owner goes for it
+-> caught_stealing sometimes | the owner sees it take and answers
+
+[caught_stealing] someone
+when | The owner of a stash sees the thief take from it
+does | Trusts the thief much less and sets its fight on them, with a grudge
+
+[resent] nobody about
+when | Hungry with nothing, no stash of its own, it sees a big stash of 3 or more cakes
+when | Or thirsty with nothing to drink and a stash of water; once a minute for each owner
+does | Thinks less of the hoarder, more the needier it is and the bigger the stash
+
+[tell_stash] someone about
+when | At a greeting, it tells a friend or one it keeps with where a stash is
+when | Or it tells the hungry with no cake, a stash they don't know of; never a foe
+does | The hearer learns the stash and who owns it, and trusts the teller more
+-> thank_tip always | the hearer learned something new
+-> stash_told sometimes | the owner is close, sees the teller, and hears it
+
+[sell_stash] someone about
+when | At a greeting, a greedy cunning human with a hearer holding spare cakes, not a friend, tells for pay
+does | The hearer learns the stash and owner; a cake is owed
+-> thank_tip always | the hearer learned something new
+-> pay often | the hearer has a cake and is still close at the greeting's end
+-> stash_told sometimes | the owner is close, sees the teller, and hears it
+
+[lie_stash] someone about
+when | A cunning human tells a hungry foe with no cake of a rival's stash, or of a stash that isn't there
+does | Sets the foe on the rival, or sends them to an empty spot; the hearer learns it as true
+-> thank_tip always | the hearer believed it as news
+-> stash_told seldom | the stash was a real one and its owner overhears
+
+[stash_told] someone
+when | The owner of a stash hears someone tell of it to a third, in earshot and sight
+does | Trusts the teller less, and the stash is marked found out, to be moved
+does | The owner will empty it and make it anew elsewhere
+
+[ask_stash] someone
+when | At a greeting, hungry with no cake or distrusting them, it asks the owner of a stash it knows
+when | Once in two minutes per owner
+-> own_stash often | the owner isn't a cunning or greedy hoarder, or is the asker's friend
+-> deny_stash often | the owner is a cunning or greedy hoarder, not a friend of the asker
+
+[own_stash] someone
+when | The owner is asked if a stash is theirs, and is open, friendly or not much of a hoarder
+
+[deny_stash] someone
+when | The owner is asked, a hoarder greedy or cunning enough, and the asker isn't a friend
+does | If the asker never saw it made, it believes this and forgets the stash is anyone's
+-> caught_denying sometimes | the asker saw the stash being made
+
+[caught_denying] someone
+when | Told "not mine" by an owner it saw make that stash
+does | Thinks less of the denier
+
+[no_water] someone
+when | Asked where water is by a group mate, and it knows of no way to water either
+does | Both now know the other has no water; the asker won't ask it again
+does | The asker may leave it behind if both are parched and lost
+
+[call_door] wall
+when | Parched, with no water anywhere and no key, lying or sitting by a locked door, it calls
+when | Again every little while until the door opens or it is no longer parched
+does | Those within earshot beyond the door hear a cry for help and may come
+-> bang_door often | it goes on to bang on the door
+-> help_coming seldom | a hearer with a key means to let it out
+-> call_back seldom | a hearer with no key means to call back through the wall
+
+[part_dry] someone
+when | Parched, leaving a company mate who is parched too and knows no water either
+when | Only when it isn't sociable or brave enough to stay lost beside them
+does | It parts company with them
+
+[bottle_rage] someone
+when | Erratic, parched and not hungry, with no drink on it and room for a bottle, it sees a bottle holder
+does | It sets on them for the bottle, full or not, and the fight starts without a grudge
+
+[learn_again] nobody
+when | A hard lesson it still holds (cakes, keys, water, sleep) is learnt the hard way again
+when | Starving with no cake, boxed in by locked doors, parched far from water, collapsing worn out
+does | The lesson grows stronger
+
+[learn_max] nobody
+when | A hard lesson fills it to full strength at last, learnt for good
+does | The lesson is at its fullest
+
+[quenched] nobody
+when | It drinks for the first time since thirst began to hurt it
+does | It lives on; the drink is the start of keeping near water
+
+[foul_again] nobody
+when | It drinks at water it tasted as foul before, knowing it, and it was not warned by anyone
+does | Foul water hurts it, more the fouler
+
+[part_wronged] nobody about
+when | It leaves the one it kept with or followed, after it hit or robbed them and knows it
+does | It parts company with them; they won't be kept with again
+
+[wary_cake] nobody
+when | After being darted, it passes a cake that might lie on a dart plate, the first time
+does | Leaves the cake alone
+
+[wary_slam] nobody
+when | After being shut in a slam room, it passes a cake in a one-door room with no key, the first time
+does | Leaves the cake alone
+
+[swap_bottle] nobody
+when | It takes a fuller bottle for its own and pours its water into it, or leaves its empty one
+does | Keeps the fuller bottle and puts its old one back down
+
+[warn_foul] someone
+when | One it walks with sets off for water it can't see and that it knows is foul
+when | Never the sleeping or the erratic
+does | The warned learns the foul water, and where it was told of it, and that it was warned
+-> foul_warned seldom | the warned drinks that foul water anyway, later
+
+[foul_warned] nobody about
+when | It drinks foul water that someone had warned it was foul
+does | Foul water hurts it, as it does anyone
+
+[see_bottle] nobody
+when | With no bottle, it finds one lying on the floor, the first it spots; the first ever it goes and looks at
+does | It means to come back for the bottle it found
+-> bottle_gone sometimes | it comes back and the bottle is gone
+-> bottle_stolen sometimes | the same, but it holds on hard to a bottle and blames someone
+
+[bottle_gone] nobody
+when | It comes back to the bottle it found and it's gone, and it doesn't hold on hard to bottles
+does | Forgets the bottle it meant to take
+
+[bottle_stolen] nobody about
+when | The same, once it holds on hard to a bottle
+does | Blames whoever it last saw beside it and thinks less of them
+
+[scarce] nobody
+when | The first time its bottle runs dry or is filled, it sees water is scarce
+does | From now on it keeps its bottle, and won't swap it away
+
+[got_dirty] nobody
+when | It has gone unwashed long enough to turn dirty
+does | It may wash, if modest, and wants to once it smells or is ashamed
+
+[washed_clean] nobody
+when | It scrubs itself clean after being dirty
+does | The dirt and its shame are gone
+
+[stink] nobody
+when | It has gone dirty long enough to start to smell
+does | Those who smell it may complain, shun it or move away from it
+-> smell_complain sometimes | a friend who smells it tells it so
+-> shunned sometimes | a modest one sees someone keep away from it
+
+[smell_death] nobody
+when | It smells a body it cannot see and has not seen, once for each body
+does | It knows something has died near
+
+[follow_stench] nobody
+when | Hungry for flesh, it sets off after the smell of a body it has not seen, once for each body
+does | It walks to the body
+
+[put_off] nobody
+when | It walks off from a smell to eat somewhere else; once a little while
+does | Whoever smells, if it sees them go, knows why and feels shunned
+-> shunned sometimes | the one who smells is modest and sees it go
+
+[first_vending] nobody
+when | The first vending machine it ever sees, lit behind its glass; it goes and looks at it first
+does | It knows what the machine sells and how much is left; the hungry with keys may go and buy
+
+[vend_cake] nobody
+when | It pays keys for a cake from a machine
+does | Costs it 3 keys and gives it a cake
+
+[vend_bottle] nobody
+when | It pays keys for an empty bottle from a machine
+does | Costs it 3 keys and gives it an empty bottle
+
+[vend_empty] nobody
+when | At the machine, nothing left in it
+does | Nothing is bought; it just stands and looks
+
+[tell_vending] someone
+when | At a greeting, it tells a friend or one it keeps with where a machine is
+does | The hearer learns where it is, its stock, and the way there
+-> thank_tip always | the hearer learned something new
+
+[sell_vending] someone
+when | At a greeting, a greedy human tells where a machine is for a cake
+does | The hearer learns where it is, its stock and the way there; a cake is owed
+-> thank_tip always | the hearer learned something new
+-> pay often | the hearer has a cake and is still close at the greeting's end
+
+[wake_stir] nobody
+when | Waking, a second after it starts to come to, still lying with its eyes shut
+-> wake_stand often | when it sits up, then gets up, still in a fog
+
+[wake_stand] nobody
+when | Getting up for the first time out of the waking sit, the fog not lifted yet
+
+[first_statue] nobody
+when | The first giant statue it sees: it goes up to it and remarks, dazed or not
+when | Dazed, alone and nobody in sight, a few seconds after the last remark
+
+[first_table] nobody
+when | Dazed and alone, it sees the first table in the room it woke in, a few seconds after its last remark
+
+[empty_room] nobody
+when | Dazed and alone, it has looked round long enough to be sure nobody is anywhere in sight
+does | Counts as a remark, so the next fog remark waits a few seconds
+
+[blank] nobody
+when | Up, dazed, still in the room it woke in, it reaches back for anything from before
+does | Nothing comes: only its own name, and the log says so
+
+[quiet] nobody
+when | Awake, alone and finding nothing new: early on every minute, later after five lonely minutes
+does | Counts as one more time alone in the quiet, for the quiet_again milestones
+-> quiet_again sometimes | at the 4th, 8th, 15th and 30th time
+
+[it_goes_on] nobody
+when | Setting foot outside the place it woke in for the first time
+
+[never_ends] nobody
+when | Entering a new place that no longer lifts its hope, the first time that happens
+
+[call_out] shout
+when | Alone in its first five minutes, coming to a door out of where it woke, open or locked
+when | Not for the timid: they keep quiet and never call
+does | Carries 24 cells through walls to whoever can't see it, and cuts in ahead of small talk
+-> heard_call often | those who hear it from out of sight, if timid or too busy to answer
+-> call_answer sometimes | a sociable hearer, not hungry, thirsty or afraid, calls back
+-> call_answered sometimes | the caller hears its call answered
+
+[heard_call] nobody about
+when | Hearing a call from out of sight; the timid hush and are shaken by it
+does | Learns where the voice came from: the curious and sociable may go towards it
+does | A timid one is scared a little by it
+
+[call_answer] shout about
+when | Hearing a call from out of sight: sociable, not hungry, thirsty or afraid, and not yet answered
+does | Shouted back, carrying through walls like the call
+-> call_answered often | the first caller hears its call answered
+-> heard_call sometimes | any other caller who has already had its answer
+
+[call_answered] nobody about
+when | Its own call answered from out of sight, the first time
+
+[first_server_room] nobody
+when | Awake, it sees the first server room it ever sees; it may go up to look first
+
+[seek_hum] nobody
+when | Tired, with keys to spend, setting off for a server room it knows to sleep in
+does | Walks to the door in; the first time only
+
+[sleep_hum] nobody
+when | Lying down to sleep among the humming machines
+does | Needs no one to watch it sleep, and keeps its water here
+
+[winded] nobody
+when | Running, it runs out of breath: tireder, sooner
+does | Bent over, it cannot run till it has got its breath back
+
+[airlock_surprise] nobody
+when | Unlocking a door and finding another locked door behind it, the first time
+-> airlock_lesson sometimes | the next time it finds a double door
+
+[airlock_lesson] nobody
+when | The second time it finds another locked door behind the one it opened
+does | Learns the double doors eat a key each
+-> spare_keys sometimes | key-wise and short of keys, or not curious, it leaves server doors be
+-> dare_airlock sometimes | key-wise, curious and with keys enough, it opens them anyway
+-> tell_airlock sometimes | it tells a keyholder who doesn't know
+
+[spare_keys] nobody
+when | Key-wise, passing up a server room's double doors to keep its keys (curious under 0.65, or too few keys)
+does | Said once for each airlock
+
+[dare_airlock] nobody
+when | Key-wise and curious, it unlocks a double door anyway, knowing the cost
+
+[tell_airlock] someone
+when | Key-wise, with one who has keys and doesn't know what the double doors cost
+does | The hearer learns the double doors eat keys, and trusts the teller a little more
+
+[hum_lesson] nobody
+when | Standing inside a server room for the first time, the hum sinking in
+does | Learns the hum is made for sleep
+
+[stay_hum] nobody
+when | Drowsy inside a server room, it sleeps here rather than pay keys to come back
+does | Said once for the stay
+
+[first_dispenser] nobody
+when | Awake, it sees the first water dispenser it ever sees
+
+[dispenser_drink] nobody
+when | Drinking at a water dispenser's tap (not after nearly dying of thirst, then it is quenched)
+does | Counts as one more drink of water, for the water_again milestones
+-> water_again sometimes | at the 4th, 8th, 15th and 30th drink
+
+[dispenser_dry] nobody
+when | Finding a dispenser dry: one it came to drink or fill at, or when thirsty, or the one it keeps
+
+[refill_dispenser] nobody
+when | Pouring its bottle into the dispenser it keeps, some water going in
+
+[spot_trap] nobody
+when | The first hidden trap it ever spots beside it; it stops and looks at it
+
+[toilet_foul] nobody
+when | Seeing a toilet someone else fouled, if it didn't already know it so; the erratic don't mind
+
+[no_flush] nobody
+when | Using a toilet for the first time and finding it has no flush
+
+[try_terminal] nobody
+when | Typing at the first terminal it tries, the screen asking for a password
+when | Only the curious (0.5 or more) try computers; leaving mid-try for something pressing still says it
+does | The first try lifts its hope a little: someone runs this place
+
+[try_desk] nobody
+when | Typing at the first console desk it tries, its screens asking for a password
+when | Only the curious (0.5 or more) try computers
+does | The first try lifts its hope a little: someone runs this place
+
+[try_again] nobody
+when | Typing at another computer after one turned it away, locked by a password again
+does | Each lock after the first scares it a little
+
+[watch_typing] nobody about
+when | Seeing someone else at the keys of a computer; the curious, once only
+
+[top_up] nobody
+when | Having learnt to keep near water, drinking at water it passes before it is thirsty
+does | Walks to the water if it is not at it, and goes back to it if turned aside
+
+[turn_back] nobody
+when | Gone too far from the water it last drank at, not thirsty yet, it turns back to drink
+does | Said once for each trip
+
+[seek_water] nobody
+when | Thirsty and knowing no water, setting off to look for some; once
+
+[seek_food] nobody
+when | Hungry (not thirsty) and knowing no cake, setting off to look for some; once
+
+[while_here] nobody
+when | Just drunk and short of cakes, with one close by in reach: fetching it
+when | Or just taken a cake, not thirsty, with water close by: drinking
+
+[errand_back] nobody
+when | Going back to the water or cake it set out for, after something turned it aside
+does | Said once for each errand
+
+[cakes_again] nobody
+when | Eating its 4th, 8th, 15th or 30th cake; 70% chance it says anything
+
+[bodies_again] nobody about
+when | Finding its 4th, 8th, 15th or 30th body; about whose it was; 70% chance
+
+[water_again] nobody
+when | Drinking its 4th, 8th, 15th or 30th drink of water; 70% chance
+
+[doors_again] nobody
+when | Unlocking its 4th, 8th, 15th or 30th door, server doors too; 70% chance
+
+[traps_again] nobody
+when | Caught by a trap the 4th, 8th, 15th or 30th time; 70% chance
+
+[blood_again] nobody
+when | Washing off blood the 4th, 8th, 15th or 30th time; 70% chance
+
+[fights_again] nobody about
+when | In its 4th, 8th, 15th or 30th fight, a new one when a gap of 30 s has passed; about the foe
+
+[going_again] nobody
+when | Pissing or shitting for the 4th, 8th, 15th or 30th time; 70% chance
+
+[sleep_again] nobody
+when | Waking from sleep for the 4th, 8th, 15th or 30th time; 70% chance
+
+[quiet_again] nobody
+when | Alone in the quiet for the 4th, 8th, 15th or 30th time; 70% chance
+
+[faces_again] nobody about
+when | Catching up with someone it knows, the 4th, 8th, 15th or 30th time; about them
+
+[low_again] nobody about
+when | Eating rotten flesh, drinking from a toilet or foul water the 4th, 8th, 15th or 30th time
+
+[first_dark] nobody
+when | The first time it stands where no light falls
+does | It grows scared while it stays in the dark
+
+[into_dark] nobody
+when | Back in the dark after a minute or more in light
+does | It grows scared while it stays in it
+
+[out_of_dark] nobody
+when | Steps into the light after at least 20 seconds in the dark
+
+[toward_light] nobody
+when | In the dark and afraid of it, it heads for a light it remembers seeing, once per spell
+does | Only the fearful (not so brave, or parched, or hopeless) say it
+
+[sleep_dark] nobody
+when | Bold enough to like it, it lies down to sleep where no light falls
+does | Said in place of the plain sleep line
+
+[sleep_lit] nobody
+when | Timid enough to mind, it lies down to sleep under a light
+does | Said in place of the plain sleep line
+
+[relief_dark] nobody
+when | A modest one, with no toilet, goes to relieve itself where it is dark
+
+[stash_dark] nobody
+when | It makes a new stash of cakes in a spot it remembers as dark
+
+[stepped_in_dark] nobody
+when | Treads in feces in the dark, where it never saw it coming
+does | Said in place of stepped_in; the modest are scared by it
+
+[hour_bell] nobody
+when | A bell tolls the hour and it is awake to hear it
+
+[opening_bell] nobody
+when | The opening bell rings, lights on, and it is awake
+does | Lifts its hope, the bolder more; it rethinks what to do
+
+[closing_bell] nobody
+when | The closing bell rings, lights out, and it is awake
+does | Scares it a little and it rethinks what to do
+-> clock_lesson sometimes | On the second closing it hears
+
+[clock_lesson] nobody
+when | The second closing bell it hears awake: it learns the lights go out at the bell
+does | A lesson learnt, once
+
+[try_door_locked] nobody
+when | Tries the handle of a shut door it never tried before and it won't give
+-> learn_doors sometimes | The third locked door, once, says that instead
+
+[door_gave] nobody
+when | Pushes a shut airlock door from inside and it gives
+does | Remembers that door gives
+
+[learn_doors] nobody
+when | The third locked door it tries: from now on it takes them all for locked
+does | A lesson learnt, once; it stops trying handles
+
+[try_doors_boxed] nobody
+when | Nowhere left to explore, it goes round every shut door again from this side, once
+-> door_gave sometimes | If one of them is an airlock door that gives
+
+[help_steps] nobody
+when | Shut in a slam room without a key, it hears steps beyond the wall, at most every 10 seconds
+does | Heard through walls by those within 12 cells, who may come with a key or call back
+does | It wants to bang on the door as well
+-> bang_door often | It goes to the door and bangs
+-> call_back sometimes | Someone who cares, near enough, answers it
+
+[learn_refill] nobody
+when | Sees a machine fuller than it last saw it, for the first time
+does | A lesson learnt: machines fill up again
+
+[bang_door] nobody
+when | Shut in, or parched at a locked door, it reaches the door and pounds on it
+does | Heard by anyone within 20 cells who can't see it
+-> hear_bang sometimes | Those who hear it from out of sight, the first time from each
+-> call_back sometimes | A hearer who cares and is minded to rescue calls back
+
+[hear_bang] nobody
+when | Hears someone bang on a door out of sight, the first time from each, and half the time says so
+does | It gets scared, learns of the door, and may weigh going to help
+-> call_back sometimes | If it decides to rescue and has no key
+
+[smell_complain] someone
+when | Smells someone it trusts and they trust it back; not again to that one for 3 minutes
+when | Not if erratic, scared, or in a fight
+does | The one told hears it at once
+-> smell_answer often | The one told answers it
+
+[smell_answer] someone
+when | Told by someone that it smells
+does | Ashamed, it rethinks and may go wash (unless erratic)
+
+[shunned] nobody
+when | Sees someone walk off from its smell, if it does smell and washes for looks
+does | Ashamed; it may go wash

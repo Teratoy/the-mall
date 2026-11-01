@@ -23,7 +23,8 @@ Beside the lines file it keeps:
 
 For the DIAGRAM tab, /api/diagram gives every moment with what the code says
 of it (tools/talk_map.py), its lines, reviewed and tones, its say-chance, and
-how often the tests said it (build/coverage.json, from make coverage).
+how often the tests said it (build/coverage.json, from make coverage), with
+its section of data/talk_flow.txt (tools/talk_flow.py) and that file's checks.
 """
 import datetime
 import json
@@ -33,6 +34,7 @@ import sys
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+import talk_flow
 import talk_map
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -43,6 +45,7 @@ TALK = os.path.join(ROOT, "src", "human", "talk.cpp")
 PAGE = os.path.join(ROOT, "tools", "lines_editor")
 MEANINGS = os.path.join(PAGE, "conditions.txt")
 COVERAGE = os.path.join(ROOT, "build", "coverage.json")
+FLOW = talk_flow.FLOW
 
 # Conditions and tone stand in a column this wide before the bar, as in the file.
 COLUMN = 24
@@ -208,7 +211,7 @@ def stamp(path):
 
 
 def version():
-    return f"{stamp(LINES)}-{stamp(REVIEW)}-{stamp(DRAFTS)}-{stamp(TALK)}-{stamp(MEANINGS)}-{stamp(COVERAGE)}"
+    return f"{stamp(LINES)}-{stamp(REVIEW)}-{stamp(DRAFTS)}-{stamp(TALK)}-{stamp(MEANINGS)}-{stamp(COVERAGE)}-{stamp(FLOW)}"
 
 
 def book():
@@ -244,7 +247,10 @@ def diagram():
     review = read_json(REVIEW, {})
     coverage = read_json(COVERAGE, None)
     code = talk_map.talk_map()
+    flow = talk_flow.read()
+    flows = {f["name"]: f for f in flow["sections"]}
     for m in code["moments"]:
+        m["flow"] = flows.get(m["name"])
         section = sections.get(m["name"])
         lines = section["lines"] if section else []
         m["inFile"] = section is not None
@@ -258,6 +264,9 @@ def diagram():
         "moments": code["moments"],
         "follows": code["follows"],
         "coverage": coverage["made"] if coverage else None,
+        "checks": talk_flow.checks(flow, code),
+        "who": talk_flow.WHO,
+        "chances": talk_flow.CHANCES,
     }
 
 
