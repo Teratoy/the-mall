@@ -25,6 +25,7 @@ For the DIAGRAM tab, /api/diagram gives every moment with what the code says
 of it (tools/talk_map.py), its lines, reviewed and tones, its say-chance, and
 how often the tests said it (build/coverage.json, from make coverage), with
 its section of data/talk_flow.txt (tools/talk_flow.py) and that file's checks.
+POST /api/flow makes one edit to talk_flow.txt (talk_flow.apply says which).
 """
 import datetime
 import json
@@ -460,6 +461,14 @@ class Handler(BaseHTTPRequestHandler):
         self.send(404, {"error": "not found"})
 
     def do_POST(self):
+        if self.path == "/api/flow":
+            op = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+            try:
+                with lock:
+                    talk_flow.apply(op, [m["name"] for m in talk_map.talk_map()["moments"]])
+                    return self.send(200, diagram())
+            except talk_flow.Conflict as e:
+                return self.send(409, {"error": str(e)})
         if self.path != "/api/op":
             return self.send(404, {"error": "not found"})
         op = json.loads(self.rfile.read(int(self.headers["Content-Length"])))

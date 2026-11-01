@@ -166,6 +166,28 @@ like the line drafts.
   unreviewed, no lines, flagged, and a tone.
 4. Editing the flow file from the tab (add a branch, change a trigger),
    with the same small-operation saving the lines use.
+
+### Built (2026-11-02, step 4)
+
+- `POST /api/flow` takes one edit, and `talk_flow.apply` makes it:
+  - `who`: the who and about of a section.
+  - `add`: a when, does or branch row. It goes after the last row of its
+    kind, keeping whens, then does, then branches.
+  - `edit` and `delete`: one row.
+  - `section`: a section for a moment that has none. It goes after the
+    nearest moment before it in the enum.
+  Each edit re-reads the file and finds its row by place and text, as
+  the lines do. If the row has changed underneath, the edit is refused
+  and the page reloads. Unknown moments and chances are refused, and so
+  are `|` and `#` in words.
+- In the side panel: a who picker and an about box; ✎ and × on each
+  when, does and branch row when hovered; + when, + does and + branch
+  under them; and Add its section for a moment with none. Enter saves,
+  Esc cancels. A branch's moment is typed with the names offered.
+  Branches into a moment are edited from the moment they leave.
+- While a row is being edited, the tab doesn't reload when the file
+  changes. Behind the tab, the lines tab no longer says the file changed
+  when it was only the flow.
 5. Counted chances: a tool runs the soak's worlds and counts, for each
    moment one human says to another, which moment follows between the
    two within a few seconds. Written to `build/talk_flow_counts.json`;

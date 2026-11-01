@@ -48,7 +48,10 @@ function shown(m) {
 // ---- Loading ----
 async function dload() {
   const r = await fetch("api/diagram");
-  dia = await r.json();
+  dtake(await r.json());
+}
+function dtake(d) {
+  dia = d;
   diaVersion = dia.version;
   dia.byName = {};
   dia.into = {};
@@ -69,7 +72,8 @@ async function dpoll() {
   if (dview.on) {
     try {
       const v = (await (await fetch("api/version")).json()).version;
-      if (v !== diaVersion) { await dload(); drender(); }
+      // Not while a row is being edited: the reload would throw the edit away.
+      if (v !== diaVersion && !dview.editing) { await dload(); drender(); }
     } catch (e) {}
   }
   setTimeout(dpoll, 2000);
@@ -228,13 +232,31 @@ function dpanel() {
   if (!m) { $("dpanel").innerHTML = ""; return; }
   const f = m.flow;
   const lm = typeof book !== "undefined" && book ? book.moments.find(x => x.name === m.name) : null;
-  const rows = (list, cls) => list.length ? `<ul class="${cls}">${list.map(r => `<li>${esc(r.text)}</li>`).join("")}</ul>` : `<p class="none">not written</p>`;
-  const branch = (b, other) => {
+  const ed = dview.editing && dview.editing.moment === m.name ? dview.editing : null;
+  const acts = (kind, i) => `<span class="racts"><button data-ed="${kind}:${i}" title="Edit">✎</button><button data-del="${kind}:${i}" title="Delete">×</button></span>`;
+  const rows = (list, kind) => {
+    const items = list.map((r, i) => ed && ed.kind === kind && ed.i === i ? `<li>${editor(kind, r)}</li>`
+      : `<li class="er">${esc(r.text)}${acts(kind, i)}</li>`);
+    if (ed && ed.kind === kind && ed.i < 0) items.push(`<li>${editor(kind, null)}</li>`);
+    return (items.length ? `<ul class="${kind}">${items.join("")}</ul>` : `<p class="none">not written</p>`)
+      + (f && !(ed && ed.kind === kind) ? `<button class="addr" data-add="${kind}">+ ${kind === "branch" ? "branch" : kind}</button>` : "");
+  };
+  const branch = (b, other, i) => {
+    if (other === "to" && ed && ed.kind === "branch" && ed.i === i) return `<li>${editor("branch", b)}</li>`;
     const code = other === "to" ? codeShows(m.name, b.to) : codeShows(b.from, m.name);
     const name = other === "to" ? b.to : b.from;
-    return `<li><a data-go="${name}">${name}</a> <span class="chw c-${b.chance || "none"}">${b.chance || "—"}</span>
-      ${code ? '<span class="code" title="the code shows this follow">code</span>' : ""}<div class="bw">${esc(b.when)}</div></li>`;
+    return `<li class="er"><a data-go="${name}">${name}</a> <span class="chw c-${b.chance || "none"}">${b.chance || "—"}</span>
+      ${code ? '<span class="code" title="the code shows this follow">code</span>' : ""}${other === "to" ? acts("branch", i) : ""}<div class="bw">${esc(b.when)}</div></li>`;
   };
+  const branches = () => {
+    const items = (f ? f.branches : []).map((b, i) => branch(b, "to", i));
+    if (ed && ed.kind === "branch" && ed.i < 0) items.push(`<li>${editor("branch", null)}</li>`);
+    return (items.length ? `<ul class="br">${items.join("")}</ul>` : '<p class="none">nothing</p>')
+      + (f && !(ed && ed.kind === "branch") ? `<button class="addr" data-add="branch">+ branch</button>` : "");
+  };
+  const whoPick = f ? `<select id="dWho">${dia.who.map(w => `<option value="${w}" ${w === f.who ? "selected" : ""}>${WHO_WORDS[w]}</option>`).join("")}</select>
+      <label class="tog"><input type="checkbox" id="dAbout" ${f.about ? "checked" : ""}> about someone</label>`
+    : `<button class="primary" data-section="${m.name}">Add its section</button>`;
   const tones = Object.entries(m.tones).map(([t, n]) =>
     `<li><b style="color:var(--${t})">${t}</b> ${n} line${n === 1 ? "" : "s"}<div class="bw">${esc((typeof meaning !== "undefined" && meaning[t]) || "")}</div></li>`).join("");
   const uses = m.uses.map((u, i) => `<li class="use ${u.kind}"><a data-copy="${esc(u.file)}:${u.line}" title="copy file:line">${esc(u.file.replace(/^src\//, ""))}:${u.line}</a>
@@ -251,7 +273,7 @@ function dpanel() {
       ${dview.mode === "focus" && dview.focus === m.name ? "" : `<button data-focus="${m.name}">Focus ◎</button>`}</div>
     <p class="gdoc">${esc(m.group)}</p>
     <div class="facts">
-      <span>said</span><b>${f ? WHO_WORDS[f.who] + (f.about ? ", about someone" : "") : "not written"}</b>
+      <span>said</span><b>${whoPick}</b>
       <span>lines</span><b>${m.lines} (${m.reviewed} reviewed)</b>
       <span>say-chance</span><b>${m.chance === null ? "always said" : m.chance}</b>
       <span>in tests</span><b>${m.said === null || m.said === undefined ? "unknown: run make coverage" : m.said ? "said " + m.said + " times" : '<span class="flagw">never said</span>'}</b>
@@ -261,14 +283,52 @@ function dpanel() {
     <h3>When</h3>${rows(f ? f.when : [], "when")}
     <h3>Does</h3>${rows(f ? f.does : [], "does")}
     ${tones ? `<h3>Tones</h3><ul class="tones">${tones}</ul>` : ""}
-    <h3>Leads to</h3>${f && f.branches.length ? `<ul class="br">${f.branches.map(b => branch(b, "to")).join("")}</ul>` : '<p class="none">nothing</p>'}
+    <h3>Leads to</h3>${branches()}
     <h3>Comes after</h3>${intoOf(m.name).length ? `<ul class="br">${intoOf(m.name).map(b => branch(b, "from")).join("")}</ul>` : '<p class="none">nothing</p>'}
     <h3>In the code</h3>${uses ? `<ul class="uses">${uses}</ul>` : '<p class="none">never named in the code</p>'}`;
   if (sample && ink) $("dpanel").querySelector(".sample").appendChild(drawBubble(sample.text, sample.tone));
+  if (f) {
+    $("dWho").onchange = () => flowOp({ op: "who", moment: m.name, who: $("dWho").value, about: $("dAbout").checked });
+    $("dAbout").onchange = $("dWho").onchange;
+  }
+  const first = $("dpanel").querySelector(".fed input, .fed select");
+  if (first) { first.focus(); if (first.select && first.type === "text") first.select(); }
 }
+/// The form for one row of talk_flow.txt: words for a when or does; for a branch the moment it
+/// leads to, how often, and when. Enter saves and Esc cancels.
+function editor(kind, r) {
+  const list = `<datalist id="dNames">${dia.moments.map(x => `<option value="${x.name}">`).join("")}</datalist>`;
+  const text = `<input type="text" id="edText" value="${esc(r ? (kind === "branch" ? r.when : r.text) : "")}" placeholder="${kind === "branch" ? "when it leads there" : kind === "when" ? "what makes it say this" : "what saying it changes"}">`;
+  const head = kind !== "branch" ? "" : `<div class="frow"><input type="text" id="edTo" list="dNames" value="${esc(r ? r.to : "")}" placeholder="moment" autocomplete="off">
+      <select id="edChance">${["", ...dia.chances].map(c => `<option value="${c}" ${r && r.chance === c ? "selected" : ""}>${c || "how often?"}</option>`).join("")}</select></div>${list}`;
+  return `<div class="fed">${head}${text}<div class="frow"><button class="primary" data-save>Save (Enter)</button><button data-cancel>Cancel (Esc)</button></div></div>`;
+}
+function editedRow(m, kind, i) {
+  const f = m.flow;
+  return i < 0 ? null : kind === "branch" ? f.branches[i] : f[kind][i];
+}
+async function flowOp(body) {
+  const r = await fetch("api/flow", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const data = await r.json();
+  if (!r.ok) { toast(data.error); dview.editing = null; await dload(); drender(); return false; }
+  dview.editing = null;
+  dtake(data);
+  drender();
+  return true;
+}
+function saveEdit() {
+  const e = dview.editing; if (!e) return;
+  const m = dm(e.moment), row = editedRow(m, e.kind, e.i);
+  const body = { moment: m.name, kind: e.kind, text: $("edText").value };
+  if (e.kind === "branch") { body.to = $("edTo").value.trim(); body.chance = $("edChance").value; }
+  if (row) Object.assign(body, { op: "edit", row: row.row, raw: row.raw }); else body.op = "add";
+  flowOp(body);
+}
+function cancelEdit() { dview.editing = null; dpanel(); }
 
 // ---- Acting ----
 function pick(name) {
+  if (dview.pick !== name) dview.editing = null;
   dview.pick = name;
   if (dview.mode === "focus") dpanel(); else { for (const el of $("dcanvas").querySelectorAll(".dcard.on")) el.classList.remove("on");
     const el = $("dcanvas").querySelector(`.dcard[data-m="${name}"]`); if (el) el.classList.add("on");
@@ -290,6 +350,7 @@ function overview() {
 }
 function goBack() { if (dview.back.length) { const n = dview.back.pop(); dview.mode = "focus"; dview.focus = n; dview.pick = n; drender(); } }
 
+window.diagramShown = () => dview.on;
 /// Keys while the tab shows; true when it took the key, so the lines tab's keys don't run.
 window.diagramKeys = e => {
   if (!dview.on) return false;
@@ -376,6 +437,14 @@ window.diagramKeys = e => {
 #dpanel .use .near { color: var(--dim); font-size: 12px; font-style: italic; }
 #dpanel .use code { display: block; color: var(--ink); font-size: 11px; white-space: pre-wrap; word-break: break-all; opacity: .8; }
 .tabs { display: flex; gap: 4px; } .tabs button.on { border-color: var(--accent); color: var(--accent); }
+#dpanel .er { position: relative; }
+#dpanel .racts { display: none; margin-left: 6px; } #dpanel .er:hover .racts { display: inline-flex; gap: 3px; }
+#dpanel .racts button { padding: 0 5px; font-size: 11px; line-height: 15px; }
+#dpanel .addr { margin-top: 4px; font-size: 11px; padding: 1px 6px; color: var(--dim); }
+#dpanel .fed { display: grid; gap: 5px; padding: 6px; background: var(--raise); border-radius: 4px; margin: 3px 0; }
+#dpanel .fed input[type=text] { width: 100%; background: var(--bg); }
+#dpanel .frow { display: flex; gap: 5px; } #dpanel .frow input { flex: 1; }
+#dpanel #dWho { font-size: 12px; padding: 1px 4px; }
 @media (max-width: 900px) { #dbody { grid-template-columns: 1fr; grid-template-rows: 1fr 45vh; } #dpanel { border-left: 0; border-top: 1px solid var(--line); } }
 `;
   document.head.appendChild(style);
@@ -419,7 +488,25 @@ window.diagramKeys = e => {
     if (n !== dview.hover) { dview.hover = n; arrowsFor(n || dview.pick); }
   });
   $("dcanvas").addEventListener("mouseleave", () => { if (dview.mode === "overview") { dview.hover = null; arrowsFor(dview.pick); } });
+  $("dpanel").addEventListener("keydown", e => {
+    if (!e.target.closest(".fed")) return;
+    if (e.key === "Enter") { e.preventDefault(); saveEdit(); }
+    else if (e.key === "Escape") { e.preventDefault(); cancelEdit(); }
+  });
   $("dpanel").addEventListener("click", e => {
+    if (e.target.closest("[data-save]")) return saveEdit();
+    if (e.target.closest("[data-cancel]")) return cancelEdit();
+    const a = e.target.closest("[data-add]");
+    if (a) { dview.editing = { moment: dview.pick, kind: a.dataset.add, i: -1 }; return dpanel(); }
+    const ed = e.target.closest("[data-ed]");
+    if (ed) { const [kind, i] = ed.dataset.ed.split(":"); dview.editing = { moment: dview.pick, kind, i: +i }; return dpanel(); }
+    const del = e.target.closest("[data-del]");
+    if (del) {
+      const [kind, i] = del.dataset.del.split(":"); const row = editedRow(dm(dview.pick), kind, +i);
+      return flowOp({ op: "delete", moment: dview.pick, row: row.row, raw: row.raw });
+    }
+    const sec = e.target.closest("[data-section]");
+    if (sec) return flowOp({ op: "section", moment: sec.dataset.section, who: "" });
     const g = e.target.closest("[data-go]"); if (g) return dview.mode === "focus" ? focusOn(g.dataset.go) : (pick(g.dataset.go), overviewTo(g.dataset.go));
     const f = e.target.closest("[data-focus]"); if (f) return focusOn(f.dataset.focus);
     const l = e.target.closest("[data-lines]"); if (l) return openLines(l.dataset.lines);

@@ -277,7 +277,8 @@ async function poll() {
     const v = (await r.json()).version;
     if (v !== version) {
       if (editing) { $("toast").textContent = ""; toast("The file changed on disk: it reloads when you finish editing.", true); }
-      else { await load(); toast("Reloaded: the file changed on disk.", true); }
+      // Behind the DIAGRAM tab the change is most often its own edit of talk_flow.txt: no word of it.
+      else { await load(); if (!(window.diagramShown && window.diagramShown())) toast("Reloaded: the file changed on disk.", true); }
     }
   } catch (e) {}
   setTimeout(poll, 2000);
