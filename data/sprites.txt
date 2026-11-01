@@ -1694,6 +1694,231 @@ qqqqqqqQQQQ.
 ..ppppPPDs..
 ..ppppPPDs..
 
+group Plant
+
+sprite boiler
+# An industrial boiler, three cells wide, seen from the front: its flue, steam valve, water glass,
+# pressure gauge and firebox door. f and F, the fire through the peephole, trade colours as it flickers.
+ink 1 4a1614 paint, darkest
+ink 2 7a2622 paint shade
+ink 3 a43630 paint
+ink 4 c85446 paint lit
+ink 5 e48a76 paint shine
+ink k 1e2024 iron dark
+ink K 3c4046 iron
+ink S 6a7078 steel
+ink s a0a6ae steel lit
+ink w dce0e4 steel shine
+ink y c8a040 brass
+ink Y 7e6224 brass shade
+ink W f0eee6 dial
+ink n d02020 needle
+ink g c8e2f0 sight glass
+ink b 4a9ad8 water
+ink f ffc040 flame
+ink F ff6020 flame, flickered
+ink v d04040 valve wheel
+blink f F
+......ssssss......
+......KKKKKK......
+.......SswK..vv...
+.......SswK.vyvv..
+.......kkkk..sS...
+.......SswK..sS...
+....112SswK22sS...
+..11223444332sS1..
+.1122334443322221.
+.SSsssswwssSSSSKK.
+.2KKK444544KKK221.
+.2SgK4yy54KWWWK21.
+.2SgK4yY5KWWWnWK1.
+.2SgK4yy5KWWnWWK1.
+.2SbK4yY5KWWWWWK1.
+.2SbK4yy54KWWWK21.
+.2SbK444544KKK221.
+.SSbKssywssySSSyK.
+.2KKK444544332221.
+.2232ssssssss2221.
+.22ksSSKKKKSSK221.
+.223sSSKFfKSwK221.
+.223sSSKfFKSwK221.
+.22ksSSKKKKSSK221.
+.2232KKKKKKKK2221.
+.SSsssswwssSSSSKK.
+ssssssssssssssssss
+KSKKSKKSKKSKKSKKSK
+KKKKKKKKKKKKKKKKKK
+kkk............kkk
+
+sprite boiler side
+# The boiler seen from its right, its front toward the right: the burner on the front, fed by a
+# gas pipe from the floor, and a handhole to clean it. f and F, the burner's flame, flicker.
+ink 1 4a1614 paint, darkest
+ink 2 7a2622 paint shade
+ink 3 a43630 paint
+ink 4 c85446 paint lit
+ink 5 e48a76 paint shine
+ink k 1e2024 iron dark
+ink K 3c4046 iron
+ink S 6a7078 steel
+ink s a0a6ae steel lit
+ink w dce0e4 steel shine
+ink y c8a040 brass
+ink Y 7e6224 brass shade
+ink f ffc040 flame
+ink F ff6020 flame, flickered
+ink B 4c6a86 burner
+ink j 324a62 burner shade
+ink J 7894ae burner lit
+ink o 000000 louvre
+ink u e8c440 gas pipe
+ink U 9a7e24 gas pipe shade
+blink f F
+...ssssss.........
+...KKKKKK.........
+....SswK..........
+....SswKYYYY......
+....kkkk.yy.......
+....SswK.yy.......
+...1SswK2yy.......
+.11234443221......
+1123344432221.....
+SSssswwssSSSK.....
+2234445433221.....
+2234445433221.....
+223ySSSSy3221.....
+223SKKKKS3221.....
+223ySSSSy3221.....
+2234445433221.sss.
+2234445433221.SSK.
+SSysswyssSySK.SSS.
+223444543322JJJJJj
+223444543322BBBBBj
+223444543322BoooBj
+223444543322BBBBBj
+223444543322BoooBj
+223444543322BBfFBj
+223444543322BBBBBj
+SSssswwssSSSjjjjjj
+sssssssssssuss....
+KSKKSKKSKKSuKK....
+KKKKKKKKKKKuKK....
+kkk.......UUUk....
+
+sprite air handler
+# An air handling unit, three cells wide, seen from the front: the duct on top, the fan behind its
+# window and the controls, the filter door, the coil's water pipes going down to the floor.
+# x and X, the fan's blades, trade colours as it turns.
+ink P cfcbbe panel
+ink p aeaa9c panel shade
+ink q e8e4d8 panel lit
+ink A 8a9096 frame
+ink a b8bec4 frame lit
+ink K 3a3e44 edge
+ink k 22252a rail dark
+ink m a6adb3 duct
+ink g d6dce0 duct flange
+ink G 7e868c duct flange shade
+ink D 1a1c22 fan housing
+ink x c4cad0 blade
+ink X 40464e blade, turned
+ink h e0e4e8 hub
+ink w eceff2 latch
+ink e 50e070 LED
+ink r f0a030 LED, amber
+ink s 202428 screen
+ink c 3c7cd4 chilled water
+ink C 28508a chilled water shade
+ink t d04848 hot water
+ink T 8a2828 hot water shade
+ink v d04040 valve wheel
+ink y e8c547 label
+ink Y 2a2a2a label print
+blink x X
+....gggggggggg....
+....mmmmmmmmmm....
+....mmmmmmmmmm....
+...KGGGGGGGGGGK...
+aaaaaaaaaaaaaaaaaK
+aqqqqqqqqqqqqqqqpK
+aqPPDDDDPPPAAAAApK
+aqPDxDDXDPPAeesApK
+aqDXDxXDxDPAssrApK
+aqDDXhhxDDPAAAAApK
+aqDDxhhXDDPAKAKApK
+aqDxDXxDXDPAaaaApK
+aqPDXDDxDPPAAAAApK
+aqppDDDDpppppppppK
+aAAAAAAAAAAAAAAAAK
+aqqqqqqqqqqqqqqqpK
+aqPPPyyyyyyyyPPPpK
+aqwPPyYYyYyYyPPwpK
+aqPPPyyyyyyyyPPPpK
+aqPPPPPPPPPPPPPPpK
+aqpppppppppppppppK
+aAAAAAAAAAAAAAAAAK
+aqqqqqqqqqqqqqqqpK
+aqAAAAAAAAPPPPPPpK
+aqPcCPPtTPPPPPPwpK
+aqvvvvPtTPPPPPPPpK
+aqpcCpvvvvpppppppK
+AAAcCAAtTAAAAAAAAA
+kkkcCkktTkkkkkkkkk
+kk.cC..tT.......kk
+
+sprite air handler side
+# The air handling unit seen from its right, its front toward the right: the louvred
+# fresh-air intake, the access door with its filter gauge, the water pipes going down.
+ink P cfcbbe panel
+ink p aeaa9c panel shade
+ink q e8e4d8 panel lit
+ink A 8a9096 frame
+ink a b8bec4 frame lit
+ink K 3a3e44 edge
+ink k 22252a rail dark
+ink m a6adb3 duct
+ink g d6dce0 duct flange
+ink G 7e868c duct flange shade
+ink w eceff2 latch
+ink l 16181c louvre gap
+ink c 3c7cd4 chilled water
+ink C 28508a chilled water shade
+ink t d04848 hot water
+ink T 8a2828 hot water shade
+ink v d04040 valve wheel
+ink y e8c547 label
+ink Y 2a2a2a label print
+....gggggggggg....
+....mmmmmmmmmm....
+....mmmmmmmmmm....
+...KGGGGGGGGGGK...
+aaaaaaaaaaaaaaaaaK
+aqqqqqqqqqqqqqqqpK
+aqAaaaaaaaaaaaaApK
+aqAllllllllllllApK
+aqAaaaaaaaaaaaaApK
+aqAllllllllllllApK
+aqAaaaaaaaaaaaaApK
+aqAllllllllllllApK
+aqAaaaaaaaaaaaaApK
+aqpppppppppppppppK
+aAAAAAAAAAAAAAAAAK
+aqqqqqqqqqqqpqqqpK
+aqPPPPPPPPPPpqPPpK
+aKPPKKKPPPPPpqPPpK
+aqPPKwKPPPPwpqPPpK
+aqPPKKKPPPPPpqPPpK
+aqPPPPPPPPPPpqPPpK
+aqPPPPPPPPPPpqPPpK
+aqPyYyYyYyPPpccccC
+aqPyYYyYyyPwpCCCcC
+aKPPPPPPPPPPpqPPcC
+aqPPPPPPPPPPtttTcC
+aqppppppppppTTtTcC
+AAAAAAAAAAAAAvvvvC
+kkkkkkkkkkkkkktTcC
+kk............tTcC
+
 group Map
 
 sprite map you

@@ -97,19 +97,22 @@ def main():
     sprites = load("data/sprites.txt")
     shown = [(n, s) for n, s in sprites.items() if s["group"] in groups]
     box = max(len(s["rows"][0]) for _, s in shown) * SCALE + GAP * SCALE
+    tall = max(len(s["rows"]) for _, s in shown) * SCALE + GAP * SCALE
+    kinds = [k for k, g in (("duct", "Air ducts"), ("pipe", "Water pipes")) if g in groups]
     per_row = 12
     rows = (len(shown) + per_row - 1) // per_row
     piece_px = 12 * SCALE
     map_w = len(LAYOUT[0]) * piece_px
-    width = max(per_row * box, 2 * map_w + 3 * box) + GAP * SCALE
-    img = Image.new("RGBA", (width, rows * 2 * box + 2 * GAP * SCALE + len(LAYOUT) * piece_px), FLOOR)
+    width = max(min(per_row, len(shown)) * box, len(kinds) * (map_w + 2 * box)) + GAP * SCALE
+    map_h = len(LAYOUT) * piece_px if kinds else 0
+    img = Image.new("RGBA", (width, rows * 2 * tall + 2 * GAP * SCALE + map_h), FLOOR)
     for k, (name, s) in enumerate(shown):
         x = GAP * SCALE + k % per_row * box
-        y = GAP * SCALE + k // per_row * 2 * box
+        y = GAP * SCALE + k // per_row * 2 * tall
         paint(img, pixels(s), x, y)
-        paint(img, pixels(s, blinked=True), x, y + box)
-    top = rows * 2 * box + 2 * GAP * SCALE
-    for side, kind in enumerate(["duct", "pipe"]):
+        paint(img, pixels(s, blinked=True), x, y + tall)
+    top = rows * 2 * tall + 2 * GAP * SCALE
+    for side, kind in enumerate(kinds):
         left = GAP * SCALE + side * (map_w + 2 * box)
         for j, row in enumerate(LAYOUT):
             for i, c in enumerate(row):
