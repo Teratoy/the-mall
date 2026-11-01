@@ -171,7 +171,7 @@ constexpr float ZOOM_EASE = 2.0f;
 /// the HUD's slide in for as long. On the PC the column slides off over both.
 constexpr float SLIDE_TIME = 0.35f;
 constexpr Rectangle CHOOSE_BACK{MARGIN, MARGIN, 32, 14};
-/// The name is a field to type in: a box round it to tap, a hint under it,
+/// The name is a field to type in: a box round it to tap, a hint under it while typing,
 /// and at most NAME_LONGEST characters.
 constexpr int CHOOSE_NAME_Y = MARGIN + 3, CHOOSE_NAME_W = 136, CHOOSE_NAME_H = 17;
 constexpr int CHOOSE_HINT_Y = CHOOSE_NAME_Y + CHOOSE_NAME_H + 4;
@@ -186,9 +186,9 @@ constexpr int TRAITS = 4, TRAIT_ROW = 13, TRAIT_BAR_W = 68, TRAIT_PIPS = 9, TRAI
 constexpr int CHOOSE_BUTTON_H = 24;
 constexpr int CHOOSE_BOTTOM_H = CHOOSE_PAD + TRAITS * TRAIT_ROW + CHOOSE_PAD + CHOOSE_BUTTON_H + CHOOSE_PAD;
 /// On the phone the name heads the bottom strip, over the traits, and the top
-/// strip holds only BACK. A phone shows no hint under the name.
-/// The name's box stands CHOOSE_PAD under the strip's edge, the traits CHOOSE_PAD under the box, or the hint.
-constexpr int CHOOSE_NAME_BLOCK_H = CHOOSE_PAD + CHOOSE_NAME_H + (files::TOUCH_ONLY ? 0 : CHOOSE_HINT_Y - CHOOSE_NAME_Y + ui::ROW);
+/// strip holds only BACK. There the name has no hint under it: its box stands
+/// CHOOSE_PAD under the strip's edge, and the traits CHOOSE_PAD under the box.
+constexpr int CHOOSE_NAME_BLOCK_H = CHOOSE_PAD + CHOOSE_NAME_H;
 constexpr int CHOOSE_BACK_H = 2 * MARGIN + 14;
 /// On the phone the bottom strip with the name over it.
 constexpr int CHOOSE_PHONE_BOTTOM_H = CHOOSE_NAME_BLOCK_H + CHOOSE_BOTTOM_H;
@@ -886,9 +886,7 @@ void WorldScene::drawChoosing(Vector2 mouse, bool wide, float out) {
     if (editing_) {
         if (std::fmod(caret_, 2 * CARET_BLINK) < CARET_BLINK)
             DrawRectangle(cx + ui::textWidth(shown.c_str()) / 2 + 1, nameY - 1, 1, 10, WHITE);
-        ui::textCentred("TYPE A NAME, ENTER WHEN DONE", cx, hintY, ui::DIM);
-    } else if (!files::TOUCH_ONLY) {
-        ui::textCentred("TAP THE NAME TO CHANGE IT", cx, hintY, ui::DIM);
+        if (wide) ui::textCentred("TYPE A NAME, ENTER WHEN DONE", cx, hintY, ui::DIM);
     }
     // A press on the name starts typing; one anywhere else ends it.
     if (out == 0.0f && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
