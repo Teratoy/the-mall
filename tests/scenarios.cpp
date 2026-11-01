@@ -1723,6 +1723,20 @@ const std::vector<Scenario> SCENARIOS = {
          return Checks{logged({"HEARD @ CALLING FOR HELP"}), logged({"LET @ OUT OF A SLAM ROOM"}),
                        logged({"@ LET ME OUT"})};
      }},
+    {"shut-in-steps", "shut in and eating, it hears steps outside and cries out to them at once", 99,
+     [](Stage& s) {
+         Human& caller = shutInFirst(s);
+         P::hushShutIn(caller);
+         caller.cakes = 2;
+         caller.hunger = 0.8f;
+         Human& walker = s.add(seedWhere(caring, 12500), 30);
+         calm(walker);
+         s.run(8);
+         P::place(s.world, walker, s.freeNear(caller.cell, 4));
+         s.run(15);
+         return Checks{logged({"HEARD STEPS OUTSIDE. CRIED OUT"}),
+                       logged({"HEARD SOMEONE CALLING FOR HELP", "HEARD @ CALLING FOR HELP"})};
+     }},
     {"shut-in-told", "a hearer tells a stranger with keys, who never heard the cry, and they let them out", 99,
      [](Stage& s) {
          Human& caller = shutInFirst(s);

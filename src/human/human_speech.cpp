@@ -27,9 +27,9 @@ bool Human::sayLater(Saying s) {
         voice_.sayings.insert(voice_.sayings.begin(), std::move(s));
         return true;
     }
-    // A call into the mall cuts in ahead of whatever was still to be said,
-    // behind any emergency.
-    if (s.moment == talk::Moment::CallOut || s.moment == talk::Moment::CallAnswer) {
+    // A call into the mall, or a cry for help from a slam room, cuts in ahead
+    // of whatever was still to be said, behind any emergency.
+    if (s.moment == talk::Moment::CallOut || s.moment == talk::Moment::CallAnswer || s.moment == talk::Moment::Help) {
         auto at = std::find_if(voice_.sayings.begin(), voice_.sayings.end(),
                                [](const Saying& q) { return !talk::isUrgent(q.moment); });
         voice_.sayings.insert(at, std::move(s));

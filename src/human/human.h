@@ -605,6 +605,8 @@ private:
         /// when it next cries for help.
         std::optional<Vec2i> slamGate;
         float helpTimer = 0.0f;
+        /// When it last cried out to steps it heard beyond the wall.
+        float stepsCried = -1e9f;
         /// Parched and boxed in: the locked door it lies by and calls through
         /// for water, and when it next calls.
         std::optional<Vec2i> callDoor;

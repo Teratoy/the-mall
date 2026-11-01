@@ -245,6 +245,8 @@ struct SoakProbe {
     }
     /// Shut in, h cries for help on its next update.
     static void cryNow(Human& h) { h.rescue_.helpTimer = 0.0f; }
+    /// h, shut in, cries for help on its own only when it hears someone.
+    static void hushShutIn(Human& h) { h.rescue_.helpTimer = 1e9f; }
     /// Nothing lies put down anywhere, and h knows of nothing lying: the
     /// bottle it woke near is gone, as if never laid.
     static void clearPiles(World& w, Human& h) {

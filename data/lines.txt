@@ -383,6 +383,19 @@ hurt fear               | I'M HURT! I'M LOCKED IN!
 hopeless                | ...IS ANYONE EVEN THERE?
 need.to.go fear         | LET ME OUT! I CAN'T HOLD IT!
 
+# Shut in a slam room, hearing steps beyond the wall: crying out to them at
+# once. Said to nobody, but it carries through the walls.
+[help_steps]
+                        | WAIT! DON'T GO! I'M IN HERE!
+                        | HEY! HEY! IN HERE!
+                        | SOMEONE'S THERE! PLEASE!
+                        | I HEAR YOU! LET ME OUT!
+timid                   | PLEASE DON'T WALK AWAY...
+brave                   | YOU! OUT THERE! OVER HERE!
+sociable                | HELLO? HELLO! I CAN HEAR YOU!
+hopeless                | ...PLEASE BE REAL.
+starving                | PLEASE... I'M HERE...
+
 # Hearing someone shut in and setting off to let them out. Said to nobody
 # ({WHO} is them, if it knows their name).
 [help_coming]
