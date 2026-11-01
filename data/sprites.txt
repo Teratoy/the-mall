@@ -523,6 +523,188 @@ SSSSs.
 SSSSs.
 sssss.
 
+group Air ducts
+
+sprite duct
+# A run of air duct seen from above, one cell of it, running west to east; the game turns it a
+# quarter to run north to south. r is the rib where one length meets the next; s its shadow on the floor.
+ink l c8ccd0 metal lit
+ink m a4aab0 metal
+ink d 74787e metal shade
+ink r dde2e6 rib
+ink s 00000040 shadow
+......
+llrlll
+mmrmmm
+mmrmmm
+ddrddd
+ssssss
+
+sprite duct corner
+# The duct turning, from the east edge to the south; the game turns it to the other three ways.
+ink l c8ccd0 metal lit
+ink m a4aab0 metal
+ink d 74787e metal shade
+ink s 00000040 shadow
+......
+.lllll
+.lmmmm
+.lmmmm
+.lmmdd
+.lmmds
+
+sprite duct tee
+# The duct branching: west to east, and a branch south; the game turns it to the other three ways.
+ink l c8ccd0 metal lit
+ink m a4aab0 metal
+ink d 74787e metal shade
+ink s 00000040 shadow
+......
+llllll
+mmmmmm
+mmmmmm
+dlmmdd
+slmmds
+
+sprite duct cross
+# Two ducts crossing in a box.
+ink l c8ccd0 metal lit
+ink m a4aab0 metal
+ink d 74787e metal shade
+ink s 00000040 shadow
+.lmmds
+llmmll
+mmmmmm
+mmmmmm
+ddmmdd
+slmmds
+
+sprite duct end
+# The duct's capped end, the run going on to the east; the game turns it to the other three ways.
+ink F 5c6066 cap
+ink l c8ccd0 metal lit
+ink m a4aab0 metal
+ink d 74787e metal shade
+ink s 00000040 shadow
+......
+.Fllll
+.Fmmmm
+.Fmmmm
+.Fdddd
+.sssss
+
+sprite duct grille
+# Where a duct breathes out into the mall: a grille set in the floor or the wall.
+# o and O, the dark between the slats, trade colours as the air stirs behind them.
+ink F 5c6066 frame
+ink l c8ccd0 slat
+ink o 1a1c20 dark
+ink O 2c3036 dark, stirred
+blink o O
+FFFFFF
+FooOoF
+FllllF
+FOooOF
+FllllF
+FFFFFF
+
+group Water pipes
+
+sprite pipe
+# A run of water pipe seen from above, one cell of it, running west to east; the game turns it a
+# quarter to run north to south. c is the coupling where one length meets the next; s its shadow.
+ink p 7aa4c4 pipe lit
+ink P 4a6e8c pipe shade
+ink c 9aa0a8 coupling
+ink s 00000040 shadow
+......
+c.....
+cppppp
+cPPPPP
+csssss
+......
+
+sprite pipe corner
+# The pipe bending, from the east edge to the south; the game turns it to the other three ways.
+ink p 7aa4c4 pipe lit
+ink P 4a6e8c pipe shade
+ink s 00000040 shadow
+......
+......
+..pppp
+..pPPP
+..pPss
+..pPs.
+
+sprite pipe tee
+# The pipe branching: west to east, and a branch south; the game turns it to the other three ways.
+ink p 7aa4c4 pipe lit
+ink P 4a6e8c pipe shade
+ink s 00000040 shadow
+......
+......
+pppppp
+PPpPPP
+sspPss
+..pPs.
+
+sprite pipe cross
+# Two pipes crossing.
+ink p 7aa4c4 pipe lit
+ink P 4a6e8c pipe shade
+ink s 00000040 shadow
+..pPs.
+..pPs.
+pppppp
+PPpPPP
+sspPss
+..pPs.
+
+sprite pipe end
+# The pipe's capped end, the run going on to the east; the game turns it to the other three ways.
+ink p 7aa4c4 pipe lit
+ink P 4a6e8c pipe shade
+ink c 9aa0a8 cap
+ink s 00000040 shadow
+......
+.c....
+.cpppp
+.cPPPP
+.sssss
+......
+
+sprite pipe valve
+# The pipe, west to east, with a red handwheel on it to shut the water off.
+ink p 7aa4c4 pipe lit
+ink P 4a6e8c pipe shade
+ink h c83c3c wheel
+ink H 8a2828 wheel shade
+ink t b0b4ba stem
+ink s 00000040 shadow
+......
+.hhhh.
+phtthp
+PhttHP
+sHHHHs
+.ssss.
+
+sprite pipe leaking
+# The pipe, west to east, dripping from a crack underneath. w and x, the drop forming and falling,
+# trade colours on every other blink.
+ink p 7aa4c4 pipe lit
+ink P 4a6e8c pipe shade
+ink c 9aa0a8 coupling
+ink s 00000040 shadow
+ink w 5cb4ec drop
+ink x 5cb4ec50 drop, fallen
+blink w x
+......
+c.....
+cppppp
+cPPPPP
+csswss
+...x..
+
 group Map
 
 sprite map you
