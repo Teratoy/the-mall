@@ -2953,3 +2953,45 @@ loner                   | NOBODY ELSE KNOWS. GOOD.
 timid                   | WHAT ELSE IS DOWN HERE?
 erratic                 | HA. HA HA.
 filthy                  | WHAT'S A LITTLE MORE.
+
+# Trying the handle of a shut door it never tried before, and finding it
+# locked. Said to nobody.
+[try_door_locked 0.6]
+                        | WORTH A TRY.
+                        | NOT THIS WAY, THEN.
+                        | WHO LOCKS A PLACE LIKE THIS?
+curious                 | WHAT ARE THEY KEEPING IN THERE?
+timid                   | SOMEONE DOESN'T WANT ME THROUGH.
+hopeless                | WHAT DID I EXPECT?
+keys                    | GOOD THING I KEPT A KEY.
+erratic                 | I HEARD SOMETHING HOLD IT SHUT.
+
+# Pushing a shut door from inside a server room's airlock, and it gives.
+# Said to nobody.
+[door_gave]
+                        | OH.
+                        | FINALLY, ONE THAT LISTENS.
+                        | JUST LIKE THAT.
+timid                   | IT LET ME GO.
+sure                    | I KNEW IT.
+erratic                 | IT WANTS ME OUT. WHY?
+
+# Finding one shut door too many locked: from now on it takes them all
+# for locked and stops trying. Said to nobody.
+[learn_doors]
+                        | THEY'RE ALL THE SAME.
+                        | NO MORE HANDLES. KEYS.
+                        | I'LL STOP ASKING NICELY.
+hopeless                | WHY DO I EVEN TRY.
+curious                 | THERE'S A KEY FOR EVERY ONE OF THEM.
+brave                   | FINE. I'LL FIND THE KEYS.
+
+# Nowhere left to go, it goes round every shut door again, from this side,
+# before it gives up. Said to nobody.
+[try_doors_boxed]
+                        | ONE OF THEM HAS TO GIVE.
+                        | AGAIN. ALL OF THEM.
+                        | I MISSED ONE. I MUST HAVE.
+hopeless                | ONE MORE TIME.
+timid                   | PLEASE. JUST ONE.
+erratic                 | THEY MOVE WHEN I'M NOT LOOKING.

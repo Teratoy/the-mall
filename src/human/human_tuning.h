@@ -124,6 +124,9 @@ constexpr float CHECK_DOOR_CHANCE = 0.5f;
 constexpr float CHECK_DOOR_CURIOUS = 0.4f;
 constexpr float DOOR_RECHECK_TIME = 90.0f;
 constexpr int DOOR_CHECK_RANGE = 2;
+/// Shut doors it must find locked by trying them before it takes every
+/// shut door for locked and stops trying (AI/door_trying_plan.md).
+constexpr int DOOR_LESSON = 3;
 /// Cells a single search may expand before giving up.
 constexpr int SEARCH_LIMIT = 200000;
 /// Steps in a row a walker waits for someone in the way before giving up.

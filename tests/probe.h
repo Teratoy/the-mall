@@ -93,6 +93,8 @@ struct SoakProbe {
             for (int x = 0; x < CHUNK; x++) {
                 Vec2i c{slot.x * CHUNK + x, slot.y * CHUNK + y};
                 h.memory.see(c, w.tile(c));
+                // Explored, it has tried its doors, all but the airlocks'.
+                if (w.tile(c) == Tile::DoorLocked && !w.airlock(c)) h.doors_.tried[c] = 0xF;
                 if (items && w.hasCake(c)) h.memory.cakes.insert(c);
                 if (items && w.hasKey(c)) h.memory.keys.insert(c);
             }
@@ -370,6 +372,14 @@ struct SoakProbe {
         h.server_.keyWise = times >= 2;
     }
     static bool keyWise(const Human& h) { return h.server_.keyWise; }
+    /// h has found this many shut doors locked by trying them (AI/door_trying_plan.md).
+    static void doorsLocked(Human& h, int n) { h.doors_.locked = n; }
+    static bool doorsLearnt(const Human& h) { return h.doors_.learnt; }
+    /// Teller tells listener the way to a locked door it knows and they don't;
+    /// the doors listener now takes for locked on someone's word.
+    static void tellLockedDoor(World& w, Human& teller, Human& listener) { teller.tellLockedDoor(w, listener); }
+    static const std::unordered_set<Vec2i, Vec2iHash>& doorsTold(const Human& h) { return h.doors_.told; }
+    static bool doorKnownLocked(const Human& h, Vec2i door) { return h.doorKnownLocked(door); }
     /// The water dispenser grown in the server room, set to hold this much
     /// water. Aborts if the room grew none.
     static const Dispenser& fillDispenser(World& w, const ServerRoom& r, float water) {

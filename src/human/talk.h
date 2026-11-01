@@ -233,6 +233,11 @@ enum class Moment {
     // Stepping in feces it couldn't see for the dark (to nobody, in place of
     // stepped_in).
     SteppedInDark,
+    // Trying doors (AI/door_trying_plan.md): a shut door's handle that won't
+    // give; an airlock door that gives at a push from inside; finding
+    // enough locked to stop trying; boxed in, trying them all again (all to
+    // nobody).
+    TryDoorLocked, DoorGave, LearnDoors, TryDoorsBoxed,
     Count
 };
 
