@@ -231,7 +231,11 @@ User asked for other dithering: crossed, hatched, and lines.
   **hatched** (rising diagonals), **crossed** (a rising diagonal, then the
   falling one over it), **lines** (level rows). **D** in game cycles them
   (the name goes to the terminal); `make shot SHOT_ARGS="--dither NAME"`.
-  Ordered is the default until the user picks one.
+  The user picked **ordered** (2026-11-01).
+- The pattern breathes, very subtly (user): each of the 16 places in the
+  pattern has its threshold swing by `PULSE` (0.08) at its own phase,
+  once every `PULSE_SECONDS` (2.4 s), so pixels on the edge of a step
+  come and go one by one. View only, on the clock.
 
 ### 4. Light limits sight
 - `Sight::look` marks a cell seen only if it is lit, or within

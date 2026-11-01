@@ -46,6 +46,11 @@ constexpr int PATTERNS[DITHER_COUNT][4][4] = {
     {{0, 2, 1, 3}, {8, 10, 9, 11}, {4, 6, 5, 7}, {12, 14, 13, 15}},
 };
 Dither pattern = Dither::Ordered;
+/// The pattern breathes: each dot's threshold swings by this much, at its
+/// own phase, once every PULSE_SECONDS, so the pixels on the edge of a step
+/// come and go one by one.
+constexpr float PULSE = 0.08f;
+constexpr float PULSE_SECONDS = 2.4f;
 
 /// Each kind of source's colour in full light: strip lights a cool
 /// off-white, vending machines warm, screens and racks their own glow.
@@ -155,6 +160,11 @@ void drawLight(const World& world, const Human& viewer, bool reveal, int x0, int
         if (x - step > t) step += 1.0f;
         return (unsigned char)std::lround(255.0f * std::min(1.0f, step / float(SHADE_STEPS)));
     };
+    // Each place in the pattern its own phase, the golden angle apart, so
+    // neighbouring dots swing out of step.
+    float thresholds[16];
+    const float swing = float(GetTime()) * 2.0f * PI / PULSE_SECONDS;
+    for (int r = 0; r < 16; r++) thresholds[r] = (float(r) + 0.5f) / 16.0f + PULSE * std::sin(swing + float(r) * 2.4f);
     for (int py = 0; py < h; py++) {
         const int wy = y0 * CELL_PX + py;
         const int ownY = py / CELL_PX + 1;
@@ -176,7 +186,7 @@ void drawLight(const World& world, const Human& viewer, bool reveal, int x0, int
             };
             const float ku = std::abs(u), kv = std::abs(v);
             const Shade want = mix(mix(own.want, at(nx, ownY), ku), mix(at(ownX, ny), at(nx, ny), ku), kv);
-            const float t = (float(PATTERNS[int(pattern)][wy & 3][wx & 3]) + 0.5f) / 16.0f;
+            const float t = thresholds[PATTERNS[int(pattern)][wy & 3][wx & 3]];
             pixels[size_t(py * w + px)] = {channel(want.r, own.drawn, t), channel(want.g, own.drawn, t),
                                            channel(want.b, own.drawn, t), 255};
         }
