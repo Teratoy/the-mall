@@ -83,6 +83,16 @@ A window, PC only. The knob panel on the left, the chunk on the right.
   gives rather than one lucky chunk.
 - **Save:** S writes the changed values back into `data/worldgen.txt`,
   keeping its comments and order. Ctrl+Z undoes a knob change (Q2).
+- **Driven from chat (user: yes):** the tool watches `data/worldgen.txt`
+  and reloads within a second when it changes on disk, so Claude in a chat
+  session can edit the file and the window regrows in front of the user.
+  Knobs the user has changed but not saved are kept over the reload.
+- **What it shows, for Claude:** each regrow also saves the view to
+  `build/genview.png` and the state to `build/genview.txt` (seed, kind,
+  footprint, view, and every knob that differs from the file), so Claude
+  can look at what the user sees and check a change did what was meant.
+- **Restart in place:** the state file is read back at start, so after a
+  rebuild for a code change the tool opens on the same seed and view.
 
 ### Step 4: overlays and readout
 
@@ -107,6 +117,29 @@ A window, PC only. The knob panel on the left, the chunk on the right.
 
 - Opens the game on that seed with the edited values, for a look in play.
 
+### Step 7: asking Claude from the editor (user: yes)
+
+- A key opens a prompt box at the bottom of the window. The user types
+  what they want ("more pillars in big rooms", "why is this plaza so
+  empty?") and Enter sends it.
+- The tool runs the `claude` CLI headless (`claude -p`, on the user's
+  Claude account, no API key) in the project folder, in the background so
+  the window stays live. It passes the prompt, `build/genview.png`, the
+  state file, and a short brief: what the knobs are, that it may change
+  only `data/worldgen.txt`, and to answer in a sentence or two.
+- Its tools are limited to reading the project and editing
+  `data/worldgen.txt`. The file watch then regrows the chunk, so the
+  answer and the change arrive together.
+- The answer shows in a strip under the prompt box; a spinner while it
+  works; Esc cancels.
+- One Claude session is kept for the tool's run (`--resume` with the id
+  from the first reply), so later prompts remember earlier ones. A key
+  starts it fresh.
+- Asked for something no knob covers (a new kind of room, a change to how
+  a generator works), it changes nothing and says so, and the idea is
+  noted for a chat session to build with a plan, `make check` and a commit
+  (Q8).
+
 ## Open questions
 
 1. **What it's for:** only tuning the knobs that exist, or later also
@@ -128,3 +161,9 @@ A window, PC only. The knob panel on the left, the chunk on the right.
    value, and you widen any in the file. Fine?
 7. **F5 in game:** new values apply to chunks grown from then on (my pick),
    or F5 throws the world away and grows it again on the same seed?
+8. **Ideas the prompt box can't do:** noted in `AI/worldgen_ideas.md`,
+   with the seed and a screenshot name, for a chat session to pick up (my
+   pick), or only shown in the answer strip?
+9. **Which model the prompt box uses:** the CLI's default, or a faster,
+   cheaper one (Sonnet or Haiku) since it only turns knobs (my pick:
+   Sonnet)?
