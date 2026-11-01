@@ -15,6 +15,7 @@
 #include "render/table_art.h"
 #include "render/toilet_art.h"
 #include "render/vending_art.h"
+#include "render/view_effects.h"
 #include "render/water_art.h"
 #include "world/world.h"
 #include <rlgl.h>
@@ -273,12 +274,17 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
                      known(c + Vec2i{0, 1}), world.floor(c), world.wall(c), reveal || viewer.sight.inView(c));
         }
     // What the viewer has never seen is snow, in a pass of its own so the
-    // texture is bound once.
+    // texture is bound once; with the snow turned off, black.
     const Texture2D& snow = snowTexture();
+    const bool snowing = viewEffects().snow;
     const int snowFrame = int(GetTime() * SNOW_FPS) % SNOW_FRAMES;
     for (int y = y0; y <= y1; y++)
         for (int x = x0; x <= x1; x++) {
             if (known({x, y}) != Tile::Void) continue;
+            if (!snowing) {
+                DrawRectangle(x * CELL_PX - left, y * CELL_PX - top, CELL_PX, CELL_PX, BLACK);
+                continue;
+            }
             Rectangle src{float(snowFrame * SNOW_PX + floorMod(x * CELL_PX, SNOW_PX)),
                           float(floorMod(y * CELL_PX, SNOW_PX)), float(CELL_PX), float(CELL_PX)};
             DrawTextureRec(snow, src, {float(x * CELL_PX - left), float(y * CELL_PX - top)}, WHITE);

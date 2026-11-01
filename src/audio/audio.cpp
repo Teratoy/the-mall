@@ -2,6 +2,7 @@
 #include "audio/denoise.h"
 #include "audio/synth.h"
 #include "core/files.h"
+#include "render/view_effects.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -101,7 +102,11 @@ void loadSettings() {
     int v;
     while (in >> key >> v) {
         v = std::clamp(v, 0, VOLUME_STEPS);
-        if (key == "master") current.master = v;
+        ViewEffects& view = viewEffects();
+        if (key == "snow") view.snow = v != 0;
+        else if (key == "light_dither") view.lightDither = v != 0;
+        else if (key == "sight_dither") view.sightDither = v != 0;
+        else if (key == "master") current.master = v;
         else if (key == "sounds") current.sounds = v;
         else if (key == "voices") current.voices = v;
         else if (key == "music") current.music = v;
@@ -206,6 +211,9 @@ void save() {
     std::ofstream out(files::savePath(SETTINGS_FILE));
     out << "master " << current.master << "\nsounds " << current.sounds << "\nmusic " << current.music << "\nvoices "
         << current.voices << "\n";
+    const ViewEffects& view = viewEffects();
+    out << "snow " << view.snow << "\nlight_dither " << view.lightDither << "\nsight_dither " << view.sightDither
+        << "\n";
 }
 
 } // namespace audio

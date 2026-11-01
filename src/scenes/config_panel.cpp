@@ -2,6 +2,7 @@
 #include "audio/audio.h"
 #include "audio/voice.h"
 #include "render/canvas.h"
+#include "render/view_effects.h"
 #include "ui/pixel_ui.h"
 #include <algorithm>
 
@@ -27,6 +28,17 @@ constexpr Row ROWS[] = {{"MASTER", &audio::Settings::master},
                         {"MUSIC", &audio::Settings::music},
                         {"VOICES", &audio::Settings::voices}};
 
+/// The view's effects, each on or off, under the volumes and TOGGLE_GAP
+/// further down than a row.
+struct Toggle {
+    const char* label;
+    bool ViewEffects::*value;
+};
+constexpr Toggle TOGGLES[] = {{"SNOW", &ViewEffects::snow},
+                              {"LIGHT DITHER", &ViewEffects::lightDither},
+                              {"SIGHT DITHER", &ViewEffects::sightDither}};
+constexpr int TOGGLE_GAP = 8;
+
 } // namespace
 
 // The rows are laid out from the widest label, the whole block centred.
@@ -34,6 +46,7 @@ bool ConfigPanel::draw(Vector2 mouse, int width) {
     ui::textCentred(TITLE, width / 2, TITLE_Y, ui::BRIGHT);
     int labelW = 0;
     for (const Row& r : ROWS) labelW = std::max(labelW, ui::textWidth(r.label));
+    for (const Toggle& t : TOGGLES) labelW = std::max(labelW, ui::textWidth(t.label));
     int pipsW = audio::VOLUME_STEPS * (PIP_W + PIP_GAP) - PIP_GAP;
     int rowW = labelW + GAP + STEP_W + GAP + pipsW + GAP + STEP_W;
     int x = (width - rowW) / 2;
@@ -55,6 +68,20 @@ bool ConfigPanel::draw(Vector2 mouse, int width) {
             // A voice is set by hearing one.
             if (r.value == &audio::Settings::voices) audio::speak(voice::speak(voice::Voice{}, SAMPLE_LINE));
             else audio::play("pop");
+        }
+        y += ROW_STEP;
+    }
+    // A toggle is one button as wide as a volume's - pips +, saying how it is.
+    y += TOGGLE_GAP;
+    ViewEffects& view = viewEffects();
+    for (const Toggle& t : TOGGLES) {
+        bool& on = view.*t.value;
+        ui::text(t.label, x, y + (STEP_H - ui::ROW) / 2 + 1);
+        Rectangle box{float(x + labelW + GAP), float(y), float(rowW - labelW - GAP), STEP_H};
+        if (ui::button(box, on ? "ON" : "OFF", mouse)) {
+            on = !on;
+            audio::save();
+            audio::play("pop");
         }
         y += ROW_STEP;
     }

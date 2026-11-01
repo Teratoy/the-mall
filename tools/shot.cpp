@@ -13,6 +13,8 @@
 //   --map          open the followed human's map
 //   --reveal       show the whole world, not just what the human knows
 //   --dither ordered|hatched|crossed|lines  the pattern light steps in (ordered)
+//   --no-snow, --no-light-dither, --no-sight-dither  turn that effect off,
+//                  as CONFIGURATION does
 //   --wide         a wide window, so the world takes the PC layout
 //   --wake         with --scene choose, press WAKE UP first, so --seconds is
 //                  the time since: to see the strips slide and the zoom ease
@@ -38,6 +40,7 @@
 #include "core/rng.h"
 #include "human/human_look.h"
 #include "render/canvas.h"
+#include "render/view_effects.h"
 #include "render/light_view.h"
 #include "scenes/config_scene.h"
 #include "scenes/menu_scene.h"
@@ -275,7 +278,8 @@ struct ShotProbe {
 int main(int argc, char** argv) {
     if (argc < 2 || argv[1][0] == '-') {
         std::fprintf(stderr, "usage: %s out.png [--scene world|menu|choose|obituary|config] [--seconds S] [--seed N] "
-                             "[--zoom 0-3] [--stats] [--log] [--map] [--reveal] [--dither NAME] [--wide] [--pile] [--smells] "
+                             "[--zoom 0-3] [--stats] [--log] [--map] [--reveal] [--dither NAME] "
+                             "[--no-snow] [--no-light-dither] [--no-sight-dither] [--wide] [--pile] [--smells] "
                              "[--vending] [--server] [--typing terminal|desk] [--washroom] [--pissed] [--wake] [--frames N]\n", argv[0]);
         return 1;
     }
@@ -309,6 +313,9 @@ int main(int argc, char** argv) {
             for (int d = 0; d < DITHER_COUNT; d++)
                 if (!std::strcmp(name, ditherName(Dither(d)))) setDither(Dither(d));
         }
+        else if (!std::strcmp(argv[i], "--no-snow")) viewEffects().snow = false;
+        else if (!std::strcmp(argv[i], "--no-light-dither")) viewEffects().lightDither = false;
+        else if (!std::strcmp(argv[i], "--no-sight-dither")) viewEffects().sightDither = false;
         else if (!std::strcmp(argv[i], "--wide")) wide = true;
         else if (!std::strcmp(argv[i], "--wake")) wake = true;
         else if (!std::strcmp(argv[i], "--pile")) pile = true;
