@@ -6,6 +6,7 @@
 #include "world/door.h"
 #include "world/gen.h"
 #include "world/mess.h"
+#include "world/noise.h"
 #include "world/pile.h"
 #include "world/server_room.h"
 #include "world/smell.h"
@@ -15,6 +16,7 @@
 #include "world/trap.h"
 #include "world/vending.h"
 #include <algorithm>
+#include <deque>
 #include <memory>
 #include <optional>
 #include <string>
@@ -208,6 +210,13 @@ public:
     void update(float dt);
     /// Seconds simulated since the world began.
     float time() const { return time_; }
+    /// Something made a sound the player may hear. For the view only:
+    /// nothing in the sim reads noises back, so they change nothing.
+    void noise(NoiseKind kind, Vec2i cell, int who = -1);
+    /// The newest noises, oldest first, and how many were ever made, so the
+    /// view can tell which it hasn't heard yet.
+    const std::deque<Noise>& noises() const { return noises_; }
+    uint64_t noiseCount() const { return noiseCount_; }
     size_t chunkCount() const { return chunks_.size(); }
 
     /// Every human ever made; a human's id is its index here.
@@ -276,6 +285,8 @@ private:
     Blood blood_;
     Mess mess_;
     float time_ = 0.0f;
+    std::deque<Noise> noises_;
+    uint64_t noiseCount_ = 0;
     std::vector<Smell> smells_;
     /// Seconds until the smells are gathered again.
     float smellIn_ = 0.0f;

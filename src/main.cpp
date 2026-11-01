@@ -1,3 +1,4 @@
+#include "audio/audio.h"
 #include "render/canvas.h"
 #include "render/icon_art.h"
 #include "scenes/menu_scene.h"
@@ -33,6 +34,7 @@ int main() {
     UnloadImage(icon);
     SetExitKey(KEY_NULL);
     SetTargetFPS(60);
+    audio::open();
     {
         Canvas canvas;
         std::unique_ptr<Scene> scene = std::make_unique<MenuScene>();
@@ -50,5 +52,6 @@ int main() {
             EndDrawing();
         }
     }
+    audio::close();
     CloseWindow();
 }

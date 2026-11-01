@@ -9,6 +9,9 @@
 
 namespace {
 
+/// Noises kept for the view to hear; older ones are dropped unheard, as
+/// when nothing is listening (the soak).
+constexpr size_t NOISES_KEPT = 256;
 /// Smells are gathered this often, in seconds.
 constexpr float SMELL_EVERY = 1.0f;
 /// Feces smell until this fresh (Mess::freshness), as dry as no longer to
@@ -252,6 +255,12 @@ size_t World::livingCount() const {
 Human* World::occupant(Vec2i cell) const {
     auto it = occupied_.find(cell);
     return it == occupied_.end() ? nullptr : it->second;
+}
+
+void World::noise(NoiseKind kind, Vec2i cell, int who) {
+    noises_.push_back({kind, cell, who});
+    noiseCount_++;
+    if (noises_.size() > NOISES_KEPT) noises_.pop_front();
 }
 
 void World::moveOccupant(Vec2i from, Vec2i to, Human* h) {
@@ -800,10 +809,12 @@ bool World::unlock(Vec2i cell) {
         if (tile(cell) != Tile::DoorLocked) return false;
         setTile(cell, Tile::DoorOpen);
         it->second.open = AIRLOCK_SHUT_TIME;
+        noise(NoiseKind::Unlock, cell);
         return true;
     }
     if (gates_.erase(cell) > 0) {
         setTile(cell, Tile::DoorOpen);
+        noise(NoiseKind::Unlock, cell);
         return true;
     }
     auto it = doorCells_.find(cell);
@@ -814,6 +825,7 @@ bool World::unlock(Vec2i cell) {
     for (Vec2i s : {d.slot, d.other()})
         if (Chunk* c = chunkAt(s))
             for (Vec2i p : d.cellsIn(s)) c->set(p - c->origin(), Tile::DoorOpen);
+    noise(NoiseKind::Unlock, cell);
     return true;
 }
 
@@ -822,6 +834,7 @@ bool World::pushOpen(Vec2i door, Vec2i from) {
     if (it == airlocks_.end() || from != door + it->second.in) return false;
     setTile(door, Tile::DoorOpen);
     it->second.open = AIRLOCK_SHUT_TIME;
+    noise(NoiseKind::AirlockOpen, door);
     return true;
 }
 
@@ -836,7 +849,10 @@ void World::updateAirlocks(float dt) {
     for (auto& [cell, d] : airlocks_) {
         if (tile(cell) != Tile::DoorOpen) continue;
         if (occupant(cell)) d.open = AIRLOCK_SHUT_TIME;
-        else if ((d.open -= dt) <= 0.0f) setTile(cell, Tile::DoorLocked);
+        else if ((d.open -= dt) <= 0.0f) {
+            setTile(cell, Tile::DoorLocked);
+            noise(NoiseKind::AirlockShut, cell);
+        }
     }
 }
 
@@ -864,6 +880,7 @@ void World::setOff(Vec2i cell, Human& h) {
     switch (t.kind) {
     case TrapKind::Spikes:
         t.sprung = SPIKES_UP_TIME;
+        noise(NoiseKind::Spikes, cell, h.id);
         h.impale(*this);
         break;
     case TrapKind::Slam:
@@ -897,9 +914,11 @@ void World::updateTraps(float dt) {
             t.shutting = false;
             setTile(t.from, Tile::DoorLocked);
             gates_.insert(t.from);
+            noise(NoiseKind::Slam, t.from);
         }
         if (t.volley > 0 && (t.reload -= dt) <= 0.0f) {
             darts_.push_back({t.from, t.dir});
+            noise(NoiseKind::DartFire, t.from);
             t.volley--;
             t.reload = DART_GAP;
         }
@@ -911,6 +930,7 @@ void World::updateTraps(float dt) {
             Vec2i cell = d.from + d.dir * i;
             if (i > DART_FLIGHT_MAX || opaque(tile(cell))) return true;
             if (Human* h = occupant(cell)) {
+                noise(NoiseKind::DartHit, cell, h->id);
                 h->hitByDart(rng_.range(DART_DAMAGE_MIN, DART_DAMAGE_MAX), d.dir);
                 return true;
             }

@@ -972,6 +972,7 @@ bool Human::doorUrge() {
 
 // The body stays where it fell, out of the way, with all it carried on it.
 void Human::die(World& world) {
+    world.noise(NoiseKind::Death, cell, id);
     for (Wound& w : wounds) w.healLeft = std::min(w.healLeft, CORPSE_BLEED_TIME);
     sleep_.diedAsleep = state == State::Sleeping;
     state = State::Dead;

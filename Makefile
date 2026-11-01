@@ -34,7 +34,7 @@ DIRTYSHEET := build/dirty_sheet
 # One human shooting all eight ways, as animation frames (tools/frames_gif.py makes the GIF).
 SHOOTANIM := build/shoot_anim
 
-.PHONY: all run clean trips stuck check golden coverage shot scenarios genprobe lightprobe hidef bottlesheet dirtysheet shootanim spritesheet spriteref fontdump lines sprites trapprobe icon apk install-apk logcat simprofile gprof
+.PHONY: all run clean trips stuck check golden coverage shot scenarios genprobe lightprobe hidef bottlesheet dirtysheet shootanim spritesheet soundsheet spriteref fontdump lines sprites trapprobe icon apk install-apk logcat simprofile gprof
 
 all: $(BIN)
 
@@ -126,6 +126,15 @@ $(SHOOTANIM): tools/shoot_anim.cpp $(filter-out build/main.o,$(OBJ))
 shootanim: $(SHOOTANIM)
 	rm -rf build/shoot-anim
 	./$(SHOOTANIM) build/shoot-anim $(SHOOTANIM_ARGS)
+
+# Every sound from data/sounds.txt rendered to build/sounds/*.wav, clear and muffled (tools/sound_sheet.cpp).
+SOUNDSHEET := build/sound_sheet
+
+$(SOUNDSHEET): tools/sound_sheet.cpp build/audio/synth.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@ $(LDLIBS)
+
+soundsheet: $(SOUNDSHEET)
+	./$(SOUNDSHEET) data/sounds.txt build/sounds
 
 # Every sprite from data/sprites.txt at 1x, in all the ways the game draws it (tools/sprite_sheet.cpp).
 SPRITESHEET := build/sprite_sheet
