@@ -1262,7 +1262,9 @@ const std::vector<Scenario> SCENARIOS = {
      [](Stage& s) {
          return askForWater(s, {logged({"TOLD @ MY BOTTLE WAS EMPTY"}), logged({"@ SAID THEIR BOTTLE WAS EMPTY. IT WASN'T"})},
                             [](Human&, Human&) {});
-     }},
+     },
+     "since light limits sight (light_plan step 4), the asker wanders dark corridors, comes back parched and is "
+     "told off its place before it asks, and takes the water by force"},
     {"bottle-refuse", "a stingy stranger won't give any of its water",
      seedWhere([](const Traits& t) { return t.greedy < 0.35f && t.sociable < 0.4f && t.brave < 0.3f; }, 15119),
      [](Stage& s) {
@@ -1362,7 +1364,9 @@ const std::vector<Scenario> SCENARIOS = {
                                 asker.cakes = 1;
                                 holder.lessons.nearWater = 1.0f;
                             });
-     }},
+     },
+     "since light limits sight (light_plan step 4), the asker wanders dark corridors, comes back parched and is "
+     "told off its place before it asks, and takes the water by force"},
     {"pile-cakes", "a hungry human with no cakes picks up cakes lying on the floor", 99,
      [](Stage& s) {
          Human& h = s.first();
@@ -2220,6 +2224,34 @@ const std::vector<Scenario> SCENARIOS = {
          h.tiredness = 0.6f;
          s.run(30);
          return Checks{loggedBy(h, "LAY DOWN WHERE THE LIGHT IS")};
+     }},
+    {"relief-dark", "modest, needing to go, it goes in the dark half of the room, where nobody would see",
+     seedWhere(modest, 30000), [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         calm(h);
+         s.run(45);
+         const int edge = h.cell.x + 5;
+         P::putOutLights(s.world, [edge](Vec2i c) { return c.x < edge; });
+         P::forget(h);
+         h.bladder = 0.95f;
+         s.run(30);
+         return Checks{loggedBy(h, "WENT WHERE THE DARK HID ME")};
+     }},
+    {"stash-dark", "a grasping loner with full pockets hides its stash in the dark half of the room",
+     seedWhere([](const Traits& t) { return t.greedy >= 0.8f && t.sociable <= 0.3f; }, 30500), [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         calm(h);
+         s.run(45);
+         const int edge = h.cell.x + 5;
+         P::putOutLights(s.world, [edge](Vec2i c) { return c.x < edge; });
+         P::forget(h);
+         h.cakes = h.carryMax();
+         // More to be had in plain sight, on the lit side, than it can carry.
+         P::addCake(s.world, s.freeNear(h.cell + Vec2i{8, 0}, 0));
+         s.run(120);
+         return Checks{loggedBy(h, "HID IT IN THE DARK")};
      }},
     {"airlock-surprise", "with keys and nowhere else to go, it opens a server room's outer door and finds another behind",
      seedWhere(plain, 23000), [](Stage& s) {

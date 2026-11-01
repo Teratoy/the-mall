@@ -323,6 +323,32 @@ User asked for other dithering: crossed, hatched, and lines.
   (`P::putOutLights`), what it saw forgotten, then tired.
 - Soak: 13 still, 2 flips, 0 loops.
 
+### Built: hiding in the dark (2026-11-01)
+- Relief: a spot it remembers in full light counts as 4 more open cells
+  round it (`RELIEF_LIT_OPEN`), by the same shyness as open cells. The
+  modest (0.55 and up) going in the dark away from a toilet note "WENT
+  WHERE THE DARK HID ME" and say `relief_dark`.
+- Stash: a spot in full light counts as 4 more open cells
+  (`STASH_LIT_OPEN`). A new stash on a cell it saw dark: "HID IT IN THE
+  DARK", `stash_dark`.
+- `litSeen(c)`: the light it last saw on a cell, 0 to 1 (0 if never seen
+  lit or dark).
+- Not built: the cunning waiting in the dark.
+- Scenarios `relief-dark`, `stash-dark`.
+- **Fix found by the soak:** a human that kept away from someone it shuns
+  walked straight back up to them once out of sight, as in the dark they
+  are seen only close (a 231-step loop). It now keeps clear of where it
+  last kept away from them for 20 s (`SHUN_REMEMBER`, `gore_.shunned`),
+  unless they become the one it goes for or walks up to.
+- "MADE FOR THE LIGHT" was said again and again on the edge of the
+  light; now again only after a minute in light.
+- `bottle-lie` and `hard-no-sell` are known again beside `bottle-sell`:
+  all three share `askForWater`, and every change moves whether the
+  asker asks before it is parched and told off. Walling the two in
+  together made the grasping holder rob the asker instead. For the user:
+  accept, or rework that setup.
+- Soak: 16 still, 0 flips, 0 loops.
+
 ### 6. The mall clock and its bells
 - The world keeps the mall's time of day, from the world's start (no
   dice). At closing time the ceiling fittings go out mall-wide but for a

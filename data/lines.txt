@@ -2927,3 +2927,19 @@ hurt                    | LET IT HEAL WHERE NOTHING LOOKS.
 scared                  | ONE EYE OPEN.
 sociable                | SOMEONE MIGHT FIND ME HERE.
 hopeless                | NOT IN THE DARK. NOT ALONE IN THE DARK.
+
+# The modest, going where the dark hides them. Said to nobody.
+[relief_dark 0.5]
+                        | NOBODY NEEDS TO SEE THIS.
+                        | QUICK. WHILE IT'S DARK.
+timid                   | PLEASE DON'T LET ANYONE COME.
+sociable                | AT LEAST THERE'S THAT.
+filthy                  | WHAT HAVE I BECOME?
+
+# Making a stash where no light falls. Said to nobody.
+[stash_dark 0.6]
+                        | WHO'D LOOK HERE?
+                        | THE DARK KEEPS SECRETS.
+greedy                  | ALL MINE. ALL HIDDEN.
+hungry                  | REMEMBER THE SPOT. REMEMBER IT.
+loner                   | NOBODY ELSE KNOWS. GOOD.

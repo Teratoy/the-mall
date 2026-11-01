@@ -52,10 +52,11 @@ void Human::darkness(const World& world, float dt) {
         }
         dark_.in = 0.0f;
         dark_.lit += dt;
-        dark_.toward = false;
         return;
     }
     if (dark_.in == 0.0f) {
+        // Back and forth on the edge of the light is one spell.
+        if (dark_.lit >= DARK_AGAIN_AFTER) dark_.toward = false;
         if (!dark_.met) {
             dark_.met = true;
             note("STOOD IN THE DARK");
@@ -121,4 +122,9 @@ std::optional<talk::Moment> Human::sleptAsLiked(const World& world) {
         return talk::Moment::SleepLit;
     }
     return std::nullopt;
+}
+
+float Human::litSeen(Vec2i c) const {
+    auto seen = memory.lightSeen(c);
+    return seen ? float(seen->level) / float(LIGHT_FULL) : 0.0f;
 }

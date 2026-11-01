@@ -969,6 +969,11 @@ private:
         /// A fresh pool of blood that scared it, and until when it stays away.
         Vec2i scare;
         float scaredUntil = 0.0f;
+        /// Whom it last kept away from, where, and until when it keeps clear
+        /// of there though it no longer sees them.
+        int shunned = -1;
+        Vec2i shunnedAt;
+        float shunnedUntil = -1.0f;
         std::unordered_map<int, Suspect> suspects;
         /// The blood each trail step led to, and when, so it doesn't pace back
         /// and forth at a trail's end.
@@ -1260,7 +1265,8 @@ private:
     struct Dark {
         /// Seconds in the dark so far, and in light since it last was.
         float in = 0.0f, lit = 1e9f;
-        /// Has ever been in the dark; has made for the light this spell.
+        /// Has ever been in the dark; has made for the light since it last
+        /// spent a while in light.
         bool met = false, toward = false;
     };
     Dark dark_;
@@ -1285,6 +1291,8 @@ private:
     /// and the moment to say; nothing if it doesn't much mind or didn't get
     /// its way.
     std::optional<talk::Moment> sleptAsLiked(const World& world);
+    /// How lit it last saw a cell, 0 dark (or never seen lit or dark) to 1.
+    float litSeen(Vec2i c) const;
     /// Walks the path running, for why.
     void startRunning(Goal g, std::vector<Vec2i> path, RunWhy why);
     /// Breath goes running and comes back resting; at none it is winded.

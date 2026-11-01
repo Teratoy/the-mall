@@ -227,6 +227,9 @@ enum class Moment {
     // Lying down to sleep in the dark, out of sight, as the bold would; under
     // a light, as the timid would (to nobody, in place of sleep_now).
     SleepDark, SleepLit,
+    // Hiding in the dark: the modest going where it hides them; making a
+    // stash where no light falls (both to nobody).
+    ReliefDark, StashDark,
     Count
 };
 

@@ -46,6 +46,11 @@ constexpr int RELIEF_RANGE = 24, RELIEF_RANGE_URGENT = 8;
 /// at middling modesty; bursting cuts it down to RELIEF_URGENT_SHY of that.
 constexpr float RELIEF_SHY = 30.0f;
 constexpr float RELIEF_URGENT_SHY = 0.3f;
+/// A spot in full light shows it as much as this many open cells round it
+/// (AI/light_plan.md step 5).
+constexpr float RELIEF_LIT_OPEN = 4.0f;
+/// This modest at least, going in the dark away from a toilet, it is glad of it.
+constexpr float RELIEF_DARK_MODEST = 0.55f;
 /// Others' mess on a spot puts it off by this much per full fresh pile.
 constexpr float RELIEF_MESS_COST = 300.0f;
 /// A settler keeps its going this far from home.
@@ -206,7 +211,8 @@ bool Human::seekRelief(World& world) {
             Tile t = memory.tile(c + d);
             open += t == Tile::Void || passable(t) || pooled(t);
         }
-        return 1 + elsewhere + int(open * shy) + int(world.mess().disgust(c, now, id) * RELIEF_MESS_COST);
+        return 1 + elsewhere + int((float(open) + RELIEF_LIT_OPEN * litSeen(c)) * shy) +
+               int(world.mess().disgust(c, now, id) * RELIEF_MESS_COST);
     };
     // Its own mess doesn't put it off the way there.
     relief_.ignoreMess = true;
@@ -287,6 +293,10 @@ void Human::startRelieving(World& world) {
         return water ? pooled(t) : !passable(t);
     };
     if (toilet && toilet->x != cell.x) facingLeft = toilet->x < cell.x;
+    if (!toilet && !isErratic() && modesty() >= RELIEF_DARK_MODEST && world.light(cell) == 0) {
+        note("WENT WHERE THE DARK HID ME");
+        sayLater(talk::Moment::ReliefDark);
+    }
     for (bool water : {true, false}) {
         if (toilet) break;
         if (blocked({-1, 0}, water))
