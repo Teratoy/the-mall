@@ -151,6 +151,69 @@ blood), `step_filth` (fresh feces), `pop`, `cry`, `unlock`,
 snoring, retching, keys and cakes picked up, bottles, flushes, vending,
 and the place loops.
 
+Later, `knob`: a shut door's handle rattling when a human tries it
+(`tryDoor`).
+
+### Survey (2026-11-01): what still makes no sound
+
+An agent went through the code for everything the player can see happen
+without a sound. Not built; the user chose to plan them first. **Sim**
+needs a new `NoiseKind` and a `world.noise()` call where it happens;
+**view** is for `hearing.cpp` to tell from state frame to frame, as
+footsteps and pops are. New to this plan unless marked (planned).
+
+The ten that matter most, in order:
+1. Blood spraying from a blow, louder the more blood it throws
+   (`spill`, human_blood.cpp). Sim, or a wet layer folded into `hit`.
+2. Bleeding drips, and a body pooling (human_blood.cpp drip loop). Sim
+   per drop, or view from `bleeding()` (planned, with a question mark).
+3. Feeding on a body: each bite and its blood (human_flesh.cpp). Sim.
+   The wettest thing in the game.
+4. A punch swung: a whoosh as `punchLanded` turns true (human_fight.cpp
+   `landPunch`); `hit` plays over it when it lands, so a lone whoosh is a
+   miss. View (planned as "punch").
+5. Pissing and shitting, a splash or a plop by where it lands (toilet,
+   floor, water), and wetting or soiling itself (human_relief.cpp
+   `startRelieving`, `accident`, `letGo`). Sim.
+6. Flies over rotting bodies and fresh filth (`smellStrength`, and the
+   freshness `stepSound` already uses). View loop (planned).
+7. Gulping from water, a basin or a toilet (human_thirst.cpp, a timer
+   per gulp: sim) and sipping from a bottle (view) (planned).
+8. Eating a cake (`startEating`, human_fight.cpp). View (planned).
+9. Panting while winded (planned), snoring (planned), a thud on
+   collapsing from exhaustion (`startSleeping` collapsed), a gasp on a
+   rough waking (`wakeUp`). View, the gasp perhaps sim.
+10. The server room hum (the sim's own `humShare`, which humans already
+    hear) and water lapping at pools and basins: view loops (planned);
+    then the vending drop and pickups below.
+
+The rest:
+- **Bodies:** sick from rotten flesh or toilet water (human_flesh.cpp,
+  human_thirst.cpp): retching is planned, but nobody retches in the game
+  yet, so it waits for that. Washing (human_blood.cpp). Rummaging while
+  looting, stashing or robbing a sleeper (the Search pose: view).
+- **Things:** a key or cake picked up (human_walk.cpp, and piles in
+  world.cpp; planned), a bottle put down (`World::putDown`); a vending
+  machine dropping goods and an empty one clunking (`World::vend`: sim,
+  planned as "paying and dropping"); a dispenser's glug as a bottle is
+  filled from it or poured into it (human_dispenser.cpp); typing at a
+  terminal (view) and its refusal beep (human_computer.cpp, sim).
+- **The toilet flush in step 4 is wrong:** the game has no flush on
+  purpose ("FOUND NO FLUSH"). The plop or splash in 5 above takes its
+  place.
+- **Places:** a buzz near a flickering light (world/lighting.cpp); the
+  room tone of each chunk kind (Rooms, Plaza, Maze, WaterMaze,
+  DataCentre; planned), a dark dead wing near silent.
+- **Guns:** the Shoot, Reload and Rack poses are drawn but `poseOf`
+  never returns them, so there is nothing to hear until humans use guns.
+- **UI:** nothing clicks but the CONFIGURATION panel's pop. One hook in
+  `ui::button` and `ui::arrowButton` (pixel_ui.cpp) covers every button:
+  the menus, HUD (LOG, MAP, NEXT, zoom, speed, pause), the pause menu,
+  the obituary. Worth sounds of their own: pause, WAKE UP, NEXT after
+  your human dies, CREMATE.
+- Left out: greeting and giving (their speech already pops); machines
+  restocking (unseen).
+
 ## 5. Where sound is heard from
 
 - Volume falls with distance from the followed human's ears,
