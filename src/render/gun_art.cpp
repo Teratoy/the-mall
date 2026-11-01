@@ -73,8 +73,8 @@ void casingFlight(float drop, float t, float& out, float& high) {
 
 Rgba gunPixel(int gx, int gy) { return sprites::get("gun", GUN_W, GUN_H).pixel(gx, gy); }
 
-void drawGun(int x, int y, bool lit) {
-    float k = lit ? 1.0f : MEMORY_DIM;
+void drawGun(int x, int y, bool inSight) {
+    float k = inSight ? 1.0f : MEMORY_DIM;
     for (int gy = 0; gy < GUN_H; gy++)
         for (int gx = 0; gx < GUN_W; gx++) {
             Rgba c = gunPixel(gx, gy);
@@ -82,8 +82,8 @@ void drawGun(int x, int y, bool lit) {
         }
 }
 
-void drawAmmoBox(int x, int y, bool opened, float left, bool lit) {
-    float k = lit ? 1.0f : MEMORY_DIM;
+void drawAmmoBox(int x, int y, bool opened, float left, bool inSight) {
+    float k = inSight ? 1.0f : MEMORY_DIM;
     const Sprite& box = sprites::get(opened ? "ammo box open" : "ammo box", AMMO_W, AMMO_H);
     // The rounds still in it, counted in reading order; the last taken first.
     int shown = int(std::ceil(std::clamp(left, 0.0f, 1.0f) * AMMO_SLOTS)), slot = 0;
@@ -96,8 +96,8 @@ void drawAmmoBox(int x, int y, bool opened, float left, bool lit) {
         }
 }
 
-void drawCasings(int x, int y, int count, bool lit) {
-    float k = lit ? 1.0f : MEMORY_DIM;
+void drawCasings(int x, int y, int count, bool inSight) {
+    float k = inSight ? 1.0f : MEMORY_DIM;
     for (int i = 0; i < std::min(count, CASINGS_SHOWN); i++) {
         const CasingSpot& s = CASING_SPOTS[i];
         drawCasing(float(x + s.x), float(y + s.y), s.across, 1, k, WHITE);

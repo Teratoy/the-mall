@@ -1,6 +1,6 @@
 // Every sprite drawn from data/sprites.txt, at 1x, in all the ways the game
 // draws it: the machines at every stock and both blinks, the toilet turned
-// to each wall and dirtied, the items and traps lit and dimmed, ammo boxes
+// to each wall and dirtied, the items and traps in sight and dimmed, ammo boxes
 // and spent casings piling up, a sleeper's
 // Z's, a human carrying cakes and shooting every way, and the icon. Compare two of these with
 // cmp to check a change drew the same, pixel for pixel.
@@ -65,43 +65,43 @@ void drawSheet(const HumanSprites& human, Texture2D icon) {
         }
         y += VENDING_H + GAP;
     }
-    // The drawn ones, as the world draws them, lit then dimmed.
+    // The drawn ones, as the world draws them, in sight then dimmed.
     int x = GAP;
-    for (bool lit : {true, false}) {
-        drawGun(x, y, lit);
-        drawKey(x + 8, y, lit);
-        drawCake(x + 16, y, lit);
-        drawHeapCake(x + 24, y, lit);
+    for (bool inSight : {true, false}) {
+        drawGun(x, y, inSight);
+        drawKey(x + 8, y, inSight);
+        drawCake(x + 16, y, inSight);
+        drawHeapCake(x + 24, y, inSight);
         int tx = x + 32;
         for (TrapKind kind : {TrapKind::Spikes, TrapKind::Slam})
-            for (bool sprung : {false, true}) drawTrap(tx, y, kind, sprung, lit), tx += CELL_PX + GAP;
+            for (bool sprung : {false, true}) drawTrap(tx, y, kind, sprung, inSight), tx += CELL_PX + GAP;
         for (Vec2i back : {Vec2i{0, -1}, Vec2i{0, 1}, Vec2i{-1, 0}, Vec2i{1, 0}})
-            for (float dirt : {0.0f, 1.0f, 3.0f, 8.0f}) drawToilet(tx, y, back, dirt, 0.0f, 7, lit), tx += CELL_PX + GAP;
+            for (float dirt : {0.0f, 1.0f, 3.0f, 8.0f}) drawToilet(tx, y, back, dirt, 0.0f, 7, inSight), tx += CELL_PX + GAP;
         y += CELL_PX + GAP;
     }
     // Ammo boxes shut, then open from full to empty; spent casings piling up
-    // on a cell, one to one past the most shown; lit then dimmed.
+    // on a cell, one to one past the most shown; in sight then dimmed.
     x = GAP;
-    for (bool lit : {true, false}) {
-        drawAmmoBox(x, y, false, 1.0f, lit), x += CELL_PX + GAP;
+    for (bool inSight : {true, false}) {
+        drawAmmoBox(x, y, false, 1.0f, inSight), x += CELL_PX + GAP;
         for (int left = AMMO_SLOTS; left >= 0; left--)
-            drawAmmoBox(x, y, true, float(left) / AMMO_SLOTS, lit), x += CELL_PX + GAP;
-        for (int n = 1; n <= CASINGS_SHOWN + 1; n++) drawCasings(x, y, n, lit), x += CELL_PX + GAP;
+            drawAmmoBox(x, y, true, float(left) / AMMO_SLOTS, inSight), x += CELL_PX + GAP;
+        for (int n = 1; n <= CASINGS_SHOWN + 1; n++) drawCasings(x, y, n, inSight), x += CELL_PX + GAP;
         x += 2 * GAP;
     }
     y += CELL_PX + GAP;
-    // Water dispensers at every level the jug shows, from the front and both sides, lit then dimmed.
+    // Water dispensers at every level the jug shows, from the front and both sides, in sight then dimmed.
     x = GAP;
-    for (bool lit : {true, false})
+    for (bool inSight : {true, false})
         for (int view = 0; view < 3; view++)
             for (int level = 0; level <= 6; level++, x += DISPENSER_W + GAP)
-                drawDispenser(x, y + DISPENSER_H, float(level) / 6.0f, view > 0, view == 2, lit);
+                drawDispenser(x, y + DISPENSER_H, float(level) / 6.0f, view > 0, view == 2, inSight);
     y += DISPENSER_H + GAP;
-    // Toilets pissed in, yellowing, then shat in too, lit then dimmed.
+    // Toilets pissed in, yellowing, then shat in too, in sight then dimmed.
     x = GAP;
-    for (bool lit : {true, false}) {
-        for (float piss : {0.0f, 0.04f, 0.1f, 0.2f, 0.3f}) drawToilet(x, y, {0, -1}, piss, piss, 7, lit), x += CELL_PX + GAP;
-        drawToilet(x, y, {0, -1}, 1.3f, 0.3f, 7, lit), x += CELL_PX + 3 * GAP;
+    for (bool inSight : {true, false}) {
+        for (float piss : {0.0f, 0.04f, 0.1f, 0.2f, 0.3f}) drawToilet(x, y, {0, -1}, piss, piss, 7, inSight), x += CELL_PX + GAP;
+        drawToilet(x, y, {0, -1}, 1.3f, 0.3f, 7, inSight), x += CELL_PX + 3 * GAP;
     }
     y += CELL_PX + GAP;
     // A human carrying cakes, and asleep with its Z's rising at a few moments.

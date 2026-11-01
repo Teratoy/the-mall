@@ -81,8 +81,8 @@ Rgba cablePixel(uint8_t links, int variant, int gx, int gy) {
     }
 }
 
-void drawCable(int x, int y, uint8_t links, int variant, bool lit) {
-    float k = lit ? 1.0f : MEMORY_DIM;
+void drawCable(int x, int y, uint8_t links, int variant, bool inSight) {
+    float k = inSight ? 1.0f : MEMORY_DIM;
     for (int gy = 0; gy < CELL_PX; gy++)
         for (int gx = 0; gx < CELL_PX; gx++) {
             Rgba c = cablePixel(links, variant, gx, gy);

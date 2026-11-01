@@ -191,9 +191,9 @@ Rgba ink(char g, int gx, int gy, int tick) {
     }
 }
 
-/// Draws a glyph's pixels from px() with its bottom-left at x, y, dimmed unless lit.
-template <typename F> void drawGlyph(int x, int y, int w, bool lit, F px) {
-    float k = lit ? 1.0f : MEMORY_DIM;
+/// Draws a glyph's pixels from px() with its bottom-left at x, y, dimmed unless in sight.
+template <typename F> void drawGlyph(int x, int y, int w, bool inSight, F px) {
+    float k = inSight ? 1.0f : MEMORY_DIM;
     for (int gy = 0; gy < SERVER_RACK_H; gy++)
         for (int gx = 0; gx < w; gx++) {
             Rgba c = px(gx, gy);
@@ -219,11 +219,11 @@ Rgba serverRackSidePixel(int gx, int gy) {
     }
 }
 
-void drawServerRack(int x, int y, bool lit, float seconds) {
-    int tick = lit ? int(seconds * TICKS) : 0;
-    drawGlyph(x, y, SERVER_RACK_W, lit, [&](int gx, int gy) { return serverRackPixel(gx, gy, tick); });
+void drawServerRack(int x, int y, bool inSight, float seconds) {
+    int tick = inSight ? int(seconds * TICKS) : 0;
+    drawGlyph(x, y, SERVER_RACK_W, inSight, [&](int gx, int gy) { return serverRackPixel(gx, gy, tick); });
 }
 
-void drawServerRackSide(int x, int y, bool lit) {
-    drawGlyph(x, y, SERVER_RACK_DEPTH, lit, [&](int gx, int gy) { return serverRackSidePixel(gx, gy); });
+void drawServerRackSide(int x, int y, bool inSight) {
+    drawGlyph(x, y, SERVER_RACK_DEPTH, inSight, [&](int gx, int gy) { return serverRackSidePixel(gx, gy); });
 }

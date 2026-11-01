@@ -26,9 +26,9 @@ uint8_t vendingFull(Vend kind);
 Rgba vendingPixel(Vend kind, int gx, int gy, uint8_t stock, int blink);
 
 /// Draws the machine with the bottom-left corner of its foot at canvas
-/// pixel x, y, dimmed unless lit, its LEDs blinking with the seconds gone.
+/// pixel x, y, dimmed unless in sight, its LEDs blinking with the seconds gone.
 /// Remembered, they hold still.
-void drawVendingMachine(Vend kind, int x, int y, uint8_t stock, bool lit, float seconds);
+void drawVendingMachine(Vend kind, int x, int y, uint8_t stock, bool inSight, float seconds);
 
 /// The machine's pixel at gx, gy seen from its right side, the mall's
 /// spiral and what it sells painted on its flank.
@@ -36,4 +36,4 @@ Rgba vendingSidePixel(Vend kind, int gx, int gy, int blink);
 
 /// Draws the machine seen from its right side, as drawVendingMachine draws
 /// its front, facing left; flipped, seen from its left side, facing right.
-void drawVendingMachineSide(Vend kind, int x, int y, bool lit, float seconds, bool flip = false);
+void drawVendingMachineSide(Vend kind, int x, int y, bool inSight, float seconds, bool flip = false);

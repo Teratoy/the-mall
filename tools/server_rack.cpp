@@ -27,8 +27,8 @@ constexpr int FRAMES = sizeof TICKS / sizeof TICKS[0];
 /// Remembered but out of sight, as the art dims it.
 constexpr float MEMORY_DIM = 0.45f;
 
-Color toColor(Rgba c, bool lit = true) {
-    float k = lit ? 1.0f : MEMORY_DIM;
+Color toColor(Rgba c, bool inSight = true) {
+    float k = inSight ? 1.0f : MEMORY_DIM;
     return {uint8_t(c.r * k), uint8_t(c.g * k), uint8_t(c.b * k), c.a};
 }
 
@@ -54,20 +54,20 @@ int main(int argc, char** argv) {
     const int rowH = SERVER_RACK_H * ZOOM + GAP;
     Image img = GenImageColor(phoneX + phoneW, GAP + 2 * rowH, BACKDROP);
     for (int row = 0; row < 2; row++) {
-        const bool lit = row == 0;
+        const bool inSight = row == 0;
         const int floor = GAP + row * rowH + SERVER_RACK_H * ZOOM;
         for (int f = 0; f < FRAMES; f++) {
-            const int tick = lit ? TICKS[f] : 0;
-            auto px = [&](int i, int j) { return toColor(serverRackPixel(i, j, tick), lit); };
+            const int tick = inSight ? TICKS[f] : 0;
+            auto px = [&](int i, int j) { return toColor(serverRackPixel(i, j, tick), inSight); };
             blit(img, GAP + f * (big + GAP), floor, SERVER_RACK_W, SERVER_RACK_H, ZOOM, px);
         }
-        auto sidePx = [&](int i, int j) { return toColor(serverRackSidePixel(i, j), lit); };
+        auto sidePx = [&](int i, int j) { return toColor(serverRackSidePixel(i, j), inSight); };
         blit(img, GAP + FRAMES * (big + GAP), floor, SERVER_RACK_DEPTH, SERVER_RACK_H, ZOOM, sidePx);
-        auto humanPx = [&](int i, int j) { return toColor(human.px[size_t(j * SPRITE_W + i)], lit); };
+        auto humanPx = [&](int i, int j) { return toColor(human.px[size_t(j * SPRITE_W + i)], inSight); };
         blit(img, GAP + FRAMES * (big + GAP) + side + GAP, floor, SPRITE_W, SPRITE_H, ZOOM, humanPx);
 
         int x = phoneX;
-        auto frontPx = [&](int i, int j) { return toColor(serverRackPixel(i, j, TICKS[1]), lit); };
+        auto frontPx = [&](int i, int j) { return toColor(serverRackPixel(i, j, TICKS[1]), inSight); };
         blit(img, x, floor, SERVER_RACK_W, SERVER_RACK_H, PHONE, frontPx);
         x += SERVER_RACK_W * PHONE + GAP;
         blit(img, x, floor, SERVER_RACK_DEPTH, SERVER_RACK_H, PHONE, sidePx);
@@ -75,7 +75,7 @@ int main(int argc, char** argv) {
         blit(img, x, floor, SPRITE_W, SPRITE_H, PHONE, humanPx);
         x += SPRITE_W * PHONE + GAP;
         auto vendPx = [&](int i, int j) {
-            return toColor(vendingPixel(Vend::Cake, i, j, vendingFull(Vend::Cake), 0), lit);
+            return toColor(vendingPixel(Vend::Cake, i, j, vendingFull(Vend::Cake), 0), inSight);
         };
         blit(img, x, floor, VENDING_W, VENDING_H, PHONE, vendPx);
     }

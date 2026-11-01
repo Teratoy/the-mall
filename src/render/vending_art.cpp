@@ -47,9 +47,9 @@ const Art& artOf(Vend kind) {
 }
 
 /// Draws a glyph's pixels from px() with its bottom-left at x, y, dimmed
-/// unless lit, and mirrored left to right when flipped.
-template <typename F> void drawGlyph(int x, int y, int w, bool lit, F px, bool flip = false) {
-    float k = lit ? 1.0f : MEMORY_DIM;
+/// unless in sight, and mirrored left to right when flipped.
+template <typename F> void drawGlyph(int x, int y, int w, bool inSight, F px, bool flip = false) {
+    float k = inSight ? 1.0f : MEMORY_DIM;
     for (int gy = 0; gy < VENDING_H; gy++)
         for (int gx = 0; gx < w; gx++) {
             Rgba c = px(gx, gy);
@@ -59,7 +59,7 @@ template <typename F> void drawGlyph(int x, int y, int w, bool lit, F px, bool f
         }
 }
 
-int blinkAt(bool lit, float seconds) { return lit ? int(seconds * LED_BLINKS) : 0; }
+int blinkAt(bool inSight, float seconds) { return inSight ? int(seconds * LED_BLINKS) : 0; }
 
 } // namespace
 
@@ -88,12 +88,12 @@ Rgba vendingPixel(Vend kind, int gx, int gy, uint8_t stock, int blink) {
 
 Rgba vendingSidePixel(Vend kind, int gx, int gy, int blink) { return artOf(kind).side->pixel(gx, gy, blink); }
 
-void drawVendingMachine(Vend kind, int x, int y, uint8_t stock, bool lit, float seconds) {
-    int blink = blinkAt(lit, seconds);
-    drawGlyph(x, y, VENDING_W, lit, [&](int gx, int gy) { return vendingPixel(kind, gx, gy, stock, blink); });
+void drawVendingMachine(Vend kind, int x, int y, uint8_t stock, bool inSight, float seconds) {
+    int blink = blinkAt(inSight, seconds);
+    drawGlyph(x, y, VENDING_W, inSight, [&](int gx, int gy) { return vendingPixel(kind, gx, gy, stock, blink); });
 }
 
-void drawVendingMachineSide(Vend kind, int x, int y, bool lit, float seconds, bool flip) {
-    int blink = blinkAt(lit, seconds);
-    drawGlyph(x, y, VENDING_DEPTH, lit, [&](int gx, int gy) { return vendingSidePixel(kind, gx, gy, blink); }, flip);
+void drawVendingMachineSide(Vend kind, int x, int y, bool inSight, float seconds, bool flip) {
+    int blink = blinkAt(inSight, seconds);
+    drawGlyph(x, y, VENDING_DEPTH, inSight, [&](int gx, int gy) { return vendingSidePixel(kind, gx, gy, blink); }, flip);
 }

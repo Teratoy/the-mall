@@ -37,15 +37,15 @@ Color blend(Color a, Color b, float t) {
     return {ch(a.r, b.r), ch(a.g, b.g), ch(a.b, b.b), ch(a.a, b.a)};
 }
 
-Color shade(Color c, bool lit) {
-    if (lit) return c;
+Color shade(Color c, bool inSight) {
+    if (inSight) return c;
     return {(unsigned char)(c.r * REMEMBERED), (unsigned char)(c.g * REMEMBERED), (unsigned char)(c.b * REMEMBERED), c.a};
 }
 
 } // namespace
 
 // The glyph is turned so its top lies toward back.
-void drawToilet(int x, int y, Vec2i back, float dirt, float piss, uint32_t seed, bool lit) {
+void drawToilet(int x, int y, Vec2i back, float dirt, float piss, uint32_t seed, bool inSight) {
     // Piss yellows the water rather than browning it.
     float bowl = std::min(1.0f, std::max(0.0f, dirt - piss) / BOWL_FULL), rim = std::min(0.5f, dirt / RIM_FULL);
     float yellow = std::min(1.0f, piss / PISS_FULL);
@@ -64,6 +64,6 @@ void drawToilet(int x, int y, Vec2i back, float dirt, float piss, uint32_t seed,
             if (back.y > 0) px = e - gx, py = e - gy;
             else if (back.x < 0) px = gy, py = e - gx;
             else if (back.x > 0) px = e - gy, py = gx;
-            DrawPixel(x + px, y + py, shade(c, lit));
+            DrawPixel(x + px, y + py, shade(c, inSight));
         }
 }

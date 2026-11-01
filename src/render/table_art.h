@@ -4,7 +4,7 @@
 #include <functional>
 
 /// How much of a table's cell the viewer gets to see.
-enum class CellView { Unknown, Remembered, Lit };
+enum class CellView { Unknown, Remembered, InSight };
 
 /// The table's top is drawn raised this far above the floor, with its front
 /// face below it: whatever lies on it is drawn this much higher too.

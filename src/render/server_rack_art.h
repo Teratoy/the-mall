@@ -15,13 +15,13 @@ inline constexpr int SERVER_RACK_DEPTH = 10;
 Rgba serverRackPixel(int gx, int gy, int tick);
 
 /// Draws the rack with the bottom-left corner of its foot at canvas pixel
-/// x, y, dimmed unless lit, ticking with the seconds gone. Remembered, it
+/// x, y, dimmed unless in sight, ticking with the seconds gone. Remembered, it
 /// holds still.
-void drawServerRack(int x, int y, bool lit, float seconds);
+void drawServerRack(int x, int y, bool inSight, float seconds);
 
 /// The rack's pixel at gx, gy seen from its right side: a steel flank with
 /// louvres and a maker's plate.
 Rgba serverRackSidePixel(int gx, int gy);
 
 /// Draws the rack seen from its right side, as drawServerRack draws its front.
-void drawServerRackSide(int x, int y, bool lit);
+void drawServerRackSide(int x, int y, bool inSight);

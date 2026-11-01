@@ -57,8 +57,8 @@ Look lookOf(const Table& t) {
             hsv(h, 0.6f, 0.45f)};
 }
 
-Color toColor(Rgba c, bool lit) {
-    float k = lit ? 1.0f : MEMORY_DIM;
+Color toColor(Rgba c, bool inSight) {
+    float k = inSight ? 1.0f : MEMORY_DIM;
     return {(unsigned char)(c.r * k), (unsigned char)(c.g * k), (unsigned char)(c.b * k), c.a};
 }
 
@@ -202,7 +202,7 @@ void drawTable(const Table& t, int x, int y, const std::function<CellView(Vec2i)
             if (!t.coversLocal(cell)) cell = {std::clamp(px / CELL_PX, 0, t.size.x - 1), fy / CELL_PX};
             CellView v = view(t.at + cell);
             if (v == CellView::Unknown) continue;
-            bool lit = v == CellView::Lit;
+            bool inSight = v == CellView::InSight;
             Rgba c;
             if (onTop) {
                 bool rimHi = !top(px, py - 1) || !top(px - 1, py);
@@ -217,12 +217,12 @@ void drawTable(const Table& t, int x, int y, const std::function<CellView(Vec2i)
                 while (bottom(x1 + 1, py)) x1++;
                 if (!legAt(t, legs, b.w, px, x0, x1)) {
                     Color s = SHADOW;
-                    if (!lit) s.a = (unsigned char)(s.a * MEMORY_DIM);
+                    if (!inSight) s.a = (unsigned char)(s.a * MEMORY_DIM);
                     DrawPixel(x - OVERHANG_PX + px, y + py, s);
                     continue;
                 }
                 c = k.leg;
             }
-            DrawPixel(x - OVERHANG_PX + px, y + py, toColor(c, lit));
+            DrawPixel(x - OVERHANG_PX + px, y + py, toColor(c, inSight));
         }
 }

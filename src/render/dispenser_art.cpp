@@ -25,8 +25,8 @@ Rgba dispenserPixel(int gx, int gy, float level, bool side) {
     return s.ink(c);
 }
 
-void drawDispenser(int x, int y, float level, bool side, bool flip, bool lit) {
-    const float k = lit ? 1.0f : MEMORY_DIM;
+void drawDispenser(int x, int y, float level, bool side, bool flip, bool inSight) {
+    const float k = inSight ? 1.0f : MEMORY_DIM;
     for (int gy = 0; gy < DISPENSER_H; gy++)
         for (int gx = 0; gx < DISPENSER_W; gx++) {
             Rgba c = dispenserPixel(gx, gy, level, side);

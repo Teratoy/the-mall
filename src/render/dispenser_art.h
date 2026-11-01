@@ -13,6 +13,6 @@ inline constexpr int DISPENSER_H = 17;
 Rgba dispenserPixel(int gx, int gy, float level, bool side);
 
 /// Draws the dispenser with the bottom-left corner of its foot at canvas
-/// pixel x, y, full to level, dimmed unless lit. Side on, flipped, its taps
+/// pixel x, y, full to level, dimmed unless in sight. Side on, flipped, its taps
 /// face left.
-void drawDispenser(int x, int y, float level, bool side, bool flip, bool lit);
+void drawDispenser(int x, int y, float level, bool side, bool flip, bool inSight);

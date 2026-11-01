@@ -18,4 +18,4 @@ Rgba cablePixel(uint8_t links, int variant, int gx, int gy);
 
 /// Draws the cable lying in the cell with its top-left at canvas pixel x, y,
 /// dimmed when remembered rather than seen.
-void drawCable(int x, int y, uint8_t links, int variant, bool lit);
+void drawCable(int x, int y, uint8_t links, int variant, bool inSight);

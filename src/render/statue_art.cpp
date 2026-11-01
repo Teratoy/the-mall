@@ -515,9 +515,9 @@ StatueArt::~StatueArt() {
     for (auto& [id, tex] : textures_) UnloadTexture(tex);
 }
 
-void StatueArt::draw(const Statue& s, int id, int x, int y, bool lit) const {
+void StatueArt::draw(const Statue& s, int id, int x, int y, bool inSight) const {
     auto it = textures_.find(id);
     if (it == textures_.end()) it = textures_.emplace(id, paint(s)).first;
-    unsigned char k = (unsigned char)(lit ? 255 : 255 * MEMORY_DIM);
+    unsigned char k = (unsigned char)(inSight ? 255 : 255 * MEMORY_DIM);
     DrawTexture(it->second, x, y - it->second.height, {k, k, k, 255});
 }

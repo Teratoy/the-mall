@@ -231,9 +231,9 @@ Rgba lamp(int gx, int gy, int tick) {
     }
 }
 
-/// Draws a glyph's pixels from px() with its top-left at x, y, dimmed unless lit.
-template <typename F> void drawGlyph(int x, int y, int w, int h, bool lit, F px) {
-    float k = lit ? 1.0f : MEMORY_DIM;
+/// Draws a glyph's pixels from px() with its top-left at x, y, dimmed unless in sight.
+template <typename F> void drawGlyph(int x, int y, int w, int h, bool inSight, F px) {
+    float k = inSight ? 1.0f : MEMORY_DIM;
     for (int gy = 0; gy < h; gy++)
         for (int gx = 0; gx < w; gx++) {
             Rgba c = px(gx, gy);
@@ -242,7 +242,7 @@ template <typename F> void drawGlyph(int x, int y, int w, int h, bool lit, F px)
         }
 }
 
-int tickAt(bool lit, float seconds) { return lit ? int(seconds * TICKS) : 0; }
+int tickAt(bool inSight, float seconds) { return inSight ? int(seconds * TICKS) : 0; }
 
 } // namespace
 
@@ -309,14 +309,14 @@ Rgba consoleDeskPixel(int gx, int gy, int tick, bool typed) {
     }
 }
 
-void drawTerminal(int x, int y, bool lit, float seconds, bool typed) {
-    int tick = tickAt(lit, seconds);
-    drawGlyph(x, y - TERMINAL_H, TERMINAL_W, TERMINAL_H, lit,
+void drawTerminal(int x, int y, bool inSight, float seconds, bool typed) {
+    int tick = tickAt(inSight, seconds);
+    drawGlyph(x, y - TERMINAL_H, TERMINAL_W, TERMINAL_H, inSight,
               [&](int gx, int gy) { return terminalPixel(gx, gy, tick, typed); });
 }
 
-void drawConsoleDesk(int x, int y, bool lit, float seconds, bool typed) {
-    int tick = tickAt(lit, seconds);
-    drawGlyph(x, y - CONSOLE_RISE, CONSOLE_W, CONSOLE_H, lit,
+void drawConsoleDesk(int x, int y, bool inSight, float seconds, bool typed) {
+    int tick = tickAt(inSight, seconds);
+    drawGlyph(x, y - CONSOLE_RISE, CONSOLE_W, CONSOLE_H, inSight,
               [&](int gx, int gy) { return consoleDeskPixel(gx, gy, tick, typed); });
 }

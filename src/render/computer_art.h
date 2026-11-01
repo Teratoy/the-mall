@@ -22,9 +22,9 @@ inline constexpr int CONSOLE_H = CONSOLE_RISE + 24;
 Rgba terminalPixel(int gx, int gy, int tick, bool typed = false);
 
 /// Draws the terminal with the bottom-left corner of its foot at canvas
-/// pixel x, y, dimmed unless lit, ticking with the seconds gone.
+/// pixel x, y, dimmed unless in sight, ticking with the seconds gone.
 /// Remembered, it holds still.
-void drawTerminal(int x, int y, bool lit, float seconds, bool typed = false);
+void drawTerminal(int x, int y, bool inSight, float seconds, bool typed = false);
 
 /// The console desk's pixel at gx, gy, gy 0 being the top of the screens
 /// and CONSOLE_RISE the back edge of its footprint, at the given tick: each
@@ -33,6 +33,6 @@ void drawTerminal(int x, int y, bool lit, float seconds, bool typed = false);
 Rgba consoleDeskPixel(int gx, int gy, int tick, bool typed = false);
 
 /// Draws the console desk with its footprint's top-left corner at canvas
-/// pixel x, y, the screens rising CONSOLE_RISE above it, dimmed unless lit.
+/// pixel x, y, the screens rising CONSOLE_RISE above it, dimmed unless in sight.
 /// Remembered, it holds still.
-void drawConsoleDesk(int x, int y, bool lit, float seconds, bool typed = false);
+void drawConsoleDesk(int x, int y, bool inSight, float seconds, bool typed = false);

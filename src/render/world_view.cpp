@@ -69,15 +69,15 @@ constexpr int STATUE_REACH = 28;
 
 Color toColor(Rgba c) { return {c.r, c.g, c.b, c.a}; }
 
-Color dim(Color c, bool lit) {
-    if (lit) return c;
+Color dim(Color c, bool inSight) {
+    if (inSight) return c;
     return {(unsigned char)(c.r * MEMORY_DIM), (unsigned char)(c.g * MEMORY_DIM),
             (unsigned char)(c.b * MEMORY_DIM), c.a};
 }
 
 /// The floor's and wall's patterns are drawn after, in a pass of their own,
 /// so the pattern texture is not swapped in and out cell by cell.
-void drawCell(int x, int y, Tile t, Tile above, Tile below, Floor floor, WallStyle wall, bool lit) {
+void drawCell(int x, int y, Tile t, Tile above, Tile below, Floor floor, WallStyle wall, bool inSight) {
     switch (t) {
     case Tile::Void:
         break;
@@ -90,41 +90,41 @@ void drawCell(int x, int y, Tile t, Tile above, Tile below, Floor floor, WallSty
     case Tile::Rack:
     case Tile::Console:
     case Tile::Dispenser:
-        DrawRectangle(x, y, CELL_PX, CELL_PX, dim(toColor(FLOOR_PALETTES[floor.palette].base), lit));
+        DrawRectangle(x, y, CELL_PX, CELL_PX, dim(toColor(FLOOR_PALETTES[floor.palette].base), inSight));
         break;
     case Tile::Wall:
-        DrawRectangle(x, y, CELL_PX, CELL_PX, dim(toColor(WALL_PALETTES[wall.palette].top), lit));
+        DrawRectangle(x, y, CELL_PX, CELL_PX, dim(toColor(WALL_PALETTES[wall.palette].top), inSight));
         if (!opaque(below))
             DrawRectangle(x, y + CELL_PX - WALL_FACE_PX, CELL_PX, WALL_FACE_PX,
-                          dim(toColor(WALL_PALETTES[wall.palette].face), lit));
+                          dim(toColor(WALL_PALETTES[wall.palette].face), inSight));
         break;
     case Tile::DoorLocked:
-        DrawRectangle(x, y, CELL_PX, CELL_PX, dim(DOOR_EDGE, lit));
-        DrawRectangle(x + 1, y + 1, CELL_PX - 2, CELL_PX - 2, dim(DOOR, lit));
+        DrawRectangle(x, y, CELL_PX, CELL_PX, dim(DOOR_EDGE, inSight));
+        DrawRectangle(x + 1, y + 1, CELL_PX - 2, CELL_PX - 2, dim(DOOR, inSight));
         break;
     case Tile::DoorOpen:
-        DrawRectangle(x, y, CELL_PX, CELL_PX, dim(DOOR_OPEN, lit));
+        DrawRectangle(x, y, CELL_PX, CELL_PX, dim(DOOR_OPEN, inSight));
         break;
     case Tile::Water:
-        DrawRectangle(x, y, CELL_PX, CELL_PX, dim(WATER, lit));
-        if (above != Tile::Water) DrawRectangle(x, y, CELL_PX, 1, dim(WATER_EDGE, lit));
+        DrawRectangle(x, y, CELL_PX, CELL_PX, dim(WATER, inSight));
+        if (above != Tile::Water) DrawRectangle(x, y, CELL_PX, 1, dim(WATER_EDGE, inSight));
         break;
     }
 }
 
 /// One cell of a basin: water, rimmed in stone on each side that is not
 /// more basin, and clouded red and brown as the water is.
-void drawBasin(int x, int y, bool up, bool down, bool leftSide, bool rightSide, float tint, float foul, bool lit) {
-    DrawRectangle(x, y, CELL_PX, CELL_PX, dim(WATER, lit));
+void drawBasin(int x, int y, bool up, bool down, bool leftSide, bool rightSide, float tint, float foul, bool inSight) {
+    DrawRectangle(x, y, CELL_PX, CELL_PX, dim(WATER, inSight));
     if (tint > 0.0f) drawWaterTint(x, y, tint);
     if (foul > 0.0f) drawWaterFoul(x, y, foul);
-    if (up) DrawRectangle(x, y, CELL_PX, 1, dim(BASIN_RIM, lit));
-    if (leftSide) DrawRectangle(x, y, 1, CELL_PX, dim(BASIN_RIM, lit));
-    if (rightSide) DrawRectangle(x + CELL_PX - 1, y, 1, CELL_PX, dim(BASIN_RIM_SHADE, lit));
-    if (down) DrawRectangle(x, y + CELL_PX - 1, CELL_PX, 1, dim(BASIN_RIM_SHADE, lit));
+    if (up) DrawRectangle(x, y, CELL_PX, 1, dim(BASIN_RIM, inSight));
+    if (leftSide) DrawRectangle(x, y, 1, CELL_PX, dim(BASIN_RIM, inSight));
+    if (rightSide) DrawRectangle(x + CELL_PX - 1, y, 1, CELL_PX, dim(BASIN_RIM_SHADE, inSight));
+    if (down) DrawRectangle(x, y + CELL_PX - 1, CELL_PX, 1, dim(BASIN_RIM_SHADE, inSight));
     // The water's own edge under the lit rim, as pools have.
     if (up) DrawRectangle(x + (leftSide ? 1 : 0), y + 1, CELL_PX - (leftSide ? 1 : 0) - (rightSide ? 1 : 0), 1,
-                          dim(WATER_EDGE, lit));
+                          dim(WATER_EDGE, inSight));
 }
 
 /// Where each cake put down goes, its top-left from the cell's: two on the
@@ -138,18 +138,18 @@ constexpr int HEAP_BOTTLE_X = -3, HEAP_BOTTLE_Y = 7;
 /// What lies put down on a cell with its top-left at (x, y): the cakes
 /// heaped, and the bottles on their side in front, each as full and as
 /// dirty as it is.
-void drawPile(int x, int y, const Pile& p, bool lit) {
+void drawPile(int x, int y, const Pile& p, bool inSight) {
     int shown = std::min(p.cakes, int(std::size(HEAP)));
-    for (int i = 0; i < shown; i++) drawHeapCake(x + HEAP[i].x, y + HEAP[i].y, lit);
+    for (int i = 0; i < shown; i++) drawHeapCake(x + HEAP[i].x, y + HEAP[i].y, inSight);
     int bottles = std::min(int(p.bottles.size()), HEAP_BOTTLES);
     for (int i = 0; i < bottles; i++)
         drawBottle({float(x), float(y)}, HEAP_BOTTLE_X + i * (BOTTLE_LONG + 1), HEAP_BOTTLE_Y, BottleTurn::Ahead, false,
-                   p.bottles[size_t(i)], 1, dim(WHITE, lit));
+                   p.bottles[size_t(i)], 1, dim(WHITE, inSight));
 }
 
 /// The slot in the wall that darts fly from.
-void drawShooter(int x, int y, bool lit) {
-    DrawRectangle(x + 2, y + 2, 2, 2, dim(TRAP_HOLE, lit));
+void drawShooter(int x, int y, bool inSight) {
+    DrawRectangle(x + 2, y + 2, 2, 2, dim(TRAP_HOLE, inSight));
 }
 
 Pose poseOf(const Human& h) {
@@ -246,28 +246,28 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
         for (int x = x0; x <= x1; x++) {
             Vec2i c{x, y};
             Tile tile = known(c);
-            bool lit = reveal || viewer.sight.sees(c);
+            bool inSight = reveal || viewer.sight.sees(c);
             if (tile == Tile::Water) {
                 // Blood clouds the water only while the viewer watches.
-                if (lit) {
+                if (inSight) {
                     if (float tint = world.blood().tint(c); tint > 0.0f)
                         drawWaterTint(x * CELL_PX - left, y * CELL_PX - top, tint);
                     if (float foul = world.foul(c); foul > 0.0f)
                         drawWaterFoul(x * CELL_PX - left, y * CELL_PX - top, foul);
                 }
-                floorTiles.drawWater(x * CELL_PX - left, y * CELL_PX - top, c, lit ? frame : 0,
-                                     dim(WATER_INK, lit));
+                floorTiles.drawWater(x * CELL_PX - left, y * CELL_PX - top, c, inSight ? frame : 0,
+                                     dim(WATER_INK, inSight));
                 continue;
             }
             if (tile == Tile::Toilet) {
                 Floor f = world.floor(c);
                 floorTiles.draw(x * CELL_PX - left, y * CELL_PX - top, c, f.pattern,
-                                dim(toColor(FLOOR_PALETTES[f.palette].ink), lit));
+                                dim(toColor(FLOOR_PALETTES[f.palette].ink), inSight));
                 // Out of sight, as dirty as the viewer last saw it.
                 if (const Toilet* t = world.toilet(c)) {
                     Human::SeenToilet seen{t->dirt, t->piss};
-                    if (!lit) seen = viewer.seenToilet(c) ? *viewer.seenToilet(c) : Human::SeenToilet{};
-                    drawToilet(x * CELL_PX - left, y * CELL_PX - top, c - t->front, seen.dirt, seen.piss, t->seed, lit);
+                    if (!inSight) seen = viewer.seenToilet(c) ? *viewer.seenToilet(c) : Human::SeenToilet{};
+                    drawToilet(x * CELL_PX - left, y * CELL_PX - top, c - t->front, seen.dirt, seen.piss, t->seed, inSight);
                 }
                 continue;
             }
@@ -275,14 +275,14 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
                 auto rim = [&](Vec2i d) { return known(c + d) != Tile::Basin; };
                 // Blood clouds the water only while the viewer watches.
                 drawBasin(x * CELL_PX - left, y * CELL_PX - top, rim({0, -1}), rim({0, 1}), rim({-1, 0}), rim({1, 0}),
-                          lit ? world.blood().tint(c) : 0.0f, lit ? world.foul(c) : 0.0f, lit);
+                          inSight ? world.blood().tint(c) : 0.0f, inSight ? world.foul(c) : 0.0f, inSight);
                 continue;
             }
             if (tile == Tile::Wall) {
                 WallStyle w = world.wall(c);
                 int h = opaque(known(c + Vec2i{0, 1})) ? CELL_PX : CELL_PX - WALL_FACE_PX;
                 floorTiles.drawWall(x * CELL_PX - left, y * CELL_PX - top, c, w.pattern, h,
-                                    dim(toColor(WALL_PALETTES[w.palette].ink), lit));
+                                    dim(toColor(WALL_PALETTES[w.palette].ink), inSight));
                 continue;
             }
             if (tile != Tile::Floor && tile != Tile::Table && tile != Tile::Statue && tile != Tile::Vending &&
@@ -290,7 +290,7 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
                 continue;
             Floor f = world.floor(c);
             floorTiles.draw(x * CELL_PX - left, y * CELL_PX - top, c, f.pattern,
-                            dim(toColor(FLOOR_PALETTES[f.palette].ink), lit));
+                            dim(toColor(FLOOR_PALETTES[f.palette].ink), inSight));
         }
 
     // Cables on the floor never move, so one is drawn wherever its cell is known.
@@ -303,13 +303,13 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
     // Blood in sight as it is, elsewhere as the viewer last saw it. On
     // floor and walls now; on tables and statues once they are drawn.
     auto drawBlood = [&](Vec2i c, int rise) {
-        bool lit = reveal || viewer.sight.sees(c);
+        bool inSight = reveal || viewer.sight.sees(c);
         const Stain* s = world.blood().at(c);
-        if (!lit) {
+        if (!inSight) {
             auto it = viewer.memory.blood.find(c);
             s = it == viewer.memory.blood.end() ? nullptr : &it->second;
         }
-        if (s) drawStain(c.x * CELL_PX - left, c.y * CELL_PX - top - rise, *s, lit ? 1.0f : MEMORY_DIM);
+        if (s) drawStain(c.x * CELL_PX - left, c.y * CELL_PX - top - rise, *s, inSight ? 1.0f : MEMORY_DIM);
     };
     for (int y = y0; y <= y1; y++)
         for (int x = x0; x <= x1; x++) {
@@ -331,17 +331,17 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
             const Dropping& d = drops[i];
             if (d.kind != kind || d.cell.x < x0 - 1 || d.cell.x > x1 + 1 || d.cell.y < y0 - 1 || d.cell.y > y1 + 1)
                 continue;
-            bool lit = reveal || viewer.sight.sees(d.cell);
-            if (!lit && !viewer.memory.mess.count(int(i))) continue;
+            bool inSight = reveal || viewer.sight.sees(d.cell);
+            if (!inSight && !viewer.memory.mess.count(int(i))) continue;
             drawDropping(d, Mess::freshness(d, world.time()), world.time() - d.born, left, top,
-                         lit ? 1.0f : MEMORY_DIM, onFloor);
+                         inSight ? 1.0f : MEMORY_DIM, onFloor);
         }
 
     // Tables never move, so a remembered one is drawn as it is, a cell at
     // a time as far as the viewer knows it.
     auto view = [&](Vec2i c) {
         if (known(c) != Tile::Table) return CellView::Unknown;
-        return reveal || viewer.sight.sees(c) ? CellView::Lit : CellView::Remembered;
+        return reveal || viewer.sight.sees(c) ? CellView::InSight : CellView::Remembered;
     };
     std::unordered_set<const Table*> tables;
     for (int y = y0; y <= y1; y++)
@@ -358,9 +358,9 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
     // Traps as the viewer knows them, or all of them when revealing; seen
     // as they are now when in sight. A dart plate's wall shows its slot.
     auto drawTrapAt = [&](Vec2i c, TrapKind kind) {
-        bool lit = reveal || viewer.sight.sees(c);
+        bool inSight = reveal || viewer.sight.sees(c);
         const Trap* t = world.trap(c);
-        drawTrap(c.x * CELL_PX - left, c.y * CELL_PX - top - rise(c), kind, lit && t && !t->armed(), lit);
+        drawTrap(c.x * CELL_PX - left, c.y * CELL_PX - top - rise(c), kind, inSight && t && !t->armed(), inSight);
         if (kind == TrapKind::Darts && t && known(t->from) != Tile::Void)
             drawShooter(t->from.x * CELL_PX - left, t->from.y * CELL_PX - top,
                         reveal || viewer.sight.sees(t->from));
@@ -383,7 +383,7 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
             drawCake(k.x * CELL_PX - left, k.y * CELL_PX - top - rise(k), viewer.sight.sees(k));
     }
 
-    // Statues the viewer knows any of the base of, lit if they see any of it.
+    // Statues the viewer knows any of the base of, in sight if they see any of it.
     std::unordered_set<int> statues;
     for (int y = y0; y <= y1 + STATUE_REACH; y++)
         for (int x = x0; x <= x1; x++)
@@ -459,63 +459,63 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
         rlPopMatrix();
         // The cakes a body still holds lie in plain sight on it, and its
         // bottles on their side at its feet.
-        bool lit = reveal || viewer.sight.sees(h.cell);
-        if (h.dead() && h.cakes > 0) drawCake(h.cell.x * CELL_PX - left, h.cell.y * CELL_PX - top, lit);
+        bool inSight = reveal || viewer.sight.sees(h.cell);
+        if (h.dead() && h.cakes > 0) drawCake(h.cell.x * CELL_PX - left, h.cell.y * CELL_PX - top, inSight);
         for (size_t i = 0; h.dead() && i < h.bottles.size(); i++) {
             Vector2 origin{float(h.cell.x * CELL_PX - left), float(h.cell.y * CELL_PX - top)};
             drawBottle(origin, int(i) * (BOTTLE_LONG + 1) - 2, CELL_PX - 1 - int(i), BottleTurn::Ahead, false,
-                       h.bottles[i], 1, dim(WHITE, lit));
+                       h.bottles[i], 1, dim(WHITE, inSight));
         }
     };
     for (const Drawn& d : drawn) {
         if (d.piece) {
             // Each blinks to its own clock; remembered, it holds still.
             const ServerPiece& p = *d.piece;
-            bool lit = reveal;
-            for (Vec2i c : pieceCells(p)) lit |= viewer.sight.sees(c);
+            bool inSight = reveal;
+            for (Vec2i c : pieceCells(p)) inSight |= viewer.sight.sees(c);
             const float seconds = float(GetTime()) + float(p.seed % 1000) / 100.0f;
             const int x = p.at.x * CELL_PX - left;
             // Someone at its keys, in sight: the screen asks them for a password.
             bool typed = false;
             for (const auto& o : world.humans())
                 typed |= o->typingAt() == p.at && (reveal || viewer.sight.sees(o->cell));
-            if (p.kind == Rig::Rack) drawServerRack(x, int(d.y) - top, lit, seconds);
-            else if (p.kind == Rig::Terminal) drawTerminal(x, int(d.y) - top, lit, seconds, typed);
-            else drawConsoleDesk(x, p.at.y * CELL_PX - top, lit, seconds, typed);
+            if (p.kind == Rig::Rack) drawServerRack(x, int(d.y) - top, inSight, seconds);
+            else if (p.kind == Rig::Terminal) drawTerminal(x, int(d.y) - top, inSight, seconds, typed);
+            else drawConsoleDesk(x, p.at.y * CELL_PX - top, inSight, seconds, typed);
             continue;
         }
         if (d.dispenser) {
             // In sight it shows how full it is now; remembered, as full as the viewer last saw it, dimmed.
             const Dispenser& w = *d.dispenser;
-            bool lit = reveal || viewer.sight.sees(w.at);
+            bool inSight = reveal || viewer.sight.sees(w.at);
             auto it = viewer.memory.dispensers.find(w.at);
-            float water = lit ? w.water : it == viewer.memory.dispensers.end() ? 0.0f : it->second;
+            float water = inSight ? w.water : it == viewer.memory.dispensers.end() ? 0.0f : it->second;
             drawDispenser(w.at.x * CELL_PX - left, int(d.y) - top, water / DISPENSER_HOLDS, w.side(), w.facing.x < 0,
-                          lit);
+                          inSight);
             continue;
         }
         if (d.machine) {
             // In sight it shows what it holds now; remembered, what the viewer saw in it, dimmed and still.
             const Machine& m = *d.machine;
-            bool lit = reveal || viewer.sight.sees(m.at) || viewer.sight.sees(m.at + m.along());
+            bool inSight = reveal || viewer.sight.sees(m.at) || viewer.sight.sees(m.at + m.along());
             int x = m.at.x * CELL_PX - left, y = int(d.y) - top;
             if (!m.side()) {
                 auto it = viewer.memory.machines.find(m.at);
-                int stock = lit ? m.stock : it == viewer.memory.machines.end() ? 0 : it->second.stock;
-                drawVendingMachine(m.kind, x, y, uint8_t((1u << stock) - 1), lit, float(GetTime()));
+                int stock = inSight ? m.stock : it == viewer.memory.machines.end() ? 0 : it->second.stock;
+                drawVendingMachine(m.kind, x, y, uint8_t((1u << stock) - 1), inSight, float(GetTime()));
             } else {
                 // Its back to the wall, its flank to the viewer.
                 int sx = m.facing.x < 0 ? x + CELL_PX - VENDING_DEPTH : x;
-                drawVendingMachineSide(m.kind, sx, y, lit, float(GetTime()), m.facing.x > 0);
+                drawVendingMachineSide(m.kind, sx, y, inSight, float(GetTime()), m.facing.x > 0);
             }
             continue;
         }
         if (!d.human) {
             const Statue& s = world.statues()[size_t(d.statue)];
-            bool lit = reveal;
-            for (int y = 0; y < s.size.y && !lit; y++)
-                for (int x = 0; x < s.size.x && !lit; x++) lit = viewer.sight.sees(s.at + Vec2i{x, y});
-            statueArt.draw(s, d.statue, s.at.x * CELL_PX - left, int(d.y) - top, lit);
+            bool inSight = reveal;
+            for (int y = 0; y < s.size.y && !inSight; y++)
+                for (int x = 0; x < s.size.x && !inSight; x++) inSight = viewer.sight.sees(s.at + Vec2i{x, y});
+            statueArt.draw(s, d.statue, s.at.x * CELL_PX - left, int(d.y) - top, inSight);
             for (int y = 0; y < s.size.y; y++)
                 for (int x = 0; x < s.size.x; x++)
                     if (known(s.at + Vec2i{x, y}) == Tile::Statue) drawBlood(s.at + Vec2i{x, y}, 0);
@@ -530,7 +530,7 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
     }
     if (viewerHidden) drawHuman(viewer, GHOST_TINT);
 
-    // The edge of sight fades into memory, so the lit circle has no hard
+    // The edge of sight fades into memory, so the circle in sight has no hard
     // rim. The pattern is fixed to the world, so it doesn't crawl as the
     // camera moves.
     if (!reveal) {

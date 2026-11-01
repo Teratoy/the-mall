@@ -21,17 +21,17 @@ inline constexpr int GUN_H = 6;
 Rgba gunPixel(int gx, int gy);
 
 /// Draws a gun lying on the floor with the cell's top-left at canvas pixel
-/// x, y, dimmed unless lit.
-void drawGun(int x, int y, bool lit);
+/// x, y, dimmed unless in sight.
+void drawGun(int x, int y, bool inSight);
 
 /// Draws an ammo box with the cell's top-left at canvas pixel x, y, dimmed
-/// unless lit: shut until opened, then open showing what is left of what
+/// unless in sight: shut until opened, then open showing what is left of what
 /// it held (0 to 1).
-void drawAmmoBox(int x, int y, bool opened, float left, bool lit);
+void drawAmmoBox(int x, int y, bool opened, float left, bool inSight);
 
 /// Draws count spent casings lying on a cell with its top-left at canvas
-/// pixel x, y, each in its own spot, dimmed unless lit.
-void drawCasings(int x, int y, int count, bool lit);
+/// pixel x, y, each in its own spot, dimmed unless in sight.
+void drawCasings(int x, int y, int count, bool inSight);
 
 /// Draws a spent casing thrown out of the gun t seconds after the shot,
 /// out to the gun's right; port is the screen point it leaves the gun at,
