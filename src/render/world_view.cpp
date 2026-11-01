@@ -1,4 +1,5 @@
 #include "render/world_view.h"
+#include "render/light_view.h"
 #include "human/human.h"
 #include "render/blood_art.h"
 #include "render/cable_art.h"
@@ -529,6 +530,9 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
         viewerDrawn |= d.human == &viewer;
     }
     if (viewerHidden) drawHuman(viewer, GHOST_TINT);
+
+    // Light over everything standing in it, before the edge of sight fades.
+    drawLight(world, viewer, reveal, x0, y0, x1, y1, left, top);
 
     // The edge of sight fades into memory, so the circle in sight has no hard
     // rim. The pattern is fixed to the world, so it doesn't crawl as the

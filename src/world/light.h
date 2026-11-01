@@ -36,6 +36,8 @@ struct LightSource {
     Vec2i cell;
     LightKind kind;
     bool on = true;
+    /// A fitting on the blink: the view makes it stutter. The sim takes it as on.
+    bool flicker = false;
 };
 
 /// How bright a source leaves a cell d cells away: LIGHT_FULL on its own

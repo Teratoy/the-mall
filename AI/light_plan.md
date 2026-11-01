@@ -157,6 +157,20 @@ differently from each other.
 - Machines are sources: vending, terminals, consoles, racks, dispensers.
 - This changes generation's dice, so the soak's worlds change: golden.
 
+### Built (2026-11-01)
+- Changed from the plan: fittings roll **dice of their own** (seeded by
+  the world's seed and the chunk's id), so the rest of generation and the
+  soak are unchanged; `make check` passes as it was.
+- `World::hangFittings` (`lighting.cpp`): a grid 8 cells apart from a
+  random offset, each point snapped to floor within 2 cells, none closer
+  than 4; 15% dead (kept as sources that are off), 8% of the rest
+  flicker (a flag only: the view doesn't make them stutter yet); 12% of
+  chunks dark all through, never the spawn; 2 night lights per slot;
+  none in server rooms, which only their machines light.
+- The spawn chunk is lit too (`makeSpawn` calls `lightUp`).
+- `make lightprobe` seed 1: 916 fittings, 26 night lights over 8 chunks;
+  floor 13% dark, 8% level 1, 47% level 2, 32% level 3.
+
 ### 3. Drawing light
 - A light layer over the world view: per pixel, the cell's level
   (interpolated in steps between neighbouring cells, ordered dither like
@@ -166,6 +180,23 @@ differently from each other.
 - Remembered cells stay at `MEMORY_DIM`, desaturated, so memory and dark
   never look alike. `make shot --scene` gets a dark-room scene; a sheet
   (`make lightsheet`) shows each source and level.
+
+### Built (2026-11-01)
+- `render/light_view.cpp`, `drawLight`: after everything standing is
+  drawn and before the edge of sight fades, a multiply layer over the
+  cells in sight. Each cell's colour runs from `DARK` (58, 62, 98) to its
+  brightest source's tint by level (0, 0.6, 0.9, 1.0). Strip lights are
+  a cool off-white, vending warm, screens blue, racks green, dispensers
+  pale blue, statues and torches amber, night lights blue.
+- Cells meet in a 4x4 ordered dither: each pixel takes its own cell's
+  colour or the nearer neighbour's by how far from its cell's middle it
+  lies, never a wall's over floor, so no light leaks through walls.
+- Remembered cells are left as they were (`MEMORY_DIM`). Lit floor in
+  sight measures about twice as bright as remembered floor; dark floor in
+  sight is darker than memory. In step 4 dark cells beyond a few steps
+  drop out of sight anyway.
+- Humans and tall art are shaded by the cells they stand over.
+- Not yet: fittings drawn as glyphs, flicker, light over remembered cells.
 
 ### 4. Light limits sight
 - `Sight::look` marks a cell seen only if it is lit, or within

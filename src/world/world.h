@@ -393,7 +393,10 @@ private:
     };
     Glowing glowing() const { return {machines_.size(), pieces_.size(), dispensers_.size(), statues_.size()}; }
     /// Puts up a light source.
-    void addLight(Vec2i cell, LightKind kind);
+    void addLight(Vec2i cell, LightKind kind, bool on = true, bool flicker = false);
+    /// Hangs ceiling fittings over a new chunk's floor and puts a few night
+    /// lights about it, with dice of their own.
+    void hangFittings(const Chunk& c);
     /// Puts up the lights of the machines, server pieces, dispensers and
     /// glowing statues placed since `before`, then lights the new chunk and
     /// those round it.

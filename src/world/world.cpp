@@ -187,6 +187,7 @@ Chunk& World::addChunk(ChunkKind kind, Vec2i slot, const Footprint& parts) {
 
 Human& World::makeSpawn(const HumanLook& look, uint64_t seed, const std::string& name) {
     Chunk& c = addChunk(ChunkKind::Spawn, {0, 0}, boxFootprint({1, 1}));
+    const Glowing unlit = glowing();
     c.paint = gen::randomFloor(rng_);
     gen::squareRoom(c, SPAWN_ROOM);
     Vec2i centre{c.w / 2, c.h / 2};
@@ -202,6 +203,7 @@ Human& World::makeSpawn(const HumanLook& look, uint64_t seed, const std::string&
     size_t next = 0;
     if (auto s = tableSpot(c, spots, next, house, true)) keys_.insert(*s);
     if (auto s = tableSpot(c, spots, next, house)) cakes_.insert(*s);
+    lightUp(c, unlit);
     Human& h = addHuman(look, c.origin() + centre, seed, name);
     layBottle(h);
     return h;

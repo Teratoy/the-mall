@@ -6,6 +6,26 @@
 #include "world/world.h"
 #include <algorithm>
 #include <cmath>
+#include <optional>
+
+namespace {
+
+/// Ceiling fittings hang on a grid this many cells apart.
+constexpr int FITTING_SPACING = 8;
+/// A grid point over no floor takes the floor this many cells off, at most.
+constexpr int FITTING_SNAP = 2;
+/// No two fittings hang closer than this, in steps.
+constexpr int FITTING_APART = 4;
+/// How many fittings are dead, and how many of the rest flicker.
+constexpr float FITTING_DEAD_CHANCE = 0.15f;
+constexpr float FITTING_FLICKER_CHANCE = 0.08f;
+/// How many chunks have every fitting dead.
+constexpr float DARK_CHUNK_CHANCE = 0.12f;
+/// Night lights in each slot of a chunk, each tried this many times.
+constexpr int NIGHT_LIGHTS_PER_SLOT = 2;
+constexpr int NIGHT_LIGHT_TRIES = 40;
+
+} // namespace
 
 int World::light(Vec2i cell) const {
     const Chunk* c = chunkAt(slotOf(cell));
@@ -19,9 +39,47 @@ LightKind World::lightFrom(Vec2i cell) const {
     return c->lightFrom[size_t(l.y * c->w + l.x)];
 }
 
-void World::addLight(Vec2i cell, LightKind kind) {
+void World::addLight(Vec2i cell, LightKind kind, bool on, bool flicker) {
     slotLights_[slotOf(cell)].push_back(int(lights_.size()));
-    lights_.push_back({cell, kind});
+    lights_.push_back({cell, kind, on, flicker});
+}
+
+// Fittings hang on a grid across the chunk, each over the floor nearest its
+// point. Some are dead and some flicker; now and then a whole chunk is dark,
+// never the first, where the first human wakes. Server rooms are lit only by
+// their machines. The dice are the chunk's own, so lighting a chunk changes
+// nothing else the world rolls.
+void World::hangFittings(const Chunk& c) {
+    Rng dice(seed_ ^ uint64_t(c.id + 1) * 0x94D049BB133111EBull);
+    const bool dark = c.id > 0 && dice.chance(DARK_CHUNK_CHANCE);
+    auto free = [&](Vec2i cell) {
+        Vec2i l = cell - c.origin();
+        return c.interior(l) && c.get(l) == Tile::Floor && !serverRoomAt(cell);
+    };
+    const Vec2i offset{dice.range(0, FITTING_SPACING - 1), dice.range(0, FITTING_SPACING - 1)};
+    std::vector<Vec2i> hung;
+    for (int y = offset.y; y < c.h; y += FITTING_SPACING)
+        for (int x = offset.x; x < c.w; x += FITTING_SPACING) {
+            Vec2i point = c.origin() + Vec2i{x, y};
+            std::optional<Vec2i> at;
+            for (int r = 0; r <= FITTING_SNAP && !at; r++)
+                for (int dy = -r; dy <= r && !at; dy++)
+                    for (int dx = -r; dx <= r && !at; dx++)
+                        if (std::max(std::abs(dx), std::abs(dy)) == r && free(point + Vec2i{dx, dy}))
+                            at = point + Vec2i{dx, dy};
+            if (!at || std::any_of(hung.begin(), hung.end(), [&](Vec2i h) { return cheb(h, *at) < FITTING_APART; }))
+                continue;
+            hung.push_back(*at);
+            bool dead = dark || dice.chance(FITTING_DEAD_CHANCE);
+            addLight(*at, LightKind::Fitting, !dead, !dead && dice.chance(FITTING_FLICKER_CHANCE));
+        }
+    for (int i = 0; i < NIGHT_LIGHTS_PER_SLOT * c.slotCount(); i++)
+        for (int tries = 0; tries < NIGHT_LIGHT_TRIES; tries++) {
+            Vec2i cell = c.origin() + Vec2i{dice.range(0, c.w - 1), dice.range(0, c.h - 1)};
+            if (!free(cell)) continue;
+            addLight(cell, LightKind::NightLight);
+            break;
+        }
 }
 
 // Vending machines light the floor before them, screens and racks glow a
@@ -41,6 +99,7 @@ void World::lightUp(const Chunk& c, Glowing before) {
         if (s.kind == StatueKind::Lamp || s.kind == StatueKind::Bulb)
             addLight(s.at + Vec2i{s.size.x / 2, s.size.y - 1}, LightKind::Statue);
     }
+    hangFittings(c);
     relightAround(c.origin(), c.origin() + Vec2i{c.w - 1, c.h - 1});
 }
 
