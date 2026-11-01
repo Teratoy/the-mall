@@ -1,5 +1,6 @@
 #include "scenes/world_scene.h"
 #include "audio/audio.h"
+#include "core/files.h"
 #include "human/human.h"
 #include "human/obituary.h"
 #include "human/talk.h"
@@ -13,6 +14,7 @@
 #include "scenes/menu_scene.h"
 #include "world/gen_tuning.h"
 #include "ui/pixel_ui.h"
+#include "rlgl.h"
 #include <algorithm>
 #include <cctype>
 #include <cmath>
@@ -151,6 +153,37 @@ constexpr int WIDE_DOING_W = Canvas::H - 2 * MARGIN;
 constexpr float WIDE_NEXT_W = 48, WIDE_NEXT_H = 16;
 /// The lines between the columns.
 constexpr Color COLUMN_EDGE = ui::GROUND;
+
+// Choosing the human, before the world's first moment: a strip at the top
+// with BACK and the name to tap and type over, and one at the bottom with
+// the traits and the two buttons. On the PC both stand in the left two
+// columns, on paper, one over the other in the middle.
+/// Mixed into the world's seed for the dice the humans are rolled with.
+constexpr uint64_t ROLL_SALT = 0x5EED0F7A11ULL;
+/// While choosing, the camera is as close as play lets it get.
+constexpr float CHOOSE_ZOOM = ZOOMS[ZOOM_COUNT - 1];
+/// After WAKE UP, the seconds the camera takes to ease out to the play zoom.
+constexpr float ZOOM_EASE = 2.0f;
+/// After WAKE UP, the choosing strips slide off the edges for this long, then
+/// the HUD's slide in for as long. On the PC the column slides off over both.
+constexpr float SLIDE_TIME = 0.35f;
+constexpr Rectangle CHOOSE_BACK{MARGIN, MARGIN, 32, 14};
+/// The name is a field to type in: a box round it to tap, a hint under it,
+/// and at most NAME_LONGEST characters.
+constexpr int CHOOSE_NAME_Y = MARGIN + 3, CHOOSE_NAME_W = 136, CHOOSE_NAME_H = 17;
+constexpr int CHOOSE_HINT_Y = CHOOSE_NAME_Y + CHOOSE_NAME_H + 4;
+constexpr int CHOOSE_TOP_H = CHOOSE_HINT_Y + ui::ROW + 2;
+constexpr size_t NAME_LONGEST = 14;
+/// The caret blinks on and off this often.
+constexpr float CARET_BLINK = 0.5f;
+/// The traits, each a label and a bar of TRAIT_PIPS, one under the other,
+/// the bars from the middle TRAIT_BAR_W right and the labels as far left.
+constexpr int CHOOSE_PAD = 8;
+constexpr int TRAITS = 4, TRAIT_ROW = 13, TRAIT_BAR_W = 68, TRAIT_PIPS = 9, TRAIT_BAR_H = 6;
+constexpr int CHOOSE_BUTTON_H = 24;
+constexpr int CHOOSE_BOTTOM_H = CHOOSE_PAD + TRAITS * TRAIT_ROW + CHOOSE_PAD + CHOOSE_BUTTON_H + CHOOSE_PAD;
+/// On the PC, the column the choosing stands in.
+constexpr int CHOOSE_WIDE_W = 2 * COLUMN_W;
 
 std::string caps(std::string s) {
     for (char& c : s) c = char(std::toupper(uint8_t(c)));
@@ -292,15 +325,87 @@ int bottleItems(const Human& h, int right, int y) {
 
 // The world is grown around the human you made, who starts in the spawn room.
 WorldScene::WorldScene(const HumanLook& look, uint64_t humanSeed, uint64_t seed, const std::string& name)
-    : seed_(seed), world_(seed) {
-    world_.makeSpawn(look, humanSeed, name);
+    : seed_(seed), world_(std::make_unique<World>(seed)), look_(look), humanSeed_(humanSeed), chosen_(name) {
+    world_->makeSpawn(look, humanSeed, name);
+}
+
+// Nothing goes in the obituary for one never woken.
+WorldScene::WorldScene(uint64_t seed) : seed_(seed), recorded_(true), rolls_(seed ^ ROLL_SALT), wokeFor_(-1.0f) {
+    roll();
+}
+
+// The spawn room is grown from the world's dice before the human is laid in
+// it, and its bottle by dice of its own, so the room stays as it was.
+void WorldScene::roll() {
+    look_ = HumanLook::random(rolls_);
+    humanSeed_ = rolls_.next();
+    world_ = std::make_unique<World>(seed_);
+    world_->makeSpawn(look_, humanSeed_, chosen_);
+    sprites_.clear();
+    focusOf_ = -1;
+}
+
+float WorldScene::zoomNow() const {
+    if (choosing()) return CHOOSE_ZOOM;
+    float play = ZOOMS[zoom_];
+    if (wokeFor_ >= ZOOM_EASE) return play;
+    float t = wokeFor_ / ZOOM_EASE;
+    t = t * t * (3.0f - 2.0f * t);
+    return CHOOSE_ZOOM + (play - CHOOSE_ZOOM) * t;
+}
+
+bool WorldScene::updateChoosing(float dt, const Canvas&) {
+    chooseTime_ += dt;
+    if (startEdit_) {
+        startEdit_ = false;
+        editing_ = true;
+        caret_ = 0.0f;
+    }
+    if (editing_) {
+        caret_ += dt;
+        // Any printable character but @ and #, which logs keep for names.
+        for (int ch = GetCharPressed(); ch; ch = GetCharPressed())
+            if (ch >= 32 && ch < 127 && ch != '@' && ch != '#' && chosen_.size() < NAME_LONGEST &&
+                !(ch == ' ' && chosen_.empty()))
+                chosen_ += char(ch);
+        if ((IsKeyPressed(KEY_BACKSPACE) || IsKeyPressedRepeat(KEY_BACKSPACE)) && !chosen_.empty()) chosen_.pop_back();
+        if (IsKeyPressed(KEY_ENTER) || ui::backPressed()) editing_ = false;
+        if (!editing_)
+            while (!chosen_.empty() && chosen_.back() == ' ') chosen_.pop_back();
+    } else {
+        if (IsKeyPressed(KEY_R)) refresh_ = true;
+        if (IsKeyPressed(KEY_ENTER)) wake_ = true;
+        if (ui::backPressed()) back_ = true;
+    }
+    if (back_) {
+        next = std::make_unique<MenuScene>();
+        return true;
+    }
+    if (refresh_) {
+        refresh_ = false;
+        roll();
+    }
+    // Grown once more with the name typed, which the human keeps for life;
+    // the same world as rolled, now to be played.
+    if (wake_) {
+        wake_ = false;
+        world_ = std::make_unique<World>(seed_);
+        world_->makeSpawn(look_, humanSeed_, chosen_);
+        sprites_.clear();
+        focusOf_ = -1;
+        wokeFor_ = 0.0f;
+        recorded_ = false;
+        return true;
+    }
+    easeCamera(dt);
+    return true;
 }
 
 void WorldScene::tryOut(std::optional<ChunkKind> kind, const Footprint& parts) {
     if (kind)
-        world_.growPastSpawn(*kind, parts);
+        world_->growPastSpawn(*kind, parts);
     else
-        world_.ensureGenerated(world_.spawnEntry());
+        world_->ensureGenerated(world_->spawnEntry());
     recorded_ = true;
 }
 
@@ -313,10 +418,10 @@ WorldScene::~WorldScene() { record(); }
 void WorldScene::record() {
     if (recorded_) return;
     recorded_ = true;
-    const Human& h = world_.human(0);
+    const Human& h = world_->human(0);
     obituary::Record r;
     r.name = h.name;
-    r.survived = world_.time() - h.born - h.deadFor();
+    r.survived = world_->time() - h.born - h.deadFor();
     r.when = std::time(nullptr);
     for (const LifeLog::Entry& e : h.log.entries()) r.log.push_back({e.time - h.born, logLine(h, e)});
     r.cause = h.dead() && !r.log.empty() ? r.log.back().what : "LEFT BEHIND";
@@ -334,10 +439,10 @@ const HumanSprites& WorldScene::spritesFor(const Human& h) {
 }
 
 const Human* WorldScene::nearestLiving() const {
-    Vec2i from = world_.human(follow_).cell;
+    Vec2i from = world_->human(follow_).cell;
     const Human* best = nullptr;
     long bestDist = 0;
-    for (const auto& h : world_.humans()) {
+    for (const auto& h : world_->humans()) {
         if (h->dead()) continue;
         Vec2i d = h->cell - from;
         long dist = long(d.x) * d.x + long(d.y) * d.y;
@@ -347,6 +452,11 @@ const Human* WorldScene::nearestLiving() const {
 }
 
 void WorldScene::update(float dt, const Canvas& canvas) {
+    if (choosing()) {
+        updateChoosing(dt, canvas);
+        return;
+    }
+    wokeFor_ += dt;
     // Back from CONFIGURATION goes to the pause menu, not the world.
     if (ui::backPressed()) {
         if (configOpen_) configOpen_ = false;
@@ -459,7 +569,7 @@ void WorldScene::update(float dt, const Canvas& canvas) {
     if (mapShown && IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(m, mapArea)) {
         mapDragging_ = true;
         mapDragFrom_ = m;
-        Vec2i at = world_.human(follow_).cell;
+        Vec2i at = world_->human(follow_).cell;
         mapDragCentre_ = mapFollow_ ? Vector2{at.x + 0.5f, at.y + 0.5f} : mapCentre_;
     }
     if (!mapShown || !IsMouseButtonDown(MOUSE_BUTTON_LEFT)) mapDragging_ = false;
@@ -472,15 +582,15 @@ void WorldScene::update(float dt, const Canvas& canvas) {
         }
     }
     mapTime_ += dt;
-    for (float left = dt * SPEEDS[speed_]; left > 0.0f; left -= MAX_TICK) world_.update(std::min(left, MAX_TICK));
+    for (float left = dt * SPEEDS[speed_]; left > 0.0f; left -= MAX_TICK) world_->update(std::min(left, MAX_TICK));
     easeCamera(dt);
-    hearing_.update(world_, world_.human(follow_), SPEEDS[speed_], reveal_);
-    if (world_.human(0).dead()) record();
+    hearing_.update(*world_, world_->human(follow_), SPEEDS[speed_], reveal_);
+    if (world_->human(0).dead()) record();
 }
 
 void WorldScene::easeCamera(float dt) {
-    Vector2 feet = feetOf(world_.human(follow_));
-    float zoom = ZOOMS[zoom_];
+    Vector2 feet = feetOf(world_->human(follow_));
+    float zoom = zoomNow();
     Vec2i at{int(std::lround(feet.x * zoom)), int(std::lround(feet.y * zoom))};
     if (focusOf_ != follow_) {
         focus_ = feet;
@@ -501,7 +611,8 @@ void WorldScene::easeCamera(float dt) {
     // a frame, and grows only on a frame the viewer steps that way too, so
     // the world holds still then instead of stepping back.
     Vec2i want{int(std::lround((feet.x - focus_.x) * zoom)), int(std::lround((feet.y - focus_.y) * zoom))};
-    if (lagZoom_ != zoom_) lag_ = want, lagZoom_ = zoom_;
+    // While the zoom eases it keeps the lag it wants, as on any change of zoom.
+    if (lagZoom_ != zoom_ || wokeFor_ < ZOOM_EASE) lag_ = want, lagZoom_ = zoom_;
     auto settle = [](int& lag, int want, int stepped) {
         if (want == lag) return;
         int toward = want > lag ? 1 : -1;
@@ -514,9 +625,9 @@ void WorldScene::easeCamera(float dt) {
 }
 
 Vector2 WorldScene::cameraFocus(const Human& viewer) const {
-    float zoom = ZOOMS[zoom_];
+    float zoom = zoomNow();
     Vector2 at = drawnFeet(viewer, zoom);
-    if (lagZoom_ != zoom_) {
+    if (lagZoom_ != zoom_ || wokeFor_ < ZOOM_EASE) {
         Vector2 feet = feetOf(viewer);
         return {at.x - std::round((feet.x - focus_.x) * zoom) / zoom, at.y - std::round((feet.y - focus_.y) * zoom) / zoom};
     }
@@ -534,7 +645,7 @@ void WorldScene::drawLog(const Human& viewer, Rectangle area, int clear) {
     int top = int(area.y) + MARGIN, y = int(area.y + area.height) - MARGIN - clear;
     // The bottom row is the clock now, live, in the times' column, so the
     // entries read as how long ago.
-    std::string now = ui::clockText(world_.time());
+    std::string now = ui::clockText(world_->time());
     y -= ui::ROW;
     ui::text(now.c_str(), left, y, ui::DIM);
     if (entries.empty()) {
@@ -637,26 +748,127 @@ void WorldScene::drawStats(const Human& viewer, Rectangle area) {
 // update.
 void WorldScene::draw(const Canvas& canvas) {
     ClearBackground(BLACK);
-    const Human& viewer = world_.human(follow_);
+    const Human& viewer = world_->human(follow_);
     if (focusOf_ != follow_) easeCamera(0.0f);
     const Vector2 focus = cameraFocus(viewer);
     bool wide = canvas.wide();
     Rectangle view = wide ? WIDE_VIEW : PHONE_VIEW;
-    drawWorld(world_, viewer, [this](const Human& h) -> const HumanSprites& { return spritesFor(h); },
-              floorTiles_, statueArt_, reveal_, ZOOMS[zoom_], view, focus);
-    // Under the pause menu nothing else takes a tap.
-    Vector2 mouse = paused_ ? Vector2{-1.0f, -1.0f} : canvas.mouse();
+    const float zoom = zoomNow();
+    drawWorld(*world_, viewer, [this](const Human& h) -> const HumanSprites& { return spritesFor(h); },
+              floorTiles_, statueArt_, reveal_, zoom, view, focus);
+    if (choosing()) {
+        drawSleeperZs(viewer, view, focus);
+        drawChoosing(canvas.mouse(), wide, 0.0f);
+        return;
+    }
+    // Under the pause menu, and while the strips slide, nothing else takes a tap.
+    bool sliding = wokeFor_ < 2.0f * SLIDE_TIME;
+    Vector2 mouse = paused_ || sliding ? Vector2{-1.0f, -1.0f} : canvas.mouse();
     if (wide) {
         std::vector<std::string> rows = ui::wrap(doing(viewer), WIDE_DOING_W);
         int stripY = Canvas::H - int(rows.size()) * ui::ROW - 2 * MARGIN;
-        drawSpeech(world_, viewer, reveal_, ZOOMS[zoom_], view, 0, stripY, focus);
+        drawSpeech(*world_, viewer, reveal_, zoom, view, 0, stripY, focus);
         drawWide(viewer, mouse, rows, stripY);
+        if (sliding) drawChoosing(mouse, true, wokeFor_ / (2.0f * SLIDE_TIME));
+    } else if (wokeFor_ < SLIDE_TIME) {
+        drawChoosing(mouse, false, wokeFor_ / SLIDE_TIME);
+    } else if (sliding) {
+        // The HUD comes in from the edges, the top half (with the buttons)
+        // down from above, the bottom half up from below.
+        float in = 1.0f - (wokeFor_ - SLIDE_TIME) / SLIDE_TIME;
+        for (int half = 0; half < 2; half++) {
+            BeginScissorMode(0, half * Canvas::H / 2, Canvas::W, Canvas::H / 2);
+            rlPushMatrix();
+            rlTranslatef(0.0f, std::round(half ? in * BOTTOM_H : -in * TOP_H), 0.0f);
+            drawPhone(viewer, mouse);
+            rlPopMatrix();
+            EndScissorMode();
+        }
     } else {
         if (!logOpen_ && !statsOpen_ && !mapOpen_)
-            drawSpeech(world_, viewer, reveal_, ZOOMS[zoom_], view, TOP_H, BOTTOM_Y, focus);
+            drawSpeech(*world_, viewer, reveal_, zoom, view, TOP_H, BOTTOM_Y, focus);
         drawPhone(viewer, mouse);
     }
     if (paused_) drawPause(canvas.mouse(), canvas.width());
+}
+
+void WorldScene::drawSleeperZs(const Human& sleeper, Rectangle view, Vector2 focus) {
+    float zoom = zoomNow();
+    Vector2 cam = cameraFor(focus, zoom, {view.width, view.height}), feet = drawnFeet(sleeper, zoom);
+    Vector2 at{view.x + (feet.x - cam.x) * zoom, view.y + (feet.y - cam.y) * zoom};
+    spritesFor(sleeper).drawWakingZs(at, sleeper.facingLeft, int(zoom), chooseTime_);
+}
+
+// out runs from 0, in place, to 1, slid off: on the phone the strips off the
+// top and bottom edges, on the PC the column off the left.
+void WorldScene::drawChoosing(Vector2 mouse, bool wide, float out) {
+    out = std::clamp(out, 0.0f, 1.0f);
+    const int width = wide ? CHOOSE_WIDE_W : Canvas::W, cx = width / 2;
+    // On the PC the two strips stand one over the other in the middle.
+    const int topY = wide ? Canvas::H / 2 - CHOOSE_TOP_H - CHOOSE_PAD : 0;
+    const int bottomY = wide ? Canvas::H / 2 : Canvas::H - CHOOSE_BOTTOM_H;
+    auto slide = [](float dx, float dy) {
+        rlPushMatrix();
+        rlTranslatef(std::round(dx), std::round(dy), 0.0f);
+    };
+    if (wide) {
+        slide(-out * width, 0.0f);
+        DrawRectangle(0, 0, width, Canvas::H, ui::PAPER);
+        DrawRectangle(width - 1, 0, 1, Canvas::H, COLUMN_EDGE);
+    } else {
+        slide(0.0f, -out * CHOOSE_TOP_H);
+        ui::panel({0, 0, float(width), float(CHOOSE_TOP_H)});
+    }
+
+    // The name to tap and type over. A phone has no keyboard to type with,
+    // so there the rolled name stays.
+    const Rectangle field{float(cx - CHOOSE_NAME_W / 2), float(topY + CHOOSE_NAME_Y - 4), float(CHOOSE_NAME_W),
+                          float(CHOOSE_NAME_H)};
+    const int nameY = topY + CHOOSE_NAME_Y, hintY = topY + CHOOSE_HINT_Y;
+    bool overName = !files::TOUCH_ONLY && CheckCollisionPointRec(mouse, field);
+    if (editing_ || overName) DrawRectangleRec(field, ui::GROUND);
+    std::string shown = caps(chosen_.empty() && !editing_ ? world_->human(0).name : chosen_);
+    ui::textCentred(shown.c_str(), cx, nameY, overName || editing_ ? WHITE : ui::BRIGHT);
+    if (editing_) {
+        if (std::fmod(caret_, 2 * CARET_BLINK) < CARET_BLINK)
+            DrawRectangle(cx + ui::textWidth(shown.c_str()) / 2 + 1, nameY - 1, 1, 10, WHITE);
+        ui::textCentred("TYPE A NAME, ENTER WHEN DONE", cx, hintY, ui::DIM);
+    } else if (!files::TOUCH_ONLY) {
+        ui::textCentred("TAP THE NAME TO CHANGE IT", cx, hintY, ui::DIM);
+    }
+    // A press on the name starts typing; one anywhere else ends it.
+    if (out == 0.0f && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+        if (overName && !editing_) startEdit_ = true;
+        if (!overName && editing_) {
+            editing_ = false;
+            while (!chosen_.empty() && chosen_.back() == ' ') chosen_.pop_back();
+        }
+    }
+    back_ |= ui::button(CHOOSE_BACK, "BACK", mouse);
+    if (!wide) {
+        rlPopMatrix();
+        slide(0.0f, out * CHOOSE_BOTTOM_H);
+        ui::panel({0, float(bottomY), float(width), float(CHOOSE_BOTTOM_H)});
+    }
+
+    // What they are like, 0 to 9 pips each, as the stats will count them.
+    const Traits& t = world_->human(0).traits;
+    const char* labels[TRAITS] = {"BRAVE", "GREEDY", "CURIOUS", "SOCIAL"};
+    const float values[TRAITS] = {t.brave, t.greedy, t.curious, t.sociable};
+    const int step = TRAIT_BAR_W / TRAIT_PIPS;
+    for (int i = 0; i < TRAITS; i++) {
+        int y = bottomY + CHOOSE_PAD + i * TRAIT_ROW;
+        ui::text(labels[i], cx - TRAIT_BAR_W, y);
+        int pips = int(values[i] * 9.99f);
+        for (int p = 0; p < TRAIT_PIPS; p++)
+            DrawRectangle(cx + p * step, y + 2, step - 1, TRAIT_BAR_H, p < pips ? ui::INK : ui::GROUND);
+    }
+    // Two buttons across the bottom, with the same margin everywhere.
+    const float buttonW = (width - 3 * CHOOSE_PAD) / 2.0f;
+    const float buttonY = float(bottomY + CHOOSE_BOTTOM_H - CHOOSE_PAD - CHOOSE_BUTTON_H);
+    refresh_ |= ui::button({float(CHOOSE_PAD), buttonY, buttonW, float(CHOOSE_BUTTON_H)}, "REFRESH", mouse);
+    wake_ |= ui::button({width - CHOOSE_PAD - buttonW, buttonY, buttonW, float(CHOOSE_BUTTON_H)}, "WAKE UP", mouse);
+    rlPopMatrix();
 }
 
 void WorldScene::drawPhone(const Human& viewer, Vector2 mouse) {
@@ -667,7 +879,7 @@ void WorldScene::drawPhone(const Human& viewer, Vector2 mouse) {
     ui::panel({0, 0, Canvas::W, TOP_H});
     // First the world's size, and whether it is all revealed.
     int y = MARGIN;
-    std::snprintf(line, sizeof line, "HUMANS %zu  CHUNKS %zu", world_.livingCount(), world_.chunkCount());
+    std::snprintf(line, sizeof line, "HUMANS %zu  CHUNKS %zu", world_->livingCount(), world_->chunkCount());
     ui::text(line, MARGIN, y, ui::DIM);
     if (reveal_) ui::textRight("REVEAL", RIGHT, y, REVEAL_INK);
     y = NAME_TEXT_Y;
@@ -754,7 +966,7 @@ void WorldScene::drawWide(const Human& viewer, Vector2 mouse, const std::vector<
         bar(labels[i], STATS_LEFT, STATS_RIGHT, WIDE_BARS_Y + 2 + i * ui::ROW, amounts[i], fills[i], barX);
 
     // Right of the world, its size and whether it is all revealed.
-    std::snprintf(line, sizeof line, "HUMANS %zu  CHUNKS %zu", world_.livingCount(), world_.chunkCount());
+    std::snprintf(line, sizeof line, "HUMANS %zu  CHUNKS %zu", world_->livingCount(), world_->chunkCount());
     ui::text(line, HUD_LEFT, MARGIN, ui::DIM);
     if (reveal_) ui::textRight("REVEAL", HUD_RIGHT, MARGIN, REVEAL_INK);
 
@@ -776,7 +988,7 @@ void WorldScene::drawWide(const Human& viewer, Vector2 mouse, const std::vector<
 
 void WorldScene::drawMapIn(const Human& viewer, Rectangle area) {
     Vector2 centre = mapFollow_ ? Vector2{viewer.cell.x + 0.5f, viewer.cell.y + 0.5f} : mapCentre_;
-    drawMap(world_, viewer, area, MAP_ZOOMS[mapZoom_], centre, mapTime_);
+    drawMap(*world_, viewer, area, MAP_ZOOMS[mapZoom_], centre, mapTime_);
 }
 
 void WorldScene::drawControls(const Controls& c, Vector2 mouse) {
@@ -807,7 +1019,7 @@ void WorldScene::drawPause(Vector2 mouse, int width) {
     configOpen_ |= ui::button(shifted(CONFIG_BUTTON), "CONFIGURATION", mouse);
     toMenu_ |= ui::button(menu, "MAIN MENU", mouse);
     if (!recorded_) {
-        std::string warning = caps(world_.human(0).name) + " WILL BE LEFT BEHIND";
+        std::string warning = caps(world_->human(0).name) + " WILL BE LEFT BEHIND";
         int y = int(menu.y + menu.height) + PAUSE_GAP;
         for (const std::string& row : ui::wrap(warning, Canvas::W - 2 * MARGIN * 4)) {
             ui::textCentred(row.c_str(), width / 2, y, ui::DIM);

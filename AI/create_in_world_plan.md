@@ -71,8 +71,29 @@ always does. No cut between choosing someone and becoming them.
 - `make shot` gets `--scene choose` to save the choosing screen, so the
   layout can be looked at without a window.
 
+## Built (2026-11-01)
+
+Steps 1–3, in `src/scenes/world_scene.cpp`, with these changes from the plan:
+
+- The sleeper is drawn as the world draws it before its first moment (the
+  Wake pose, eyes shut), with the sleeper's z's rising from its head
+  (`HumanSprites::drawWakingZs`). That pose has no breathing frames, so
+  only the z's move.
+- No fades: raylib can't fade a whole strip at once, so on WAKE UP the
+  choosing strips slide off the top and bottom (0.35 s), then the HUD's
+  slide in from the same edges (0.35 s). On the PC the choosing column
+  slides off to the left over the HUD. The camera eases from zoom 3 to the
+  play zoom 2 over 2 s, starting at once.
+- The world is grown again on WAKE UP with the typed name, since a human's
+  name is fixed when it is made; it is the same world as the one rolled.
+- `CreateScene` is gone. `make shot SHOT_ARGS="--scene choose"` shows
+  choosing; with `--wake` WAKE UP is pressed first, so `--seconds` counts
+  from waking.
+- `make check` passes unchanged.
+
 ## Still open
 
-- Whether the close zoom is the closest play zoom or closer still (start
-  with the closest, `zoom_` = the last index).
-- Whether BACK should fade too, or cut straight to the menu as now.
+- Whether the close zoom should be closer than the closest play zoom (3).
+- Whether BACK should slide too, or cut straight to the menu as now (cuts).
+- The table, cake and key aren't seen while choosing: the sleeper sees only
+  what it saw on coming to. Whether the room should show more.

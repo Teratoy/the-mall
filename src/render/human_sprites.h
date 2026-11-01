@@ -70,6 +70,10 @@ public:
     /// at (drawn as it flies by draw, for CASING_TIME after the shot), for the
     /// floor to take it; drawn as draw would at feet. False when not shooting.
     bool casingRest(Vector2 feet, Pose pose, bool flip, int scale, Vector2& rest) const;
+    /// Asleep where it came to, before the world's first moment: z's rising
+    /// from the head of one drawn in the Wake pose at feet, sleepTime
+    /// counting from when they started.
+    void drawWakingZs(Vector2 feet, bool flip, int scale, float sleepTime) const;
     /// Redraws every frame with this blood on the body, unless it already shows it.
     void bloody(const BodyBlood& blood);
     /// The same for the feces and the piss on it, painted over the blood.
@@ -150,4 +154,6 @@ private:
     /// Curled up asleep or just woken, turned onto its side; asleep, z's
     /// rise from the head, sleepTime counting from lying down.
     void drawCurled(Vector2 feet, const Texture2D& tex, bool flip, int scale, Color tint, float sleepTime) const;
+    /// The z's rising from head and drifting on the way ahead (1 right, -1 left).
+    void drawZs(Vector2 head, float ahead, int scale, Color tint, float sleepTime) const;
 };
