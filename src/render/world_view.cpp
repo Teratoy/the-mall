@@ -222,7 +222,7 @@ bool shown(const Human& viewer, const Human& h, bool reveal) {
 
 void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprites,
                const FloorTiles& floorTiles, const StatueArt& statueArt, bool reveal, float zoom, Rectangle area,
-               Vector2 focus) {
+               Vector2 focus, bool humans) {
     // Everything is placed in whole world pixels from left and top; the
     // camera's part of a world pixel past them shifts it all at once.
     Vector2 cam = cameraFor(focus, zoom, {area.width, area.height});
@@ -404,7 +404,7 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
     };
     std::vector<Drawn> drawn;
     for (const auto& h : world.humans())
-        if (shown(viewer, *h, reveal)) drawn.push_back({feetOf(*h).y, h.get(), -1});
+        if (humans && shown(viewer, *h, reveal)) drawn.push_back({feetOf(*h).y, h.get(), -1});
     for (int id : statues) {
         const Statue& s = world.statues()[size_t(id)];
         drawn.push_back({float((s.at.y + s.size.y) * CELL_PX), nullptr, id});

@@ -66,6 +66,7 @@ void Human::endEating() {
         hunger = std::max(0.0f, hunger - CAKE_FOOD);
         takeIn(0.0f, 1.0f);
         note("ATE A CAKE");
+        repeated(Repeat::Cakes);
     }
     startIdle(LOOK_TIME_MIN, LOOK_TIME_MAX);
 }
@@ -274,6 +275,8 @@ void Human::landPunch(World& world) {
     remember(Episode::What::Fight, EPISODE_HIT, id, f.id);
     f.remember(Episode::What::Fight, took ? EPISODE_ROBBED : EPISODE_GOT_HIT, id, f.id);
     sayLater(talk::Moment::Hit, f.id);
+    fought(f.id);
+    f.fought(id);
     wrong(f, true);
     // Wet blood on them comes off on the fist.
     if (f.stains.wetAny()) stain({BodyPart::FrontArm}, 1, 120, true);
@@ -352,6 +355,7 @@ void Human::hitByDart(float damage, Vec2i dir) {
     remember(Episode::What::Trap, EPISODE_DART, id, -1, int(TrapKind::Darts));
     scare(DREAD_TRAP_HIT);
     sayLater(talk::Moment::Darted);
+    repeated(Repeat::Traps);
     BodyPart part = BodyPart::Torso;
     if (dir.x != 0 && rng_.chance(0.5f)) part = (dir.x > 0) == facingLeft ? BodyPart::FrontArm : BodyPart::BackArm;
     wound(WoundKind::Pierce, part, damage, false);
@@ -366,6 +370,7 @@ void Human::impale(World&) {
     note("STEPPED ON SPIKES");
     scare(DREAD_TRAP_HIT);
     sayLater(talk::Moment::Spiked);
+    repeated(Repeat::Traps);
     BodyPart part = rng_.chance(0.5f) ? BodyPart::Feet : BodyPart::Legs;
     float damage = rng_.range(SPIKE_WOUND_MIN, SPIKE_WOUND_MAX);
     wound(WoundKind::Pierce, part, damage).bleed *= SPIKE_BLEED_MUL;
@@ -387,6 +392,7 @@ void Human::learnTrap(Vec2i cell, TrapKind kind, bool mine) {
     else if (kind == TrapKind::Slam) {
         note("SHUT IN A SLAM ROOM");
         sayLater(talk::Moment::Slammed);
+        repeated(Repeat::Traps);
     }
     // Caught itself, or saw someone else darted: wary of the next one like it.
     if (kind == TrapKind::Darts) {

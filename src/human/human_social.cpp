@@ -715,6 +715,7 @@ void Human::greet(Human& other) {
     bool first = met.insert(other.id).second;
     note(first ? "MET @" : "CAUGHT UP WITH @", other.id);
     sayLater(first ? talk::Moment::Meet : talk::Moment::CatchUp, other.id);
+    if (!first) repeated(Repeat::Faces, other.id);
     social_.greetedAt[other.id] = clock_;
     regard(other.id, TRUST_GREETED);
     if (other.cell.x != cell.x) facingLeft = other.cell.x < cell.x;

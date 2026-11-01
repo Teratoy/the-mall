@@ -723,6 +723,34 @@ Checks wareSlam(Stage& s, int keys, Checks expect) {
     return expect;
 }
 
+/// How much the first human's dread rose at each of two bodies found in
+/// turn, the second when it has already found bodiesBefore (and so has
+/// hardened, or worn down, as its traits go). Dread is cleared before each.
+std::pair<float, float> bodyDreads(Stage& s, int bodiesBefore) {
+    Human& finder = s.first();
+    Human& a = s.add(seedWhere(plain, 9900), 4);
+    Human& b = s.add(seedWhere(plain, 9950), 12);
+    calm(finder);
+    float jumps[2] = {-1.0f, -1.0f};
+    size_t seen = 0;
+    float last = 0.0f;
+    auto watch = [&] {
+        if (P::bodiesSeen(finder) > seen && seen < 2) jumps[seen] = P::dread(finder) - last;
+        seen = P::bodiesSeen(finder);
+        last = P::dread(finder);
+    };
+    P::setDread(finder, 0.0f);
+    P::kill(s.world, a);
+    s.run(15, watch);
+    P::setRepeats(finder, P::Repeat::Bodies, bodiesBefore);
+    P::setDread(finder, 0.0f);
+    last = 0.0f;
+    P::place(s.world, b, s.freeNear(finder.cell, 2));
+    P::kill(s.world, b);
+    s.run(15, watch);
+    return {jumps[0], jumps[1]};
+}
+
 const std::vector<Scenario> SCENARIOS = {
     {"wary-darts", "darted once, a human not yet hungry leaves the next table cake alone", seedWhere(plain, 9000),
      [](Stage& s) {
@@ -2423,6 +2451,35 @@ const std::vector<Scenario> SCENARIOS = {
          calm(finder);
          s.run(30);
          return Checks{loggedBy(finder, "WENT CLOSER TO LOOK AT A BODY"), loggedBy(finder, "FOUND @ DEAD")};
+     }},
+    {"repeat-milestones", "three cakes and three bodies in, a human eats its 4th cake and finds its 4th body",
+     seedWhere(plain, 9000),
+     [](Stage& s) {
+         Human& h = s.first();
+         Human& victim = s.add(seedWhere(plain, 9900), 4);
+         calm(h);
+         h.hunger = 0.7f;
+         h.cakes = 2;
+         P::setRepeats(h, P::Repeat::Cakes, 3);
+         P::setRepeats(h, P::Repeat::Bodies, 3);
+         P::kill(s.world, victim);
+         s.run(40);
+         return Checks{loggedBy(h, "ATE MY 4TH CAKE"), loggedBy(h, "FOUND MY 4TH BODY"),
+                       {"counted 4 bodies", [&h](const Stage&) { return P::repeats(h, P::Repeat::Bodies) == 4; }}};
+     }},
+    {"repeat-harden", "a brave loner dreads a body less once it has found several",
+     seedWhere([](const Traits& t) { return t.brave >= 0.7f && t.sociable <= 0.3f; }, 9000),
+     [](Stage& s) {
+         auto [first, later] = bodyDreads(s, 5);
+         return Checks{{"found both", [first, later](const Stage&) { return first > 0.0f && later > 0.0f; }},
+                       {"the later body dreaded less", [first, later](const Stage&) { return later < 0.9f * first; }}};
+     }},
+    {"repeat-grieve", "a timid, sociable human dreads a body more once it has found several",
+     seedWhere([](const Traits& t) { return t.brave <= 0.3f && t.sociable >= 0.7f; }, 9000),
+     [](Stage& s) {
+         auto [first, later] = bodyDreads(s, 5);
+         return Checks{{"found both", [first, later](const Stage&) { return first > 0.0f && later > 0.0f; }},
+                       {"the later body dreaded more", [first, later](const Stage&) { return later > 1.1f * first; }}};
      }},
     // Planning for needs (AI/needs_planning_plan.md).
     {"top-up", "having learnt to keep near water, a human not yet thirsty drinks at a basin a few steps off",

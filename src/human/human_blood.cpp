@@ -374,6 +374,7 @@ bool Human::startWash(World& world) {
     path_.clear();
     timer = WASH_STEP;
     note(bloody ? "WASHED OFF BLOOD" : filthy ? "WASHED OFF SHIT" : "WASHED OFF DIRT");
+    if (bloody) repeated(Repeat::Blood);
     offendDrinkers(world, gore_.washAt);
     return true;
 }
