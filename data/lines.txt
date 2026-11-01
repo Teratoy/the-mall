@@ -2977,6 +2977,44 @@ timid                   | WHAT ELSE IS DOWN HERE?
 erratic                 | HA. HA HA.
 filthy                  | WHAT'S A LITTLE MORE.
 
+# A bell tolls the hour, heard all through the mall. Said to nobody.
+[hour_bell 0.12]
+                        | ANOTHER HOUR.
+                        | WHO RINGS IT?
+                        | COUNTING. ALWAYS COUNTING.
+curious                 | WHERE IS THAT BELL?
+hopeless                | IT DOESN'T MATTER WHAT HOUR IT IS.
+timid                   | IT MAKES ME JUMP. EVERY TIME.
+settled                 | THERE'S THE BELL. ALL'S WELL.
+
+# The closing bell, and the lights going out. Said to nobody.
+[closing_bell 0.8]
+                        | NO. NO, WAIT.
+                        | CLOSING TIME. FOR WHOM?
+                        | HOLD STILL. LET YOUR EYES COME.
+timid                   | DON'T LEAVE ME IN HERE!
+brave                   | SO IT SLEEPS TOO.
+tired                   | BEDTIME, THEN.
+hopeless                | EVEN THE LIGHTS GIVE UP.
+
+# The opening bell, and the lights coming on. Said to nobody.
+[opening_bell 0.7]
+                        | MORNING. IS IT MORNING?
+                        | THERE IT IS AGAIN.
+                        | OPEN FOR BUSINESS. WHAT BUSINESS?
+brave                   | RIGHT. ANOTHER GO.
+timid                   | I MADE IT. I MADE IT THROUGH.
+hopeless                | ANOTHER DAY OF THIS.
+sure                    | TODAY. TODAY I FIND IT.
+
+# Knowing at last the lights go out at the bell. Said to nobody.
+[clock_lesson]
+                        | THE BELL, THEN THE DARK. EVERY TIME.
+                        | IT KEEPS HOURS. LIKE A SHOP.
+curious                 | SOMEONE STILL RUNS THIS PLACE.
+timid                   | WHEN IT RINGS, I'LL BE READY.
+hopeless                | IT'LL OPEN AND CLOSE WITHOUT US.
+
 # Trying the handle of a shut door it never tried before, and finding it
 # locked. Said to nobody.
 [try_door_locked 0.6]

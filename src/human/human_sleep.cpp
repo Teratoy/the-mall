@@ -53,6 +53,8 @@ constexpr float TIRED_BLEED = 0.3f;
 constexpr float TIRED_DREAD = 1.0f / 1800.0f;
 /// Tired from here on: it wants sleep. Exhausted from EXHAUSTED: slower.
 constexpr float TIRED = 0.5f;
+/// Once it has heard the mall close, tired enough from here (AI/light_plan.md step 6).
+constexpr float TIRED_CLOSED = 0.4f;
 constexpr float EXHAUSTED = 0.8f;
 /// Tiredness slept off a second; it wakes once down to RESTED.
 constexpr float SLEEP_RECOVERY = 1.0f / 170.0f;
@@ -195,7 +197,9 @@ constexpr Vec2i RING[8] = {{1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}, {
 
 } // namespace
 
-bool Human::tired() const { return tiredness >= TIRED; }
+float Human::tiredFrom() const { return bells_.closed ? TIRED_CLOSED : TIRED; }
+
+bool Human::tired() const { return tiredness >= tiredFrom(); }
 
 bool Human::exhausted() const { return tiredness >= EXHAUSTED; }
 
@@ -239,7 +243,7 @@ bool Human::sleepWatched(const World& world, Vec2i c) const {
     return false;
 }
 
-float Human::tiredDrive() const { return std::max(0.0f, (tiredness - TIRED) / (1.0f - TIRED)); }
+float Human::tiredDrive() const { return std::max(0.0f, (tiredness - tiredFrom()) / (1.0f - tiredFrom())); }
 
 void Human::tire(float dt) {
     if (state == State::Sleeping) {

@@ -1013,7 +1013,9 @@ void World::gatherSmells() {
 
 // By index: a human stepping into an empty slot adds a chunk and a human.
 void World::update(float dt) {
+    const float before = time_;
     time_ += dt;
+    tickClock(before);
     for (auto& c : chunks_) c->simulate(dt);
     updateTraps(dt);
     updateMachines(dt);

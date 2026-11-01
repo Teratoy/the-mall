@@ -65,6 +65,12 @@ public:
     /// (or, with no kind, the one the game rolls there), and the world kept
     /// out of the obituary.
     void tryOut(std::optional<ChunkKind> kind, const Footprint& parts);
+    /// Starts the world at this step of the speeds (0 is X1), for watching
+    /// several worlds run fast side by side.
+    void startAtSpeed(int step);
+    /// Writes every human's life log to this file when the world is left,
+    /// for reading after a test run.
+    void writeLogsTo(std::string path) { logsPath_ = std::move(path); }
 
     void update(float dt, const Canvas& canvas) override;
     void draw(const Canvas& canvas) override;
@@ -74,6 +80,9 @@ private:
     /// tools/shot.cpp opens menus and keeps its worlds out of the obituary.
     friend struct ShotProbe;
     uint64_t seed_;
+    /// Where to write every human's life log on leaving, if anywhere.
+    std::string logsPath_;
+    void writeLogs() const;
     /// Grown afresh from seed_ for each human rolled while choosing, so the
     /// spawn room is the same for all of them.
     std::unique_ptr<World> world_;
@@ -200,6 +209,8 @@ private:
     /// The phone's strips and buttons over the world, and whichever of the
     /// log, stats or map is open.
     void drawPhone(const Human& viewer, Vector2 mouse);
+    /// The mall's time, HH:MM, starting x canvas pixels across, y down.
+    void drawClock(int x, int y) const;
     /// The PC's columns beside the square of world, and what they are doing,
     /// in doingRows, in a strip from stripY down the bottom of the square.
     void drawWide(const Human& viewer, Vector2 mouse, const std::vector<std::string>& doingRows, int stripY);

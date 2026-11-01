@@ -132,6 +132,11 @@ struct SoakProbe {
     /// A terminal or console desk stood with its cell (the desk's top-left) at at.
     /// Forgets every cell it has seen, as if just come to.
     static void forget(Human& h) { h.memory = Memory{}; }
+    /// The world's clock set to this many seconds since it began; no bell
+    /// rings for the jump, but the lights follow at the next tick.
+    static void setTime(World& w, float t) { w.time_ = t; }
+    /// Lies down to sleep where it stands, not worn through.
+    static void sleepNow(World& w, Human& h) { h.startSleeping(w, false); }
     /// Fresh feces of nobody's on the cell, just dropped.
     static void dropFeces(World& w, Vec2i cell) {
         w.mess().drop(MessKind::Feces, cell, cell.x * CELL_PX + 3.0f, cell.y * CELL_PX + 4.0f, 1.0f, w.time(), -1, 7);

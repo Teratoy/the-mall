@@ -49,6 +49,8 @@ constexpr float CAMERA_LAG_MAX = 12.0f;
 // right edge between them. The human's stats are a menu of their own,
 // opened by tapping their name.
 constexpr int MARGIN = 4;
+/// Between the world's size and the mall's time, in the top strip.
+constexpr int CLOCK_GAP = 8;
 constexpr int RIGHT = Canvas::W - MARGIN;
 /// The world's size; then the name with the LOG button beside it, and
 /// items, centred on a row as tall as the button.
@@ -410,9 +412,34 @@ void WorldScene::tryOut(std::optional<ChunkKind> kind, const Footprint& parts) {
     recorded_ = true;
 }
 
+void WorldScene::startAtSpeed(int step) { speed_ = std::clamp(step, 0, SPEED_COUNT - 1); }
+
 // Leaving the world any way at all, even closing the window, counts as
 // leaving them behind.
-WorldScene::~WorldScene() { record(); }
+WorldScene::~WorldScene() {
+    record();
+    writeLogs();
+}
+
+void WorldScene::writeLogs() const {
+    if (logsPath_.empty() || !world_) return;
+    std::FILE* f = std::fopen(logsPath_.c_str(), "w");
+    if (!f) return;
+    auto clock = [](float t) {
+        char buf[16];
+        std::snprintf(buf, sizeof buf, "%d:%02d", int(t) / 60, int(t) % 60);
+        return std::string(buf);
+    };
+    std::fprintf(f, "SEED %llu, WORLD TIME %s, %zu HUMANS\n", (unsigned long long)seed_,
+                 clock(world_->time()).c_str(), world_->humans().size());
+    for (const auto& h : world_->humans()) {
+        std::fprintf(f, "\n=== %s #%d%s, BORN %s, %s ===\n", caps(h->name).c_str(), h->id,
+                     h->id == follow_ ? " (FOLLOWED)" : "", clock(h->born).c_str(), h->dead() ? "DEAD" : "ALIVE");
+        for (const auto& e : h->log.entries())
+            std::fprintf(f, "%7s  %s\n", clock(e.time).c_str(), logLine(*h, e).c_str());
+    }
+    std::fclose(f);
+}
 
 // The cause is the last line of their log, which their death always
 // writes; times are counted from when they came in.
@@ -797,6 +824,13 @@ void WorldScene::draw(const Canvas& canvas) {
     if (paused_) drawPause(canvas.mouse(), canvas.width());
 }
 
+// The mall's time after the world's size, brighter while it is open.
+void WorldScene::drawClock(int x, int y) const {
+    char time[8];
+    std::snprintf(time, sizeof time, "%02d:%02d", world_->hour(), world_->minute());
+    ui::text(time, x + CLOCK_GAP, y, world_->closed() ? ui::DIM : ui::BRIGHT);
+}
+
 void WorldScene::drawSleeperZs(const Human& sleeper, Rectangle view, Vector2 focus) {
     float zoom = zoomNow();
     Vector2 cam = cameraFor(focus, zoom, {view.width, view.height}), feet = drawnFeet(sleeper, zoom);
@@ -882,10 +916,12 @@ void WorldScene::drawPhone(const Human& viewer, Vector2 mouse) {
     // Top strip. Who is followed and what they carry: the one name it is
     // sure of is its own, underlined, and tapping it opens their stats.
     ui::panel({0, 0, Canvas::W, TOP_H});
-    // First the world's size, and whether it is all revealed.
+    // First the world's size, how long it has run, and whether it is all revealed.
     int y = MARGIN;
-    std::snprintf(line, sizeof line, "HUMANS %zu  CHUNKS %zu", world_->livingCount(), world_->chunkCount());
+    std::snprintf(line, sizeof line, "HUMANS %zu  ROOMS %zu  %s", world_->livingCount(), world_->chunkCount(),
+                  ui::clockText(world_->time()).c_str());
     ui::text(line, MARGIN, y, ui::DIM);
+    drawClock(MARGIN + ui::textWidth(line), y);
     if (reveal_) ui::textRight("REVEAL", RIGHT, y, REVEAL_INK);
     y = NAME_TEXT_Y;
     std::string name = caps(viewer.name);
@@ -970,9 +1006,11 @@ void WorldScene::drawWide(const Human& viewer, Vector2 mouse, const std::vector<
     for (int i = 0; i < WIDE_BARS; i++)
         bar(labels[i], STATS_LEFT, STATS_RIGHT, WIDE_BARS_Y + 2 + i * ui::ROW, amounts[i], fills[i], barX);
 
-    // Right of the world, its size and whether it is all revealed.
-    std::snprintf(line, sizeof line, "HUMANS %zu  CHUNKS %zu", world_->livingCount(), world_->chunkCount());
+    // Right of the world, its size, how long it has run, and whether it is all revealed.
+    std::snprintf(line, sizeof line, "HUMANS %zu  ROOMS %zu  %s", world_->livingCount(), world_->chunkCount(),
+                  ui::clockText(world_->time()).c_str());
     ui::text(line, HUD_LEFT, MARGIN, ui::DIM);
+    drawClock(HUD_LEFT + ui::textWidth(line), MARGIN);
     if (reveal_) ui::textRight("REVEAL", HUD_RIGHT, MARGIN, REVEAL_INK);
 
     // What they are doing, centred along the bottom of the world.

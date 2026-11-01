@@ -397,6 +397,38 @@ each an ON/OFF button, kept in the settings file (`snow`, `light_dither`,
   humans and chunk counters, measured with `ui::textRight`; on the wide
   PC layout in the same place. A scenario checks the bells and reactions.
 
+### Built (2026-11-01)
+- `world/clock.h`: 24 mall hours of 50 s (a 20-minute day), open 06:00
+  to midnight, closed midnight to 06:00; the world begins at 06:00 on
+  day 1. `World::hour()`, `minute()`, `day()`, `closed()`. No dice.
+- `World::tickClock`: as the hour turns a bell rings (`bellsRung()`,
+  `lastBell()`): the opening bell at 06:00, the closing bell at midnight,
+  the hour bell otherwise. While closed, ceiling fittings give no light;
+  night lights, machines, glowing statues (and torches, later) still do.
+  Every chunk is relit at opening and closing. The lights follow
+  `closed()`, so a test that sets the clock finds them right.
+- `human_bells.cpp`, `bells_`: every human hears every bell, awake or
+  asleep.
+  - Hour: the first one noted ("HEARD A BELL TOLL THE HOUR"); `hour_bell`
+    said now and then (0.12). Asleep, nothing.
+  - Closing: "THE BELL RANG AND THE LIGHTS WENT OUT", `closing_bell`, dread
+    0.15 swayed by bravery; tired enough to sleep from 0.4, not 0.5, until
+    it hears the opening bell (`tiredFrom()`). The second closing it hears
+    awake: "THE LIGHTS GO OUT AT THE BELL. EVERY TIME", `clock_lesson`.
+    Asleep, it only knows the mall closed.
+  - Opening: a little hope (more for the bold); asleep and not exhausted,
+    it wakes ("WOKE TO THE BELL"); awake, "THE BELL RANG AND THE LIGHTS
+    CAME ON", `opening_bell`.
+- The HUD: the time, HH:MM, after "HUMANS n  CHUNKS n" in the top strip,
+  phone and wide alike, bright while open, dim while closed.
+- No sound yet: main has no noise list (sound_plan.md step 2 isn't
+  built). The bells should go into it when it is.
+- Scenarios `closing-bell`, `opening-bell`, `closing-sleep`,
+  `clock-lesson` (`P::setTime` jumps the clock).
+- The soak runs 15 minutes, 06:00 to midnight: it hears the hour bells
+  but never a night. Only the scenarios cover the mall closed.
+- Soak: 10 still, 2 flips, 0 loops.
+
 ### 7. (If A3) Switches and carried light
 - Wall switches per room; a new `Action` with rows in all three tables.
 - A torch item, found or vended, carried like a bottle, its light moving

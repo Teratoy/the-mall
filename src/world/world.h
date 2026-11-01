@@ -2,6 +2,7 @@
 #include "core/rng.h"
 #include "world/blood.h"
 #include "world/chunk.h"
+#include "world/clock.h"
 #include "world/dispenser.h"
 #include "world/door.h"
 #include "world/gen.h"
@@ -229,6 +230,16 @@ public:
     void update(float dt);
     /// Seconds simulated since the world began.
     float time() const { return time_; }
+    /// The mall's clock: the hour (0 to 23) and minute of the day, and the
+    /// day, from 1.
+    int hour() const;
+    int minute() const;
+    int day() const;
+    /// From midnight until opening: the ceiling lights are out.
+    bool closed() const { return hour() < OPENING; }
+    /// How many bells have rung since the world began, and which was last.
+    int bellsRung() const { return bellsRung_; }
+    Bell lastBell() const { return lastBell_; }
     /// Something made a sound the player may hear. For the view only:
     /// nothing in the sim reads noises back, so they change nothing.
     void noise(NoiseKind kind, Vec2i cell, int who = -1, float size = 1.0f);
@@ -306,6 +317,15 @@ private:
     Blood blood_;
     Mess mess_;
     float time_ = 0.0f;
+    int bellsRung_ = 0;
+    Bell lastBell_ = Bell::Hour;
+    /// The ceiling lights are out for the night.
+    bool closed_ = false;
+    /// Seconds into the mall's day.
+    float mallTime() const;
+    /// Rings the bell when the hour turns, and puts the ceiling lights out
+    /// at closing and on again at opening.
+    void tickClock(float before);
     std::deque<Noise> noises_;
     uint64_t noiseCount_ = 0;
     std::vector<Smell> smells_;

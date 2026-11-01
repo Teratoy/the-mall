@@ -35,6 +35,7 @@ void Human::update(World& world, float dt) {
     }
     live(world, dt);
     if (dead()) return;
+    hearBells(world);
     // Asleep it says nothing and does nothing, until a blow wakes it, and
     // then it answers the blow like anyone.
     if (state == State::Sleeping) {

@@ -75,6 +75,7 @@ constexpr const char* MOMENTS[] = {
     "sleep_dark", "sleep_lit",
     "relief_dark", "stash_dark",
     "stepped_in_dark",
+    "hour_bell", "opening_bell", "closing_bell", "clock_lesson",
     "try_door_locked", "door_gave", "learn_doors", "try_doors_boxed", "help_steps",
     "learn_refill",
 };

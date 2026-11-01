@@ -2353,6 +2353,65 @@ const std::vector<Scenario> SCENARIOS = {
          s.run(20);
          return Checks{loggedBy(h, "STEPPED IN SHIT IN THE DARK")};
      }},
+    {"closing-bell", "at midnight the bell rings and the ceiling lights go out; awake, it is uneasy",
+     seedWhere([](const Traits& t) { return t.brave < 0.3f; }, 32000), [](Stage& s) {
+         Human& h = s.first();
+         calm(h);
+         s.run(45);
+         // Under the first fitting that is on, which closing puts out.
+         Vec2i at{};
+         for (const LightSource& l : s.world.lights())
+             if (l.kind == LightKind::Fitting && l.on) {
+                 at = l.cell;
+                 break;
+             }
+         const int before = s.world.light(at);
+         P::setDread(h, 0.0f);
+         P::setTime(s.world, (MALL_HOURS - OPENING) * MALL_HOUR - 2.0f);
+         s.run(4);
+         return Checks{loggedBy(h, "THE BELL RANG AND THE LIGHTS WENT OUT"),
+                       {"fitting out, closed now", [&s, at, before](const Stage&) {
+                            return before == LIGHT_FULL && s.world.light(at) < before && s.world.closed();
+                        }},
+                       {"uneasy", [&h](const Stage&) { return h.dread() > 0.05f; }}};
+     }},
+    {"opening-bell", "asleep in the night, not worn through, it wakes to the opening bell",
+     seedWhere(plain, 32500), [](Stage& s) {
+         Human& h = s.first();
+         calm(h);
+         s.run(45);
+         P::setTime(s.world, MALL_DAY - 3.0f);
+         s.run(1);
+         h.tiredness = 0.45f;
+         P::sleepNow(s.world, h);
+         s.run(6);
+         return Checks{loggedBy(h, "WOKE TO THE BELL"), {"open again", [&s](const Stage&) { return !s.world.closed(); }}};
+     }},
+    {"closing-sleep", "a little tired, it would go on; once the mall closes, it lies down",
+     seedWhere(plain, 33000), [](Stage& s) {
+         Human& h = s.first();
+         calm(h);
+         s.run(45);
+         h.tiredness = 0.42f;
+         s.run(10);
+         const bool sleptOpen = h.state == Human::State::Sleeping;
+         P::setTime(s.world, (MALL_HOURS - OPENING) * MALL_HOUR - 1.0f);
+         s.run(40);
+         return Checks{{"awake while open", [sleptOpen](const Stage&) { return !sleptOpen; }},
+                       loggedBy(h, "FELL ASLEEP")};
+     }},
+    {"clock-lesson", "the second time the lights go out at the bell, it knows the mall keeps hours",
+     seedWhere(plain, 33500), [](Stage& s) {
+         Human& h = s.first();
+         calm(h);
+         s.run(45);
+         for (int night = 1; night <= 2; night++) {
+             P::setTime(s.world, night * MALL_DAY - OPENING * MALL_HOUR - 1.0f);
+             s.run(3);
+             calm(h);
+         }
+         return Checks{loggedBy(h, "THE LIGHTS GO OUT AT THE BELL. EVERY TIME")};
+     }},
     {"airlock-surprise", "with keys and nowhere else to go, it opens a server room's outer door and finds another behind",
      seedWhere(plain, 23000), [](Stage& s) {
          Human& h = s.first();

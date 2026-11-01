@@ -39,6 +39,28 @@ LightKind World::lightFrom(Vec2i cell) const {
     return c->lightFrom[size_t(l.y * c->w + l.x)];
 }
 
+float World::mallTime() const { return std::fmod(time_ + OPENING * MALL_HOUR, MALL_DAY); }
+
+int World::hour() const { return int(mallTime() / MALL_HOUR); }
+
+int World::minute() const { return int(std::fmod(mallTime(), MALL_HOUR) / MALL_HOUR * 60.0f); }
+
+int World::day() const { return 1 + int((time_ + OPENING * MALL_HOUR) / MALL_DAY); }
+
+// The world's own clock: no dice, the same in every world. The lights follow
+// whether it is closed, so a jump in time (a test setting the clock) leaves
+// them right too, though no bell rings for it.
+void World::tickClock(float before) {
+    const int was = int(std::fmod(before + OPENING * MALL_HOUR, MALL_DAY) / MALL_HOUR), now = hour();
+    if (now != was) {
+        bellsRung_++;
+        lastBell_ = now == OPENING ? Bell::Opening : now == 0 ? Bell::Closing : Bell::Hour;
+    }
+    if (closed() == closed_) return;
+    closed_ = closed();
+    for (auto& c : chunks_) relight(*c);
+}
+
 void World::addLight(Vec2i cell, LightKind kind, bool on, bool flicker) {
     slotLights_[slotOf(cell)].push_back(int(lights_.size()));
     lights_.push_back({cell, kind, on, flicker});
@@ -124,7 +146,7 @@ void World::relight(Chunk& c) {
             for (int id : it->second) {
                 const LightSource& s = lights_[size_t(id)];
                 const int r = lightRadius(s.kind);
-                if (!s.on || s.cell.x + r < lo.x || s.cell.y + r < lo.y || s.cell.x - r > hi.x || s.cell.y - r > hi.y)
+                if (!s.on || (closed_ && s.kind == LightKind::Fitting) || s.cell.x + r < lo.x || s.cell.y + r < lo.y || s.cell.x - r > hi.x || s.cell.y - r > hi.y)
                     continue;
                 shadowcast(s.cell, r, tileAt, [&](Vec2i cell) {
                     Vec2i l = cell - lo;
