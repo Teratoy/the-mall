@@ -235,6 +235,19 @@ over 12 cells. At speed xN, steps play one in N and anything not urgent
 is quieter by the square root of N. At most 6 sounds start a frame,
 loudest first, besides the urgent ones (cries, slams, spikes, deaths).
 
+### Denoiser (2026-11-01, user's ask)
+
+`src/audio/denoise.cpp` sits on raylib's final mix
+(`AttachAudioMixedProcessor`), so every sound, voice and the music pass
+through it last. A fourth-order low-pass at 3800 Hz smooths the hiss of
+the crush's stair-steps (just under half its 8000 Hz) and keeps the grit;
+a gentle gate fades the mix out under 0.004, where only the last flicker
+of crushed tails is left (opens in 2 ms, closes over 120 ms). It assumes
+the device mixes at 48000 Hz in stereo, as it does on this machine
+(PulseAudio) and on Android. A sound given a crush rate above 8000 in
+`data/sounds.txt` loses what it gains above 3800 Hz: raise `CUT_HZ` if
+that is wanted.
+
 ## 6. Voices
 
 - A soft pop as each bubble opens (user's decision), pitched a little

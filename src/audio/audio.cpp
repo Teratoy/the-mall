@@ -1,4 +1,5 @@
 #include "audio/audio.h"
+#include "audio/denoise.h"
 #include "audio/synth.h"
 #include "core/files.h"
 #include <algorithm>
@@ -112,12 +113,14 @@ void open() {
     InitAudioDevice();
     opened = IsAudioDeviceReady();
     if (!opened) std::fprintf(stderr, "no sound device: the game will be silent\n");
+    else denoise::attach();
 }
 
 void close() {
     if (!opened) return;
     for (auto& [name, e] : table) unload(e);
     table.clear();
+    denoise::detach();
     CloseAudioDevice();
     opened = false;
 }
