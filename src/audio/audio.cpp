@@ -88,12 +88,6 @@ void store(const std::vector<synth::Def>& defs) {
     }
 }
 
-/// A volume step heard as its square, which sounds more even across the steps.
-float gainOf(int step) {
-    float v = std::clamp(step, 0, VOLUME_STEPS) / float(VOLUME_STEPS);
-    return v * v;
-}
-
 void loadSettings() {
     std::ifstream in(files::savePath(SETTINGS_FILE));
     std::string key;
@@ -102,6 +96,7 @@ void loadSettings() {
         v = std::clamp(v, 0, VOLUME_STEPS);
         if (key == "master") current.master = v;
         else if (key == "sounds") current.sounds = v;
+        else if (key == "music") current.music = v;
     }
 }
 
@@ -162,9 +157,16 @@ void play(std::string_view name, float volume, float pan, float pitch, bool muff
 
 Settings& settings() { return current; }
 
+float gainOf(int step) {
+    float v = std::clamp(step, 0, VOLUME_STEPS) / float(VOLUME_STEPS);
+    return v * v;
+}
+
+bool ready() { return opened; }
+
 void save() {
     std::ofstream out(files::savePath(SETTINGS_FILE));
-    out << "master " << current.master << "\nsounds " << current.sounds << "\n";
+    out << "master " << current.master << "\nsounds " << current.sounds << "\nmusic " << current.music << "\n";
 }
 
 } // namespace audio

@@ -41,7 +41,7 @@ DIRTYSHEET := build/dirty_sheet
 # One human shooting all eight ways, as animation frames (tools/frames_gif.py makes the GIF).
 SHOOTANIM := build/shoot_anim
 
-.PHONY: all run clean trips stuck check golden coverage shot scenarios genprobe genview lightprobe hidef bottlesheet dirtysheet shootanim spritesheet soundsheet spriteref fontdump lines sprites sounds trapprobe icon apk install-apk logcat simprofile gprof
+.PHONY: all run clean trips stuck check golden coverage shot scenarios genprobe genview lightprobe hidef bottlesheet dirtysheet shootanim spritesheet soundsheet musicsheet spriteref fontdump lines sprites sounds trapprobe icon apk install-apk logcat simprofile gprof
 
 all: $(BIN)
 
@@ -150,11 +150,15 @@ shootanim: $(SHOOTANIM)
 SOUNDSHEET := build/sound_sheet
 
 # No raylib, so the sound editor can run it on the host.
-$(SOUNDSHEET): tools/sound_sheet.cpp build/audio/synth.o
+$(SOUNDSHEET): tools/sound_sheet.cpp build/audio/synth.o build/audio/music_data.o
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@ -lm
 
 soundsheet: $(SOUNDSHEET)
 	./$(SOUNDSHEET) data/sounds.txt build/sounds
+
+# Every song in data/music.txt to build/music/: each section alone, and each song as played for 3 minutes.
+musicsheet: $(SOUNDSHEET)
+	./$(SOUNDSHEET) --music data/music.txt build/music
 
 # Every sprite from data/sprites.txt at 1x, in all the ways the game draws it (tools/sprite_sheet.cpp).
 SPRITESHEET := build/sprite_sheet

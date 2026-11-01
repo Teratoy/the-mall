@@ -19,7 +19,9 @@ struct Row {
     const char* label;
     int audio::Settings::*value;
 };
-constexpr Row ROWS[] = {{"MASTER", &audio::Settings::master}, {"SOUNDS", &audio::Settings::sounds}};
+constexpr Row ROWS[] = {{"MASTER", &audio::Settings::master},
+                        {"SOUNDS", &audio::Settings::sounds},
+                        {"MUSIC", &audio::Settings::music}};
 
 } // namespace
 

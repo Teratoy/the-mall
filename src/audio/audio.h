@@ -2,8 +2,8 @@
 #include <string_view>
 
 /// The game's sound: the sounds of data/sounds.txt, rendered once and
-/// played at a volume, pan and pitch, clear or muffled as through a wall;
-/// and the volumes the player set in CONFIGURATION, kept between runs.
+/// played at a volume, pan and pitch, clear or muffled as through a wall
+/// (the music is in audio/music.h); and the volumes the player set in CONFIGURATION, kept between runs.
 /// Where there is no sound device, or it was never opened (the tools),
 /// nothing plays and nothing fails.
 namespace audio {
@@ -14,6 +14,7 @@ inline constexpr int VOLUME_STEPS = 10;
 struct Settings {
     int master = 8;
     int sounds = 8;
+    int music = 6;
 };
 
 /// Opens the sound device and reads the settings.
@@ -27,6 +28,11 @@ bool reload();
 void play(std::string_view name, float volume = 1.0f, float pan = 0.5f, float pitch = 1.0f, bool muffled = false);
 
 Settings& settings();
+/// A volume step as a gain, heard as its square, which sounds more even
+/// across the steps.
+float gainOf(int step);
+/// True once the sound device is open and working.
+bool ready();
 /// Writes the settings to the save file, after a change.
 void save();
 

@@ -45,6 +45,10 @@ struct Def {
     float rate = 8000.0f;
 };
 
+/// Reads a layer's line after its wave, "FROM [TO] [key value ...]", as
+/// data/sounds.txt writes it. Bad parts are reported with source and line;
+/// false when it is no layer at all.
+bool readLayer(const std::string& wave, std::istream& words, Layer& l, const std::string& source, int line);
 /// Every sound in the file, in order. Lines it can't make out are reported
 /// with source and line number, and skipped.
 std::vector<Def> parse(std::istream& in, const std::string& source);
@@ -52,5 +56,20 @@ std::vector<Def> parse(std::istream& in, const std::string& source);
 /// (Hz, 0 for none) dulls it before the crush, as heard through a wall.
 /// The same def always renders the same samples.
 std::vector<float> render(const Def& def, float lowpass = 0.0f);
+/// The layers alone, mixed, before the sound's gain and the crush, their
+/// noise grown from seed: what the music builds its notes from, crushing
+/// the whole mix once.
+std::vector<float> layers(const Def& def, uint64_t seed);
+
+/// The crush, a sample at a time: each sample held for a whole crushed
+/// sample, and rounded to a few levels.
+class Crush {
+public:
+    Crush(int bits, float rate);
+    float operator()(float s);
+
+private:
+    float levels_, every_, held_ = 0.0f, since_;
+};
 
 } // namespace synth

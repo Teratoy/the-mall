@@ -1,4 +1,6 @@
 #include "scenes/menu_scene.h"
+#include "audio/audio.h"
+#include "audio/music.h"
 #include "human/human.h"
 #include "render/canvas.h"
 #include "render/world_view.h"
@@ -40,6 +42,12 @@ MenuScene::MenuScene() : world_(uint64_t(std::time(nullptr))) {
 }
 
 void MenuScene::update(float dt, const Canvas&) {
+    music::want(music::MENU);
+    // F5 reads the music and sounds again, to hear a change to them here.
+    if (IsKeyPressed(KEY_F5)) {
+        music::reload();
+        audio::reload();
+    }
     focus_.y += MALL_SPEED * dt;
     // Down the view's middle and both edges, a chunk ahead of its bottom.
     const int below = int(focus_.y / CELL_PX) + MALL_AHEAD;
