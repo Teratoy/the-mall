@@ -31,8 +31,9 @@ void drawCakeIcon(int x, int y);
 /// lit, remembered ones dimmed, never-seen ones black, and the humans in
 /// sight. reveal shows the whole truth instead, for debugging. zoom is
 /// canvas pixels per world pixel; area is the part of the canvas the world
-/// is shown in, and nothing is drawn outside it.
+/// is shown in, and nothing is drawn outside it. Without humans, the mall
+/// is drawn empty, and sprites is never asked for.
 void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprites,
                const FloorTiles& floorTiles, const StatueArt& statueArt, bool reveal, float zoom, Rectangle area,
-               Vector2 focus);
+               Vector2 focus, bool humans = true);
 
