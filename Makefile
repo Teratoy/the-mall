@@ -11,6 +11,11 @@ LDLIBS   := $(shell pkg-config --libs raylib 2>/dev/null) -lm
 SRC := $(shell find src -name '*.cpp')
 OBJ := $(SRC:src/%.cpp=build/%.o)
 BIN := build/themall
+# raylib copied beside the game, which finds it there (rpath), so play.sh can
+# start the game on the host: the toolbox has no sound libraries, and raylib
+# there plays into nothing.
+RAYLIB_DIR := $(shell pkg-config --variable=libdir raylib 2>/dev/null)
+RAYLIB_COPY := build/lib/.copied
 # Headless check for humans stuck, looping or blocking each other.
 STUCK := build/stuck_soak
 # The soak run that make check compares with tests/golden/soak.txt. The
@@ -40,8 +45,13 @@ SHOOTANIM := build/shoot_anim
 
 all: $(BIN)
 
-$(BIN): $(OBJ)
-	$(CXX) $(LDFLAGS) $^ -o $@ $(LDLIBS)
+$(BIN): $(OBJ) | $(RAYLIB_COPY)
+	$(CXX) $(LDFLAGS) $^ -o $@ -Wl,-rpath,'$$ORIGIN/lib' $(LDLIBS)
+
+$(RAYLIB_COPY):
+	@mkdir -p $(@D)
+	cp -P $(RAYLIB_DIR)/libraylib.so* $(@D)/
+	@touch $@
 
 build/%.o: src/%.cpp
 	@mkdir -p $(@D)
