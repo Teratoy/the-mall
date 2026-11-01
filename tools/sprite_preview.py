@@ -91,8 +91,8 @@ def piece(kind, i, j):
     return kind + (" " + joins if joins else "")
 
 
-# The plant joined to its runs: (machine, kind of run). From the front a run leaves each side over the bottom two
-# cells; from the side one leaves the bottom, from the second cell in.
+# The plant joined to its runs: (machine, kind of run). From the front a run goes into the base on the left and one
+# leaves the east side over the bottom two cells; from the side one goes into the base.
 JOINED = [("boiler", "pipe"), ("air handler", "duct")]
 
 
@@ -103,13 +103,13 @@ def joined(img, sprites, left, top):
         front, side = sprites.get(machine), sprites.get(machine + " side")
         if not front or not side:
             continue
-        for name, at in ((kind + " down e", 0), (kind + " ew", 12), (kind + " ew", 42), (kind + " down w", 54)):
-            paint(img, pixels(sprites[name]), x + at * SCALE, top + 18 * SCALE)
-        paint(img, pixels(front), x + 24 * SCALE, top)
-        sx = x + 70 * SCALE
+        paint(img, pixels(front), x, top)
+        for name, dx, dy in ((kind + " ew", 18, 18), (kind + " down w", 30, 18),
+                             (kind + " ns", 0, 30), (kind + " down n", 0, 42)):
+            paint(img, pixels(sprites[name]), x + dx * SCALE, top + dy * SCALE)
+        sx = x + 50 * SCALE
         paint(img, pixels(side), sx, top)
-        paint(img, pixels(sprites[kind + " ns"]), sx + 6 * SCALE, top + 30 * SCALE)
-        paint(img, pixels(sprites[kind + " down n"]), sx + 6 * SCALE, top + 42 * SCALE)
+        paint(img, pixels(sprites[kind + " down n"]), sx, top + 36 * SCALE)
 
 
 def main():
@@ -129,7 +129,7 @@ def main():
     plant = "Plant" in groups
     if plant:
         width = max(width, len(JOINED) * 100 * SCALE)
-        map_h += 56 * SCALE
+        map_h += 60 * SCALE
     img = Image.new("RGBA", (width, rows * 2 * tall + 2 * GAP * SCALE + map_h), FLOOR)
     for k, (name, s) in enumerate(shown):
         x = GAP * SCALE + k % per_row * box

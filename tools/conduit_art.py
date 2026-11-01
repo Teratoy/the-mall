@@ -17,7 +17,8 @@ SIZE = 12
 SIDES = "nesw"
 CENTRE = 5.5
 
-# --- Air ducts: boxes of galvanised sheet that fill the piece, their front face to the south where it's open.
+# --- Air ducts: boxes of galvanised sheet, 8 px across and 3 high, seen from above and the south. A run shows its
+# top raised by its height, its front face hanging below where it faces south, and a shadow to the south-east.
 
 DUCT_INKS = [
     ("L", "e8ecee", "lip, lit"),
@@ -40,104 +41,119 @@ DUCT_INKS = [
     ("C", "3a3d40", "floor collar shade"),
     ("n", "9aa0a6", "collar bolt"),
     ("o", "141618", "hole"),
+    ("s", "00000050", "shadow"),
 ]
 VENT_INKS = [("v", "16181c", "vent dark"), ("V", "2c3036", "vent dark, stirred"), ("w", "d0d6da", "vent slat")]
-# The top face of a duct open to the south ends here; its front face takes the rows below.
-DUCT_TOP = 9
+# The top of a west-east run takes these rows, its front face the next DUCT_HEIGHT; a north-south run's top
+# takes these columns. Where they cross is the middle of the piece.
+DUCT_ROWS = range(0, 8)
+DUCT_COLS = range(1, 9)
+DUCT_HEIGHT = 3
+# The shadow falls this far east and south of the duct.
+DUCT_SHADOW = ((1, 1), (2, 1))
+# Room round the piece, so arms that join reach past its edges and cast their shadows into it.
+PAD = 3
 
 
 def blank():
     return [["."] * SIZE for _ in range(SIZE)]
 
 
+def duct_body(joins, middle=True):
+    """The top and front face of a duct joining the given sides, as two sets of (x, y), on a canvas reaching PAD
+    past the piece; the arms that join run on past the edge."""
+    top = set()
+    lo, hi = -PAD, SIZE + PAD
+    if middle:
+        top |= {(x, y) for x in DUCT_COLS for y in DUCT_ROWS}
+    if "e" in joins:
+        top |= {(x, y) for x in range(DUCT_COLS[-1] + 1, hi) for y in DUCT_ROWS}
+    if "w" in joins:
+        top |= {(x, y) for x in range(lo, DUCT_COLS[0]) for y in DUCT_ROWS}
+    if "s" in joins:
+        top |= {(x, y) for x in DUCT_COLS for y in range(DUCT_ROWS[-1] + 1, hi)}
+    if "n" in joins:
+        top |= {(x, y) for x in DUCT_COLS for y in range(lo, DUCT_ROWS[0])}
+    face = set()
+    for x, y in top:
+        if (x, y + 1) not in top:
+            face |= {(x, y + k) for k in range(1, DUCT_HEIGHT + 1)}
+    return top, face - top
+
+
 def duct(joins):
     """The duct piece joining the given sides."""
     n, e, s, w = (side in joins for side in SIDES)
+    top, face = duct_body(joins)
     g = blank()
-    bottom = SIZE if s else DUCT_TOP
-    for y in range(bottom):
-        for x in range(SIZE):
-            g[y][x] = "m"
-    if not n:
-        g[0] = ["L"] * SIZE
-        g[1] = ["l"] * SIZE
-    for y in range(bottom):
-        if not w:
-            g[y][0] = "e"
-        if not e:
-            g[y][SIZE - 1] = "E"
-    if not s:
-        for x in range(SIZE):
-            g[DUCT_TOP][x], g[DUCT_TOP + 1][x], g[DUCT_TOP + 2][x] = "f", "F", "K"
-        for x in (2, 5, 8):
-            g[DUCT_TOP + 1][x + (1 if w else 0)] = "r"
-        if not w:
-            g[DUCT_TOP][0] = g[DUCT_TOP + 1][0] = "F"
-        if not e:
-            g[DUCT_TOP][SIZE - 1] = g[DUCT_TOP + 1][SIZE - 1] = "K"
+
+    def inside(x, y):
+        return 0 <= x < SIZE and 0 <= y < SIZE
+
+    # The shadow first, on the floor, then the duct over it.
+    solid = top | face
+    for x, y in solid:
+        for dx, dy in DUCT_SHADOW:
+            p = (x + dx, y + dy)
+            if p not in solid and inside(*p):
+                g[p[1]][p[0]] = "s"
+    for x, y in top:
+        if inside(x, y):
+            if (x, y - 1) not in top:
+                g[y][x] = "L"
+            elif (x, y - 2) not in top:
+                g[y][x] = "l"
+            elif (x - 1, y) not in top:
+                g[y][x] = "e"
+            elif (x + 1, y) not in top:
+                g[y][x] = "E"
+            else:
+                g[y][x] = "m"
+    for x, y in face:
+        if inside(x, y):
+            depth = next(j for j in range(1, DUCT_HEIGHT + 1) if (x, y - j) in top)
+            g[y][x] = "fFK"[depth - 1]
+            if depth == 2 and x % 3 == 1:
+                g[y][x] = "r"
+    # Round off the top's outer corners.
+    for x, y in top:
+        if inside(x, y) and (x, y - 1) not in top and ((x - 1, y) not in top or (x + 1, y) not in top):
+            g[y][x] = "l"
     # The flange where this piece meets the one before it, bolted.
     if w:
         for y in range(SIZE):
-            g[y][0], g[y][1] = "g", "G"
-        for y in (2, 6 if not s else 9):
-            g[y][0] = "b"
-        if not s:
-            g[DUCT_TOP + 2][0], g[DUCT_TOP + 2][1] = "K", "K"
+            if g[y][0] in "LlmeE":
+                g[y][0] = "g"
+            elif g[y][0] in "fFrK":
+                g[y][0] = "G"
+        g[DUCT_ROWS[1]][0] = g[DUCT_ROWS[-1] - 1][0] = "b"
     if n:
-        g[0] = ["g"] * SIZE
-        g[1] = ["G"] * SIZE
-        for x in (2, 9):
-            g[0][x] = "b"
-        if not w:
-            g[0][0], g[1][0] = "e", "e"
-        if not e:
-            g[0][SIZE - 1], g[1][SIZE - 1] = "E", "E"
-    if w and n:
-        g[0][0], g[0][1], g[1][0], g[1][1] = "g", "g", "g", "G"
-    # Round off the outer corners.
-    if not n and not w:
-        g[0][0] = "."
-    if not n and not e:
-        g[0][SIZE - 1] = "."
-    if not s and not w:
-        g[SIZE - 1][0] = "."
-    if not s and not e:
-        g[SIZE - 1][SIZE - 1] = "."
+        for x in DUCT_COLS:
+            g[0][x] = "g"
+            g[1][x] = "G"
+        g[0][DUCT_COLS[1]] = g[0][DUCT_COLS[-2]] = "b"
     # On a straight run the sheet is creased in an X to stiffen it; where runs meet, an inspection plate.
-    x0, y0 = (2 if w else 1), (2 if n else 2)
-    x1, y1 = SIZE - 2, bottom - 1 if s else DUCT_TOP - 1
     if joins in ("ew", "ns"):
-        cols = x1 - x0
-        for i in range(cols + 1):
-            ya = y0 + round(i * (y1 - y0) / cols)
-            yb = y1 - round(i * (y1 - y0) / cols)
+        if joins == "ew":
+            x0, x1, y0, y1 = (1 if w else 0), SIZE - 1, DUCT_ROWS[2], DUCT_ROWS[-1]
+        else:
+            x0, x1, y0, y1 = DUCT_COLS[1], DUCT_COLS[-2], 2, SIZE - 1
+        span = x1 - x0
+        for i in range(span + 1):
+            ya = y0 + round(i * (y1 - y0) / span)
+            yb = y1 - round(i * (y1 - y0) / span)
             if g[ya][x0 + i] == "m":
                 g[ya][x0 + i] = "x"
             if g[yb][x0 + i] == "m":
                 g[yb][x0 + i] = "X"
     elif len(joins) >= 2 or not joins:
-        px0, py0, px1, py1 = 3, 3, 8, 7
+        px0, py0, px1, py1 = DUCT_COLS[1] + 1, DUCT_ROWS[2], DUCT_COLS[-2] - 1, DUCT_ROWS[-2]
         for y in range(py0, py1 + 1):
             for x in range(px0, px1 + 1):
-                edge = y in (py0, py1) or x in (px0, px1)
-                if edge:
+                if y in (py0, py1) or x in (px0, px1):
                     g[y][x] = "g" if (y == py0 or x == px0) else "G"
         for x, y in ((px0, py0), (px1, py0), (px0, py1), (px1, py1)):
             g[y][x] = "b"
-    else:
-        # An end: a seam two in from the open end.
-        if joins == "e":
-            for y in range(2, bottom):
-                g[y][2] = "G"
-        elif joins == "w":
-            for y in range(2, bottom):
-                g[y][SIZE - 3] = "G"
-        elif joins == "s":
-            for x in range(1, SIZE - 1):
-                g[2][x] = "G"
-        elif joins == "n":
-            for x in range(1, SIZE - 1):
-                g[DUCT_TOP - 2][x] = "G"
     return g
 
 
@@ -145,40 +161,28 @@ def duct_down(side):
     """The duct coming in from one side and bending down into the floor: its top darkens as it turns away, and
     a dark gap shows round it inside a bolted collar on the floor."""
     g = duct(side)
-    if side in "ew":
-        # From the far end in: collar, hole, then the bend, darkest where it drops.
-        cols = list(range(5)) if side == "e" else list(range(SIZE - 1, SIZE - 6, -1))
-        for y in range(SIZE):
-            g[y][cols[0]] = "c" if side == "e" else "C"
-            g[y][cols[1]] = "o"
-            for x, dark in zip(cols[2:], "Ddl"):
-                if g[y][x] in "mlLxXeEGg":
-                    g[y][x] = dark
-        for y in (1, 5, 10):
-            g[y][cols[0]] = "n"
-    elif side == "s":
-        for x in range(SIZE):
-            g[0][x], g[1][x] = "c", "o"
-            for y, dark in ((2, "D"), (3, "d"), (4, "l")):
-                if g[y][x] != ".":
-                    g[y][x] = dark
-        for x in (1, 5, 10):
-            g[0][x] = "n"
-    else:
-        # Bending toward us: the top runs on, its crown catches the light, and it drops to the floor.
-        for x in range(SIZE):
-            g[5][x], g[6][x] = "l", "L"
-            g[7][x], g[8][x], g[9][x] = "f", "F", "F"
-            g[10][x], g[11][x] = "o", "c"
-        for x in (2, 5, 8):
-            g[8][x] = "r"
-        for x in (1, 5, 10):
-            g[11][x] = "n"
-        for y in range(5, 10):
-            g[y][0] = "F" if y > 6 else "e"
-            g[y][SIZE - 1] = "K" if y > 6 else "E"
-        for y in (9, 10):
-            g[y][0] = g[y][SIZE - 1] = "C"
+    top, face = duct_body(side)
+    # Away from the arm the top bends down: darker toward the far side.
+    sx, sy = STEP[side]
+    for x in DUCT_COLS:
+        for y in DUCT_ROWS:
+            far = (x - DUCT_COLS[0]) if sx < 0 else (DUCT_COLS[-1] - x) if sx > 0 else \
+                  (y - DUCT_ROWS[0]) if sy < 0 else (DUCT_ROWS[-1] - y)
+            if g[y][x] not in "gGb":
+                g[y][x] = "m" if far < 3 else "d" if far < 5 else "D"
+    # The collar on the floor round where it goes in, showing past the far side and under its face.
+    fx0, fx1, fy0, fy1 = DUCT_COLS[0] - 1, DUCT_COLS[-1] + 1, DUCT_ROWS[0] + DUCT_HEIGHT - 1, DUCT_ROWS[-1] + DUCT_HEIGHT + 1
+    for y in range(fy0, min(SIZE, fy1 + 1)):
+        for x in range(max(0, fx0), min(SIZE, fx1 + 1)):
+            if g[y][x] in ".s":
+                edge = y in (fy0, fy1) or x in (fx0, fx1)
+                g[y][x] = ("c" if (x + y) % 5 else "n") if edge else "o"
+    if side != "s":
+        # Its face drops into the hole.
+        for x in DUCT_COLS:
+            for y in range(DUCT_ROWS[-1] + 1, DUCT_ROWS[-1] + DUCT_HEIGHT + 1):
+                if g[y][x] in "fFKr":
+                    g[y][x] = "C"
     return g
 
 
@@ -186,9 +190,9 @@ def duct_vent(joins):
     """A straight duct with a louvred vent in its top, breathing out into the mall."""
     g = duct(joins)
     if joins == "ew":
-        x0, x1, y0, y1 = 3, 9, 2, 7
+        x0, x1, y0, y1 = 3, 8, DUCT_ROWS[1], DUCT_ROWS[-1]
     else:
-        x0, x1, y0, y1 = 2, 9, 3, 9
+        x0, x1, y0, y1 = DUCT_COLS[0] + 1, DUCT_COLS[-1] - 1, 3, 9
     for y in range(y0, y1 + 1):
         for x in range(x0, x1 + 1):
             if y in (y0, y1) or x in (x0, x1):

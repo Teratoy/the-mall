@@ -4,3 +4,4 @@ AI/APIkey.txt
 .directory
 data/obituary.txt
 data/settings.txt
+__pycache__/
