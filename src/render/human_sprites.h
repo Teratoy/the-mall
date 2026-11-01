@@ -35,10 +35,12 @@
 /// Reload stands side on, the gun low in front of the chest, pressing in
 /// rounds one at a time; animTime counts from starting, a round every
 /// RELOAD_ROUND_TIME. A human quicker or slower at it passes its time
-/// scaled to that. Facing left it keeps the gun in the same hand. animTime counts from
+/// scaled to that. Facing left it keeps the gun in the same hand. Rack,
+/// after the last round, grips the slide, pulls it back and lets it go,
+/// over RACK_TIME from starting, then stands holding the gun low. animTime counts from
 /// the shot: the kick knocks the hand back, tips the muzzle up and jolts
 /// the head back for SHOT_TIME, then it holds the aim. Type stands at a computer's keys, tapping.
-enum class Pose { Idle, Walk, Wave, Eat, Guard, Punch, Offer, Fall, Sit, Rise, Wash, Search, Feed, Wake, Point, PointUp, PointDown, Squat, Piss, Sleep, WakeUp, DiedAsleep, Sip, Fill, Pour, OfferBottle, Lie, Run, Winded, Shoot, ShootUp, ShootUpAhead, ShootDownAhead, ShootDown, Reload, Type };
+enum class Pose { Idle, Walk, Wave, Eat, Guard, Punch, Offer, Fall, Sit, Rise, Wash, Search, Feed, Wake, Point, PointUp, PointDown, Squat, Piss, Sleep, WakeUp, DiedAsleep, Sip, Fill, Pour, OfferBottle, Lie, Run, Winded, Shoot, ShootUp, ShootUpAhead, ShootDownAhead, ShootDown, Reload, Rack, Type };
 
 
 /// One human's frames as textures, made from its look.
@@ -92,6 +94,8 @@ private:
     std::array<std::array<Texture2D, 2>, 3> shootFar_;
     /// Reloading a round, the gun in the near hand and in the far one.
     std::array<Texture2D, RELOAD_FRAMES> reload_, reloadFar_;
+    /// Racking the slide, likewise.
+    std::array<Texture2D, RACK_FRAMES> rack_, rackFar_;
     std::array<Texture2D, WALK_FRAMES> walk_;
     std::array<Texture2D, RUN_FRAMES> run_;
     std::array<Texture2D, WINDED_FRAMES> winded_;

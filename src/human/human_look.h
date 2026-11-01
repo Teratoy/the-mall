@@ -47,6 +47,10 @@ inline constexpr Rgba ROUND = hex(0xdcc070);
 /// Reloading a round: reaching into the pocket, bringing the round up, at
 /// the gun, pressing it in, and the hand going back down.
 inline constexpr int RELOAD_FRAMES = 5;
+/// Racking the slide once the last round is in: gripping the back of it,
+/// pulling it back, letting go, the gun jumping as it springs home, and
+/// the hand dropping away.
+inline constexpr int RACK_FRAMES = 4;
 
 /// Not part of the body: a cake held, or nothing.
 inline constexpr uint8_t NO_PART = 0xff;
@@ -185,6 +189,9 @@ struct HumanLook {
     /// gun, which dips as it goes in. far holds the gun in the far hand, as
     /// shooting does, so facing left it is the same hand.
     SpriteFrame reload(int frame, bool far = false) const;
+    /// Racking the slide after the last round, one of the RACK_FRAMES, held
+    /// as reloading is.
+    SpriteFrame rack(int frame, bool far = false) const;
     /// At the keys of a computer, the front forearm out level ahead at the
     /// waist: 0 the hand lifted, 1 down on a key.
     SpriteFrame type(int frame) const;
@@ -222,7 +229,8 @@ private:
         /// Aiming or reloading with the gun in the back arm, the far one,
         /// rather than the front.
         bool farGun = false;
-        /// With Arm::Reload, which of the RELOAD_FRAMES.
+        /// With Arm::Reload, which of the RELOAD_FRAMES, or past them which
+        /// of the RACK_FRAMES.
         int reload = 0;
     };
     /// The shade the tucked gun is drawn in: dulled with dirt when dirty.

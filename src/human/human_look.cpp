@@ -240,6 +240,10 @@ SpriteFrame HumanLook::reload(int frame, bool far) const {
     return draw({.front = Arm::Reload, .farGun = far, .reload = std::clamp(frame, 0, RELOAD_FRAMES - 1)});
 }
 
+SpriteFrame HumanLook::rack(int frame, bool far) const {
+    return draw({.front = Arm::Reload, .farGun = far, .reload = RELOAD_FRAMES + std::clamp(frame, 0, RACK_FRAMES - 1)});
+}
+
 // Going off, the kick jolts the head back a pixel.
 SpriteFrame HumanLook::shoot(int aim, bool fire, bool far) const {
     aim = std::clamp(aim, -2, 2);
@@ -413,6 +417,9 @@ SpriteFrame HumanLook::drawBody(const Stance& s) const {
     // chest, muzzle down ahead; the other reaches into the hip pocket,
     // brings a round up in its fingers, holds it to the top of the slide and
     // thumbs it in, the gun dipping a pixel, then goes back down for the next.
+    // Racking, it grips the back of the slide, pulls it two pixels back up
+    // the way from the muzzle, and lets go, the gun jumping down as it
+    // springs home, then the hand drops away.
     // With the gun in the far hand, that arm reaches round from behind the
     // body, its hand at the chest's edge, and the near hand loads, its
     // pocket at the front of the hip.
@@ -427,7 +434,8 @@ SpriteFrame HumanLook::drawBody(const Stance& s) const {
             }
         };
         const int shoulder = torsoTop + 1, step = s.reload;
-        const bool press = step == 3;
+        const int grip = RELOAD_FRAMES, pull = RELOAD_FRAMES + 1, let = RELOAD_FRAMES + 2;
+        const bool press = step == 3 || step == let;
         const int gunSide = s.farGun ? 0 : 1, loadSide = 1 - gunSide;
         const Vec2i gunShoulder{gunSide == 0 ? tl - 1 : tr + 1, shoulder};
         const Vec2i loadShoulder{loadSide == 0 ? tl - 1 : tr + 1, shoulder};
@@ -438,7 +446,11 @@ SpriteFrame HumanLook::drawBody(const Stance& s) const {
         // way up, or at the slide; and the round in its fingers, if any.
         const Vec2i pocket{s.farGun ? tr : loadShoulder.x, torsoBottom};
         const Vec2i rising = s.farGun ? Vec2i{tr + 3, shoulder + 1} : Vec2i{CX - 1, shoulder + 2};
-        const Vec2i hand = step == 0 ? pocket : step == 2 ? Vec2i{port.x - 1, port.y - 1} : press ? port : rising;
+        const Vec2i hand = step == 0                  ? pocket
+                           : step == pull              ? Vec2i{port.x - 2, port.y - 2}
+                           : step == 2                 ? Vec2i{port.x - 1, port.y - 1}
+                           : step == 3 || step == grip ? port
+                                                       : rising;
         if (s.farGun) {
             // Its shoulder behind, its hand coming out at the chest's edge.
             armPx(gunSide, gunShoulder.x, gunShoulder.y, 0, false);

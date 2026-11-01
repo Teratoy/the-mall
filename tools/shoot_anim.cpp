@@ -5,8 +5,8 @@
 // on the floor, where they pile up on their cells, and a row of ammo boxes
 // lies by the wall, shut and then open from full to empty. It goes through
 // HumanSprites::draw with the time since the last shot, as in the game.
-// With reload, it instead presses RELOAD_ROUNDS rounds into the gun facing
-// right, then as many facing left.
+// With reload, it instead presses RELOAD_ROUNDS rounds into the gun and
+// racks the slide, facing right, then the same facing left.
 // Usage: build/shoot_anim [dir] [seed] [scale] [reload]   (make shootanim)
 // writes dir/frame000.png on, one every FRAME_MS; tools/frames_gif.py
 // (on the host, which has PIL) joins them into a GIF.
@@ -60,6 +60,8 @@ constexpr Way WAYS[] = {
 /// HumanSprites draws it.
 constexpr int RELOAD_ROUNDS = 3;
 constexpr float ROUND_TIME = 1.2f;
+/// Racking the slide after them, and holding still after, in seconds.
+constexpr float RACK_SHOWN = 1.0f;
 
 /// The ammo boxes along the top row: shut, then open with this much left.
 constexpr float BOXES[] = {-1.0f, 1.0f, 0.75f, 0.5f, 0.2f, 0.0f};
@@ -113,10 +115,13 @@ int main(int argc, char** argv) {
         };
         if (reload) {
             const int perWay = int(RELOAD_ROUNDS * ROUND_TIME * 1000) / FRAME_MS;
-            for (bool flip : {false, true})
+            const int racking = int(RACK_SHOWN * 1000) / FRAME_MS;
+            for (bool flip : {false, true}) {
                 for (int f = 0; f < perWay && ok; f++)
                     ok = frame(TextFormat("Reload, round %d", 1 + int(f * FRAME_MS / 1000.0f / ROUND_TIME)), Pose::Reload,
                                float(f * FRAME_MS) / 1000.0f, flip);
+                for (int f = 0; f < racking && ok; f++) ok = frame("Rack", Pose::Rack, float(f * FRAME_MS) / 1000.0f, flip);
+            }
         }
         const int perWay = int(WAY_TIME * 1000) / FRAME_MS;
         for (const Way& way : reload ? std::span<const Way>{} : std::span<const Way>{WAYS})

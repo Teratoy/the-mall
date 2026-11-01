@@ -34,6 +34,9 @@ constexpr float WAKE_EYES_SHUT = 1.5f, WAKE_BLINK_EVERY = 1.1f, WAKE_BLINK_TIME 
 /// the hand going back down.
 constexpr float RELOAD_ROUND_TIME = 1.2f;
 constexpr float RELOAD_STEP_ENDS[RELOAD_FRAMES] = {0.3f, 0.55f, 0.8f, 1.0f, 1.2f};
+/// Racking the slide: the moment each frame ends, gripping it, pulling it
+/// back, letting go; the last, the hand dropped away, holds on.
+constexpr float RACK_STEP_ENDS[RACK_FRAMES] = {0.15f, 0.35f, 0.5f, 0.6f};
 /// Shooting, the kick lasts this long after each shot.
 constexpr float SHOT_TIME = 0.1f;
 /// Feeding, the head dips a pixel this often.
@@ -96,6 +99,13 @@ size_t reloadFrame(float t) {
     return i;
 }
 
+/// Which rack frame shows this long after starting; the last holds on.
+size_t rackFrame(float t) {
+    size_t i = 0;
+    while (i + 1 < RACK_FRAMES && t >= RACK_STEP_ENDS[i]) i++;
+    return i;
+}
+
 } // namespace
 
 template <class F> void HumanSprites::eachFrame(const HumanLook& look, F&& add) {
@@ -134,6 +144,10 @@ template <class F> void HumanSprites::eachFrame(const HumanLook& look, F&& add) 
     for (int i = 0; i < RELOAD_FRAMES; i++) {
         add(reload_[size_t(i)], look.reload(i));
         add(reloadFar_[size_t(i)], look.reload(i, true));
+    }
+    for (int i = 0; i < RACK_FRAMES; i++) {
+        add(rack_[size_t(i)], look.rack(i));
+        add(rackFar_[size_t(i)], look.rack(i, true));
     }
     for (int i = 0; i < TYPE_FRAMES; i++) add(type_[size_t(i)], look.type(i));
 }
@@ -296,6 +310,7 @@ void HumanSprites::draw(Vector2 feet, Pose pose, float animTime, bool flip, int 
                            : pose == Pose::Pour  ? pour_
                            : pose == Pose::OfferBottle ? offerBottle_
                            : pose == Pose::Reload ? (flip ? reloadFar_ : reload_)[reloadFrame(animTime)]
+                           : pose == Pose::Rack ? (flip ? rackFar_ : rack_)[rackFrame(animTime)]
                            : shooting  ? (flip ? shootFar_[size_t(aim + 1)] : shoot_[size_t(aim + 2)])
                                                  [animTime < SHOT_TIME ? 1 : 0]
                            : pose == Pose::Fall  ? (animTime < FALL_KNEEL ? idle_ : kneel_)
