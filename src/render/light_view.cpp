@@ -126,7 +126,7 @@ void drawLight(const World& world, const Human& viewer, bool reveal, int x0, int
                 cell.want = lit(world.light(c), world.lightFrom(c));
                 continue;
             }
-            if (!viewer.sight.sees(c)) {
+            if (!viewer.sight.inView(c)) {
                 auto seen = viewer.memory.lightSeen(c);
                 cell.want = remembered(seen ? lit(seen->level, seen->from) : Shade{1.0f, 1.0f, 1.0f});
                 cell.drawn = MEMORY_DIM;
