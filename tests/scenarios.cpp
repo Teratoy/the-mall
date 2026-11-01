@@ -97,11 +97,23 @@ struct Stage {
     /// Runs, calling each() after every step.
     template <typename F> void run(float seconds, F each) {
         const float dt = 1.0f / 30.0f;
+        // SCENARIO_TRACE=1 prints each human's state, goal and cell whenever the first two change.
+        static const bool trace = std::getenv("SCENARIO_TRACE");
         for (int f = 0; f < int(seconds / dt); f++) {
             world.update(dt);
             each();
+            if (!trace) continue;
+            for (const auto& h : world.humans()) {
+                auto& was = traced_[h->id];
+                std::pair<int, int> now{int(h->state), int(h->goal)};
+                if (was == now) continue;
+                was = now;
+                std::printf("     #%d %6.1f state %d goal %d at (%d,%d) to (%d,%d)\n", h->id, world.time(), now.first,
+                            now.second, h->cell.x, h->cell.y, P::target(*h).x, P::target(*h).y);
+            }
         }
     }
+    std::map<int, std::pair<int, int>> traced_;
     /// Someone's log has this line.
     bool logged(const std::string& line) const {
         for (const auto& h : world.humans())
@@ -1959,7 +1971,9 @@ const std::vector<Scenario> SCENARIOS = {
                  return Checks{own(prim, "WASHED OFF BLOOD"), own(slob, "WASHED OFF BLOOD")};
              },
              shamelessMeek);
-     }},
+     },
+     "since sight reaches 40 cells when lit (explore_heading_plan), the shameless one checks a far door and sits "
+     "twice before it makes for the basin, at 60 s, as the run ends"},
     {"stink", "dirty long enough, a human starts to smell", seedWhere(shameless, 12000),
      [](Stage& s) {
          Human& h = s.first();
@@ -2066,7 +2080,9 @@ const std::vector<Scenario> SCENARIOS = {
                               return Checks{loggedBy(heard, "HEARD SOMEONE CALL OUT"),
                                             loggedBy(heard, "WENT TOWARD THE VOICE")};
                           });
-     }},
+     },
+     "since sight reaches 40 cells when lit (explore_heading_plan), the hearer already sees all round the voice "
+     "beyond the locked door, so it is as near as it can get without walking"},
     {"call-timid", "a timid human hears a call from out of sight, hushes, and doesn't go to it",
      seedWhere([](const Traits& t) { return t.brave >= 0.5f; }, 9950),
      [](Stage& s) {
@@ -2149,7 +2165,8 @@ const std::vector<Scenario> SCENARIOS = {
          h.memory.airlocks[r.outer] = {0, -1};
          bool opened = s.world.unlock(r.outer);
          h.hunger = h.thirst = h.tiredness = 0.1f;
-         s.run(60);
+         // Seeing the whole lit room, it may look round it before the open door.
+         s.run(90);
          return Checks{{"the outer door opened", [opened](const Stage&) { return opened; }},
                        {"never inside the room", [&h, &r](const Stage&) { return !r.contains(h.cell); }},
                        {"not stuck in the lobby", [&h, &r](const Stage&) { return !r.encloses(h.cell); }}};
@@ -2159,12 +2176,16 @@ const std::vector<Scenario> SCENARIOS = {
          Human& h = s.first();
          P::clearChunk(s.world, h.cell);
          calm(h);
-         // Past the waking fog, which narrows sight too.
+         // Past the waking fog, which narrows sight too, and back in the middle of the room.
+         const Vec2i woke = h.cell;
          s.run(45);
+         P::place(s.world, h, woke);
          P::darkenChunk(s.world, h.cell);
-         const Vec2i near = s.freeNear(h.cell, 3), dark = s.freeNear(h.cell, 9), lit = s.farFrom(h.cell, 14);
+         const Vec2i near = s.freeNear(h.cell, 2), dark = s.freeNear(h.cell, 9), lit = s.farFrom(h.cell, 14);
          for (Vec2i c : {near, dark, lit}) P::addCake(s.world, c);
          P::hangLight(s.world, lit);
+         // It looks round now, even if it stands still looking at something.
+         h.observe(s.world);
          s.run(0.5f);
          return Checks{{"sees the cake beside it", [&h, near](const Stage&) { return h.memory.cakes.count(near) > 0; }},
                        {"not the one in the dark", [&h, dark](const Stage&) { return h.memory.cakes.count(dark) == 0; }},

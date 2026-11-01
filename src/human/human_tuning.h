@@ -67,6 +67,12 @@ constexpr float DOOR_URGE_OUT = 0.3f;
 /// door, the hunch turns this far toward the way it went.
 constexpr int HUNCH_COST = 300;
 constexpr int HUNCH_DOOR_COST = 1500;
+/// Exploring, unseen floor right behind the way it was going costs as much
+/// as this many tenths of a cell more walking, so it carries on across a
+/// room instead of circling the rim of what it can see; and plain unseen
+/// floor costs FRONTIER_COST more than a door, so a doorway in view wins.
+constexpr int HEADING_COST = 300;
+constexpr int FRONTIER_COST = 150;
 /// Hope, 0 to 1 (more in human_hope.cpp): what each thing does to it. A new
 /// chunk is in human_hope.cpp, as it wears off. Falls hit the timid harder.
 constexpr float HOPE_DOOR = 0.1f;
