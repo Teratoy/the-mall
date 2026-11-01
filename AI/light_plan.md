@@ -220,6 +220,19 @@ does all three shadings that were separate:
 - Until step 4, a dark place in sight beyond the glow looks about as dark
   as remembered dark; then those cells drop out of sight.
 
+### Dither patterns (2026-11-01)
+User asked for other dithering: crossed, hatched, and lines.
+- The layer now blends the shades of the four cells round each pixel
+  (bilinear) and steps the blend into `SHADE_STEPS` (8) steps, each pixel
+  between two steps going up by a 4x4 pattern. Before, a pixel only took
+  its own cell's shade or a neighbour's, so a pattern showed only within
+  half a cell of a cell's edge.
+- Four patterns (`Dither` in `light_view.h`): **ordered** (Bayer dots),
+  **hatched** (rising diagonals), **crossed** (a rising diagonal, then the
+  falling one over it), **lines** (level rows). **D** in game cycles them
+  (the name goes to the terminal); `make shot SHOT_ARGS="--dither NAME"`.
+  Ordered is the default until the user picks one.
+
 ### 4. Light limits sight
 - `Sight::look` marks a cell seen only if it is lit, or within
   `DARK_SIGHT` cells (2–3) of the eye. Walls and lit cells beyond a dark

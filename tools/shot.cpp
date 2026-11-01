@@ -12,6 +12,7 @@
 //   --log          open the followed human's log
 //   --map          open the followed human's map
 //   --reveal       show the whole world, not just what the human knows
+//   --dither ordered|hatched|crossed|lines  the pattern light steps in (ordered)
 //   --wide         a wide window, so the world takes the PC layout
 //   --vending      grow the mall round the spawn until a vending machine
 //                  stands in it, and put the followed human in front of it
@@ -35,6 +36,7 @@
 #include "core/rng.h"
 #include "human/human_look.h"
 #include "render/canvas.h"
+#include "render/light_view.h"
 #include "scenes/create_scene.h"
 #include "scenes/menu_scene.h"
 #include "scenes/obituary_scene.h"
@@ -265,7 +267,7 @@ struct ShotProbe {
 int main(int argc, char** argv) {
     if (argc < 2 || argv[1][0] == '-') {
         std::fprintf(stderr, "usage: %s out.png [--scene world|menu|create|obituary] [--seconds S] [--seed N] "
-                             "[--zoom 0-3] [--stats] [--log] [--map] [--reveal] [--wide] [--pile] [--smells] "
+                             "[--zoom 0-3] [--stats] [--log] [--map] [--reveal] [--dither NAME] [--wide] [--pile] [--smells] "
                              "[--vending] [--server] [--typing terminal|desk] [--washroom] [--pissed] [--frames N]\n", argv[0]);
         return 1;
     }
@@ -294,6 +296,11 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(argv[i], "--log")) log = true;
         else if (!std::strcmp(argv[i], "--map")) map = true;
         else if (!std::strcmp(argv[i], "--reveal")) reveal = true;
+        else if (!std::strcmp(argv[i], "--dither")) {
+            const char* name = value();
+            for (int d = 0; d < DITHER_COUNT; d++)
+                if (!std::strcmp(name, ditherName(Dither(d)))) setDither(Dither(d));
+        }
         else if (!std::strcmp(argv[i], "--wide")) wide = true;
         else if (!std::strcmp(argv[i], "--pile")) pile = true;
         else if (!std::strcmp(argv[i], "--smells")) smelly = true;

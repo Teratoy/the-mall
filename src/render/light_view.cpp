@@ -30,8 +30,22 @@ constexpr Shade EYE_GLOW = {0.58f, 0.59f, 0.7f};
 constexpr float EYE_GLOW_CELLS = 4.0f;
 /// The last two rings of sight fade toward how memory looks, by these.
 constexpr float SIGHT_FADE_INNER = 0.25f, SIGHT_FADE_OUTER = 0.75f;
-/// The 4x4 ordered dither the light steps from cell to cell by.
-constexpr int BAYER[4][4] = {{0, 8, 2, 10}, {12, 4, 14, 6}, {3, 11, 1, 9}, {15, 7, 13, 5}};
+/// Shades are stepped into this many steps from black to full, and each
+/// pixel between two steps takes the upper one by the pattern.
+constexpr int SHADE_STEPS = 8;
+/// Each pattern as the order, 0 first, in which the pixels of a 4x4 block
+/// go up to the next step as the shade rises toward it.
+constexpr int PATTERNS[DITHER_COUNT][4][4] = {
+    // Ordered (Bayer): scattered dots.
+    {{0, 8, 2, 10}, {12, 4, 14, 6}, {3, 11, 1, 9}, {15, 7, 13, 5}},
+    // Hatched: rising diagonals, every other one first.
+    {{0, 8, 4, 12}, {9, 5, 13, 1}, {6, 14, 2, 10}, {15, 3, 11, 7}},
+    // Crossed: a rising diagonal, then the falling one over it.
+    {{0, 10, 7, 15}, {8, 4, 13, 3}, {6, 14, 2, 11}, {12, 1, 9, 5}},
+    // Lines: level rows, every other one first.
+    {{0, 2, 1, 3}, {8, 10, 9, 11}, {4, 6, 5, 7}, {12, 14, 13, 15}},
+};
+Dither pattern = Dither::Ordered;
 
 /// Each kind of source's colour in full light: strip lights a cool
 /// off-white, vending machines warm, screens and racks their own glow.
@@ -73,15 +87,22 @@ struct Cell {
 
 } // namespace
 
+void setDither(Dither d) { pattern = d; }
+Dither dither() { return pattern; }
+const char* ditherName(Dither d) {
+    static const char* NAMES[DITHER_COUNT] = {"ordered", "hatched", "crossed", "lines"};
+    return NAMES[int(d)];
+}
+
 // Each cell gets the shade it should end at. In sight, the light on it now,
 // or what the viewer's eyes make out near it if that is more, fading over
 // the last two rings into how it will be remembered. Out of sight, the
-// light it was seen in, greyed and dimmed. Each pixel then takes its own
-// cell's shade or a neighbour's, by how near that neighbour it lies against
-// the dither, divided by how dim its own art is drawn: so it can darken
-// art toward a dark neighbour but never brighten memory, and the edge of
-// sight fades on the side in sight. Never a wall's shade over floor, so
-// light doesn't leak through one.
+// light it was seen in, greyed and dimmed. Each pixel then blends the
+// shades of the four cells whose middles are round it, divided by how dim
+// its own art is drawn: so it can darken art toward a dark neighbour but
+// never brighten memory, and the edge of sight fades on the side in sight.
+// Never a wall's shade over floor, so light doesn't leak through one. The
+// blend is stepped through the pattern, so it falls off in pixels.
 void drawLight(const World& world, const Human& viewer, bool reveal, int x0, int y0, int x1, int y1, int left,
                int top) {
     const int cw = x1 - x0 + 3, ch = y1 - y0 + 3;
@@ -126,13 +147,19 @@ void drawLight(const World& world, const Human& viewer, bool reveal, int x0, int
         UnloadImage(blank);
     }
     pixels.resize(size_t(w * h));
-    auto channel = [](float want, float drawn) {
-        return (unsigned char)std::lround(255.0f * std::min(1.0f, want / drawn));
+    // A shade over art drawn this dim, stepped to the next step up or down
+    // by the pattern.
+    auto channel = [](float want, float drawn, float t) {
+        float x = std::min(1.0f, want / drawn) * float(SHADE_STEPS);
+        float step = std::floor(x);
+        if (x - step > t) step += 1.0f;
+        return (unsigned char)std::lround(255.0f * std::min(1.0f, step / float(SHADE_STEPS)));
     };
     for (int py = 0; py < h; py++) {
         const int wy = y0 * CELL_PX + py;
         const int ownY = py / CELL_PX + 1;
         const float v = (float(py % CELL_PX) + 0.5f) / CELL_PX - 0.5f;
+        const int ny = ownY + (v < 0 ? -1 : 1);
         for (int px = 0; px < w; px++) {
             const int wx = x0 * CELL_PX + px;
             const int ownX = px / CELL_PX + 1;
@@ -142,14 +169,16 @@ void drawLight(const World& world, const Human& viewer, bool reveal, int x0, int
                 continue;
             }
             const float u = (float(px % CELL_PX) + 0.5f) / CELL_PX - 0.5f;
-            const float t = (float(BAYER[wy & 3][wx & 3]) + 0.5f) / 16.0f;
-            int cx = ownX, cy = ownY;
-            if (std::abs(u) > t) cx += u < 0 ? -1 : 1;
-            if (std::abs(v) > t) cy += v < 0 ? -1 : 1;
-            const Cell* pick = &cells[size_t(cy * cw + cx)];
-            if (!pick->shown || (pick->wall && !own.wall)) pick = &own;
-            pixels[size_t(py * w + px)] = {channel(pick->want.r, own.drawn), channel(pick->want.g, own.drawn),
-                                           channel(pick->want.b, own.drawn), 255};
+            const int nx = ownX + (u < 0 ? -1 : 1);
+            auto at = [&](int x, int y) {
+                const Cell& c = cells[size_t(y * cw + x)];
+                return !c.shown || (c.wall && !own.wall) ? own.want : c.want;
+            };
+            const float ku = std::abs(u), kv = std::abs(v);
+            const Shade want = mix(mix(own.want, at(nx, ownY), ku), mix(at(ownX, ny), at(nx, ny), ku), kv);
+            const float t = (float(PATTERNS[int(pattern)][wy & 3][wx & 3]) + 0.5f) / 16.0f;
+            pixels[size_t(py * w + px)] = {channel(want.r, own.drawn, t), channel(want.g, own.drawn, t),
+                                           channel(want.b, own.drawn, t), 255};
         }
     }
     UpdateTexture(texture, pixels.data());

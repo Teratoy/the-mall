@@ -4,6 +4,7 @@
 #include "human/talk.h"
 #include "render/bottle_art.h"
 #include "render/canvas.h"
+#include "render/light_view.h"
 #include "render/map_view.h"
 #include "render/speech_view.h"
 #include "render/sprites.h"
@@ -351,6 +352,11 @@ void WorldScene::update(float dt, const Canvas& canvas) {
     speed_ = std::clamp(speed_ + speedStep_, 0, SPEED_COUNT - 1);
     speedStep_ = 0;
     if (IsKeyPressed(KEY_TAB)) reveal_ = !reveal_;
+    // D tries the light's dither patterns in turn.
+    if (IsKeyPressed(KEY_D)) {
+        setDither(Dither((int(dither()) + 1) % DITHER_COUNT));
+        TraceLog(LOG_INFO, "light dither: %s", ditherName(dither()));
+    }
     if (IsKeyPressed(KEY_F5)) {
         talk::reload();
         sprites::reload();
