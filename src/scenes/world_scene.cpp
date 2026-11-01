@@ -412,9 +412,34 @@ void WorldScene::tryOut(std::optional<ChunkKind> kind, const Footprint& parts) {
     recorded_ = true;
 }
 
+void WorldScene::startAtSpeed(int step) { speed_ = std::clamp(step, 0, SPEED_COUNT - 1); }
+
 // Leaving the world any way at all, even closing the window, counts as
 // leaving them behind.
-WorldScene::~WorldScene() { record(); }
+WorldScene::~WorldScene() {
+    record();
+    writeLogs();
+}
+
+void WorldScene::writeLogs() const {
+    if (logsPath_.empty() || !world_) return;
+    std::FILE* f = std::fopen(logsPath_.c_str(), "w");
+    if (!f) return;
+    auto clock = [](float t) {
+        char buf[16];
+        std::snprintf(buf, sizeof buf, "%d:%02d", int(t) / 60, int(t) % 60);
+        return std::string(buf);
+    };
+    std::fprintf(f, "SEED %llu, WORLD TIME %s, %zu HUMANS\n", (unsigned long long)seed_,
+                 clock(world_->time()).c_str(), world_->humans().size());
+    for (const auto& h : world_->humans()) {
+        std::fprintf(f, "\n=== %s #%d%s, BORN %s, %s ===\n", caps(h->name).c_str(), h->id,
+                     h->id == follow_ ? " (FOLLOWED)" : "", clock(h->born).c_str(), h->dead() ? "DEAD" : "ALIVE");
+        for (const auto& e : h->log.entries())
+            std::fprintf(f, "%7s  %s\n", clock(e.time).c_str(), logLine(*h, e).c_str());
+    }
+    std::fclose(f);
+}
 
 // The cause is the last line of their log, which their death always
 // writes; times are counted from when they came in.

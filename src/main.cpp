@@ -35,16 +35,25 @@ void fitWindowWide() {
 ///   --chunk KIND x,y;...  the chunk grown past the spawn's door: rooms, maze,
 ///                         watermaze, plaza or datacentre, on these slots; left
 ///                         out, the game rolls it
+///   --speed STEP          starts at this step of the speeds, 1 (X1) to 5 (X16)
+///   --logs FILE           writes every human's life log there on leaving
+///   --quit-after SECONDS  closes the game after this many real seconds
 /// Straight into the world, past the menu, and kept out of the obituary.
 std::unique_ptr<Scene> tryOut(int argc, char** argv) {
     uint64_t seed = 0;
     bool seeded = false;
     std::optional<ChunkKind> kind;
     Footprint parts;
+    int speed = 1;
+    std::string logs;
     for (int i = 1; i < argc; i++) {
         if (!std::strcmp(argv[i], "--seed") && i + 1 < argc) {
             seed = std::strtoull(argv[++i], nullptr, 10);
             seeded = true;
+        } else if (!std::strcmp(argv[i], "--speed") && i + 1 < argc) {
+            speed = std::atoi(argv[++i]);
+        } else if (!std::strcmp(argv[i], "--logs") && i + 1 < argc) {
+            logs = argv[++i];
         } else if (!std::strcmp(argv[i], "--chunk") && i + 2 < argc) {
             const std::string k = argv[++i];
             kind = k == "maze"         ? ChunkKind::Maze
@@ -68,6 +77,8 @@ std::unique_ptr<Scene> tryOut(int argc, char** argv) {
     Rng looks{seed};
     auto scene = std::make_unique<WorldScene>(HumanLook::random(looks), seed, seed);
     scene->tryOut(kind, parts);
+    scene->startAtSpeed(speed - 1);
+    scene->writeLogsTo(logs);
     return scene;
 }
 } // namespace
@@ -86,7 +97,10 @@ int main(int argc, char** argv) {
         Canvas canvas;
         std::unique_ptr<Scene> scene = tryOut(argc, argv);
         if (!scene) scene = std::make_unique<MenuScene>();
-        while (!WindowShouldClose()) {
+        double quitAfter = 0.0;
+        for (int i = 1; i + 1 < argc; i++)
+            if (!std::strcmp(argv[i], "--quit-after")) quitAfter = std::atof(argv[i + 1]);
+        while (!WindowShouldClose() && (quitAfter <= 0.0 || GetTime() < quitAfter)) {
             float dt = std::min(GetFrameTime(), 0.1f);
             canvas.fit(scene->canBeWide());
             scene->update(dt, canvas);
