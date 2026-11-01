@@ -41,8 +41,9 @@ toolbox run -c claude-build make check        # soak vs golden output (~75 s)
 | `make apk` (on the host, not the toolbox) | Builds `build/TheMall-debug.apk` for the phone with the Android NDK. See `android/apk.mk` and [AI/android_plan.md](AI/android_plan.md) |
 | `make lines` (host or toolbox), or `./lines.sh` (the "The Mall Lines" desktop shortcut) | The lines editor: a local web page at http://localhost:8765 for rewriting `data/lines.txt`, with the game's bubble drawn beside each line. See [AI/lines_editor_plan.md](AI/lines_editor_plan.md) |
 | `make sprites` (host or toolbox), or `./sprites.sh` | The sprite editor: a local web page at http://localhost:8766 for redrawing `data/sprites.txt`. See [AI/sprite_editor_plan.md](AI/sprite_editor_plan.md) |
-| `make sounds` (host), or `./sounds.sh` (the "The Mall Sounds" desktop shortcut) | The sound editor: a local web page at http://localhost:8767 for tweaking `data/sounds.txt`, each sound rendered by the game's synth (`build/sound_sheet --one`, which sounds.sh builds in the toolbox). See [AI/sound_editor_plan.md](AI/sound_editor_plan.md) |
+| `make sounds` (host), or `./sounds.sh` (the "The Mall Sounds" desktop shortcut) | The sound editor: a local web page at http://localhost:8767 for tweaking `data/sounds.txt` (and, on its MUSIC tab, `data/music.txt`), each sound rendered by the game's synth (`build/sound_sheet --one`, which sounds.sh builds in the toolbox). See [AI/sound_editor_plan.md](AI/sound_editor_plan.md) |
 | `make soundsheet` | Renders every sound from `data/sounds.txt` to `build/sounds/NAME.wav`, clear and muffled. See [AI/sound_plan.md](AI/sound_plan.md) |
+| `make musicsheet` | Renders each section of each song in `data/music.txt` alone, and three minutes of each song as the game plays it, to `build/music/`. See [AI/music_plan.md](AI/music_plan.md) |
 | `make spritesheet` | Draws every sprite from `data/sprites.txt` in all the ways the game does, at 1x, to `build/sprite-sheet.png`: `cmp` it before and after an art refactor. `make spriteref` remakes the sprite editor's human and machine slots |
 | `make simprofile` / `make gprof` | Times the sim alone on one soak seed (`SIMPROFILE_ARGS="seed minutes crowd"`); `gprof` writes a profile to `build/gprof.txt`. See [AI/sim_speed_plan.md](AI/sim_speed_plan.md) |
 | `make trips` | How walks for needs go in the soak's worlds: finished or dropped on the way, and for what; how far water was when it got thirsty; what the thirsty who know no water do. `TRIPS_TRACE=seed:id` follows one human (pass it with `toolbox run -c claude-build env TRIPS_TRACE=...`, since `toolbox run` drops the environment). See [AI/needs_planning_plan.md](AI/needs_planning_plan.md) |
@@ -112,7 +113,9 @@ lost, and several useful probes already have been.
   at the top of the file that uses it, not as a `constexpr`. Timings the
   sim runs on (smell, spikes, darts, airlocks) stay in code.
 - `data/sounds.txt`: every sound, as a few synth numbers per layer (its
-  header explains them); F5 reloads it. `src/audio/`: the synth, the
+  header explains them); F5 reloads it. `data/music.txt`: the music,
+  written like a tracker and played through the same synth (the main
+  menu's for now); F5 reloads it, on the main menu too. `src/audio/`: the synth, the
   player, and `Hearing`, which plays what the followed human hears from
   the world's noises (`World::noise`, for the view only: nothing in the
   sim reads them).

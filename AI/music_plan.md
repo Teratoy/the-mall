@@ -109,6 +109,23 @@ vary menu drop 0.25 keep bass
   own) writes each section to `build/music/SONG-SECTION.wav`, and a few
   minutes of the song as the Rng would play it to `build/music/SONG.wav`.
 
+### Built (2026-11-01)
+
+- `src/audio/music_data.{h,cpp}`, no raylib: `parse`, `render` (a section,
+  each channel apart, uncrushed, with its tails) and `Tape`, which plays a
+  song on and on (flow, vary, wow, then the crush on the mix, a sample at a
+  time). The synth gained `synth::layers` (the layers before the crush),
+  `synth::Crush` and `synth::readLayer`, split out of `render` and `parse`:
+  every sound renders byte for byte as before.
+- Changed from the sketch: notes are written with flats only (`Db4`), as
+  `#` starts a comment; `.` alone holds (no `---`); a channel can be a few
+  cents out of tune of its own (`epiano:7`); `vary` keeps by instrument
+  name. The song starts at its first section as written, and only then do
+  channels drop out.
+- `make musicsheet` (`build/sound_sheet --music`) writes each section alone
+  and three minutes of each song as played to `build/music/`;
+  `--music-one` renders one song from stdin for the editor.
+
 ## 2. The player
 
 - `src/audio/music.{h,cpp}`: `music::want("menu", level)`, called by a
@@ -129,6 +146,16 @@ vary menu drop 0.25 keep bass
 - F5 reloads `data/music.txt` too; the song carries on from the section
   it was in.
 
+### Built (2026-11-01)
+
+`src/audio/music.{h,cpp}`: `music::want(song, level)` each frame from the
+scenes, `music::update(dt)` from the main loop, `music::reload()` on F5 (the
+main menu has F5 too, to hear a change there), `music::close()` before the
+device. A raylib `AudioStream` at 22050 Hz, fed 4096 samples at a time. A
+song fades out over 3 s (`FADE_OUT`) and rises or ducks over 1 s (`FADE`).
+The tapes' dice are view only, seeded from the clock. MUSIC (default 6) is
+in `audio::Settings`, `data/settings.txt` and `ConfigPanel`.
+
 ## 3. The menu tune
 
 Written into `data/music.txt` in the mood the user chose: lounge chords
@@ -137,6 +164,19 @@ brush on the off-beats, slow (about 80 a minute), a little out of tune
 between voices and wandering with the wow. Three or four short sections
 (8 or 16 bars), so the variations have room. The user listens and it is
 changed from what they say.
+
+### Built (2026-11-01)
+
+`song menu` in `data/music.txt`: 80 a minute, two rows a beat, wow 14
+cents. Three epiano voices (a thin square with a sine tine, a little out of
+tune with each other), a sine bass with a square an octave up so small
+speakers carry it, a vibraphone tune on a triangle, a brush on two and
+four. In F major, four sections of eight bars (about 24 s each): a, the
+tune (I–vi–ii–V); b, the bridge; c, the tune gone wrong, its chords sliding
+a half step off (Eb, Db, Gb major sevenths); d, the chords alone, no tune or
+brush. Flow: a goes to b mostly, else c or d; vary drops a channel 20% of
+the time, never the bass. Not yet heard by the user: change it from what
+they say.
 
 ## 4. The scenes
 
@@ -150,12 +190,28 @@ changed from what they say.
 - The pause menu's CONFIGURATION over the world has no music (there is
   none in the world yet).
 
+### Built (2026-11-01)
+
+As planned: `MenuScene` and `ConfigScene` want the menu song, `ObituaryScene`
+at 35% (`MUSIC_LEVEL`), `WorldScene` while choosing, and none once awake, so
+it fades over 3 s from WAKE UP. `tryOut` (Play from genview) starts awake,
+with no music.
+
 ## 5. Android
 
 - `data/music.txt` in the APK's assets (`android/apk.mk`, the list beside
   `sounds.txt`).
 - On going to the background the music stream and all sounds pause, and
   resume on return. Needs trying on the S25 Ultra (android_plan.md step 4).
+
+### Built (2026-11-01), untried on the phone
+
+`data/music.txt` is in the APK's assets. Pausing needed no code: raylib's
+loop on Android stops while the app is in the background (it waits in
+`PollInputEvents`), so nothing feeds the stream, which plays out what it
+holds (under 0.4 s) and falls silent; coming back, it carries on from the
+same place in the tape. Sounds already playing finish (they are short), and
+no new ones start.
 
 ## 6. The editor: a music tab in the sound editor
 
@@ -173,6 +229,30 @@ changed from what they say.
 Its own small plan section (or `AI/sound_editor_plan.md`) when it is
 built: the format should settle first, from steps 1–3.
 
+### Built (2026-11-01)
+
+`./sounds.sh` has SOUNDS and MUSIC tabs (`tools/sound_editor/music.js`,
+served by `tools/sound_editor.py`). The music list shows each song, its
+instruments (♪) and sections (§), each with ▶.
+- **The song**: tempo, rows, wow and gain as sliders; channels, flow and
+  vary as text. PLAY plays 60 s as the game would.
+- **An instrument**: gain, detune, sustain, and the same layer cards as a
+  sound (the sound page's `layerCards`, now shared). PLAY NOTE plays the
+  note typed beside it.
+- **A section**: the grid, beats shaded and bars ruled, the comment column
+  for chord names; arrows and Enter move; bad cells show red. PLAY (the
+  section alone), PLAY FROM HERE (the song from it), + BAR, − BAR, COPY
+  SECTION (a new section after the last; it plays in the song once a flow
+  names it).
+- STOP (Esc), SAVE (ctrl+s) and REVERT are for the whole song. SAVE sends
+  the song's block rebuilt from its parts: the lines of a part not changed
+  are kept as they were, comments too, so an unchanged song saves byte for
+  byte. Refused if the song changed in the file meanwhile (SAVE again keeps
+  the page's), or if the synth complains of it. Muting a layer is for
+  listening only, as on the sound page.
+- Not done: adding instruments or songs, or removing sections, from the
+  page (edit the file for those).
+
 ## Later (not in this plan)
 
 - **In-game music**: whether the world has music at all, and if so when
@@ -184,11 +264,11 @@ built: the format should settle first, from steps 1–3.
 ## Build order
 
 1, 2 and 3 together (the format, the player and a first tune, heard in the
-menu with the MUSIC row), then 4, then 5, then 6.
+menu with the MUSIC row), then 4, then 5, then 6. All built on 2026-11-01.
 
 ## Open questions
 
-Defaults to confirm as it is built:
+Defaults to confirm, now built as written here, so the user can hear them:
 - The fade on WAKE UP: 3 s, over the camera easing out.
 - OBITUARY's duck: 35%.
 - The crush on the mix rather than per note, and the same 5 bits at 8 kHz

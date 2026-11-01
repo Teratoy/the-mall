@@ -37,6 +37,19 @@ input:focus, select:focus, button:focus-visible { outline: 1px solid var(--accen
 
 /* The open sound. */
 #main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+#mhead { padding: 10px 16px 8px; border-bottom: 1px solid var(--line); }
+#mhead h1 { margin: 0; font-size: 18px; color: var(--bright); font-weight: normal; display: flex; gap: 12px; align-items: baseline; }
+#mhead h1 .g { color: var(--dim); font-size: 12px; }
+#mhead .doc { margin-top: 3px; white-space: pre-wrap; }
+#mtools { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; padding: 8px 16px; border-bottom: 1px solid var(--line); }
+#mtools .sep { width: 1px; align-self: stretch; background: var(--line); margin: 0 4px; }
+#mtools kbd { color: var(--dim); font-size: 10px; margin-left: 3px; }
+#mbody { flex: 1; overflow: auto; padding: 12px 16px 30px; min-height: 0; }
+#mwave { width: 100%; height: 90px; display: block; background: var(--panel); border: 1px solid var(--line); border-radius: 3px; }
+#mwaveinfo { color: var(--dim); font-size: 11px; margin: 3px 0 12px; }
+#mstatus { padding: 5px 16px; border-top: 1px solid var(--line); color: var(--dim); min-height: 28px; white-space: pre-wrap; }
+#mstatus.bad { color: var(--bad); }
+#mstatus.good { color: var(--good); }
 #head { padding: 10px 16px 8px; border-bottom: 1px solid var(--line); }
 #head h1 { margin: 0; font-size: 18px; color: var(--bright); font-weight: normal; display: flex; gap: 12px; align-items: baseline; }
 #head h1 .g { color: var(--dim); font-size: 12px; }
@@ -62,16 +75,40 @@ input:focus, select:focus, button:focus-visible { outline: 1px solid var(--accen
 .row input[type=range] { width: 100%; padding: 0; accent-color: var(--accent); background: none; border: none; }
 .row input[type=number] { width: 100%; padding: 2px 4px; }
 .note { color: var(--dim); font-size: 12px; }
+
+/* SOUNDS and MUSIC. */
+.tabs { display: flex; gap: 4px; margin-bottom: 8px; }
+.tabs button { flex: 1; }
+.hidden { display: none !important; }
+.snd .k { color: var(--dim); width: 12px; }
+.text { display: grid; grid-template-columns: 70px 1fr; gap: 8px; align-items: center; margin: 2px 0; }
+.text label { color: var(--dim); }
+.text input { width: 100%; }
+#mtools input.note { width: 52px; }
+
+/* A section: rows down, a column per channel. */
+table.grid { border-collapse: collapse; }
+.grid th { color: var(--accent); font-weight: normal; font-size: 11px; padding: 2px 4px; text-align: left; }
+.grid td { padding: 0; border-left: 1px solid var(--line); }
+.grid td.n { color: var(--dim); font-size: 11px; padding: 0 6px 0 0; text-align: right; border: none; }
+.grid input { width: 5ch; border: none; border-radius: 0; background: transparent; padding: 1px 4px; color: var(--ink); }
+.grid input.c { width: 28ch; color: var(--dim); }
+.grid input.set { color: var(--bright); }
+.grid input.bad { color: var(--bad); }
+.grid tr.beat td { background: #1d1d1d; }
+.grid tr.bar td { border-top: 1px solid var(--dim); }
+.grid input:focus { outline: 1px solid var(--accent); background: var(--sel); }
 </style>
 </head>
 <body>
 <div id="app">
   <div id="side">
     <div class="top">
-      <h2>Sounds</h2>
-      <div class="note">▶ plays. ↑ ↓ move through them.</div>
+      <div class="tabs"><button id="tabSounds" class="on">SOUNDS</button><button id="tabMusic">MUSIC</button></div>
+      <div class="note" id="sidenote">▶ plays. ↑ ↓ move through them.</div>
     </div>
     <div id="list"></div>
+    <div id="mlist" class="hidden"></div>
   </div>
   <div id="main">
     <div id="head"><h1><span id="name"></span><span class="g" id="group"></span></h1><div class="doc" id="doc"></div></div>
@@ -93,6 +130,16 @@ input:focus, select:focus, button:focus-visible { outline: 1px solid var(--accen
       <div id="layers"></div>
     </div>
     <div id="status"></div>
+  </div>
+  <div id="mmain" class="hidden" style="display:flex; flex-direction:column; min-width:0; min-height:0;">
+    <div id="mhead" class="head"><h1><span id="mname"></span><span class="g" id="mkind"></span></h1><div class="doc" id="mdoc"></div></div>
+    <div id="mtools" class="tools"></div>
+    <div id="mbody" class="body">
+      <canvas id="mwave" class="wave"></canvas>
+      <div id="mwaveinfo" class="waveinfo"></div>
+      <div id="mpart"></div>
+    </div>
+    <div id="mstatus" class="statusbar"></div>
   </div>
 </div>
 <script>
@@ -147,15 +194,17 @@ function blockOf(s, skipMuted) {
   const o = s.edit.options;
   for (const k of ["gain", "bits", "rate"]) if (o[k] !== undefined) head += ` ${k} ${fmt(o[k])}`;
   const lines = [head];
-  for (const l of s.edit.layers) {
-    if (skipMuted && l.muted) continue;
-    let line = "    " + l.wave + " " + fmt(l.from);
-    if (l.to !== undefined && +l.to !== +l.from) line += " " + fmt(l.to);
-    for (const k of Object.keys(layerKeys))
-      if (l.keys[k] !== undefined) line += " " + k + " " + fmt(l.keys[k]);
-    lines.push(line);
-  }
+  for (const l of s.edit.layers) if (!(skipMuted && l.muted)) lines.push(layerLine(l));
   return lines.join("\n");
+}
+
+// A layer's line, as data/sounds.txt and data/music.txt write it.
+function layerLine(l) {
+  let line = "    " + l.wave + " " + fmt(l.from);
+  if (l.to !== undefined && +l.to !== +l.from) line += " " + fmt(l.to);
+  for (const k of Object.keys(layerKeys))
+    if (l.keys[k] !== undefined) line += " " + k + " " + fmt(l.keys[k]);
+  return line;
 }
 const dirty = s => blockOf(s) !== blockOf({...s, edit: s.saved});
 
@@ -216,7 +265,7 @@ function show(name) {
   $("name").textContent = s.name;
   $("group").textContent = s.section;
   $("doc").textContent = s.notes.join("\n");
-  for (const row of document.querySelectorAll(".snd"))
+  for (const row of document.querySelectorAll("#list .snd"))
     row.classList.toggle("on", row.querySelector(".n").textContent === name);
   drawSound();
   drawLayers();
@@ -227,7 +276,7 @@ function show(name) {
 function marks() {
   const s = byName[open], d = dirty(s);
   $("save").disabled = $("revert").disabled = !d;
-  for (const row of document.querySelectorAll(".snd")) {
+  for (const row of document.querySelectorAll("#list .snd")) {
     const t = byName[row.querySelector(".n").textContent];
     row.querySelector(".d").textContent = dirty(t) ? "●" : "";
   }
@@ -235,7 +284,7 @@ function marks() {
 
 // One slider with its number. get and set read and write the value;
 // changed runs as it is let go.
-function slider(key, label, get, set, isDefault) {
+function slider(key, label, get, set, isDefault, done) {
   const r = RANGES[key], row = document.createElement("div");
   row.className = "row" + (isDefault() ? "" : " set");
   row.title = TIPS[key] || "";
@@ -260,7 +309,7 @@ function slider(key, label, get, set, isDefault) {
   const sync = () => { range.value = toPos(get()); num.value = fmt(get()); row.classList.toggle("set", !isDefault()); };
   range.oninput = () => { set(fromPos(+range.value)); num.value = fmt(get()); row.classList.toggle("set", !isDefault()); };
   // A new repeat count shows or hides gap and fade.
-  const after = () => { if (key === "repeat") drawLayers(); marks(); play(byName[open], "play"); };
+  const after = done || (() => { if (key === "repeat") drawLayers(); marks(); play(byName[open], "play"); });
   range.onchange = after;
   num.onchange = () => {
     if (num.value === "" || isNaN(+num.value)) return sync();
@@ -292,9 +341,15 @@ function drawSound() {
 }
 
 function drawLayers() {
-  const s = byName[open], box = $("layers");
+  const s = byName[open];
+  layerCards(s.edit.layers, $("layers"), drawLayers, () => { marks(); play(s, "play"); }, () => play(s, "play"));
+}
+
+// A card per layer, sliders and all. redraw draws them again, changed runs
+// after an edit, replay after muting (which changes nothing saved).
+function layerCards(layers, box, redraw, changed, replay) {
   box.innerHTML = "";
-  s.edit.layers.forEach((l, i) => {
+  layers.forEach((l, i) => {
     const card = document.createElement("div");
     card.className = "card" + (l.muted ? " muted" : "");
     const bar = document.createElement("div");
@@ -304,44 +359,44 @@ function drawLayers() {
     const wave = document.createElement("select");
     for (const w of waves) wave.add(new Option(w, w, false, w === l.wave));
     // Only a square has a duty.
-    wave.onchange = () => { l.wave = wave.value; drawLayers(); marks(); play(s, "play"); };
+    wave.onchange = () => { l.wave = wave.value; redraw(); changed(); };
     const button = (text, title, act) => {
       const b = document.createElement("button");
       b.textContent = text, b.title = title, b.onclick = act;
       return b;
     };
     const mute = button("MUTE", "Leave it out while listening; it is still saved", () => {
-      l.muted = !l.muted; drawLayers(); play(s, "play");
+      l.muted = !l.muted; redraw(); replay();
     });
     mute.classList.toggle("on", !!l.muted);
     const solo = button("SOLO", "Hear only this layer", () => {
-      const only = !s.edit.layers.every((m, j) => (j === i) !== !!m.muted);
-      s.edit.layers.forEach((m, j) => m.muted = only && j !== i);
-      drawLayers(); play(s, "play");
+      const only = !layers.every((m, j) => (j === i) !== !!m.muted);
+      layers.forEach((m, j) => m.muted = only && j !== i);
+      redraw(); replay();
     });
     const copy = button("COPY", "Add a copy of this layer under it", () => {
       const c = clone(l);
       delete c.muted;
-      s.edit.layers.splice(i + 1, 0, c);
-      drawLayers(); marks(); play(s, "play");
+      layers.splice(i + 1, 0, c);
+      redraw(); changed();
     });
     const remove = button("REMOVE", "Take this layer out", () => {
-      if (s.edit.layers.length === 1) return status("A sound needs a layer.", "bad");
-      s.edit.layers.splice(i, 1);
-      drawLayers(); marks(); play(s, "play");
+      if (layers.length === 1) return status("A sound needs a layer.", "bad");
+      layers.splice(i, 1);
+      redraw(); changed();
     });
     bar.append(t, wave, mute, solo, copy, remove);
     const rows = document.createElement("div");
     rows.className = "rows";
     rows.append(
-      slider("from", "from Hz", () => l.from, v => l.from = Math.max(v, 1), () => false),
-      slider("to", "to Hz", () => l.to ?? l.from, v => l.to = Math.max(v, 1), () => (l.to ?? l.from) === l.from));
+      slider("from", "from Hz", () => l.from, v => l.from = Math.max(v, 1), () => false, changed),
+      slider("to", "to Hz", () => l.to ?? l.from, v => l.to = Math.max(v, 1), () => (l.to ?? l.from) === l.from, changed));
     for (const k of Object.keys(layerKeys)) {
       if (k === "duty" && l.wave !== "square") continue;
       if ((k === "gap" || k === "fade") && (l.keys.repeat ?? 1) <= 1) continue;
       rows.appendChild(slider(k, k, () => l.keys[k] ?? layerKeys[k],
         v => l.keys[k] = k === "repeat" ? Math.max(1, Math.round(v)) : v,
-        () => (l.keys[k] ?? layerKeys[k]) === layerKeys[k]));
+        () => (l.keys[k] ?? layerKeys[k]) === layerKeys[k], () => { if (k === "repeat") redraw(); changed(); }));
     }
     card.append(bar, rows);
     box.appendChild(card);
@@ -375,8 +430,8 @@ async function play(s, how) {
 
 // The wave as played, and its true peak and clipped samples from the
 // server (the browser's resampled copy overshoots).
-function drawWave(buffer, keep, label, peak, clipped) {
-  const c = $("wave"), w = c.clientWidth, h = c.clientHeight, dpr = window.devicePixelRatio || 1;
+function drawWave(buffer, keep, label, peak, clipped, where = "") {
+  const c = $(where + "wave"), w = c.clientWidth, h = c.clientHeight, dpr = window.devicePixelRatio || 1;
   c.width = w * dpr, c.height = h * dpr;
   const g = c.getContext("2d");
   g.scale(dpr, dpr);
@@ -390,7 +445,7 @@ function drawWave(buffer, keep, label, peak, clipped) {
     hi = Math.min(hi, 1), lo = Math.max(lo, -1);
     g.fillRect(x, h / 2 - hi * keep * h / 2, 1, Math.max(1, (hi - lo) * keep * h / 2));
   }
-  $("waveinfo").textContent = `${label}: ${buffer.duration.toFixed(2)} s, peak ${(peak * keep).toFixed(2)}` +
+  $(where + "waveinfo").textContent = `${label}: ${buffer.duration.toFixed(2)} s, peak ${(peak * keep).toFixed(2)}` +
     (clipped ? `, ${clipped} samples cut off at full loudness (crunch, or turn the gain down)` : "");
 }
 
@@ -438,6 +493,7 @@ $("add").onclick = () => {
 
 document.addEventListener("keydown", e => {
   const typing = e.target.tagName === "INPUT" && e.target.type !== "range" || e.target.tagName === "SELECT";
+  if (tab === "music") return musicKey(e);
   if ((e.ctrlKey || e.metaKey) && e.key === "s") { e.preventDefault(); save(); return; }
   if (typing) return;
   if (e.key === " ") { e.preventDefault(); play(byName[open], "play"); return; }
@@ -448,18 +504,20 @@ document.addEventListener("keydown", e => {
   }
 });
 
-window.addEventListener("beforeunload", e => { if (sounds.some(dirty)) e.preventDefault(); });
+window.addEventListener("beforeunload", e => { if (sounds.some(dirty) || songs.some(songDirty)) e.preventDefault(); });
 
 // The file changed (a hand edit, another session): take the new copy of
 // every sound not being edited here.
 setInterval(async () => {
   try {
-    const v = (await (await fetch("/api/version")).json()).version;
-    if (v !== version) await load();
+    const v = await (await fetch("/api/version")).json();
+    if (v.version !== version) await load();
+    if (v.music !== mversion) await loadMusic();
   } catch (e) {}
 }, 2000);
 
 load();
 </script>
+<script src="music.js"></script>
 </body>
 </html>

@@ -66,3 +66,5 @@ easy access to all the sounds.
   moved: untouched sounds save byte for byte as they were. A block changed
   underneath is refused; the page keeps its edits, and SAVE again puts them
   over it. Edits to several sounds wait on the page, marked ● in the list.
+- Later (2026-11-01), a MUSIC tab for data/music.txt: see
+  [music_plan.md](music_plan.md) step 6.
