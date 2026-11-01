@@ -508,6 +508,7 @@ bool Human::tryDoor(World& world, Vec2i door) {
         observe(world);
         return true;
     }
+    world.noise(NoiseKind::Knob, door, id);
     if (!fresh) return false;
     note("TRIED A DOOR: LOCKED");
     if (++doors_.locked >= DOOR_LESSON && !doors_.learnt) {

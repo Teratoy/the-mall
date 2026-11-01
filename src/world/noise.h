@@ -21,6 +21,8 @@ enum class NoiseKind : uint8_t {
     Hit,
     /// Someone falling dead.
     Death,
+    /// A shut door's handle tried, rattling against its lock.
+    Knob,
 };
 
 struct Noise {

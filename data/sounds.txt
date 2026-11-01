@@ -71,6 +71,12 @@ sound unlock
     noise 3000 gain 0.3 delay 0.06 decay 0.02 repeat 2 gap 0.04 fade 0.7
     square 220 160 gain 0.35 delay 0.13 decay 0.07 duty 0.4
 
+# A shut door's handle tried: turned, and rattled against the lock.
+sound knob
+    square 1500 1150 gain 0.2 decay 0.015 duty 0.2 repeat 3 gap 0.08 fade 0.8
+    noise 2800 1800 gain 0.3 decay 0.02 highpass 900 repeat 3 gap 0.08 fade 0.8
+    square 240 190 gain 0.3 delay 0.01 decay 0.035 duty 0.4 repeat 3 gap 0.08 fade 0.75
+
 # A server room's airlock: a hiss as it gives, and as it seals.
 sound airlock_open
     noise 3600 2200 gain 0.35 attack 0.03 hold 0.1 decay 0.25 highpass 800

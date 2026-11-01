@@ -55,6 +55,7 @@ constexpr NoiseSound NOISE_SOUNDS[] = {
     {"dart_hit", 0.8f, 14.0f, false},     // DartHit
     {"hit", 0.9f, 16.0f, false},          // Hit
     {"death", 1.0f, 24.0f, true},         // Death
+    {"knob", 0.6f, 10.0f, false},         // Knob
 };
 
 /// The cells that block sight strictly between a and b, along a line.
