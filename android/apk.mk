@@ -25,10 +25,16 @@ GLUE      := $(NDK)/sources/android/native_app_glue
 
 B       := build/android
 RAYLIB  := $(B)/raylib
-APK     := build/TheMall-debug.apk
-# The standard Android debug key, kept outside build/ so a clean doesn't
-# lose it: an APK signed with another key won't install over the last one.
-KEYSTORE := $(HOME)/.android/debug.keystore
+# The version shown on the phone and in the APK's name. The version code
+# goes up with it, so a newer APK installs over an older one.
+VERSION      := 0.12
+VERSION_CODE := 12
+APK     := build/TheMall-debug-$(VERSION).apk
+# The game's own key, not the shared Android debug one, kept outside build/
+# so a clean doesn't lose it: an APK signed with another key won't install
+# over the last one.
+KEYSTORE := $(HOME)/.android/themall.keystore
+KEY_ALIAS := themall
 
 RAYLIB_SRC := rcore rshapes rtextures rtext rmodels raudio utils
 RAYLIB_OBJ := $(RAYLIB_SRC:%=$(B)/raylib-obj/%.o)
@@ -71,8 +77,8 @@ $(B)/res.zip: $(shell find android/res -type f)
 
 $(KEYSTORE):
 	@mkdir -p $(@D)
-	keytool -genkeypair -keystore $@ -storepass android -alias androiddebugkey -keypass android \
-		-keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+	keytool -genkeypair -keystore $@ -storepass android -alias $(KEY_ALIAS) -keypass android \
+		-keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Teratoy,O=The Mall,C=IT"
 
 # The data files go in as assets under the same names the game opens on a
 # computer; the library goes in stripped of its debug symbols.
@@ -82,11 +88,12 @@ $(APK): android/AndroidManifest.xml $(B)/res.zip $(B)/libthemall.so data/lines.t
 	cp data/lines.txt data/names.txt data/sprites.txt data/sounds.txt data/worldgen.txt $(B)/pkg/assets/data/
 	$(STRIP) --strip-debug -o $(B)/pkg/lib/arm64-v8a/libthemall.so $(B)/libthemall.so
 	$(BUILD_TOOLS)/aapt2 link -o $(B)/unsigned.apk --manifest android/AndroidManifest.xml -I $(PLATFORM)/android.jar \
-		--min-sdk-version $(MIN_SDK) --target-sdk-version $(TARGET_SDK) --debug-mode -A $(B)/pkg/assets $(B)/res.zip
+		--min-sdk-version $(MIN_SDK) --target-sdk-version $(TARGET_SDK) --debug-mode \
+		--version-code $(VERSION_CODE) --version-name $(VERSION)-debug --replace-version -A $(B)/pkg/assets $(B)/res.zip
 	cd $(B)/pkg && zip -q -r ../unsigned.apk lib
 	$(BUILD_TOOLS)/zipalign -f -P 16 4 $(B)/unsigned.apk $(B)/aligned.apk
 	$(BUILD_TOOLS)/apksigner sign --ks $(KEYSTORE) --ks-pass pass:android --key-pass pass:android \
-		--ks-key-alias androiddebugkey --v4-signing-enabled false --out $@ $(B)/aligned.apk
+		--ks-key-alias $(KEY_ALIAS) --v4-signing-enabled false --out $@ $(B)/aligned.apk
 	@echo "apk: $@ is ready: copy it to the phone and open it to install"
 
 install-apk: $(APK)
