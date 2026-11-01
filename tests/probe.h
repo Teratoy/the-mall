@@ -423,6 +423,11 @@ struct GenViewProbe {
         }
         return nullptr;
     }
+    /// Where keys and the chunk's human may start: floor deep enough into
+    /// the chunk from where it was entered. World cells.
+    static std::vector<Vec2i> deepSpots(World& w, const Chunk& c, Vec2i entry) {
+        return w.deepSpots(c, entry - c.origin());
+    }
     /// The chunk the game would grow through the spawn's door, its kind and
     /// footprint rolled.
     static const Chunk* rolled(World& w) {

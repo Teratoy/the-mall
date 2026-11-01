@@ -185,6 +185,35 @@ A window, PC only. The knob panel on the left, the chunk on the right.
   and says so loudly when one fails (floor outside the footprint, a door
   that can't be reached).
 
+### Built (2026-11-01)
+
+- A second row in the top bar: five overlays, any together (keys 1 to 5),
+  each a picture a pixel a cell over the art or the map:
+  1. doors and keys: open doors orange, locked red, keys yellow, cakes
+     pink, the entry white;
+  2. water sides (`gen::sides`), a colour each;
+  3. out of reach from the entry, locks as open: orange where only
+     swimming gets, red where nothing does;
+  4. traps: spikes red; dart plates pink with their shooter and line cyan;
+     slam plates pink with their gate red;
+  5. deep spots, where keys and the chunk's human may start.
+- T: the readout, per chunk: floor and water %, the longest walk between
+  two doors that can reach each other, the farthest floor from the entry
+  (in steps, locks as open), doors and new doors, keys, cakes and those
+  over water, tables, statues, machines, toilets, basin cells, server
+  rooms, dispensers, spikes, dart plates, slam rooms. Before/after puts
+  the two side by side, what differs yellow; nine seeds gives the least,
+  mean and most.
+- genprobe's checks moved to `tools/chunk_checks.h` and are run on every
+  chunk grown: what they would fail it for shows in red across the
+  chunk, readout or not.
+- The readout and any fault go into `build/genview.txt` too, a line per
+  chunk, for Claude.
+- Not built: dead ends (no good measure on corridors three wide), a count
+  of rooms (the rooms generator's boxes are not kept), private spots, and
+  where a vending machine could stand (that test lives inside
+  `placeMachines`). Each can come if wanted.
+
 ### Step 5: drop humans
 
 - A button runs the sim headless on the chunk (with the world around it

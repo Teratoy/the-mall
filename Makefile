@@ -51,13 +51,13 @@ run: $(BIN)
 	./$(BIN)
 
 $(SCENARIOS): tests/scenarios.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out tests/probe.h,$^) -o $@ $(LDLIBS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDLIBS)
 
 scenarios: $(SCENARIOS)
 	./$(SCENARIOS)
 
 $(STUCK): tests/stuck_soak.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out tests/probe.h,$^) -o $@ $(LDLIBS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDLIBS)
 
 stuck: $(STUCK)
 	./$(STUCK)
@@ -92,14 +92,14 @@ $(SHOT): tools/shot.cpp $(filter-out build/main.o,$(OBJ))
 shot: $(SHOT)
 	./$(SHOT) build/shot.png $(SHOT_ARGS)
 
-$(GENPROBE): tools/genprobe.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out tests/probe.h,$^) -o $@ $(LDLIBS)
+$(GENPROBE): tools/genprobe.cpp tools/chunk_checks.h tests/probe.h $(filter-out build/main.o,$(OBJ))
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDLIBS)
 
 genprobe: $(GENPROBE)
 	./$(GENPROBE) $(GENPROBE_ARGS)
 
-$(GENVIEW): tools/genview.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out tests/probe.h,$^) -o $@ $(LDLIBS)
+$(GENVIEW): tools/genview.cpp tools/chunk_checks.h tests/probe.h $(filter-out build/main.o,$(OBJ))
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDLIBS)
 
 genview: $(GENVIEW)
 	./$(GENVIEW)
@@ -171,14 +171,14 @@ lines:
 # Life logs of one soak world: build/lifelog seed [minutes] [crowd] [name] [every].
 LIFELOG := build/lifelog
 $(LIFELOG): tools/lifelog.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out tests/probe.h,$^) -o $@ $(LDLIBS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDLIBS)
 
 # How trips for needs go: done or dropped on the way, and for what.
 # build/trips [seeds] [minutes] [crowd] [examples].
 TRIPS := build/trips
 TRIPS_ARGS ?= 6 15 6
 $(TRIPS): tools/trips.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out tests/probe.h,$^) -o $@ $(LDLIBS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDLIBS)
 
 trips: $(TRIPS)
 	./$(TRIPS) $(TRIPS_ARGS)
@@ -193,7 +193,7 @@ clean:
 SIMPROFILE := build/sim_profile
 SIMPROFILE_ARGS ?= 4 15 6
 $(SIMPROFILE): tools/sim_profile.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out tests/probe.h,$^) -o $@ $(LDLIBS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDLIBS)
 
 simprofile: $(SIMPROFILE)
 	./$(SIMPROFILE) $(SIMPROFILE_ARGS)
@@ -219,7 +219,7 @@ gprof: build/pg/sim_profile
 TRAPPROBE := build/trap_probe
 
 $(TRAPPROBE): tools/trap_probe.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out tests/probe.h,$^) -o $@ $(LDLIBS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDLIBS)
 
 trapprobe: $(TRAPPROBE)
 	./$(TRAPPROBE) $(TRAPPROBE_ARGS)

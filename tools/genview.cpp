@@ -20,6 +20,22 @@
 //              take its seed
 //   Save (S)   writes the changed values into data/worldgen.txt
 // The view pans with a drag and zooms with the wheel; F fits the chunk.
+// Second row, overlays, any together (or keys 1 to 5):
+//   1 doors and keys   open doors orange, locked red; keys yellow, cakes
+//                      pink, where it was entered white
+//   2 water sides      each side of the water its own colour
+//   3 out of reach     floor that can't be walked to from where it was
+//                      entered, locks as open: orange if swimming gets
+//                      there, red if nothing does
+//   4 traps            spikes red; dart plates pink, their shooters and
+//                      line cyan; slam plates pink, their gates red
+//   5 deep spots       where keys and the chunk's human may start
+//   T readout          what the chunk has: floor and water, the longest
+//                      walk, keys, cakes, traps, machines... In before/after
+//                      what differs shows yellow; with nine seeds, the
+//                      least, the mean and the most over them. Whatever
+//                      genprobe would fail it for shows in red on the
+//                      chunk, readout or not.
 //
 // The file is watched: changed on disk, by hand or by Claude in a chat, it
 // is read again within a second and the chunk regrown, keeping knobs
@@ -29,11 +45,13 @@
 // Claude can see what the user sees. That file is read back at start, so a
 // rebuild opens on the same chunk.
 #include "../tests/probe.h"
+#include "chunk_checks.h"
 #include "core/rng.h"
 #include "human/human_look.h"
 #include "render/floor_tiles.h"
 #include "render/statue_art.h"
 #include "render/world_view.h"
+#include "world/gen.h"
 #include "world/gen_tuning.h"
 #include <algorithm>
 #include <charconv>
@@ -42,6 +60,7 @@
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <deque>
 #include <memory>
 #include <raylib.h>
 #include <rlgl.h>
@@ -61,7 +80,9 @@ constexpr double WATCH_EVERY = 0.5;
 
 constexpr int FONT = 20;
 constexpr int ROW = 26;
-constexpr int BAR_H = 36;
+/// The top bar: a row of what is grown and how it is shown, then a row
+/// of overlays.
+constexpr int BAR_ROW = 36, BAR_H = 2 * BAR_ROW;
 constexpr int STATUS_H = 30;
 constexpr int PAD = 8;
 /// The knob panel's slider and value columns; the name column is as wide
@@ -160,12 +181,200 @@ Texture2D flatMap(const World& w, const Chunk& c) {
     return t;
 }
 
+enum Overlay { DOORS, SIDES, REACH, TRAPS, DEEP, OVERLAYS };
+const char* const OVERLAY_NAMES[] = {"Doors & keys", "Water sides", "Out of reach", "Traps", "Deep spots"};
+/// How see-through an overlay is over the chunk.
+constexpr unsigned char TINT = 150;
+
+/// An overlay a pixel a cell, see-through but where painted.
+struct Paint {
+    Image img;
+    const Chunk& c;
+    Paint(const Chunk& chunk) : img(GenImageColor(chunk.w, chunk.h, BLANK)), c(chunk) {}
+    /// A world cell, if it is the chunk's.
+    void cell(Vec2i at, Color col) {
+        Vec2i l = at - c.origin();
+        if (c.owns(l)) ImageDrawPixel(&img, l.x, l.y, col);
+    }
+    /// A ring round a world cell, and the cell.
+    void ring(Vec2i at, Color col) {
+        for (int y = -1; y <= 1; y++)
+            for (int x = -1; x <= 1; x++) cell(at + Vec2i{x, y}, col);
+    }
+    Texture2D done() {
+        Texture2D t = LoadTextureFromImage(img);
+        UnloadImage(img);
+        return t;
+    }
+};
+
+/// Steps from start to every cell walkable from it, locks as open; -1 where
+/// it can't get. Local cells.
+std::vector<int> steps(const Chunk& c, Vec2i start) {
+    std::vector<int> d(size_t(c.w * c.h), -1);
+    std::deque<Vec2i> open{start};
+    d[size_t(start.y * c.w + start.x)] = 0;
+    while (!open.empty()) {
+        Vec2i p = open.front();
+        open.pop_front();
+        for (Vec2i dir : DIRS4) {
+            Vec2i n = p + dir;
+            if (!c.owns(n) || d[size_t(n.y * c.w + n.x)] >= 0) continue;
+            Tile k = c.get(n);
+            if (!passable(k) && k != Tile::DoorLocked) continue;
+            d[size_t(n.y * c.w + n.x)] = d[size_t(p.y * c.w + p.x)] + 1;
+            open.push_back(n);
+        }
+    }
+    return d;
+}
+
+/// The overlays of a chunk grown in w, entered at entry.
+void overlays(World& w, const Chunk& c, Vec2i entry, Texture2D (&out)[OVERLAYS]) {
+    const Color yellow{250, 230, 0, 255}, pink{250, 80, 160, 255}, red{235, 50, 40, 255}, orange{250, 150, 30, 255},
+        cyan{60, 230, 240, 255}, white{255, 255, 255, 255};
+    {
+        Paint p(c);
+        for (int y = 0; y < c.h; y++)
+            for (int x = 0; x < c.w; x++) {
+                Tile k = c.get({x, y});
+                if (k == Tile::DoorOpen) p.cell(c.origin() + Vec2i{x, y}, orange);
+                if (k == Tile::DoorLocked) p.cell(c.origin() + Vec2i{x, y}, red);
+            }
+        for (Vec2i k : w.cakes()) p.ring(k, pink);
+        for (Vec2i k : w.keys()) p.ring(k, yellow);
+        p.ring(entry, white);
+        out[DOORS] = p.done();
+    }
+    {
+        Paint p(c);
+        const std::vector<int> side = gen::sides(c);
+        const Color hues[] = {{80, 200, 120, TINT}, {200, 90, 220, TINT}, {240, 200, 60, TINT}, {70, 160, 250, TINT},
+                              {250, 110, 90, TINT}, {120, 240, 230, TINT}, {180, 180, 250, TINT}, {250, 160, 200, TINT}};
+        for (int y = 0; y < c.h; y++)
+            for (int x = 0; x < c.w; x++) {
+                int l = side[size_t(y * c.w + x)];
+                if (l >= 0 && c.get({x, y}) != Tile::Wall) p.cell(c.origin() + Vec2i{x, y}, hues[l % 8]);
+            }
+        out[SIDES] = p.done();
+    }
+    {
+        Paint p(c);
+        const std::vector<bool> walked = reach(c, entry, false), swum = reach(c, entry, true);
+        for (int y = 0; y < c.h; y++)
+            for (int x = 0; x < c.w; x++) {
+                size_t i = size_t(y * c.w + x);
+                if (!passable(c.get({x, y})) || walked[i]) continue;
+                p.cell(c.origin() + Vec2i{x, y}, swum[i] ? Color{250, 150, 30, 200} : Color{235, 50, 40, 220});
+            }
+        out[REACH] = p.done();
+    }
+    {
+        Paint p(c);
+        for (const auto& [at, t] : w.traps()) {
+            if (w.chunkIdAt(at) != c.id) continue;
+            if (t.kind == TrapKind::Spikes) {
+                p.ring(at, red);
+            } else if (t.kind == TrapKind::Darts) {
+                for (Vec2i q = t.from; q != at && cheb(q, t.from) <= 32; q = q + t.dir) p.cell(q, Fade(cyan, 0.6f));
+                p.ring(t.from, cyan);
+                p.ring(at, pink);
+            } else {
+                p.ring(t.from, red);
+                p.ring(at, pink);
+            }
+        }
+        out[TRAPS] = p.done();
+    }
+    {
+        Paint p(c);
+        for (Vec2i s : GenViewProbe::deepSpots(w, c, entry)) p.cell(s, Color{90, 250, 120, 200});
+        p.ring(entry, white);
+        out[DEEP] = p.done();
+    }
+}
+
+/// What a chunk has, a row each, and what genprobe would fail it for.
+struct Readout {
+    std::vector<std::pair<std::string, float>> rows;
+    std::string fault;
+};
+
+Readout readout(const World& w, const Chunk& c, Vec2i entry) {
+    Readout r;
+    Tally t;
+    r.fault = check(w, c, entry, t);
+    int owned = 0, floor = 0, water = 0, basins = 0, toilets = 0;
+    for (int y = 0; y < c.h; y++)
+        for (int x = 0; x < c.w; x++) {
+            if (!c.owns({x, y}) || !c.interior({x, y})) continue;
+            owned++;
+            Tile k = c.get({x, y});
+            floor += k == Tile::Floor;
+            water += k == Tile::Water;
+            basins += k == Tile::Basin;
+            toilets += k == Tile::Toilet;
+        }
+    // The longest walk between two of its doors, and from the entry to the
+    // farthest floor, locks as open.
+    std::vector<Vec2i> doors;
+    for (const auto& [key, d] : SoakProbe::doors(w))
+        for (Vec2i s : {d.slot, d.other()})
+            if (c.covers(s)) doors.push_back(d.cellsIn(s)[size_t(d.width / 2)] - c.origin());
+    int longest = 0, farthest = 0;
+    for (Vec2i a : doors) {
+        std::vector<int> d = steps(c, a);
+        for (Vec2i b : doors) longest = std::max(longest, d[size_t(b.y * c.w + b.x)]);
+    }
+    for (int d : steps(c, entry - c.origin())) farthest = std::max(farthest, d);
+    auto in = [&](Vec2i at) { return w.chunkIdAt(at) == c.id; };
+    int tables = 0, statues = 0, machines = 0, servers = 0, dispensers = 0, spikes = 0, darts = 0, slams = 0;
+    for (const Table& x : w.tables()) tables += in(x.at);
+    for (const Statue& x : w.statues()) statues += in(x.at);
+    for (const Machine& x : w.machines()) machines += in(x.at);
+    for (const ServerRoom& x : w.serverRooms()) servers += in({x.x, x.y});
+    for (const Dispenser& x : w.dispensers()) dispensers += in(x.at);
+    for (const auto& [at, x] : w.traps())
+        if (in(at)) (x.kind == TrapKind::Spikes ? spikes : x.kind == TrapKind::Darts ? darts : slams)++;
+    r.rows = {{"floor %", owned ? 100.0f * floor / owned : 0},
+              {"water %", owned ? 100.0f * water / owned : 0},
+              {"longest door to door", float(longest)},
+              {"farthest from entry", float(farthest)},
+              {"doors", float(doors.size())},
+              {"new doors", float(t.doors)},
+              {"keys", float(t.keys)},
+              {"cakes", float(t.cakes)},
+              {"cakes over water", float(t.overWater)},
+              {"tables", float(tables)},
+              {"statues", float(statues)},
+              {"machines", float(machines)},
+              {"toilets", float(toilets)},
+              {"basin cells", float(basins)},
+              {"server rooms", float(servers)},
+              {"dispensers", float(dispensers)},
+              {"spikes", float(spikes)},
+              {"dart plates", float(darts)},
+              {"slam rooms", float(slams)}};
+    return r;
+}
+
+/// A number for the readout: whole, or to one place.
+std::string shown(float v) {
+    char buf[32];
+    std::snprintf(buf, sizeof buf, v == std::floor(v) ? "%.0f" : "%.1f", double(v));
+    return buf;
+}
+
 /// One chunk grown, with its world, and drawn both ways.
 struct Grown {
     std::unique_ptr<World> world;
     const Chunk* chunk = nullptr;
     RenderTexture2D art{};
     Texture2D map{};
+    Texture2D overlay[OVERLAYS]{};
+    Readout readout;
+    /// Where it was entered: the cell past the spawn's door.
+    Vec2i entry{};
     uint64_t seed = 0;
     std::string label, note;
 
@@ -175,6 +384,8 @@ struct Grown {
     ~Grown() {
         if (art.id) UnloadRenderTexture(art);
         if (map.id) UnloadTexture(map);
+        for (Texture2D& t : overlay)
+            if (t.id) UnloadTexture(t);
     }
     /// The chunk's size in world pixels.
     Vector2 size() const { return chunk ? Vector2{float(chunk->w * CELL_PX), float(chunk->h * CELL_PX)} : Vector2{}; }
@@ -199,6 +410,7 @@ public:
         BeginDrawing();
         ClearBackground(BG);
         drawView();
+        drawReadouts();
         drawPanel();
         drawBar();
         drawStatus();
@@ -227,7 +439,10 @@ private:
     StatueArt statueArt_;
     uint64_t seed_ = 1;
     int kind_ = 2, shape_ = 0, turns_ = 0;
-    bool mirror_ = false, map_ = false, dirty_ = true;
+    bool mirror_ = false, map_ = false, dirty_ = true, readout_ = false;
+    bool shown_[OVERLAYS]{};
+    /// The top of the bar row being drawn.
+    int barY_ = 0;
     Mode mode_ = Mode::Single;
     /// The view's centre, in the chunk's own world pixels, and screen
     /// pixels per world pixel; fitted again when the chunk's size changes.
@@ -347,10 +562,21 @@ private:
         out << "kind " << kind_ << " " << KINDS[kind_].name << "\n";
         out << "footprint " << SHAPES[size_t(shape_)].name << " turn " << turns_ << " mirror " << mirror_ << "\n";
         out << "view " << (map_ ? "map" : "art") << "\n";
+        out << "overlays";
+        for (int o = 0; o < OVERLAYS; o++)
+            if (shown_[o]) out << " " << o + 1;
+        out << "\nreadout " << readout_ << "\n";
         out << "mode " << (mode_ == Mode::Single ? "single" : mode_ == Mode::Compare ? "compare" : "grid") << "\n";
         if (!panes_.empty() && panes_.front()->chunk) {
             const Chunk& c = *panes_.front()->chunk;
             out << "shown " << panes_.front()->label << " at slot " << c.slot.x << " " << c.slot.y << "\n";
+        }
+        for (const auto& g : panes_) {
+            if (!g->chunk) continue;
+            out << "readout seed " << g->seed << ":";
+            for (const auto& [name, v] : g->readout.rows) out << " " << name << "=" << shown(v) << ";";
+            if (!g->readout.fault.empty()) out << " FAULT " << g->readout.fault;
+            out << "\n";
         }
         out << "# Knobs changed here and not yet saved: section, name, values.\n";
         const auto& all = tune::all();
@@ -370,6 +596,10 @@ private:
             std::string what;
             w >> what;
             if (what == "seed") w >> seed_;
+            else if (what == "overlays") {
+                for (int o; w >> o;)
+                    if (o >= 1 && o <= OVERLAYS) shown_[o - 1] = true;
+            } else if (what == "readout") w >> readout_;
             else if (what == "kind") w >> kind_;
             else if (what == "view") {
                 std::string v;
@@ -412,12 +642,14 @@ private:
         g->world->makeSpawn(HumanLook::random(looks), seed);
         const KindPick& pick = KINDS[kind_];
         const Footprint parts = footprint();
+        g->entry = GenViewProbe::spawnDoor(*g->world).second;
         g->chunk = pick.rolled ? GenViewProbe::rolled(*g->world) : GenViewProbe::grow(*g->world, pick.kind, parts);
         if (!g->chunk) {
             g->note = std::string("The game never grows ") + pick.name + " on " + SHAPES[size_t(shape_)].name;
             return g;
         }
         const Chunk& c = *g->chunk;
+        if (c.kind == ChunkKind::Spawn) g->entry = c.origin() + Vec2i{c.w / 2, c.h / 2};
         Vec2i box = footprintBox(c.parts);
         g->label = std::string(kindName(c.kind)) + " " + std::to_string(box.x) + "x" + std::to_string(box.y) +
                    (int(c.parts.size()) != box.x * box.y ? " (" + std::to_string(c.parts.size()) + " slots)" : "");
@@ -436,6 +668,8 @@ private:
                     DrawRectangle(sx * CHUNK * CELL_PX, sy * CHUNK * CELL_PX, CHUNK * CELL_PX, CHUNK * CELL_PX, BLACK);
         EndTextureMode();
         g->map = flatMap(*g->world, c);
+        g->readout = readout(*g->world, c, g->entry);
+        overlays(*g->world, c, g->entry, g->overlay);
         return g;
     }
 
@@ -510,12 +744,83 @@ private:
                 SetTextureFilter(g.art.texture, s < 1.0f ? TEXTURE_FILTER_BILINEAR : TEXTURE_FILTER_POINT);
                 DrawTexturePro(g.art.texture, {0, 0, size.x, -size.y}, dest, {0, 0}, 0, WHITE);
             }
+            for (int o = 0; o < OVERLAYS; o++)
+                if (shown_[o])
+                    DrawTexturePro(g.overlay[o], {0, 0, float(g.overlay[o].width), float(g.overlay[o].height)}, dest,
+                                   {0, 0}, 0, WHITE);
         } else {
             text(g.note, int(a.x + PAD), int(a.y + a.height / 2), BAD);
         }
         DrawRectangle(int(a.x), int(a.y), int(a.width), ROW, Fade(BLACK, 0.7f));
         text(g.label + "   seed " + std::to_string(g.seed), int(a.x + PAD), int(a.y + 3), INK);
+        if (!g.readout.fault.empty()) {
+            DrawRectangle(int(a.x), int(a.y + a.height) - ROW, int(a.width), ROW, Fade(BAD, 0.85f));
+            text("genprobe would fail it: " + g.readout.fault, int(a.x + PAD), int(a.y + a.height) - ROW + 3, WHITE);
+        }
         EndScissorMode();
+    }
+
+    /// The readout in a box at the top right of an area: a column of values
+    /// for each, headed, those that differ from the first column's yellow.
+    void drawReadout(Rectangle a, const std::vector<std::string>& heads,
+                     const std::vector<std::vector<float>>& columns, bool mark) {
+        if (columns.empty() || panes_.empty()) return;
+        const auto& rows = panes_.front()->readout.rows;
+        int labelW = 0;
+        for (const auto& row : rows) labelW = std::max(labelW, width(row.first));
+        labelW += 2 * PAD;
+        const int colW = 80;
+        int w = labelW + int(columns.size()) * colW + 3 * PAD, h = int(rows.size() + 1) * ROW + PAD;
+        Rectangle box{a.x + a.width - float(w) - PAD, a.y + ROW + PAD, float(w), float(h)};
+        DrawRectangleRec(box, Fade(PANEL, 0.92f));
+        DrawRectangleLinesEx(box, 1, LINE);
+        for (size_t j = 0; j < heads.size(); j++)
+            text(heads[j], int(box.x) + PAD + labelW + PAD + int(j) * colW, int(box.y) + 4, DIM);
+        for (size_t i = 0; i < rows.size(); i++) {
+            int y = int(box.y) + 4 + int(i + 1) * ROW;
+            text(rows[i].first, int(box.x) + PAD, y, INK);
+            for (size_t j = 0; j < columns.size(); j++) {
+                if (i >= columns[j].size()) continue;
+                bool differs = mark && j > 0 && columns[j][i] != columns[0][i];
+                text(shown(columns[j][i]), int(box.x) + PAD + labelW + PAD + int(j) * colW, y, differs ? CHANGED : INK);
+            }
+        }
+    }
+
+    void drawReadouts() {
+        if (!readout_ || panes_.empty()) return;
+        auto values = [](const Grown& g) {
+            std::vector<float> v;
+            for (const auto& row : g.readout.rows) v.push_back(row.second);
+            return v;
+        };
+        std::vector<Rectangle> areas = paneAreas();
+        if (mode_ == Mode::Single) {
+            if (panes_[0]->chunk) drawReadout(areas[0], {}, {values(*panes_[0])}, false);
+        } else if (mode_ == Mode::Compare) {
+            if (panes_[0]->chunk && panes_[1]->chunk)
+                drawReadout(areas[1], {"file", "changed"}, {values(*panes_[0]), values(*panes_[1])}, true);
+        } else {
+            // The least, the mean and the most over the nine.
+            std::vector<float> lo, mean, hi;
+            int n = 0;
+            for (const auto& g : panes_) {
+                if (!g->chunk) continue;
+                std::vector<float> v = values(*g);
+                if (n++ == 0) {
+                    lo = hi = mean = v;
+                    continue;
+                }
+                for (size_t i = 0; i < v.size(); i++) {
+                    lo[i] = std::min(lo[i], v[i]);
+                    hi[i] = std::max(hi[i], v[i]);
+                    mean[i] += v[i];
+                }
+            }
+            if (!n) return;
+            for (float& m : mean) m /= float(n);
+            drawReadout(viewArea(), {"least", "mean", "most"}, {lo, mean, hi}, false);
+        }
     }
 
     void drawView() {
@@ -559,7 +864,7 @@ private:
 
     /// A button; returns 1 when clicked, -1 when right-clicked.
     int button(int& x, const std::string& label, bool on = false) {
-        Rectangle r{float(x), 4, float(width(label) + 2 * PAD), float(BAR_H - 8)};
+        Rectangle r{float(x), float(barY_ + 4), float(width(label) + 2 * PAD), float(BAR_ROW - 8)};
         x += int(r.width) + 4;
         bool hot = over(r);
         DrawRectangleRec(r, on ? FILL : hot ? HOT : PANEL);
@@ -593,7 +898,7 @@ private:
         }
         x += PAD;
         if (button(x, "<")) step(-1);
-        text("seed " + std::to_string(seed_), x, 10, INK);
+        text("seed " + std::to_string(seed_), x, barY_ + 10, INK);
         x += width("seed " + std::to_string(seed_)) + 4;
         if (button(x, ">")) step(1);
         if (button(x, "R")) reroll();
@@ -607,6 +912,13 @@ private:
         x += PAD;
         int n = changedCount();
         if (button(x, n ? "Save " + std::to_string(n) : "Save", n > 0)) save();
+        barY_ = BAR_ROW;
+        x = PAD;
+        for (int o = 0; o < OVERLAYS; o++)
+            if (button(x, std::to_string(o + 1) + " " + OVERLAY_NAMES[o], shown_[o])) shown_[o] = !shown_[o];
+        x += PAD;
+        if (button(x, "T Readout", readout_)) readout_ = !readout_;
+        barY_ = 0;
     }
 
     void drawStatus() {
@@ -790,6 +1102,9 @@ private:
         if (IsKeyPressed(KEY_R)) reroll();
         if (IsKeyPressed(KEY_V)) map_ = !map_;
         if (IsKeyPressed(KEY_F)) fit();
+        if (IsKeyPressed(KEY_T)) readout_ = !readout_;
+        for (int o = 0; o < OVERLAYS; o++)
+            if (IsKeyPressed(KeyboardKey(KEY_ONE + o))) shown_[o] = !shown_[o];
         if (IsKeyPressed(KEY_C)) {
             mode_ = mode_ == Mode::Compare ? Mode::Single : Mode::Compare;
             dirty_ = true;
