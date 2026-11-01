@@ -10,7 +10,9 @@
 // First it runs the generators alone on every footprint, without a World.
 // Then it grows whole worlds, crossing door after door the way humans do,
 // and checks in each new chunk that every new door, key and cake can be
-// reached from the door it was entered by, locks aside. Exits 1 if any
+// reached from the door it was entered by, locks aside. Last it grows each
+// kind on each footprint the game grows it on, beside the spawn, as
+// tools/genview.cpp does, and checks those the same way. Exits 1 if any
 // check fails.
 #include "../tests/probe.h"
 #include "core/rng.h"
@@ -153,6 +155,8 @@ void save(const Chunk& c, const std::string& path, const World* w = nullptr) {
 
 /// Chunks a world grows to, crossing doors.
 constexpr int WORLD_CHUNKS = 40;
+/// Seeds for each kind and footprint grown as asked, beside the spawn.
+constexpr int GIVEN_SEEDS = 5;
 /// Data centres grown, and the machines in their corridors.
 int centres = 0, centreMachines = 0;
 
@@ -172,6 +176,94 @@ std::string shapeName(const Chunk& c) {
 /// Grows a world from its spawn by crossing, each time, the first door (in
 /// a fixed order) that leads where nothing is yet. Returns how many chunks
 /// broke a check.
+/// What is wrong with a chunk just grown in a world, entered at entry,
+/// counted in its tally: a door, key, machine or server room cell that
+/// can't be reached. Empty when nothing is.
+std::string check(const World& w, const Chunk& c, Vec2i entry, Tally& t) {
+    using P = SoakProbe;
+    // Everything walkable from the entry, locked doors and gates as if
+    // open; and with swimming, what only water cuts off, which another
+    // door may reach.
+    auto flood = [&](bool swim) {
+        std::vector<bool> reached(size_t(c.w * c.h), false);
+        std::vector<Vec2i> stack{entry - c.origin()};
+        reached[size_t(stack[0].y * c.w + stack[0].x)] = true;
+        while (!stack.empty()) {
+            Vec2i p = stack.back();
+            stack.pop_back();
+            for (Vec2i d : DIRS4) {
+                Vec2i n = p + d;
+                if (!c.owns(n) || reached[size_t(n.y * c.w + n.x)]) continue;
+                Tile k = c.get(n);
+                if (!passable(k) && k != Tile::DoorLocked && !(swim && k == Tile::Water)) continue;
+                reached[size_t(n.y * c.w + n.x)] = true;
+                stack.push_back(n);
+            }
+        }
+        return reached;
+    };
+    const std::vector<bool> walked = flood(false), swum = flood(true);
+    // A key or cake on a table is reached from beside it.
+    auto near = [&](const std::vector<bool>& reached, Vec2i cell) {
+        Vec2i l = cell - c.origin();
+        if (reached[size_t(l.y * c.w + l.x)]) return true;
+        for (Vec2i d : DIRS8)
+            if (c.owns(l + d) && reached[size_t((l + d).y * c.w + l.x + d.x)]) return true;
+        return false;
+    };
+    std::string why;
+    for (const auto& [key, d] : P::doors(w)) {
+        Vec2i side = c.covers(d.slot) ? d.slot : d.other();
+        if (!c.covers(side) || w.generated(d.slot) + w.generated(d.other()) != 1) continue;
+        t.doors++;
+        if (!near(walked, d.cellsIn(side)[0])) why = "a new door out of reach";
+    }
+    for (Vec2i k : w.keys())
+        if (w.chunkIdAt(k) == c.id) {
+            t.keys++;
+            if (!near(walked, k)) why = "a key out of reach";
+        }
+    for (Vec2i k : w.cakes())
+        if (w.chunkIdAt(k) == c.id) {
+            t.cakes++;
+            if (!near(walked, k)) t.overWater++;
+            if (!near(swum, k)) why = "a cake sealed off";
+        }
+    // A machine stands with wall behind both cells and is worked from
+    // floor that can be reached, as a cake can, maybe from another door.
+    for (const Machine& m : w.machines())
+        if (w.chunkIdAt(m.at) == c.id) {
+            t.machines++;
+            bool reached = false;
+            for (Vec2i cell : {m.at, m.at + m.along()}) {
+                if (w.tile(cell) != Tile::Vending || w.tile(cell - m.facing) != Tile::Wall)
+                    why = "a machine not against a wall";
+                Vec2i front = cell + m.facing - c.origin();
+                reached |= c.owns(front) && swum[size_t(front.y * c.w + front.x)];
+            }
+            if (m.facing.y < 0) why = "a machine with its back to the viewer";
+            if (!reached) why = "a machine sealed off";
+            // A data centre's stands in an alcove, wall at both its ends,
+            // so the corridor keeps its width.
+            if (c.kind == ChunkKind::DataCentre &&
+                (w.tile(m.at - m.along()) != Tile::Wall || w.tile(m.at + m.along() * 2) != Tile::Wall) &&
+                !w.machine(m.at - m.along()) && !w.machine(m.at + m.along() * 2))
+                why = "a data centre machine out of its alcove";
+        }
+    // Every cell of a server room's floor can be walked to through its
+    // airlock: no row of racks or desk walls any of it off.
+    for (const ServerRoom& r : w.serverRooms())
+        if (w.chunkIdAt({r.x, r.y}) == c.id) {
+            t.servers++;
+            for (int y = r.y; y < r.y + r.h; y++)
+                for (int x = r.x; x < r.x + r.w; x++) {
+                    Vec2i l = Vec2i{x, y} - c.origin();
+                    if (passable(c.get(l)) && !swum[size_t(l.y * c.w + l.x)]) why = "a server room cell walled off";
+                }
+        }
+    return why;
+}
+
 int growWorld(uint64_t seed, std::map<std::string, Tally>& tally, bool png) {
     using P = SoakProbe;
     World w(seed);
@@ -200,90 +292,11 @@ int growWorld(uint64_t seed, std::map<std::string, Tally>& tally, bool png) {
         t.chunks++;
         t.slowest = std::max(t.slowest, ms);
 
-        // Everything walkable from the entry, locked doors and gates as if
-        // open; and with swimming, what only water cuts off, which another
-        // door may reach.
-        auto flood = [&](bool swim) {
-            std::vector<bool> reached(size_t(c.w * c.h), false);
-            std::vector<Vec2i> stack{entry - c.origin()};
-            reached[size_t(stack[0].y * c.w + stack[0].x)] = true;
-            while (!stack.empty()) {
-                Vec2i p = stack.back();
-                stack.pop_back();
-                for (Vec2i d : DIRS4) {
-                    Vec2i n = p + d;
-                    if (!c.owns(n) || reached[size_t(n.y * c.w + n.x)]) continue;
-                    Tile k = c.get(n);
-                    if (!passable(k) && k != Tile::DoorLocked && !(swim && k == Tile::Water)) continue;
-                    reached[size_t(n.y * c.w + n.x)] = true;
-                    stack.push_back(n);
-                }
-            }
-            return reached;
-        };
-        const std::vector<bool> walked = flood(false), swum = flood(true);
-        // A key or cake on a table is reached from beside it.
-        auto near = [&](const std::vector<bool>& reached, Vec2i cell) {
-            Vec2i l = cell - c.origin();
-            if (reached[size_t(l.y * c.w + l.x)]) return true;
-            for (Vec2i d : DIRS8)
-                if (c.owns(l + d) && reached[size_t((l + d).y * c.w + l.x + d.x)]) return true;
-            return false;
-        };
-        std::string why;
-        for (const auto& [key, d] : P::doors(w)) {
-            Vec2i side = c.covers(d.slot) ? d.slot : d.other();
-            if (!c.covers(side) || w.generated(d.slot) + w.generated(d.other()) != 1) continue;
-            t.doors++;
-            if (!near(walked, d.cellsIn(side)[0])) why = "a new door out of reach";
-        }
-        for (Vec2i k : w.keys())
-            if (w.chunkIdAt(k) == c.id) {
-                t.keys++;
-                if (!near(walked, k)) why = "a key out of reach";
-            }
-        for (Vec2i k : w.cakes())
-            if (w.chunkIdAt(k) == c.id) {
-                t.cakes++;
-                if (!near(walked, k)) t.overWater++;
-                if (!near(swum, k)) why = "a cake sealed off";
-            }
-        // A machine stands with wall behind both cells and is worked from
-        // floor that can be reached, as a cake can, maybe from another door.
-        for (const Machine& m : w.machines())
-            if (w.chunkIdAt(m.at) == c.id) {
-                t.machines++;
-                bool reached = false;
-                for (Vec2i cell : {m.at, m.at + m.along()}) {
-                    if (w.tile(cell) != Tile::Vending || w.tile(cell - m.facing) != Tile::Wall)
-                        why = "a machine not against a wall";
-                    Vec2i front = cell + m.facing - c.origin();
-                    reached |= c.owns(front) && swum[size_t(front.y * c.w + front.x)];
-                }
-                if (m.facing.y < 0) why = "a machine with its back to the viewer";
-                if (!reached) why = "a machine sealed off";
-                // A data centre's stands in an alcove, wall at both its ends,
-                // so the corridor keeps its width.
-                if (c.kind == ChunkKind::DataCentre &&
-                    (w.tile(m.at - m.along()) != Tile::Wall || w.tile(m.at + m.along() * 2) != Tile::Wall) &&
-                    !w.machine(m.at - m.along()) && !w.machine(m.at + m.along() * 2))
-                    why = "a data centre machine out of its alcove";
-            }
+        std::string why = check(w, c, entry, t);
         if (c.kind == ChunkKind::DataCentre) {
             centres++;
             for (const Machine& m : w.machines()) centreMachines += w.chunkIdAt(m.at) == c.id;
         }
-        // Every cell of a server room's floor can be walked to through its
-        // airlock: no row of racks or desk walls any of it off.
-        for (const ServerRoom& r : w.serverRooms())
-            if (w.chunkIdAt({r.x, r.y}) == c.id) {
-                t.servers++;
-                for (int y = r.y; y < r.y + r.h; y++)
-                    for (int x = r.x; x < r.x + r.w; x++) {
-                        Vec2i l = Vec2i{x, y} - c.origin();
-                        if (passable(c.get(l)) && !swum[size_t(l.y * c.w + l.x)]) why = "a server room cell walled off";
-                    }
-            }
         if (png && c.kind == ChunkKind::DataCentre)
             save(c, "build/genprobe-png/world" + std::to_string(seed) + "-datacentre" + std::to_string(c.id) + ".png", &w);
         // Big plazas are rare, so any grown is drawn.
@@ -362,5 +375,32 @@ int main(int argc, char** argv) {
                 centres ? double(centreMachines) / centres : 0.0);
     std::printf("genprobe: %d worlds, %d chunks grown, %d failed\n", seeds, grown, worldFailed);
     failed += worldFailed;
+
+    // Every kind the game grows on every footprint, grown beside the spawn
+    // as tools/genview.cpp grows them, checked as in a world.
+    int given = 0, givenFailed = 0;
+    for (const Shape& s : shapes())
+        for (ChunkKind kind :
+             {ChunkKind::Rooms, ChunkKind::Maze, ChunkKind::WaterMaze, ChunkKind::Plaza, ChunkKind::DataCentre}) {
+            if (!GenViewProbe::grows(kind, s.parts)) continue;
+            for (int seed = 1; seed <= std::min(seeds, GIVEN_SEEDS); seed++) {
+                World w(uint64_t(seed) * 7919);
+                Rng looks{uint64_t(seed)};
+                w.makeSpawn(HumanLook::random(looks), uint64_t(seed));
+                const Vec2i entry = GenViewProbe::spawnDoor(w).second;
+                const Chunk* c = GenViewProbe::grow(w, kind, s.parts);
+                given++;
+                Tally t;
+                std::string why = !c ? "no room for it beside the spawn" : c->kind != kind ? "grown as another kind" : "";
+                if (why.empty()) why = check(w, *c, entry, t);
+                if (!why.empty()) {
+                    givenFailed++;
+                    std::printf("FAIL  given %-8s %-9s seed %d: %s\n", s.name.c_str(), kindName(kind), seed,
+                                why.c_str());
+                }
+            }
+        }
+    std::printf("genprobe: %d chunks grown as asked, %d failed\n", given, givenFailed);
+    failed += givenFailed;
     return failed ? 1 : 0;
 }

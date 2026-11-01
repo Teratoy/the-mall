@@ -278,13 +278,24 @@ void World::generate(Vec2i slot, Vec2i entry) {
     auto [origin, parts] = options[size_t(rng_.weighted(weights))];
 
     std::vector<float> kindWeights = KIND_WEIGHTS;
-    const Vec2i box = footprintBox(*parts);
-    if (box.x != box.y || int(parts->size()) != box.x * box.y) kindWeights[3] = 0.0f;
-    if (int(parts->size()) > MAZE_SLOTS_MAX) kindWeights[1] = kindWeights[2] = 0.0f;
-    ChunkKind kind = KINDS[rng_.weighted(kindWeights)];
+    for (size_t i = 0; i < kindWeights.size(); i++)
+        if (!grows(KINDS[i], *parts)) kindWeights[i] = 0.0f;
+    grow(KINDS[rng_.weighted(kindWeights)], origin, *parts, entry, true);
+}
+
+bool World::grows(ChunkKind kind, const Footprint& parts) {
+    const Vec2i box = footprintBox(parts);
+    if (kind == ChunkKind::Plaza) return box.x == box.y && int(parts.size()) == box.x * box.y;
+    if (kind == ChunkKind::Maze || kind == ChunkKind::WaterMaze) return int(parts.size()) <= MAZE_SLOTS_MAX;
+    return kind != ChunkKind::Spawn;
+}
+
+// The data centre's dice are rolled even when the kind is given, so the
+// chunk comes out as it would have had the game rolled that kind.
+void World::grow(ChunkKind kind, Vec2i origin, const Footprint& parts, Vec2i entry, bool mayCentre) {
     Rng serverDice(seed_ ^ uint64_t(chunks_.size() + 1) * 0xD1B54A32D192ED03ull);
-    if (serverDice.chance(DATA_CENTRE_CHANCE)) kind = ChunkKind::DataCentre;
-    Chunk& c = addChunk(kind, origin, *parts);
+    if (serverDice.chance(DATA_CENTRE_CHANCE) && mayCentre) kind = ChunkKind::DataCentre;
+    Chunk& c = addChunk(kind, origin, parts);
     const Glowing unlit = glowing();
     const int slotCount = c.slotCount();
     markDoors(c);

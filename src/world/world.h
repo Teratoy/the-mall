@@ -225,6 +225,8 @@ public:
 private:
     /// tests/stuck_soak.cpp packs extra humans in with addHuman.
     friend struct SoakProbe;
+    /// tools/genview.cpp grows the chunk it is asked for with grow.
+    friend struct GenViewProbe;
     struct Edge {
         EdgeKey key;
         /// The chunk's slot on this side of the wall, and the slot past it.
@@ -286,6 +288,13 @@ private:
     Chunk* chunkAt(Vec2i slot);
     Chunk& addChunk(ChunkKind kind, Vec2i slot, const Footprint& parts);
     void generate(Vec2i slot, Vec2i entry);
+    /// Whether the game ever grows this kind on this footprint: plazas only
+    /// on a whole square, mazes no bigger than MAZE_SLOTS_MAX slots.
+    static bool grows(ChunkKind kind, const Footprint& parts);
+    /// Grows a chunk of this kind on the footprint at origin, entered at
+    /// entry, once generate() has rolled them. When mayCentre, its own dice
+    /// may make it a data centre instead.
+    void grow(ChunkKind kind, Vec2i origin, const Footprint& parts, Vec2i entry, bool mayCentre);
     std::vector<Edge> perimeter(const Chunk& c) const;
     /// Puts the doors neighbours already made into the chunk's border, as
     /// tiles only, so generators can keep water off them.

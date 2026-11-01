@@ -88,6 +88,25 @@ a world without a visible window.
   in `tests/probe.h`. `generate()` itself still rolls as now, so the game
   and the soak are unchanged.
 
+### Built (2026-11-01)
+
+- `World::generate()` now only rolls the footprint and the kind, then
+  calls `World::grow(kind, origin, parts, entry, mayCentre)`, which grows
+  the chunk as before. The data centre's own dice are rolled even when the
+  kind is given, so a chunk grown as asked comes out as the game would
+  have grown it had it rolled that kind.
+- `World::grows(kind, parts)`: whether the game ever grows that kind on
+  that footprint (plazas only on a whole square, mazes no bigger than
+  `MAZE_SLOTS_MAX`). `generate()` uses it for its kind weights.
+- `GenViewProbe` in `tests/probe.h`, a friend of World: `grow(world, kind,
+  footprint)` grows the chunk through the spawn's door, placed so the slot
+  past the door is its own (Spawn gives the spawn itself; nothing when the
+  game never grows that kind there); `rolled(world)` lets the game roll
+  it; `spawnDoor(world)` gives the door and the cell past it.
+- `genprobe` grows every kind on every footprint the game allows this way,
+  5 seeds each, and checks them as it checks world chunks: 295 chunks, 0
+  failed. `make check` passes unchanged.
+
 ### Step 3: `tools/genview.cpp`, `make genview`
 
 A window, PC only. The knob panel on the left, the chunk on the right.
