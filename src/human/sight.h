@@ -36,5 +36,4 @@ private:
     std::vector<bool> seen_;
 
     void mark(Vec2i cell);
-    void cast(const World& world, int row, float start, float end, int xx, int xy, int yx, int yy);
 };

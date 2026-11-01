@@ -120,6 +120,36 @@ differently from each other.
   open doors let it through, shut ones don't.
 - Nothing reads it yet: `make check` unchanged.
 
+### Built (2026-11-01)
+- The rename: `lit` (in sight) is `inSight` through `render/` and the
+  sheet tools, and `CellView::Lit` is `CellView::InSight`. Comments where
+  lit meant shading (a rim lit on its top) or a lamp being on stay.
+- `src/world/shadowcast.h`: the shadowcasting `Sight` did, as a template
+  over what a cell holds and what to do with each cell reached. `Sight`
+  and light both use it; `make check` unchanged.
+- `src/world/light.h/.cpp`: `LightKind` (fitting, night light, vending,
+  screen, rack, dispenser, statue, torch), a radius per kind (fitting 7,
+  statue 6, torch 5, vending and night light 3, screen and rack 2,
+  dispenser 1), `LIGHT_FULL` 3 and `LIGHT_REACH` 8. A cell's level falls
+  from 3 on the source in steps to 1 at the edge of its reach; the
+  brightest source wins, and its kind is kept for the tint in step 3.
+- Each `Chunk` keeps `light` and `lightFrom` per cell. The world keeps
+  the sources (`lights()`, indexed by slot), and `World::light(cell)` and
+  `lightFrom(cell)`. In `src/world/lighting.cpp`.
+- Sources put up with no dice, so generation is unchanged: vending
+  machines, terminals and the console desk (screens), racks, dispensers,
+  and the giant desk lamp and light bulb statues. Fittings and night
+  lights wait for step 2.
+- A chunk is relit from scratch, from every source within reach, when it
+  is made, when a chunk is made beside it, and when a door near it opens
+  or shuts (`World::setTile`, only where a tile turns opaque or clear).
+- `make lightprobe` (`tools/light_probe.cpp`): grows the slots round a
+  spawn and prints the sources by kind, how much floor is lit at each
+  level, and an ASCII map round the waker or a source
+  (`LIGHTPROBE_ARGS="seed width height source"`). Seed 1: 14 sources in
+  8 chunks; without fittings 99.7% of floor is dark.
+- `make simprofile` (seed 4, 15 min, crowd 6): 1.79 s.
+
 ### 2. Sources in generation
 - Ceiling fittings placed by `gen_rooms`, `gen_plaza`, `gen_maze` and the
   rest, at regular spacing, from the chunk's own Rng: a share dead, a

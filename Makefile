@@ -24,6 +24,7 @@ SCENARIOS := build/scenarios
 SHOT := build/shot
 # Grows chunk interiors on every footprint and checks they keep to it.
 GENPROBE := build/genprobe
+LIGHTPROBE := build/lightprobe
 # A human drawn at twice the detail, beside the one the game draws now.
 HIDEF := build/hidef
 # Human frames with bottles, scaled up, to check the bottle art by eye.
@@ -33,7 +34,7 @@ DIRTYSHEET := build/dirty_sheet
 # One human shooting all eight ways, as animation frames (tools/frames_gif.py makes the GIF).
 SHOOTANIM := build/shoot_anim
 
-.PHONY: all run clean trips stuck check golden coverage shot scenarios genprobe hidef bottlesheet dirtysheet shootanim spritesheet spriteref fontdump lines sprites trapprobe icon apk install-apk logcat simprofile gprof
+.PHONY: all run clean trips stuck check golden coverage shot scenarios genprobe lightprobe hidef bottlesheet dirtysheet shootanim spritesheet spriteref fontdump lines sprites trapprobe icon apk install-apk logcat simprofile gprof
 
 all: $(BIN)
 
@@ -94,6 +95,12 @@ $(GENPROBE): tools/genprobe.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
 
 genprobe: $(GENPROBE)
 	./$(GENPROBE) $(GENPROBE_ARGS)
+
+$(LIGHTPROBE): tools/light_probe.cpp $(filter-out build/main.o,$(OBJ))
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@ $(LDLIBS)
+
+lightprobe: $(LIGHTPROBE)
+	./$(LIGHTPROBE) $(LIGHTPROBE_ARGS)
 
 $(HIDEF): tools/hidef.cpp $(filter-out build/main.o,$(OBJ))
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@ $(LDLIBS)

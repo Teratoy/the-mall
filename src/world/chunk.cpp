@@ -19,6 +19,7 @@ Vec2i footprintBox(const Footprint& parts) {
 Chunk::Chunk(int id, ChunkKind kind, Vec2i slot, Footprint parts)
     : id(id), kind(kind), slot(slot), slots(footprintBox(parts)), parts(std::move(parts)), w(slots.x * CHUNK),
       h(slots.y * CHUNK), tiles(size_t(w * h), Tile::Wall), floors(size_t(w * h)), walls(size_t(w * h)),
+      light(size_t(w * h), 0), lightFrom(size_t(w * h), LightKind::None),
       owned_(size_t(slots.x * slots.y), false) {
     for (Vec2i p : this->parts) owned_[size_t(p.y * slots.x + p.x)] = true;
     box_ = slotCount() == slots.x * slots.y;

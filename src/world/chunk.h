@@ -1,6 +1,7 @@
 #pragma once
 #include "core/vec.h"
 #include "world/floor.h"
+#include "world/light.h"
 #include "world/wall.h"
 #include <cstdint>
 #include <vector>
@@ -66,6 +67,10 @@ struct Chunk {
     Floor paint;
     /// How each cell's wall looks; meaningless where there is no wall.
     std::vector<WallStyle> walls;
+    /// How brightly each cell is lit, 0 to LIGHT_FULL, and by what kind of
+    /// source the brightest light on it comes from.
+    std::vector<uint8_t> light;
+    std::vector<LightKind> lightFrom;
 
     Chunk(int id, ChunkKind kind, Vec2i slot, Footprint parts);
 
@@ -98,6 +103,7 @@ struct Chunk {
     void setFloor(Vec2i l, Floor f) { floors[size_t(l.y * w + l.x)] = f; }
     WallStyle wall(Vec2i l) const { return walls[size_t(l.y * w + l.x)]; }
     void setWall(Vec2i l, WallStyle s) { walls[size_t(l.y * w + l.x)] = s; }
+    int lightAt(Vec2i l) const { return light[size_t(l.y * w + l.x)]; }
 
     /// Runs whatever lives here, on screen or not. Nothing does yet.
     void simulate(float dt) { (void)dt; }

@@ -291,6 +291,7 @@ void World::generate(Vec2i slot, Vec2i entry) {
     Rng serverDice(seed_ ^ uint64_t(chunks_.size() + 1) * 0xD1B54A32D192ED03ull);
     if (serverDice.chance(DATA_CENTRE_CHANCE)) kind = ChunkKind::DataCentre;
     Chunk& c = addChunk(kind, origin, *parts);
+    const Glowing unlit = glowing();
     const int slotCount = c.slotCount();
     markDoors(c);
     std::vector<gen::RoomBox> rooms;
@@ -394,6 +395,7 @@ void World::generate(Vec2i slot, Vec2i entry) {
     placeSpikes(c, slams);
     // Last but for the bottle, so no key or cake lies where one stands.
     placeMachines(c, slams);
+    lightUp(c, unlit);
     // Last, so its bottle lies clear of every table and trap.
     if (waker) layBottle(*waker);
 }
@@ -836,8 +838,13 @@ void World::updateAirlocks(float dt) {
     }
 }
 
+// A door that opens lets light through, and one that shuts stops it.
 void World::setTile(Vec2i cell, Tile t) {
-    if (Chunk* c = chunkAt(slotOf(cell))) c->set(cell - c->origin(), t);
+    Chunk* c = chunkAt(slotOf(cell));
+    if (!c) return;
+    bool was = opaque(c->get(cell - c->origin()));
+    c->set(cell - c->origin(), t);
+    if (opaque(t) != was) relightAround(cell, cell);
 }
 
 const Trap* World::trap(Vec2i cell) const {

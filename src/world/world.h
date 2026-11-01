@@ -68,6 +68,14 @@ public:
     /// Generates a chunk over the cell's slot if there is none yet.
     void ensureGenerated(Vec2i cell);
 
+    /// How brightly a cell is lit, 0 (dark) to LIGHT_FULL; 0 where nothing
+    /// is generated. Kept up to date as doors open and shut.
+    int light(Vec2i cell) const;
+    /// The kind of source the brightest light on a cell comes from.
+    LightKind lightFrom(Vec2i cell) const;
+    /// Every light source, in the order they were put up.
+    const std::vector<LightSource>& lights() const { return lights_; }
+
     /// The table standing on a cell, if any. Tables never move.
     const Table* table(Vec2i cell) const;
     const std::vector<Table>& tables() const { return tables_; }
@@ -252,6 +260,9 @@ private:
     /// Which dispenser stands on each cell.
     std::unordered_map<Vec2i, int, Vec2iHash> dispenserCells_;
     std::unordered_map<Vec2i, AirlockDoor, Vec2iHash> airlocks_;
+    std::vector<LightSource> lights_;
+    /// The light sources in each slot, by index into lights_.
+    std::unordered_map<Vec2i, std::vector<int>, Vec2iHash> slotLights_;
     std::unordered_map<Vec2i, uint8_t, Vec2iHash> cables_;
     std::unordered_set<Vec2i, Vec2iHash> keys_;
     std::unordered_set<Vec2i, Vec2iHash> cakes_;
@@ -374,6 +385,25 @@ private:
     /// it look round again to see it.
     void layBottle(Human& h);
     void setTile(Vec2i cell, Tile t);
+
+    /// How many of each lit thing there were, so a new chunk lights what
+    /// was put in it. In lighting.cpp, like the rest of the light.
+    struct Glowing {
+        size_t machines, pieces, dispensers, statues;
+    };
+    Glowing glowing() const { return {machines_.size(), pieces_.size(), dispensers_.size(), statues_.size()}; }
+    /// Puts up a light source.
+    void addLight(Vec2i cell, LightKind kind);
+    /// Puts up the lights of the machines, server pieces, dispensers and
+    /// glowing statues placed since `before`, then lights the new chunk and
+    /// those round it.
+    void lightUp(const Chunk& c, Glowing before);
+    /// Works out every cell of a chunk's light again, from every source
+    /// that reaches into it.
+    void relight(Chunk& c);
+    /// Works out again the light of every chunk within LIGHT_REACH of the
+    /// cells from lo to hi.
+    void relightAround(Vec2i lo, Vec2i hi);
     /// Spikes sink, plates re-arm, gates shut, and darts fly.
     void updateTraps(float dt);
 };
