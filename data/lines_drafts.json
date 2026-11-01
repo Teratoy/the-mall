@@ -1,0 +1,1740 @@
+{
+ "drafts": [
+  {
+   "id": "repeat-bodies_again-1",
+   "moment": "bodies_again",
+   "old": null,
+   "conds": "",
+   "text": "THE MALL KEEPS THEM ALL.",
+   "note": "plain, the place as collector"
+  },
+  {
+   "id": "repeat-bodies_again-2",
+   "moment": "bodies_again",
+   "old": null,
+   "conds": "again",
+   "text": "I KNOW THIS FEELING NOW.",
+   "note": "early tier, recognition"
+  },
+  {
+   "id": "repeat-bodies_again-3",
+   "moment": "bodies_again",
+   "old": null,
+   "conds": "often",
+   "text": "I STEP AROUND THEM NOW.",
+   "note": "late tier, habit as horror"
+  },
+  {
+   "id": "repeat-bodies_again-4",
+   "moment": "bodies_again",
+   "old": null,
+   "conds": "timid again",
+   "text": "PLEASE, NO MORE. PLEASE.",
+   "note": "timid grief growing"
+  },
+  {
+   "id": "repeat-bodies_again-5",
+   "moment": "bodies_again",
+   "old": null,
+   "conds": "timid often",
+   "text": "EACH ONE WEIGHS MORE THAN THE LAST.",
+   "note": "timid grieves more each time"
+  },
+  {
+   "id": "repeat-bodies_again-6",
+   "moment": "bodies_again",
+   "old": null,
+   "conds": "sociable !body.bones",
+   "text": "{WHO}, WHO'LL MISS YOU BUT ME?",
+   "note": "sociable mourns a named one"
+  },
+  {
+   "id": "repeat-bodies_again-7",
+   "moment": "bodies_again",
+   "old": null,
+   "conds": "sociable often",
+   "text": "I'M RUNNING OUT OF PEOPLE TO LOSE.",
+   "note": "sociable, late, losses pile"
+  },
+  {
+   "id": "repeat-bodies_again-8",
+   "moment": "bodies_again",
+   "old": null,
+   "conds": "brave again",
+   "text": "KEEP MOVING. DON'T LOOK.",
+   "note": "brave hardening"
+  },
+  {
+   "id": "repeat-bodies_again-9",
+   "moment": "bodies_again",
+   "old": null,
+   "conds": "brave often",
+   "text": "I DON'T STOP FOR THEM NOW.",
+   "note": "brave fully hardened"
+  },
+  {
+   "id": "repeat-bodies_again-10",
+   "moment": "bodies_again",
+   "old": null,
+   "conds": "loner again",
+   "text": "THEY SHOULD HAVE KEPT TO THEMSELVES.",
+   "note": "loner, cold judgement"
+  },
+  {
+   "id": "repeat-bodies_again-11",
+   "moment": "bodies_again",
+   "old": null,
+   "conds": "loner body.bones",
+   "text": "QUIET COMPANY.",
+   "note": "loner, dark humour"
+  },
+  {
+   "id": "repeat-bodies_again-12",
+   "moment": "bodies_again",
+   "old": null,
+   "conds": "hopeless",
+   "text": "WHICH OF US HAS IT WORSE?",
+   "note": "hopeless sees itself"
+  },
+  {
+   "id": "repeat-bodies_again-13",
+   "moment": "bodies_again",
+   "old": null,
+   "conds": "hopeless body.fresh",
+   "text": "YOU GOT OUT, {WHO}. IN A WAY.",
+   "note": "hopeless envies the dead"
+  },
+  {
+   "id": "repeat-bodies_again-14",
+   "moment": "bodies_again",
+   "old": null,
+   "conds": "curious again",
+   "text": "SAME PLACE THEY ALWAYS FALL. WHY?",
+   "note": "curious looks for a pattern"
+  },
+  {
+   "id": "repeat-bodies_again-15",
+   "moment": "bodies_again",
+   "old": null,
+   "conds": "curious often",
+   "text": "I'D NEED MORE FINGERS NOW.",
+   "note": "curious counting, dark humour"
+  },
+  {
+   "id": "repeat-bodies_again-16",
+   "moment": "bodies_again",
+   "old": null,
+   "conds": "greedy",
+   "text": "THE DEAD DON'T NEED POCKETS.",
+   "note": "greedy sees loot"
+  },
+  {
+   "id": "repeat-bodies_again-17",
+   "moment": "bodies_again",
+   "old": null,
+   "conds": "greedy often",
+   "text": "SOMEONE ALWAYS GETS THERE FIRST.",
+   "note": "greedy, late, practical gripe"
+  },
+  {
+   "id": "repeat-bodies_again-18",
+   "moment": "bodies_again",
+   "old": null,
+   "conds": "erratic body.fresh",
+   "text": "STILL SOFT. STILL GOOD.",
+   "note": "erratic sees food"
+  },
+  {
+   "id": "repeat-bodies_again-19",
+   "moment": "bodies_again",
+   "old": null,
+   "conds": "craving body.rotting",
+   "text": "NOT TOO FAR GONE. NOT YET.",
+   "note": "craving appraises the meat"
+  },
+  {
+   "id": "repeat-bodies_again-20",
+   "moment": "bodies_again",
+   "old": null,
+   "conds": "craving often",
+   "text": "I DON'T SEE FACES. I SEE MEALS.",
+   "note": "craving, late, lost"
+  },
+  {
+   "id": "repeat-bodies_again-21",
+   "moment": "bodies_again",
+   "old": null,
+   "conds": "guilty",
+   "text": "DID I DO THIS ONE? I CAN'T RECALL.",
+   "note": "guilty, memory gaps"
+  },
+  {
+   "id": "repeat-bodies_again-22",
+   "moment": "bodies_again",
+   "old": null,
+   "conds": "scared body.rotting",
+   "text": "THE SMELL GETS INTO EVERYTHING.",
+   "note": "scared, rot sensory"
+  },
+  {
+   "id": "repeat-blood_again-1",
+   "moment": "blood_again",
+   "old": null,
+   "conds": "",
+   "text": "THE WATER TURNS PINK. THEN CLEAR.",
+   "note": "plain, image"
+  },
+  {
+   "id": "repeat-blood_again-2",
+   "moment": "blood_again",
+   "old": null,
+   "conds": "",
+   "text": "CLEAN FOR NOW.",
+   "note": "plain, resigned"
+  },
+  {
+   "id": "repeat-blood_again-3",
+   "moment": "blood_again",
+   "old": null,
+   "conds": "again",
+   "text": "I KNOW HOW LONG IT TAKES NOW.",
+   "note": "early tier, routine forming"
+  },
+  {
+   "id": "repeat-blood_again-4",
+   "moment": "blood_again",
+   "old": null,
+   "conds": "often",
+   "text": "I COULD DO THIS IN MY SLEEP.",
+   "note": "late tier, numb"
+  },
+  {
+   "id": "repeat-blood_again-5",
+   "moment": "blood_again",
+   "old": null,
+   "conds": "often",
+   "text": "WASH. DRY. WAIT FOR THE NEXT.",
+   "note": "late tier, cycle"
+  },
+  {
+   "id": "repeat-blood_again-6",
+   "moment": "blood_again",
+   "old": null,
+   "conds": "hurt",
+   "text": "MINE, THIS TIME. MOSTLY.",
+   "note": "hurt, dark humour"
+  },
+  {
+   "id": "repeat-blood_again-7",
+   "moment": "blood_again",
+   "old": null,
+   "conds": "bleeding",
+   "text": "WHAT'S THE POINT? IT KEEPS COMING.",
+   "note": "still bleeding while washing"
+  },
+  {
+   "id": "repeat-blood_again-8",
+   "moment": "blood_again",
+   "old": null,
+   "conds": "guilty often",
+   "text": "THE WATER FORGIVES. I DON'T.",
+   "note": "guilty, late"
+  },
+  {
+   "id": "repeat-blood_again-9",
+   "moment": "blood_again",
+   "old": null,
+   "conds": "sociable",
+   "text": "WHO WOULD HUG ME LIKE THIS?",
+   "note": "sociable, fear of being shunned"
+  },
+  {
+   "id": "repeat-blood_again-10",
+   "moment": "blood_again",
+   "old": null,
+   "conds": "loner",
+   "text": "BETTER NOBODY SEES ME LIKE THIS.",
+   "note": "loner, hiding"
+  },
+  {
+   "id": "repeat-blood_again-11",
+   "moment": "blood_again",
+   "old": null,
+   "conds": "brave again",
+   "text": "PART OF THE JOB.",
+   "note": "brave, practical"
+  },
+  {
+   "id": "repeat-blood_again-12",
+   "moment": "blood_again",
+   "old": null,
+   "conds": "timid often",
+   "text": "I SCRUB TILL IT STINGS.",
+   "note": "timid compulsion"
+  },
+  {
+   "id": "repeat-blood_again-13",
+   "moment": "blood_again",
+   "old": null,
+   "conds": "erratic",
+   "text": "SHAME TO WASTE IT.",
+   "note": "erratic, dark"
+  },
+  {
+   "id": "repeat-blood_again-14",
+   "moment": "blood_again",
+   "old": null,
+   "conds": "craving",
+   "text": "I LICKED IT FIRST. I DIDN'T MEAN TO.",
+   "note": "craving, confession"
+  },
+  {
+   "id": "repeat-blood_again-15",
+   "moment": "blood_again",
+   "old": null,
+   "conds": "hopeless",
+   "text": "WHY WASH? IT'LL BE BACK.",
+   "note": "hopeless"
+  },
+  {
+   "id": "repeat-blood_again-16",
+   "moment": "blood_again",
+   "old": null,
+   "conds": "settled",
+   "text": "HOME HAS A SINK, AT LEAST.",
+   "note": "settled, wry"
+  },
+  {
+   "id": "repeat-blood_again-17",
+   "moment": "blood_again",
+   "old": null,
+   "conds": "homebody",
+   "text": "I'LL NEVER GET IT OUT OF THESE CLOTHES.",
+   "note": "homebody, domestic worry"
+  },
+  {
+   "id": "repeat-fights_again-1",
+   "moment": "fights_again",
+   "old": null,
+   "conds": "",
+   "text": "FISTS UP. HERE WE GO.",
+   "note": "plain, weary"
+  },
+  {
+   "id": "repeat-fights_again-2",
+   "moment": "fights_again",
+   "old": null,
+   "conds": "again",
+   "text": "MY HANDS KNOW WHAT TO DO NOW.",
+   "note": "early tier, body learns"
+  },
+  {
+   "id": "repeat-fights_again-3",
+   "moment": "fights_again",
+   "old": null,
+   "conds": "often",
+   "text": "I'VE FORGOTTEN HOW TO TALK.",
+   "note": "late tier, loss"
+  },
+  {
+   "id": "repeat-fights_again-4",
+   "moment": "fights_again",
+   "old": null,
+   "conds": "often",
+   "text": "WHO WAS I BEFORE ALL THIS?",
+   "note": "late tier, identity"
+  },
+  {
+   "id": "repeat-fights_again-5",
+   "moment": "fights_again",
+   "old": null,
+   "conds": "",
+   "text": "{WHO}. IT WAS ALWAYS GOING TO BE YOU.",
+   "note": "plain, {WHO} as fate"
+  },
+  {
+   "id": "repeat-fights_again-6",
+   "moment": "fights_again",
+   "old": null,
+   "conds": "sociable",
+   "text": "NOT YOU TOO, {WHO}.",
+   "note": "sociable, hurt it is someone known"
+  },
+  {
+   "id": "repeat-fights_again-7",
+   "moment": "fights_again",
+   "old": null,
+   "conds": "generous",
+   "text": "I DON'T WANT TO HURT YOU, {WHO}.",
+   "note": "generous, reluctance"
+  },
+  {
+   "id": "repeat-fights_again-8",
+   "moment": "fights_again",
+   "old": null,
+   "conds": "brave again",
+   "text": "I'M GETTING GOOD AT THIS.",
+   "note": "brave, unsettling pride"
+  },
+  {
+   "id": "repeat-fights_again-9",
+   "moment": "fights_again",
+   "old": null,
+   "conds": "timid",
+   "text": "JUST MAKE IT STOP QUICK.",
+   "note": "timid fear"
+  },
+  {
+   "id": "repeat-fights_again-10",
+   "moment": "fights_again",
+   "old": null,
+   "conds": "greedy",
+   "text": "WHATEVER YOU'VE GOT, IT'S MINE.",
+   "note": "greedy, loot motive"
+  },
+  {
+   "id": "repeat-fights_again-11",
+   "moment": "fights_again",
+   "old": null,
+   "conds": "generous again",
+   "text": "I'D HAVE SHARED. I'D HAVE SHARED!",
+   "note": "generous, frustrated"
+  },
+  {
+   "id": "repeat-fights_again-12",
+   "moment": "fights_again",
+   "old": null,
+   "conds": "loner",
+   "text": "THIS IS WHY I KEEP AWAY.",
+   "note": "loner, vindicated"
+  },
+  {
+   "id": "repeat-fights_again-13",
+   "moment": "fights_again",
+   "old": null,
+   "conds": "erratic",
+   "text": "HA! AGAIN! AGAIN!",
+   "note": "erratic glee"
+  },
+  {
+   "id": "repeat-fights_again-14",
+   "moment": "fights_again",
+   "old": null,
+   "conds": "craving",
+   "text": "KEEP STILL. I'M SO HUNGRY.",
+   "note": "craving sees food in the foe"
+  },
+  {
+   "id": "repeat-fights_again-15",
+   "moment": "fights_again",
+   "old": null,
+   "conds": "hopeless",
+   "text": "MAYBE THIS TIME I LOSE.",
+   "note": "hopeless, half wishing"
+  },
+  {
+   "id": "repeat-fights_again-16",
+   "moment": "fights_again",
+   "old": null,
+   "conds": "bleeding",
+   "text": "NOT AGAIN. NOT LIKE THIS.",
+   "note": "bleeding, dread"
+  },
+  {
+   "id": "repeat-fights_again-17",
+   "moment": "fights_again",
+   "old": null,
+   "conds": "guilty often",
+   "text": "I STOPPED SAYING SORRY.",
+   "note": "guilty, late"
+  },
+  {
+   "id": "repeat-cakes_again-1",
+   "moment": "cakes_again",
+   "old": null,
+   "conds": "",
+   "text": "I USED TO KNOW OTHER FOODS. DIDN'T I?",
+   "note": "memory loss through food"
+  },
+  {
+   "id": "repeat-cakes_again-2",
+   "moment": "cakes_again",
+   "old": null,
+   "conds": "",
+   "text": "SWEET. ALWAYS SWEET. NEVER SALT.",
+   "note": "craving for difference, sensory"
+  },
+  {
+   "id": "repeat-cakes_again-3",
+   "moment": "cakes_again",
+   "old": null,
+   "conds": "again",
+   "text": "IT'S STARTING TO TASTE LIKE THE CARPET.",
+   "note": "wry, place seeping in"
+  },
+  {
+   "id": "repeat-cakes_again-4",
+   "moment": "cakes_again",
+   "old": null,
+   "conds": "again",
+   "text": "FUNNY. I'D KILL FOR BREAD.",
+   "note": "wry, dark hint"
+  },
+  {
+   "id": "repeat-cakes_again-5",
+   "moment": "cakes_again",
+   "old": null,
+   "conds": "often",
+   "text": "I DON'T TASTE IT ANY MORE. I JUST CHEW.",
+   "note": "numb"
+  },
+  {
+   "id": "repeat-cakes_again-6",
+   "moment": "cakes_again",
+   "old": null,
+   "conds": "often",
+   "text": "MY TEETH ACHE FROM THE SUGAR.",
+   "note": "body wearing down"
+  },
+  {
+   "id": "repeat-cakes_again-7",
+   "moment": "cakes_again",
+   "old": null,
+   "conds": "greedy",
+   "text": "ONE MORE. THEN ONE MORE.",
+   "note": "greed as compulsion"
+  },
+  {
+   "id": "repeat-cakes_again-8",
+   "moment": "cakes_again",
+   "old": null,
+   "conds": "generous",
+   "text": "SOMEONE ELSE MIGHT HAVE NEEDED THAT.",
+   "note": "generous conscience"
+  },
+  {
+   "id": "repeat-cakes_again-9",
+   "moment": "cakes_again",
+   "old": null,
+   "conds": "curious often",
+   "text": "THE SAME CRUMB IN THE SAME PLACE. EVERY ONE.",
+   "note": "curious noticing the uncanny"
+  },
+  {
+   "id": "repeat-cakes_again-10",
+   "moment": "cakes_again",
+   "old": null,
+   "conds": "timid",
+   "text": "WHAT IF THEY STOP? WHAT THEN?",
+   "note": "fear of dependence"
+  },
+  {
+   "id": "repeat-cakes_again-11",
+   "moment": "cakes_again",
+   "old": null,
+   "conds": "homebody",
+   "text": "LIKE SUNDAY. I THINK WE HAD SUNDAYS.",
+   "note": "homely half-memory"
+  },
+  {
+   "id": "repeat-cakes_again-12",
+   "moment": "cakes_again",
+   "old": null,
+   "conds": "settled",
+   "text": "IT'S NOT SO BAD. IT'S CAKE.",
+   "note": "settled contentment"
+  },
+  {
+   "id": "repeat-cakes_again-13",
+   "moment": "cakes_again",
+   "old": null,
+   "conds": "loner often",
+   "text": "A TABLE FOR ONE. ALWAYS.",
+   "note": "loner, wry"
+  },
+  {
+   "id": "repeat-cakes_again-14",
+   "moment": "cakes_again",
+   "old": null,
+   "conds": "sociable",
+   "text": "IT TASTES BETTER SHARED. I THINK.",
+   "note": "sociable longing"
+  },
+  {
+   "id": "repeat-cakes_again-15",
+   "moment": "cakes_again",
+   "old": null,
+   "conds": "craving",
+   "text": "IT'S NOT WHAT I WANT. NOT ANY MORE.",
+   "note": "flesh-eater, creepy"
+  },
+  {
+   "id": "repeat-cakes_again-16",
+   "moment": "cakes_again",
+   "old": null,
+   "conds": "guilty",
+   "text": "CAKE. GOOD. ONLY CAKE.",
+   "note": "guilty, holding on to the clean food"
+  },
+  {
+   "id": "repeat-cakes_again-17",
+   "moment": "cakes_again",
+   "old": null,
+   "conds": "dreamt",
+   "text": "IN THE DREAM THERE WAS SOUP.",
+   "note": "dream of before"
+  },
+  {
+   "id": "repeat-cakes_again-18",
+   "moment": "cakes_again",
+   "old": null,
+   "conds": "hopeless again",
+   "text": "IT'S FEEDING ME TO KEEP ME HERE.",
+   "note": "paranoid hopeless"
+  },
+  {
+   "id": "repeat-water_again-1",
+   "moment": "water_again",
+   "old": null,
+   "conds": "",
+   "text": "IT NEVER RUNS OUT. WHY DOES THAT SCARE ME?",
+   "note": "uncanny plenty"
+  },
+  {
+   "id": "repeat-water_again-2",
+   "moment": "water_again",
+   "old": null,
+   "conds": "",
+   "text": "NO TASTE. NO SMELL. NOTHING.",
+   "note": "flat, numb"
+  },
+  {
+   "id": "repeat-water_again-3",
+   "moment": "water_again",
+   "old": null,
+   "conds": "again",
+   "text": "COLD WOULD BE NICE. JUST ONCE.",
+   "note": "small longing"
+  },
+  {
+   "id": "repeat-water_again-4",
+   "moment": "water_again",
+   "old": null,
+   "conds": "again",
+   "text": "MY THROAT REMEMBERS RAIN.",
+   "note": "memory through the body"
+  },
+  {
+   "id": "repeat-water_again-5",
+   "moment": "water_again",
+   "old": null,
+   "conds": "often",
+   "text": "I DRINK. I PISS. I DRINK.",
+   "note": "numb cycle"
+  },
+  {
+   "id": "repeat-water_again-6",
+   "moment": "water_again",
+   "old": null,
+   "conds": "often",
+   "text": "I COULD FIND IT WITH MY EYES SHUT NOW.",
+   "note": "knowing the place too well"
+  },
+  {
+   "id": "repeat-water_again-7",
+   "moment": "water_again",
+   "old": null,
+   "conds": "parched",
+   "text": "OH. OH, THAT'S BETTER.",
+   "note": "pure relief"
+  },
+  {
+   "id": "repeat-water_again-8",
+   "moment": "water_again",
+   "old": null,
+   "conds": "thirsty again",
+   "text": "IT'S NEVER WHERE I LEFT IT.",
+   "note": "wry frustration"
+  },
+  {
+   "id": "repeat-water_again-9",
+   "moment": "water_again",
+   "old": null,
+   "conds": "curious",
+   "text": "WHERE DO THE PIPES GO? OUT?",
+   "note": "curious hope"
+  },
+  {
+   "id": "repeat-water_again-10",
+   "moment": "water_again",
+   "old": null,
+   "conds": "timid",
+   "text": "WHAT IF THEY'RE PUTTING SOMETHING IN IT?",
+   "note": "timid paranoia"
+  },
+  {
+   "id": "repeat-water_again-11",
+   "moment": "water_again",
+   "old": null,
+   "conds": "greedy",
+   "text": "MORE. I'LL TAKE MORE.",
+   "note": "greed even for water"
+  },
+  {
+   "id": "repeat-water_again-12",
+   "moment": "water_again",
+   "old": null,
+   "conds": "homebody often",
+   "text": "MY BASIN. MY WATER. MINE.",
+   "note": "homebody claiming"
+  },
+  {
+   "id": "repeat-water_again-13",
+   "moment": "water_again",
+   "old": null,
+   "conds": "settled",
+   "text": "WATER, A BED, A CAKE. IT'S ENOUGH.",
+   "note": "settled acceptance"
+  },
+  {
+   "id": "repeat-water_again-14",
+   "moment": "water_again",
+   "old": null,
+   "conds": "erratic",
+   "text": "IT'S WHISPERING. LISTEN. NO, LISTEN.",
+   "note": "unhinged"
+  },
+  {
+   "id": "repeat-water_again-15",
+   "moment": "water_again",
+   "old": null,
+   "conds": "filthy",
+   "text": "I SHOULD WASH. I WON'T.",
+   "note": "filthy, giving up"
+  },
+  {
+   "id": "repeat-water_again-16",
+   "moment": "water_again",
+   "old": null,
+   "conds": "hopeless",
+   "text": "KEEPING ME ALIVE. FOR WHAT?",
+   "note": "hopeless"
+  },
+  {
+   "id": "repeat-water_again-17",
+   "moment": "water_again",
+   "old": null,
+   "conds": "dreamt",
+   "text": "THERE WAS A SEA. I SWAM IN IT.",
+   "note": "dream of before"
+  },
+  {
+   "id": "repeat-water_again-18",
+   "moment": "water_again",
+   "old": null,
+   "conds": "brave often",
+   "text": "STAY WET, KEEP WALKING.",
+   "note": "brave mantra"
+  },
+  {
+   "id": "repeat-low_again-1",
+   "moment": "low_again",
+   "old": null,
+   "conds": "",
+   "text": "I DON'T EVEN WAIT TILL I'M DESPERATE NOW.",
+   "note": "slide into habit"
+  },
+  {
+   "id": "repeat-low_again-2",
+   "moment": "low_again",
+   "old": null,
+   "conds": "",
+   "text": "DON'T THINK. SWALLOW.",
+   "note": "terse self-command"
+  },
+  {
+   "id": "repeat-low_again-3",
+   "moment": "low_again",
+   "old": null,
+   "conds": "again",
+   "text": "THE TASTE STAYS ALL DAY.",
+   "note": "lingering disgust"
+  },
+  {
+   "id": "repeat-low_again-4",
+   "moment": "low_again",
+   "old": null,
+   "conds": "again",
+   "text": "JUST THIS ONCE. AGAIN.",
+   "note": "wry self-deceit"
+  },
+  {
+   "id": "repeat-low_again-5",
+   "moment": "low_again",
+   "old": null,
+   "conds": "often",
+   "text": "I USED TO BE SOMEONE WHO WOULDN'T.",
+   "note": "lost self"
+  },
+  {
+   "id": "repeat-low_again-6",
+   "moment": "low_again",
+   "old": null,
+   "conds": "often",
+   "text": "IT'S ALMOST GOOD. THAT'S THE WORST PART.",
+   "note": "horror at own adaptation"
+  },
+  {
+   "id": "repeat-low_again-7",
+   "moment": "low_again",
+   "old": null,
+   "conds": "guilty",
+   "text": "I DESERVE THIS. I DESERVE WORSE.",
+   "note": "guilt as punishment"
+  },
+  {
+   "id": "repeat-low_again-8",
+   "moment": "low_again",
+   "old": null,
+   "conds": "craving",
+   "text": "MORE. THERE'S ALWAYS MORE.",
+   "note": "craving, unhinged"
+  },
+  {
+   "id": "repeat-low_again-9",
+   "moment": "low_again",
+   "old": null,
+   "conds": "brave",
+   "text": "A STOMACH IS A STOMACH.",
+   "note": "brave, hard"
+  },
+  {
+   "id": "repeat-low_again-10",
+   "moment": "low_again",
+   "old": null,
+   "conds": "sociable",
+   "text": "DON'T LET ANYONE SEE ME LIKE THIS.",
+   "note": "sociable shame"
+  },
+  {
+   "id": "repeat-low_again-11",
+   "moment": "low_again",
+   "old": null,
+   "conds": "loner",
+   "text": "NOBODY TO TELL ME NO.",
+   "note": "loner, alone with it"
+  },
+  {
+   "id": "repeat-low_again-12",
+   "moment": "low_again",
+   "old": null,
+   "conds": "greedy",
+   "text": "WASTE NOTHING. NOTHING.",
+   "note": "greed turned grim"
+  },
+  {
+   "id": "repeat-low_again-13",
+   "moment": "low_again",
+   "old": null,
+   "conds": "homebody",
+   "text": "MOTHER WOULD WEEP. IF I HAD ONE.",
+   "note": "homebody, half-memory"
+  },
+  {
+   "id": "repeat-low_again-14",
+   "moment": "low_again",
+   "old": null,
+   "conds": "curious often",
+   "text": "I WONDER WHAT IT'S DOING TO ME.",
+   "note": "curious, detached"
+  },
+  {
+   "id": "repeat-low_again-15",
+   "moment": "low_again",
+   "old": null,
+   "conds": "parched",
+   "text": "WATER IS WATER. IT'S WET. IT'S WATER.",
+   "note": "parched rationalising"
+  },
+  {
+   "id": "repeat-low_again-16",
+   "moment": "low_again",
+   "old": null,
+   "conds": "starving",
+   "text": "HUNGER WINS. HUNGER ALWAYS WINS.",
+   "note": "starving resignation"
+  },
+  {
+   "id": "repeat-low_again-17",
+   "moment": "low_again",
+   "old": null,
+   "conds": "filthy often",
+   "text": "I'M AS FOUL AS WHAT I EAT.",
+   "note": "filthy, self-disgust"
+  },
+  {
+   "id": "repeat-low_again-18",
+   "moment": "low_again",
+   "old": null,
+   "conds": "settled",
+   "text": "YOU GET USED TO IT. YOU DO.",
+   "note": "settled, wry numb"
+  },
+  {
+   "id": "repeat-doors_again-1",
+   "moment": "doors_again",
+   "old": null,
+   "conds": "",
+   "text": "EVERY KEY FITS. NONE OF THEM MATTER.",
+   "note": "the cruelty of success"
+  },
+  {
+   "id": "repeat-doors_again-2",
+   "moment": "doors_again",
+   "old": null,
+   "conds": "",
+   "text": "SOMEONE MADE ALL THESE LOCKS. WHY?",
+   "note": "quiet paranoia"
+  },
+  {
+   "id": "repeat-doors_again-3",
+   "moment": "doors_again",
+   "old": null,
+   "conds": "again",
+   "text": "MAYBE THE NEXT ONE. MAYBE.",
+   "note": "hope, still holding"
+  },
+  {
+   "id": "repeat-doors_again-4",
+   "moment": "doors_again",
+   "old": null,
+   "conds": "again",
+   "text": "I'M GETTING GOOD AT THIS. GOOD FOR WHAT?",
+   "note": "skill without purpose"
+  },
+  {
+   "id": "repeat-doors_again-5",
+   "moment": "doors_again",
+   "old": null,
+   "conds": "often",
+   "text": "I COULD DO THIS IN MY SLEEP. MAYBE I AM.",
+   "note": "numb, dreamlike"
+  },
+  {
+   "id": "repeat-doors_again-6",
+   "moment": "doors_again",
+   "old": null,
+   "conds": "often",
+   "text": "CLICK. AND NOTHING. CLICK. AND NOTHING.",
+   "note": "rhythm of futility"
+  },
+  {
+   "id": "repeat-doors_again-7",
+   "moment": "doors_again",
+   "old": null,
+   "conds": "brave",
+   "text": "FINE. NEXT.",
+   "note": "stubborn, clipped"
+  },
+  {
+   "id": "repeat-doors_again-8",
+   "moment": "doors_again",
+   "old": null,
+   "conds": "timid",
+   "text": "PLEASE BE EMPTY. PLEASE.",
+   "note": "fear of what's behind"
+  },
+  {
+   "id": "repeat-doors_again-9",
+   "moment": "doors_again",
+   "old": null,
+   "conds": "greedy keys",
+   "text": "MORE KEYS THAN WAYS OUT.",
+   "note": "hoarding feels hollow"
+  },
+  {
+   "id": "repeat-doors_again-10",
+   "moment": "doors_again",
+   "old": null,
+   "conds": "curious again",
+   "text": "THE LOCKS ARE ALL THE SAME. ALL OF THEM.",
+   "note": "noticing the pattern"
+  },
+  {
+   "id": "repeat-doors_again-11",
+   "moment": "doors_again",
+   "old": null,
+   "conds": "loner",
+   "text": "KEEP THEM SHUT BEHIND ME.",
+   "note": "wanting walls"
+  },
+  {
+   "id": "repeat-doors_again-12",
+   "moment": "doors_again",
+   "old": null,
+   "conds": "sociable",
+   "text": "MAYBE SOMEONE'S WAITING ON THE OTHER SIDE.",
+   "note": "hoping for people, not exits"
+  },
+  {
+   "id": "repeat-doors_again-13",
+   "moment": "doors_again",
+   "old": null,
+   "conds": "erratic",
+   "text": "IT'S THE SAME DOOR. THEY MOVE IT.",
+   "note": "paranoid delusion"
+  },
+  {
+   "id": "repeat-doors_again-14",
+   "moment": "doors_again",
+   "old": null,
+   "conds": "sure",
+   "text": "CLOSER. I CAN FEEL IT. CLOSER.",
+   "note": "conviction"
+  },
+  {
+   "id": "repeat-doors_again-15",
+   "moment": "doors_again",
+   "old": null,
+   "conds": "hopeless often",
+   "text": "A DOOR IS JUST A WALL THAT LIES.",
+   "note": "bitter aphorism"
+  },
+  {
+   "id": "repeat-doors_again-16",
+   "moment": "doors_again",
+   "old": null,
+   "conds": "settled",
+   "text": "WHY AM I EVEN LOOKING?",
+   "note": "habit outliving the hope"
+  },
+  {
+   "id": "repeat-doors_again-17",
+   "moment": "doors_again",
+   "old": null,
+   "conds": "generous",
+   "text": "I'LL LEAVE IT OPEN FOR THE NEXT ONE.",
+   "note": "small kindness"
+  },
+  {
+   "id": "repeat-traps_again-1",
+   "moment": "traps_again",
+   "old": null,
+   "conds": "",
+   "text": "OF COURSE. OF COURSE IT WAS.",
+   "note": "weary resignation"
+  },
+  {
+   "id": "repeat-traps_again-2",
+   "moment": "traps_again",
+   "old": null,
+   "conds": "",
+   "text": "WHO SETS THESE? WHO RESETS THEM?",
+   "note": "paranoia about a maker"
+  },
+  {
+   "id": "repeat-traps_again-3",
+   "moment": "traps_again",
+   "old": null,
+   "conds": "again",
+   "text": "I LOOKED. I SWEAR I LOOKED.",
+   "note": "self-doubt"
+  },
+  {
+   "id": "repeat-traps_again-4",
+   "moment": "traps_again",
+   "old": null,
+   "conds": "again",
+   "text": "SAME PLACE IT HURT LAST TIME.",
+   "note": "bodily memory"
+  },
+  {
+   "id": "repeat-traps_again-5",
+   "moment": "traps_again",
+   "old": null,
+   "conds": "often",
+   "text": "MY BODY IS ALL OLD WOUNDS NOW.",
+   "note": "worn down"
+  },
+  {
+   "id": "repeat-traps_again-6",
+   "moment": "traps_again",
+   "old": null,
+   "conds": "often",
+   "text": "AT LEAST IT STILL WANTS ME.",
+   "note": "dark humour"
+  },
+  {
+   "id": "repeat-traps_again-7",
+   "moment": "traps_again",
+   "old": null,
+   "conds": "brave",
+   "text": "IS THAT ALL YOU'VE GOT?",
+   "note": "defiance at the building"
+  },
+  {
+   "id": "repeat-traps_again-8",
+   "moment": "traps_again",
+   "old": null,
+   "conds": "timid",
+   "text": "I'LL NEVER TOUCH ANYTHING AGAIN.",
+   "note": "shrinking, vow"
+  },
+  {
+   "id": "repeat-traps_again-9",
+   "moment": "traps_again",
+   "old": null,
+   "conds": "greedy",
+   "text": "NOTHING HERE IS FREE. NOTHING.",
+   "note": "lesson about taking"
+  },
+  {
+   "id": "repeat-traps_again-10",
+   "moment": "traps_again",
+   "old": null,
+   "conds": "curious",
+   "text": "THERE MUST BE A PATTERN. THERE MUST.",
+   "note": "trying to solve it"
+  },
+  {
+   "id": "repeat-traps_again-11",
+   "moment": "traps_again",
+   "old": null,
+   "conds": "curious often",
+   "text": "I'VE LEARNT NOTHING. NOTHING AT ALL.",
+   "note": "defeated inquiry"
+  },
+  {
+   "id": "repeat-traps_again-12",
+   "moment": "traps_again",
+   "old": null,
+   "conds": "bleeding",
+   "text": "HOW MUCH MORE DO I HAVE IN ME?",
+   "note": "fear of running out"
+  },
+  {
+   "id": "repeat-traps_again-13",
+   "moment": "traps_again",
+   "old": null,
+   "conds": "hurt often",
+   "text": "I'M MORE SCAR THAN SKIN.",
+   "note": "body as record"
+  },
+  {
+   "id": "repeat-traps_again-14",
+   "moment": "traps_again",
+   "old": null,
+   "conds": "erratic again",
+   "text": "IT LAUGHED. I HEARD IT LAUGH.",
+   "note": "hearing the mall"
+  },
+  {
+   "id": "repeat-traps_again-15",
+   "moment": "traps_again",
+   "old": null,
+   "conds": "sociable",
+   "text": "I HOPE NOBODY ELSE STEPS HERE.",
+   "note": "thinking of others"
+  },
+  {
+   "id": "repeat-traps_again-16",
+   "moment": "traps_again",
+   "old": null,
+   "conds": "loner",
+   "text": "SERVES ME RIGHT. NOBODY TO WARN ME.",
+   "note": "alone with it"
+  },
+  {
+   "id": "repeat-traps_again-17",
+   "moment": "traps_again",
+   "old": null,
+   "conds": "hopeless",
+   "text": "ONE DAY ONE OF THESE WILL FINISH IT.",
+   "note": "almost wishing"
+  },
+  {
+   "id": "repeat-traps_again-18",
+   "moment": "traps_again",
+   "old": null,
+   "conds": "scared",
+   "text": "EVERY STEP. I HAVE TO WATCH EVERY STEP.",
+   "note": "hypervigilance"
+  },
+  {
+   "id": "repeat-going_again-1",
+   "moment": "going_again",
+   "old": null,
+   "conds": "",
+   "text": "I USED TO HAVE A DOOR FOR THIS.",
+   "note": "memory of before"
+  },
+  {
+   "id": "repeat-going_again-2",
+   "moment": "going_again",
+   "old": null,
+   "conds": "",
+   "text": "THE WHOLE MALL IS MY TOILET.",
+   "note": "dark humour"
+  },
+  {
+   "id": "repeat-going_again-3",
+   "moment": "going_again",
+   "old": null,
+   "conds": "again",
+   "text": "DON'T LOOK. JUST DON'T LOOK.",
+   "note": "humiliation"
+  },
+  {
+   "id": "repeat-going_again-4",
+   "moment": "going_again",
+   "old": null,
+   "conds": "again",
+   "text": "THE SMELL FOLLOWS ME.",
+   "note": "shame lingers"
+  },
+  {
+   "id": "repeat-going_again-5",
+   "moment": "going_again",
+   "old": null,
+   "conds": "often",
+   "text": "I KNOW ALL MY CORNERS NOW.",
+   "note": "grim familiarity"
+  },
+  {
+   "id": "repeat-going_again-6",
+   "moment": "going_again",
+   "old": null,
+   "conds": "often",
+   "text": "I'VE STOPPED BLUSHING.",
+   "note": "shame gone, and that's sad"
+  },
+  {
+   "id": "repeat-going_again-7",
+   "moment": "going_again",
+   "old": null,
+   "conds": "timid",
+   "text": "PLEASE NOBODY COME. PLEASE.",
+   "note": "exposed fear"
+  },
+  {
+   "id": "repeat-going_again-8",
+   "moment": "going_again",
+   "old": null,
+   "conds": "brave",
+   "text": "LET THE PLACE HAVE IT.",
+   "note": "defiant"
+  },
+  {
+   "id": "repeat-going_again-9",
+   "moment": "going_again",
+   "old": null,
+   "conds": "homebody",
+   "text": "NOT HERE. NOT WHERE I SLEEP.",
+   "note": "protecting home"
+  },
+  {
+   "id": "repeat-going_again-10",
+   "moment": "going_again",
+   "old": null,
+   "conds": "settled",
+   "text": "FAR FROM THE BED. ALWAYS FAR FROM THE BED.",
+   "note": "house rules"
+  },
+  {
+   "id": "repeat-going_again-11",
+   "moment": "going_again",
+   "old": null,
+   "conds": "curious",
+   "text": "WHERE DOES IT ALL GO? IT GOES.",
+   "note": "the mall swallows it"
+  },
+  {
+   "id": "repeat-going_again-12",
+   "moment": "going_again",
+   "old": null,
+   "conds": "erratic",
+   "text": "A GIFT. FOR WHOEVER BUILT THIS.",
+   "note": "spite, unhinged"
+  },
+  {
+   "id": "repeat-going_again-13",
+   "moment": "going_again",
+   "old": null,
+   "conds": "filthy",
+   "text": "I'M PART OF THE MESS NOW.",
+   "note": "self-disgust"
+  },
+  {
+   "id": "repeat-going_again-14",
+   "moment": "going_again",
+   "old": null,
+   "conds": "filthy often",
+   "text": "I CAN'T SMELL MYSELF ANY MORE.",
+   "note": "lost to it"
+  },
+  {
+   "id": "repeat-going_again-15",
+   "moment": "going_again",
+   "old": null,
+   "conds": "bursting",
+   "text": "NO TIME FOR SHAME. NO TIME.",
+   "note": "urgency beats dignity"
+  },
+  {
+   "id": "repeat-going_again-16",
+   "moment": "going_again",
+   "old": null,
+   "conds": "generous",
+   "text": "SORRY. TO WHOEVER WALKS HERE.",
+   "note": "apology to strangers"
+  },
+  {
+   "id": "repeat-going_again-17",
+   "moment": "going_again",
+   "old": null,
+   "conds": "greedy",
+   "text": "EVERYTHING I EAT ENDS UP ON THE FLOOR.",
+   "note": "cakes for nothing"
+  },
+  {
+   "id": "repeat-going_again-18",
+   "moment": "going_again",
+   "old": null,
+   "conds": "hopeless",
+   "text": "EAT, DRINK, SQUAT. THAT'S A LIFE.",
+   "note": "bleak summary of being"
+  },
+  {
+   "id": "repeat-sleep_again-1",
+   "moment": "sleep_again",
+   "old": null,
+   "conds": "",
+   "text": "THE CEILING HASN'T MOVED.",
+   "note": "same view, wry"
+  },
+  {
+   "id": "repeat-sleep_again-2",
+   "moment": "sleep_again",
+   "old": null,
+   "conds": "again",
+   "text": "FOR ONE SECOND I DIDN'T KNOW. THEN I DID.",
+   "note": "the moment memory returns"
+  },
+  {
+   "id": "repeat-sleep_again-3",
+   "moment": "sleep_again",
+   "old": null,
+   "conds": "often",
+   "text": "THE WORST PART IS IT FEELS NORMAL.",
+   "note": "routine as dread"
+  },
+  {
+   "id": "repeat-sleep_again-4",
+   "moment": "sleep_again",
+   "old": null,
+   "conds": "often",
+   "text": "SLEEP, WAKE, WALK. SLEEP, WAKE.",
+   "note": "losing track of time"
+  },
+  {
+   "id": "repeat-sleep_again-5",
+   "moment": "sleep_again",
+   "old": null,
+   "conds": "settled often",
+   "text": "THE FLOOR KNOWS MY SHAPE NOW.",
+   "note": "comfort in routine"
+  },
+  {
+   "id": "repeat-sleep_again-6",
+   "moment": "sleep_again",
+   "old": null,
+   "conds": "dreamt again",
+   "text": "WHY DO I ALWAYS WAKE AT THE GOOD PART?",
+   "note": "dream cut short"
+  },
+  {
+   "id": "repeat-sleep_again-7",
+   "moment": "sleep_again",
+   "old": null,
+   "conds": "dreamt often",
+   "text": "THE DREAMS ARE THE ONLY PLACE I LEAVE.",
+   "note": "escape only in sleep"
+  },
+  {
+   "id": "repeat-sleep_again-8",
+   "moment": "sleep_again",
+   "old": null,
+   "conds": "timid",
+   "text": "NOBODY CAME. GOOD. NOBODY CAME.",
+   "note": "relief of surviving the night"
+  },
+  {
+   "id": "repeat-sleep_again-9",
+   "moment": "sleep_again",
+   "old": null,
+   "conds": "brave",
+   "text": "UP. ANOTHER DAY OF WALLS.",
+   "note": "grim resolve"
+  },
+  {
+   "id": "repeat-sleep_again-10",
+   "moment": "sleep_again",
+   "old": null,
+   "conds": "homebody",
+   "text": "MY OWN BED. I CAN ALMOST FEEL IT.",
+   "note": "missing a home it can't recall"
+  },
+  {
+   "id": "repeat-sleep_again-11",
+   "moment": "sleep_again",
+   "old": null,
+   "conds": "erratic",
+   "text": "SOMEONE MOVED THINGS WHILE I SLEPT.",
+   "note": "paranoia"
+  },
+  {
+   "id": "repeat-sleep_again-12",
+   "moment": "sleep_again",
+   "old": null,
+   "conds": "hungry",
+   "text": "SLEEPING DOESN'T FILL ANYTHING.",
+   "note": "woke hungry"
+  },
+  {
+   "id": "repeat-sleep_again-13",
+   "moment": "sleep_again",
+   "old": null,
+   "conds": "tired often",
+   "text": "I SLEEP AND SLEEP. IT'S NEVER ENOUGH.",
+   "note": "sleep that doesn't rest"
+  },
+  {
+   "id": "repeat-sleep_again-14",
+   "moment": "sleep_again",
+   "old": null,
+   "conds": "hopeless",
+   "text": "SLEEP WAS BETTER.",
+   "note": "prefers oblivion"
+  },
+  {
+   "id": "repeat-sleep_again-15",
+   "moment": "sleep_again",
+   "old": null,
+   "conds": "sure",
+   "text": "TODAY. TODAY I FIND IT.",
+   "note": "hope renewed each morning"
+  },
+  {
+   "id": "repeat-sleep_again-16",
+   "moment": "sleep_again",
+   "old": null,
+   "conds": "sociable",
+   "text": "GOOD MORNING, NOBODY.",
+   "note": "loneliness, dark humour"
+  },
+  {
+   "id": "repeat-sleep_again-17",
+   "moment": "sleep_again",
+   "old": null,
+   "conds": "curious",
+   "text": "WHO KEEPS THE LIGHTS ON ALL NIGHT?",
+   "note": "the lights never change"
+  },
+  {
+   "id": "repeat-sleep_again-18",
+   "moment": "sleep_again",
+   "old": null,
+   "conds": "scared",
+   "text": "I DREAMT SOMEONE STOOD OVER ME.",
+   "note": "fear of sleeping exposed"
+  },
+  {
+   "id": "repeat-quiet_again-1",
+   "moment": "quiet_again",
+   "old": null,
+   "conds": "",
+   "text": "I'VE STARTED HUMMING. TO HAVE SOMETHING.",
+   "note": "filling the silence"
+  },
+  {
+   "id": "repeat-quiet_again-2",
+   "moment": "quiet_again",
+   "old": null,
+   "conds": "again",
+   "text": "WAS IT LEFT LAST TIME? OR RIGHT?",
+   "note": "rooms all alike"
+  },
+  {
+   "id": "repeat-quiet_again-3",
+   "moment": "quiet_again",
+   "old": null,
+   "conds": "again",
+   "text": "I KNOW THAT STAIN. I THINK.",
+   "note": "false recognition"
+  },
+  {
+   "id": "repeat-quiet_again-4",
+   "moment": "quiet_again",
+   "old": null,
+   "conds": "often",
+   "text": "I TALK TO MYSELF NOW. WE GET ON.",
+   "note": "dark humour"
+  },
+  {
+   "id": "repeat-quiet_again-5",
+   "moment": "quiet_again",
+   "old": null,
+   "conds": "often",
+   "text": "WHAT DID MY VOICE SOUND LIKE?",
+   "note": "said aloud, eerie"
+  },
+  {
+   "id": "repeat-quiet_again-6",
+   "moment": "quiet_again",
+   "old": null,
+   "conds": "sociable often",
+   "text": "I'M FORGETTING HOW FACES GO.",
+   "note": "loneliness eroding memory"
+  },
+  {
+   "id": "repeat-quiet_again-7",
+   "moment": "quiet_again",
+   "old": null,
+   "conds": "sociable again",
+   "text": "ANYONE. I'D EVEN TAKE A THIEF.",
+   "note": "desperate for company"
+  },
+  {
+   "id": "repeat-quiet_again-8",
+   "moment": "quiet_again",
+   "old": null,
+   "conds": "loner",
+   "text": "NOBODY ASKING ME ANYTHING. PERFECT.",
+   "note": "loner content"
+  },
+  {
+   "id": "repeat-quiet_again-9",
+   "moment": "quiet_again",
+   "old": null,
+   "conds": "loner often",
+   "text": "MINE. ALL OF IT, MINE.",
+   "note": "loner owning the quiet"
+  },
+  {
+   "id": "repeat-quiet_again-10",
+   "moment": "quiet_again",
+   "old": null,
+   "conds": "timid",
+   "text": "QUIET MEANS SAFE. QUIET MEANS SAFE.",
+   "note": "self-soothing mantra"
+  },
+  {
+   "id": "repeat-quiet_again-11",
+   "moment": "quiet_again",
+   "old": null,
+   "conds": "brave",
+   "text": "SILENCE NEVER STOPPED ANYONE.",
+   "note": "shrugging it off"
+  },
+  {
+   "id": "repeat-quiet_again-12",
+   "moment": "quiet_again",
+   "old": null,
+   "conds": "curious",
+   "text": "WHY IS THERE NEVER AN ECHO?",
+   "note": "odd detail of the place"
+  },
+  {
+   "id": "repeat-quiet_again-13",
+   "moment": "quiet_again",
+   "old": null,
+   "conds": "homebody",
+   "text": "QUIET LIKE A HOUSE AFTER EVERYONE LEFT.",
+   "note": "homesick image"
+  },
+  {
+   "id": "repeat-quiet_again-14",
+   "moment": "quiet_again",
+   "old": null,
+   "conds": "erratic again",
+   "text": "WHO SAID THAT? ...ME. IT WAS ME.",
+   "note": "fraying mind"
+  },
+  {
+   "id": "repeat-quiet_again-15",
+   "moment": "quiet_again",
+   "old": null,
+   "conds": "hopeless",
+   "text": "I COULD STOP HERE. NOBODY WOULD KNOW.",
+   "note": "giving up, nobody watching"
+  },
+  {
+   "id": "repeat-quiet_again-16",
+   "moment": "quiet_again",
+   "old": null,
+   "conds": "settled often",
+   "text": "IT'S PEACEFUL, ONCE YOU STOP FIGHTING IT.",
+   "note": "acceptance"
+  },
+  {
+   "id": "repeat-quiet_again-17",
+   "moment": "quiet_again",
+   "old": null,
+   "conds": "scared",
+   "text": "DON'T BREATHE SO LOUD.",
+   "note": "fear of being heard"
+  },
+  {
+   "id": "repeat-quiet_again-18",
+   "moment": "quiet_again",
+   "old": null,
+   "conds": "dreamt",
+   "text": "THERE WERE VOICES IN THE DREAM. SO MANY.",
+   "note": "contrast with silence"
+  },
+  {
+   "id": "repeat-faces_again-1",
+   "moment": "faces_again",
+   "old": null,
+   "conds": "",
+   "text": "{WHO}. OF COURSE IT'S {WHO}.",
+   "note": "wry resignation"
+  },
+  {
+   "id": "repeat-faces_again-2",
+   "moment": "faces_again",
+   "old": null,
+   "conds": "again",
+   "text": "FOR AN ENDLESS PLACE, IT'S SMALL.",
+   "note": "irony of the endless mall"
+  },
+  {
+   "id": "repeat-faces_again-3",
+   "moment": "faces_again",
+   "old": null,
+   "conds": "often",
+   "text": "WE'RE LIKE A FAMILY NOW. A BAD ONE.",
+   "note": "dark humour"
+  },
+  {
+   "id": "repeat-faces_again-4",
+   "moment": "faces_again",
+   "old": null,
+   "conds": "sociable often",
+   "text": "{WHO} IS ALL THE WORLD I HAVE LEFT.",
+   "note": "attachment from isolation"
+  },
+  {
+   "id": "repeat-faces_again-5",
+   "moment": "faces_again",
+   "old": null,
+   "conds": "loner often",
+   "text": "I CAN'T GET AWAY FROM {WHO}.",
+   "note": "loner hemmed in"
+  },
+  {
+   "id": "repeat-faces_again-6",
+   "moment": "faces_again",
+   "old": null,
+   "conds": "loner again",
+   "text": "THERE'S NO AVOIDING ANYONE HERE.",
+   "note": "loner annoyed"
+  },
+  {
+   "id": "repeat-faces_again-7",
+   "moment": "faces_again",
+   "old": null,
+   "conds": "timid again",
+   "text": "IS {WHO} FOLLOWING ME?",
+   "note": "suspicion"
+  },
+  {
+   "id": "repeat-faces_again-8",
+   "moment": "faces_again",
+   "old": null,
+   "conds": "erratic",
+   "text": "THEY KEEP PUTTING {WHO} IN MY WAY.",
+   "note": "paranoia about the place"
+  },
+  {
+   "id": "repeat-faces_again-9",
+   "moment": "faces_again",
+   "old": null,
+   "conds": "curious again",
+   "text": "DO WE WALK IN CIRCLES, OR DOES IT?",
+   "note": "the mall turning"
+  },
+  {
+   "id": "repeat-faces_again-10",
+   "moment": "faces_again",
+   "old": null,
+   "conds": "greedy",
+   "text": "{WHO} OWES ME SOMETHING. I'M SURE.",
+   "note": "greed as reflex, funny"
+  },
+  {
+   "id": "repeat-faces_again-11",
+   "moment": "faces_again",
+   "old": null,
+   "conds": "generous",
+   "text": "GOOD. I'D WONDERED IF {WHO} WAS EATING.",
+   "note": "care"
+  },
+  {
+   "id": "repeat-faces_again-12",
+   "moment": "faces_again",
+   "old": null,
+   "conds": "brave",
+   "text": "AT LEAST {WHO} IS STILL STANDING.",
+   "note": "respect, endurance"
+  },
+  {
+   "id": "repeat-faces_again-13",
+   "moment": "faces_again",
+   "old": null,
+   "conds": "hopeless",
+   "text": "ALL OF US, STILL HERE. NOBODY GETS OUT.",
+   "note": "shared trap"
+  },
+  {
+   "id": "repeat-faces_again-14",
+   "moment": "faces_again",
+   "old": null,
+   "conds": "hopeless often",
+   "text": "{WHO} HAS THE SAME EYES AS ME NOW.",
+   "note": "seeing own despair in another"
+  },
+  {
+   "id": "repeat-faces_again-15",
+   "moment": "faces_again",
+   "old": null,
+   "conds": "homebody",
+   "text": "LIKE NEIGHBOURS. ALMOST.",
+   "note": "comfort in familiar faces"
+  },
+  {
+   "id": "repeat-faces_again-16",
+   "moment": "faces_again",
+   "old": null,
+   "conds": "dreamt",
+   "text": "WAS {WHO} IN MY DREAM? BEFORE?",
+   "note": "haunting hint of the past"
+  },
+  {
+   "id": "repeat-faces_again-17",
+   "moment": "faces_again",
+   "old": null,
+   "conds": "scared",
+   "text": "IF {WHO}'S STILL HERE, IT'S NOT JUST ME.",
+   "note": "comfort in fear"
+  },
+  {
+   "id": "repeat-faces_again-18",
+   "moment": "faces_again",
+   "old": null,
+   "conds": "settled often",
+   "text": "{WHO}. LIKE CLOCKWORK.",
+   "note": "comfort in routine"
+  }
+ ]
+}
