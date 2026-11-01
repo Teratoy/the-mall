@@ -233,6 +233,10 @@ enum class Moment {
     // Stepping in feces it couldn't see for the dark (to nobody, in place of
     // stepped_in).
     SteppedInDark,
+    // The mall's bells (AI/light_plan.md step 6): the hour; opening, the
+    // lights coming on; closing, the lights going out; knowing at last
+    // what the bell means (all to nobody).
+    HourBell, OpeningBell, ClosingBell, ClockLesson,
     Count
 };
 

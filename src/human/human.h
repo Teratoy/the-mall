@@ -1293,6 +1293,24 @@ private:
     std::optional<talk::Moment> sleptAsLiked(const World& world);
     /// How lit it last saw a cell, 0 dark (or never seen lit or dark) to 1.
     float litSeen(Vec2i c) const;
+
+    /// The mall's bells (human_bells.cpp, AI/light_plan.md step 6): heard
+    /// everywhere, awake or asleep. Closing pulls it toward sleep, opening
+    /// wakes it, and it learns the lights go out at the bell.
+    struct Bells {
+        /// The world's bells it has answered; -1 before it first looks.
+        int heard = -1;
+        /// It heard the closing bell and not yet the opening one.
+        bool closed = false;
+        /// Closing bells heard awake; has heard an hour bell.
+        int closings = 0;
+        bool hourHeard = false;
+    };
+    Bells bells_;
+    /// Answers any bell rung since it last listened.
+    void hearBells(World& world);
+    /// Tired enough to want sleep from here: less once the mall has closed.
+    float tiredFrom() const;
     /// Walks the path running, for why.
     void startRunning(Goal g, std::vector<Vec2i> path, RunWhy why);
     /// Breath goes running and comes back resting; at none it is winded.

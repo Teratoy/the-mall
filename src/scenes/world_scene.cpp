@@ -44,6 +44,8 @@ constexpr float CAMERA_LAG_MAX = 12.0f;
 // right edge between them. The human's stats are a menu of their own,
 // opened by tapping their name.
 constexpr int MARGIN = 4;
+/// Between the world's size and the mall's time, in the top strip.
+constexpr int CLOCK_GAP = 8;
 constexpr int RIGHT = Canvas::W - MARGIN;
 /// The world's size; then the name with the LOG button beside it, and
 /// items, centred on a row as tall as the button.
@@ -636,6 +638,13 @@ void WorldScene::draw(const Canvas& canvas) {
     if (paused_) drawPause(canvas.mouse(), canvas.width());
 }
 
+// The mall's time after the world's size, brighter while it is open.
+void WorldScene::drawClock(int x, int y) const {
+    char time[8];
+    std::snprintf(time, sizeof time, "%02d:%02d", world_.hour(), world_.minute());
+    ui::text(time, x + CLOCK_GAP, y, world_.closed() ? ui::DIM : ui::BRIGHT);
+}
+
 void WorldScene::drawPhone(const Human& viewer, Vector2 mouse) {
     char line[64];
 
@@ -646,6 +655,7 @@ void WorldScene::drawPhone(const Human& viewer, Vector2 mouse) {
     int y = MARGIN;
     std::snprintf(line, sizeof line, "HUMANS %zu  CHUNKS %zu", world_.livingCount(), world_.chunkCount());
     ui::text(line, MARGIN, y, ui::DIM);
+    drawClock(MARGIN + ui::textWidth(line), y);
     if (reveal_) ui::textRight("REVEAL", RIGHT, y, REVEAL_INK);
     y = NAME_TEXT_Y;
     std::string name = caps(viewer.name);
@@ -733,6 +743,7 @@ void WorldScene::drawWide(const Human& viewer, Vector2 mouse, const std::vector<
     // Right of the world, its size and whether it is all revealed.
     std::snprintf(line, sizeof line, "HUMANS %zu  CHUNKS %zu", world_.livingCount(), world_.chunkCount());
     ui::text(line, HUD_LEFT, MARGIN, ui::DIM);
+    drawClock(HUD_LEFT + ui::textWidth(line), MARGIN);
     if (reveal_) ui::textRight("REVEAL", HUD_RIGHT, MARGIN, REVEAL_INK);
 
     // What they are doing, centred along the bottom of the world.

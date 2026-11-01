@@ -136,6 +136,8 @@ private:
     /// The phone's strips and buttons over the world, and whichever of the
     /// log, stats or map is open.
     void drawPhone(const Human& viewer, Vector2 mouse);
+    /// The mall's time, HH:MM, starting x canvas pixels across, y down.
+    void drawClock(int x, int y) const;
     /// The PC's columns beside the square of world, and what they are doing,
     /// in doingRows, in a strip from stripY down the bottom of the square.
     void drawWide(const Human& viewer, Vector2 mouse, const std::vector<std::string>& doingRows, int stripY);
