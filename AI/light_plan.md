@@ -309,6 +309,20 @@ User asked for other dithering: crossed, hatched, and lines.
   pass again; `bottle-sell` is still known.
 - Soak: 13 still, 0 flips, 0 loops (was 18, 5, 0).
 
+### Built: where to sleep (2026-11-01)
+- `sleepDark()`: (brave - 0.45) x 2, clamped to -1..1: the bold would
+  sooner sleep in the dark, out of sight, the timid where they can see.
+- `seekSleep` adds `sleepLightCost`: a spot's remembered light costs the
+  bold up to 6 cells more lit, the timid up to 6 more dark. Spots it never
+  saw lit or dark cost nothing either way.
+- Lying down where it wanted (minding at least 0.4; dark, or lit 2 or
+  more), it notes "LAY DOWN IN THE DARK, OUT OF SIGHT" or "LAY DOWN WHERE
+  THE LIGHT IS" and says `sleep_dark` or `sleep_lit` in place of
+  `sleep_now`.
+- Scenarios `sleep-dark`, `sleep-lit`: half the spawn room put out
+  (`P::putOutLights`), what it saw forgotten, then tired.
+- Soak: 13 still, 2 flips, 0 loops.
+
 ### 6. The mall clock and its bells
 - The world keeps the mall's time of day, from the world's start (no
   dice). At closing time the ceiling fittings go out mall-wide but for a

@@ -9,6 +9,7 @@
 #include "world/world.h"
 
 #include <algorithm>
+#include <cmath>
 
 namespace {
 
@@ -27,6 +28,17 @@ constexpr int DARK_FRONTIER_COST = 200;
 constexpr float DARK_FEAR_PARCHED = 0.4f, DARK_FEAR_HOPELESS = 0.3f;
 /// Afraid of the dark this much at least, it says it makes for the light.
 constexpr float TOWARD_LIGHT_FEAR = 0.5f;
+/// Bolder than this, it would sooner sleep in the dark, the more the
+/// bolder by SLEEP_DARK_SWAY; less bold, in light.
+constexpr float SLEEP_DARK_BRAVE = 0.45f;
+constexpr float SLEEP_DARK_SWAY = 2.0f;
+/// A spot in the light it would rather not have, or in the dark, costs up
+/// to this many cells more to sleep on.
+constexpr float SLEEP_LIGHT_COST = 6.0f;
+/// It minds this much at least before it says it got its way, and lit this
+/// much counts as under a light.
+constexpr float SLEEP_PICKY = 0.4f;
+constexpr int SLEEP_LIT_LEVEL = 2;
 
 } // namespace
 
@@ -83,4 +95,30 @@ void Human::makeForLight(const World& world, const std::vector<Vec2i>& path) {
     dark_.toward = true;
     note("MADE FOR THE LIGHT");
     sayLater(talk::Moment::TowardLight);
+}
+
+float Human::sleepDark() const { return std::clamp((traits.brave - SLEEP_DARK_BRAVE) * SLEEP_DARK_SWAY, -1.0f, 1.0f); }
+
+// Lit, the bold pay for being seen; dark, the timid for not seeing. A spot
+// it never saw lit or dark it takes as it comes.
+float Human::sleepLightCost(Vec2i c) const {
+    auto seen = memory.lightSeen(c);
+    if (!seen) return 0.0f;
+    float lit = float(seen->level) / float(LIGHT_FULL), dark = sleepDark();
+    return SLEEP_LIGHT_COST * (dark > 0.0f ? dark * lit : -dark * (1.0f - lit));
+}
+
+std::optional<talk::Moment> Human::sleptAsLiked(const World& world) {
+    float dark = sleepDark();
+    if (std::abs(dark) < SLEEP_PICKY) return std::nullopt;
+    int level = world.light(cell);
+    if (dark > 0.0f && level == 0) {
+        note("LAY DOWN IN THE DARK, OUT OF SIGHT");
+        return talk::Moment::SleepDark;
+    }
+    if (dark < 0.0f && level >= SLEEP_LIT_LEVEL) {
+        note("LAY DOWN WHERE THE LIGHT IS");
+        return talk::Moment::SleepLit;
+    }
+    return std::nullopt;
 }

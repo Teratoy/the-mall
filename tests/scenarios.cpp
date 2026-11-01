@@ -2194,6 +2194,33 @@ const std::vector<Scenario> SCENARIOS = {
          s.run(20);
          return Checks{loggedBy(h, "MADE FOR THE LIGHT")};
      }},
+    {"sleep-dark", "tired and bold, it lies down in the dark half of the room, out of sight",
+     seedWhere([](const Traits& t) { return t.brave > 0.85f; }, 29000), [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         calm(h);
+         s.run(45);
+         // The light from the lit half reaches a couple of cells past it, so dark lies close by.
+         const int edge = h.cell.x + 5;
+         P::putOutLights(s.world, [edge](Vec2i c) { return c.x < edge; });
+         P::forget(h);
+         h.tiredness = 0.6f;
+         s.run(30);
+         return Checks{loggedBy(h, "LAY DOWN IN THE DARK, OUT OF SIGHT")};
+     }},
+    {"sleep-lit", "tired and timid, it lies down in the lit half of the room, where it can see",
+     seedWhere([](const Traits& t) { return t.brave < 0.15f; }, 29500), [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         calm(h);
+         s.run(45);
+         const int edge = h.cell.x;
+         P::putOutLights(s.world, [edge](Vec2i c) { return c.x < edge; });
+         P::forget(h);
+         h.tiredness = 0.6f;
+         s.run(30);
+         return Checks{loggedBy(h, "LAY DOWN WHERE THE LIGHT IS")};
+     }},
     {"airlock-surprise", "with keys and nowhere else to go, it opens a server room's outer door and finds another behind",
      seedWhere(plain, 23000), [](Stage& s) {
          Human& h = s.first();

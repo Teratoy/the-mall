@@ -224,6 +224,9 @@ enum class Moment {
     // out of a long spell in it; making for light it sees from the dark
     // (all to nobody).
     FirstDark, IntoDark, OutOfDark, TowardLight,
+    // Lying down to sleep in the dark, out of sight, as the bold would; under
+    // a light, as the timid would (to nobody, in place of sleep_now).
+    SleepDark, SleepLit,
     Count
 };
 

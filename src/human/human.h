@@ -1275,6 +1275,16 @@ private:
     /// Exploring by this path: if it stands in the dark and makes for light,
     /// it says so, once a spell.
     void makeForLight(const World& world, const std::vector<Vec2i>& path);
+    /// Which it would sooner sleep in, -1 light to 1 dark: the bold the
+    /// dark, out of sight, the timid where they can see.
+    float sleepDark() const;
+    /// What the light it remembers on a spot costs it to sleep there, in
+    /// cells.
+    float sleepLightCost(Vec2i c) const;
+    /// Lying down where it would sooner sleep, light or dark, it notes it,
+    /// and the moment to say; nothing if it doesn't much mind or didn't get
+    /// its way.
+    std::optional<talk::Moment> sleptAsLiked(const World& world);
     /// Walks the path running, for why.
     void startRunning(Goal g, std::vector<Vec2i> path, RunWhy why);
     /// Breath goes running and comes back resting; at none it is winded.

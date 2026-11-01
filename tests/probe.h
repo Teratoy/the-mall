@@ -127,6 +127,14 @@ struct SoakProbe {
     /// A terminal or console desk stood with its cell (the desk's top-left) at at.
     /// Forgets every cell it has seen, as if just come to.
     static void forget(Human& h) { h.memory = Memory{}; }
+    /// Every light whose cell passes put out, and the light round each worked out again.
+    template <class F> static void putOutLights(World& w, F where) {
+        for (LightSource& l : w.lights_)
+            if (where(l.cell)) {
+                l.on = false;
+                w.relightAround(l.cell, l.cell);
+            }
+    }
     /// Every light in the cell's chunk put out, as in a dark chunk.
     static void darkenChunk(World& w, Vec2i cell) {
         const Chunk& c = *w.chunkAt(World::slotOf(cell));

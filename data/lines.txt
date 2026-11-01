@@ -2907,3 +2907,23 @@ sociable                | IS ANYONE ELSE OUT HERE?
 timid                   | PLEASE LET THERE BE SOMEONE THERE.
 parched                 | WATER... MAYBE OVER THERE.
 hopeless                | LIKE A MOTH.
+
+# Lying down to sleep in the dark, out of sight. Said to nobody, in place
+# of sleep_now.
+[sleep_dark 0.6]
+                        | NOBODY'LL FIND ME HERE.
+                        | THE DARK KEEPS ITS OWN.
+                        | NOT A SOUND. GOOD.
+cakes                   | MINE STAY MINE. NOBODY SEES.
+loner                   | JUST ME AND THE DARK.
+hurt                    | LET IT HEAL WHERE NOTHING LOOKS.
+
+# Lying down to sleep under a light. Said to nobody, in place of
+# sleep_now.
+[sleep_lit 0.6]
+                        | I NEED TO SEE THEM COMING.
+                        | LEAVE IT ON. PLEASE.
+                        | AT LEAST HERE I'LL SEE.
+scared                  | ONE EYE OPEN.
+sociable                | SOMEONE MIGHT FIND ME HERE.
+hopeless                | NOT IN THE DARK. NOT ALONE IN THE DARK.
