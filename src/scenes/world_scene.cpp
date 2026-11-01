@@ -882,9 +882,10 @@ void WorldScene::drawPhone(const Human& viewer, Vector2 mouse) {
     // Top strip. Who is followed and what they carry: the one name it is
     // sure of is its own, underlined, and tapping it opens their stats.
     ui::panel({0, 0, Canvas::W, TOP_H});
-    // First the world's size, and whether it is all revealed.
+    // First the world's size, how long it has run, and whether it is all revealed.
     int y = MARGIN;
-    std::snprintf(line, sizeof line, "HUMANS %zu  CHUNKS %zu", world_->livingCount(), world_->chunkCount());
+    std::snprintf(line, sizeof line, "HUMANS %zu  ROOMS %zu  %s", world_->livingCount(), world_->chunkCount(),
+                  ui::clockText(world_->time()).c_str());
     ui::text(line, MARGIN, y, ui::DIM);
     if (reveal_) ui::textRight("REVEAL", RIGHT, y, REVEAL_INK);
     y = NAME_TEXT_Y;
@@ -970,8 +971,9 @@ void WorldScene::drawWide(const Human& viewer, Vector2 mouse, const std::vector<
     for (int i = 0; i < WIDE_BARS; i++)
         bar(labels[i], STATS_LEFT, STATS_RIGHT, WIDE_BARS_Y + 2 + i * ui::ROW, amounts[i], fills[i], barX);
 
-    // Right of the world, its size and whether it is all revealed.
-    std::snprintf(line, sizeof line, "HUMANS %zu  CHUNKS %zu", world_->livingCount(), world_->chunkCount());
+    // Right of the world, its size, how long it has run, and whether it is all revealed.
+    std::snprintf(line, sizeof line, "HUMANS %zu  ROOMS %zu  %s", world_->livingCount(), world_->chunkCount(),
+                  ui::clockText(world_->time()).c_str());
     ui::text(line, HUD_LEFT, MARGIN, ui::DIM);
     if (reveal_) ui::textRight("REVEAL", HUD_RIGHT, MARGIN, REVEAL_INK);
 

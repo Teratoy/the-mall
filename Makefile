@@ -42,7 +42,7 @@ DIRTYSHEET := build/dirty_sheet
 # One human shooting all eight ways, as animation frames (tools/frames_gif.py makes the GIF).
 SHOOTANIM := build/shoot_anim
 
-.PHONY: all run clean trips stuck check golden coverage shot scenarios genprobe genview lightprobe exploreprobe hidef bottlesheet dirtysheet shootanim spritesheet soundsheet musicsheet voicesheet spriteref fontdump lines sprites sounds trapprobe icon apk install-apk logcat simprofile noiseprobe gprof
+.PHONY: all run clean trips stuck check golden coverage shot scenarios genprobe genview lightprobe exploreprobe hidef bottlesheet dirtysheet shootanim spritesheet soundsheet musicsheet voicesheet spriteref fontdump lines sprites sounds trapprobe icon apk install-apk logcat simprofile noiseprobe logsize gprof
 
 all: $(BIN)
 
@@ -243,6 +243,16 @@ $(SIMPROFILE): tools/sim_profile.cpp tests/probe.h $(filter-out build/main.o,$(O
 
 simprofile: $(SIMPROFILE)
 	./$(SIMPROFILE) $(SIMPROFILE_ARGS)
+
+# How big the life logs grow over a long game (tools/log_size.cpp):
+# build/log_size [seeds] [minutes] [crowd] [every].
+LOGSIZE := build/log_size
+LOGSIZE_ARGS ?= 4 120 6 15
+$(LOGSIZE): tools/log_size.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDLIBS)
+
+logsize: $(LOGSIZE)
+	./$(LOGSIZE) $(LOGSIZE_ARGS)
 
 # How many of each noise the sim makes for the view to hear (tools/noise_probe.cpp).
 NOISEPROBE := build/noise_probe
