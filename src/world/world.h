@@ -398,9 +398,12 @@ private:
     /// lights about it, with dice of their own.
     void hangFittings(const Chunk& c);
     /// Puts up the lights of the machines, server pieces, dispensers and
-    /// glowing statues placed since `before`, then lights the new chunk and
-    /// those round it.
+    /// glowing statues placed since `before`, hangs the new chunk's fittings,
+    /// then lights it and the chunks round it.
     void lightUp(const Chunk& c, Glowing before);
+    /// Puts up the lights of what was placed since `before`, and relights
+    /// round each.
+    void lightPlaced(Glowing before);
     /// Works out every cell of a chunk's light again, from every source
     /// that reaches into it.
     void relight(Chunk& c);

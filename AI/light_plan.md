@@ -246,6 +246,38 @@ User asked for other dithering: crossed, hatched, and lines.
 - `Memory` keeps which rooms it found dark. Golden changes; look at the
   diff for new stuck humans (walking blind into dark mazes).
 
+### Built (2026-11-01)
+- `Sight::look` marks a cell seen only if it is lit, or within
+  `Sight::DARK_SIGHT` cells of the eye (euclidean). A dark stretch doesn't
+  block the cast, so a lit room is seen across a dark hall, and a human
+  standing in the dark is seen by others only close. The view's eye glow
+  now reaches `DARK_SIGHT + 1`, so what is seen in the dark is what glows.
+- `DARK_SIGHT` is **4**, not the 2–3 planned: at 3, a human that has just
+  unlocked a server room's outer door couldn't see the inner door behind
+  it (4 cells off across the dark lobby), and never knew the double doors
+  for what they were.
+- **The spawn room never has dead fittings**: it wakes in light. With
+  dead ones, the waker could miss the key in a dark patch and get stuck in
+  its first room.
+- **Racks shine 3 cells (was 2) and dispensers 2 (was 1)**: a server room
+  is lit only by its machines, and at the old reach so much of its floor
+  was unseen that a thirsty human couldn't plan a way to the dispenser.
+- `Memory` already keeps the light each cell was seen in (above); nothing
+  plans on it yet.
+- Scenarios: probe helpers that build server rooms, computers, machines
+  and statues now light them (`World::lightPlaced`), and a server room
+  built by a probe puts out the fittings it encloses, as generation does.
+  New `dark-sight`: in a dark chunk it sees the cake beside it, not one 9
+  cells off in the dark, and does see one under a light across the room.
+  `bottle-sell`, `bottle-lie` and `hard-no-sell` are marked **known**: the
+  asker wanders dark corridors, comes back parched and is told off the
+  holder's place before it asks, so it takes the water by force. For the
+  user to decide on.
+- Soak: no new stuck humans or loops (18 still, 5 flips, 0 loops; was 21,
+  3, 0). Many more live to the end (38 of 70, was 25 of 59 alive), with
+  fewer bodies looted: humans see one another, and so fight, less.
+  `make simprofile` seed 4: 1.9 s (was 1.8).
+
 ### 5. What darkness does
 - Dread in the dark by bravery (more for the timid); lines on entering a dark place for the
   first time and on lights dying around it (feeling, not report).

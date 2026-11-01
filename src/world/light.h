@@ -20,8 +20,8 @@ constexpr int lightRadius(LightKind k) {
     case LightKind::NightLight: return 3;
     case LightKind::Vending: return 3;
     case LightKind::Screen: return 2;
-    case LightKind::Rack: return 2;
-    case LightKind::Dispenser: return 1;
+    case LightKind::Rack: return 3;
+    case LightKind::Dispenser: return 2;
     case LightKind::Statue: return 6;
     case LightKind::Torch: return 5;
     case LightKind::None: break;

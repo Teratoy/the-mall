@@ -25,9 +25,9 @@ constexpr float MEMORY_DIM = 0.45f;
 /// the way through a dark place stays readable.
 constexpr float MEMORY_DARK = 0.6f;
 /// Eyes get used to the dark: right round the viewer it makes out this
-/// much, fading to nothing this many cells out.
+/// much, fading to nothing a cell past where it sees in the dark.
 constexpr Shade EYE_GLOW = {0.58f, 0.59f, 0.7f};
-constexpr float EYE_GLOW_CELLS = 4.0f;
+constexpr float EYE_GLOW_CELLS = float(Sight::DARK_SIGHT + 1);
 /// The last two rings of sight fade toward how memory looks, by these.
 constexpr float SIGHT_FADE_INNER = 0.25f, SIGHT_FADE_OUTER = 0.75f;
 /// Shades are stepped into this many steps from black to full, and each

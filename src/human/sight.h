@@ -5,10 +5,14 @@
 class World;
 
 /// What a human can see right now: every cell in line of sight within
-/// RADIUS, all round. Walls and locked doors block sight but are seen.
+/// RADIUS, all round, that is lit, and the dark ones close round it. Walls
+/// and locked doors block sight but are seen. A dark stretch doesn't block
+/// it: a lit room is seen across a dark hall.
 class Sight {
 public:
     static constexpr int RADIUS = 20;
+    /// In the dark it makes out only this many cells round itself.
+    static constexpr int DARK_SIGHT = 4;
 
     Sight() : seen_(SIDE * SIDE, false) {}
 

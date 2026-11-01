@@ -45,8 +45,8 @@ void World::addLight(Vec2i cell, LightKind kind, bool on, bool flicker) {
 }
 
 // Fittings hang on a grid across the chunk, each over the floor nearest its
-// point. Some are dead and some flicker; now and then a whole chunk is dark,
-// never the first, where the first human wakes. Server rooms are lit only by
+// point. Some are dead and some flicker; now and then a whole chunk is dark.
+// Never in the spawn room, where the first human wakes: it wakes in light. Server rooms are lit only by
 // their machines. The dice are the chunk's own, so lighting a chunk changes
 // nothing else the world rolls.
 void World::hangFittings(const Chunk& c) {
@@ -70,7 +70,7 @@ void World::hangFittings(const Chunk& c) {
             if (!at || std::any_of(hung.begin(), hung.end(), [&](Vec2i h) { return cheb(h, *at) < FITTING_APART; }))
                 continue;
             hung.push_back(*at);
-            bool dead = dark || dice.chance(FITTING_DEAD_CHANCE);
+            bool dead = dark || (c.kind != ChunkKind::Spawn && dice.chance(FITTING_DEAD_CHANCE));
             addLight(*at, LightKind::Fitting, !dead, !dead && dice.chance(FITTING_FLICKER_CHANCE));
         }
     for (int i = 0; i < NIGHT_LIGHTS_PER_SLOT * c.slotCount(); i++)
@@ -86,6 +86,13 @@ void World::hangFittings(const Chunk& c) {
 // little round them, a dispenser's tap barely, and the giant desk lamp and
 // light bulb shine from their bases (user).
 void World::lightUp(const Chunk& c, Glowing before) {
+    lightPlaced(before);
+    hangFittings(c);
+    relightAround(c.origin(), c.origin() + Vec2i{c.w - 1, c.h - 1});
+}
+
+void World::lightPlaced(Glowing before) {
+    const size_t first = lights_.size();
     for (size_t i = before.machines; i < machines_.size(); i++) addLight(machines_[i].at, LightKind::Vending);
     for (size_t i = before.pieces; i < pieces_.size(); i++) {
         const ServerPiece& p = pieces_[i];
@@ -99,8 +106,7 @@ void World::lightUp(const Chunk& c, Glowing before) {
         if (s.kind == StatueKind::Lamp || s.kind == StatueKind::Bulb)
             addLight(s.at + Vec2i{s.size.x / 2, s.size.y - 1}, LightKind::Statue);
     }
-    hangFittings(c);
-    relightAround(c.origin(), c.origin() + Vec2i{c.w - 1, c.h - 1});
+    for (size_t i = first; i < lights_.size(); i++) relightAround(lights_[i].cell, lights_[i].cell);
 }
 
 // Each source shines into the chunk only on cells the chunk owns; where

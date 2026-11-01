@@ -7,7 +7,10 @@ void Sight::look(const World& world, Vec2i eye, int radius) {
     eye_ = eye;
     radius_ = std::clamp(radius, 1, RADIUS);
     std::fill(seen_.begin(), seen_.end(), false);
-    shadowcast(eye, radius_, [&](Vec2i c) { return world.tile(c); }, [&](Vec2i c) { mark(c); });
+    shadowcast(eye, radius_, [&](Vec2i c) { return world.tile(c); }, [&](Vec2i c) {
+        Vec2i d = c - eye;
+        if (d.x * d.x + d.y * d.y <= DARK_SIGHT * DARK_SIGHT || world.light(c) > 0) mark(c);
+    });
 }
 
 bool Sight::sees(Vec2i cell) const {

@@ -1254,13 +1254,17 @@ const std::vector<Scenario> SCENARIOS = {
      [](Stage& s) {
          return askForWater(s, {logged({"SOLD @ SOME WATER FOR A CAKE"}), logged({"BOUGHT SOME WATER FROM @ FOR A CAKE"})},
                             [](Human&, Human& asker) { asker.cakes = 1; });
-     }},
+     },
+     "since light limits sight (light_plan step 4), the asker wanders dark corridors, comes back parched and is "
+     "told off its place before it asks, and takes the water by force"},
     {"bottle-lie", "a cunning stranger says its bottle is empty, and is seen through",
      seedWhere([](const Traits& t) { return cunning(t) && t.sociable < 0.4f; }, 14000),
      [](Stage& s) {
          return askForWater(s, {logged({"TOLD @ MY BOTTLE WAS EMPTY"}), logged({"@ SAID THEIR BOTTLE WAS EMPTY. IT WASN'T"})},
                             [](Human&, Human&) {});
-     }},
+     },
+     "since light limits sight (light_plan step 4), the asker wanders dark corridors, comes back parched and is "
+     "told off its place before it asks, and takes the water by force"},
     {"bottle-refuse", "a stingy stranger won't give any of its water",
      seedWhere([](const Traits& t) { return t.greedy < 0.35f && t.sociable < 0.4f && t.brave < 0.3f; }, 15119),
      [](Stage& s) {
@@ -1360,7 +1364,9 @@ const std::vector<Scenario> SCENARIOS = {
                                 asker.cakes = 1;
                                 holder.lessons.nearWater = 1.0f;
                             });
-     }},
+     },
+     "since light limits sight (light_plan step 4), the asker wanders dark corridors, comes back parched and is "
+     "told off its place before it asks, and takes the water by force"},
     {"pile-cakes", "a hungry human with no cakes picks up cakes lying on the floor", 99,
      [](Stage& s) {
          Human& h = s.first();
@@ -2147,6 +2153,22 @@ const std::vector<Scenario> SCENARIOS = {
          return Checks{{"the outer door opened", [opened](const Stage&) { return opened; }},
                        {"never inside the room", [&h, &r](const Stage&) { return !r.contains(h.cell); }},
                        {"not stuck in the lobby", [&h, &r](const Stage&) { return !r.encloses(h.cell); }}};
+     }},
+    {"dark-sight", "in the dark it makes out only what is close round it, but a cake under a light across the room",
+     seedWhere(plain, 26000), [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         calm(h);
+         // Past the waking fog, which narrows sight too.
+         s.run(45);
+         P::darkenChunk(s.world, h.cell);
+         const Vec2i near = s.freeNear(h.cell, 3), dark = s.freeNear(h.cell, 9), lit = s.farFrom(h.cell, 14);
+         for (Vec2i c : {near, dark, lit}) P::addCake(s.world, c);
+         P::hangLight(s.world, lit);
+         s.run(0.5f);
+         return Checks{{"sees the cake beside it", [&h, near](const Stage&) { return h.memory.cakes.count(near) > 0; }},
+                       {"not the one in the dark", [&h, dark](const Stage&) { return h.memory.cakes.count(dark) == 0; }},
+                       {"sees the lit one", [&h, lit](const Stage&) { return h.memory.cakes.count(lit) > 0; }}};
      }},
     {"airlock-surprise", "with keys and nowhere else to go, it opens a server room's outer door and finds another behind",
      seedWhere(plain, 23000), [](Stage& s) {

@@ -106,7 +106,10 @@ struct SoakProbe {
     /// A statue of this kind about the cell, kept clear of the human; false if none fits.
     static bool placeStatue(World& w, Vec2i cell, const Human& h, StatueKind kind) {
         Chunk& c = *w.chunkAt(World::slotOf(cell));
-        return w.placeStatue(c, cell - c.origin(), h.cell - c.origin(), false, kind);
+        const World::Glowing before = w.glowing();
+        bool placed = w.placeStatue(c, cell - c.origin(), h.cell - c.origin(), false, kind);
+        w.lightPlaced(before);
+        return placed;
     }
     /// Which remarks on the room through the fog it has made, a bit each
     /// from talk::Moment::FirstStatue.
@@ -122,7 +125,23 @@ struct SoakProbe {
         h.computers_.tries = 64;
     }
     /// A terminal or console desk stood with its cell (the desk's top-left) at at.
-    static void standComputer(World& w, Rig kind, Vec2i at) { w.standPiece(*w.chunkAt(World::slotOf(at)), kind, at, 1); }
+    /// Every light in the cell's chunk put out, as in a dark chunk.
+    static void darkenChunk(World& w, Vec2i cell) {
+        const Chunk& c = *w.chunkAt(World::slotOf(cell));
+        for (LightSource& l : w.lights_)
+            if (w.chunkAt(World::slotOf(l.cell)) == &c) l.on = false;
+        w.relightAround(c.origin(), c.origin() + Vec2i{c.w - 1, c.h - 1});
+    }
+    /// A ceiling fitting hung over the cell, lit, and the light round it worked out again.
+    static void hangLight(World& w, Vec2i cell) {
+        w.addLight(cell, LightKind::Fitting);
+        w.relightAround(cell, cell);
+    }
+    static void standComputer(World& w, Rig kind, Vec2i at) {
+        const World::Glowing before = w.glowing();
+        w.standPiece(*w.chunkAt(World::slotOf(at)), kind, at, 1);
+        w.lightPlaced(before);
+    }
     /// h tried this computer earlier, and was turned away.
     static void triedComputer(Human& h, Vec2i at, Rig kind) {
         h.computers_.seen[at] = Human::Computers::Try::Tried;
@@ -271,10 +290,12 @@ struct SoakProbe {
     static const Machine& standMachine(World& w, Vend kind, Vec2i at, Vec2i facing, int stock) {
         Machine shape{kind, at, facing};
         for (int i = -1; i <= 2; i++) w.setTile(at + shape.along() * i - facing, Tile::Wall);
+        const World::Glowing before = w.glowing();
         if (!w.standMachine(*w.chunkAt(World::slotOf(at)), kind, at, facing, stock)) {
             std::fprintf(stderr, "probe: no floor for a machine at %d,%d\n", at.x, at.y);
             std::abort();
         }
+        w.lightPlaced(before);
         return w.machines_.back();
     }
     /// h knows the machine and what is in it, as if it had seen it.
@@ -307,7 +328,13 @@ struct SoakProbe {
         w.serverRooms_.push_back({at.x, at.y, rw, rh, outer, inner});
         Rng dice(1);
         const ServerRoom r = w.serverRooms_.back();
+        const World::Glowing before = w.glowing();
         w.furnishServerRoom(*w.chunkAt(World::slotOf(at)), dice, r, inner + in);
+        // Only its machines light it, as generation has it.
+        for (LightSource& l : w.lights_)
+            if ((l.kind == LightKind::Fitting || l.kind == LightKind::NightLight) && r.encloses(l.cell)) l.on = false;
+        w.relightAround(at - Vec2i{1, 1}, at + Vec2i{rw, rh + 3});
+        w.lightPlaced(before);
         return w.serverRooms_.back();
     }
     /// h knows the server room and its doors, as if it had seen them.
