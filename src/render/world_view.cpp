@@ -157,6 +157,8 @@ void drawShooter(int x, int y, bool inSight) {
     DrawRectangle(x + 2, y + 2, 2, 2, dim(TRAP_HOLE, inSight));
 }
 
+} // namespace
+
 Pose poseOf(const Human& h) {
     // Pointing the way out, arm held out: up for a way mostly north, down
     // for one mostly south.
@@ -194,8 +196,6 @@ Pose poseOf(const Human& h) {
     if (h.moving) return h.running() ? Pose::Run : Pose::Walk;
     return h.winded() ? Pose::Winded : Pose::Idle;
 }
-
-} // namespace
 
 void drawKeyIcon(int x, int y) { drawKey(x, y, true); }
 

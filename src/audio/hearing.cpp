@@ -1,6 +1,7 @@
 #include "audio/hearing.h"
 #include "audio/audio.h"
 #include "human/human.h"
+#include "render/human_sprites.h"
 #include "render/world_view.h"
 #include "world/world.h"
 #include <algorithm>
@@ -107,13 +108,15 @@ void Hearing::hear(const World& world, const Human& listener, Vec2i cell, const 
     queue_.push_back({name, v, pan, pitch, walls > 0, urgent});
 }
 
-// A step is heard as a human comes onto a new cell; fast, only some are.
+// A step is heard as a foot comes down in the walk or run art, so the
+// sound keeps time with it; fast, only some are.
 void Hearing::footsteps(const World& world, const Human& listener, int speed) {
     for (const auto& h : world.humans()) {
-        auto [it, fresh] = cells_.try_emplace(h->id, h->cell);
-        if (fresh || it->second == h->cell) continue;
-        it->second = h->cell;
-        if (h->dead() || (speed > 1 && !rng_.chance(1.0f / float(speed)))) continue;
+        int now = h->dead() ? -1 : footfalls(poseOf(*h), h->animTime);
+        auto [it, fresh] = feet_.try_emplace(h->id, now);
+        int before = it->second;
+        it->second = now;
+        if (fresh || now < 0 || now <= before || (speed > 1 && !rng_.chance(1.0f / float(speed)))) continue;
         bool running = h->running();
         hear(world, listener, h->cell, stepSound(world, h->cell, running), running ? RUN_LOUD : STEP_LOUD, STEP_REACH,
              false, speed);
@@ -172,7 +175,7 @@ void Hearing::update(const World& world, const Human& listener, int speed, bool 
 void Hearing::skip(const World& world) {
     noisesHeard_ = world.noiseCount();
     for (const auto& h : world.humans()) {
-        cells_[h->id] = h->cell;
+        feet_[h->id] = h->dead() ? -1 : footfalls(poseOf(*h), h->animTime);
         const Human::Speech* s = h->dead() ? nullptr : h->speaking();
         lines_[h->id] = s ? s->text : std::string();
     }

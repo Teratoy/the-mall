@@ -33,8 +33,9 @@ private:
         bool muffled, urgent;
     };
     std::vector<Heard> queue_;
-    /// Each human's cell when last heard, and the line it was saying.
-    std::unordered_map<int, Vec2i> cells_;
+    /// How many times each human's feet had come down when last heard
+    /// (footfalls), and the line it was saying.
+    std::unordered_map<int, int> feet_;
     std::unordered_map<int, std::string> lines_;
     uint64_t noisesHeard_ = 0;
     /// The wobble on each sound, for the ear only, never the sim's dice.

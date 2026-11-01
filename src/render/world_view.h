@@ -7,6 +7,7 @@ class Human;
 class HumanSprites;
 class FloorTiles;
 class StatueArt;
+enum class Pose;
 
 using SpritesFor = std::function<const HumanSprites&(const Human&)>;
 
@@ -21,6 +22,8 @@ Vector2 drawnFeet(const Human& h, float zoom);
 /// pixels. zoom is canvas pixels per world pixel. It is snapped to whole
 /// canvas pixels, so it can fall between world ones.
 Vector2 cameraFor(Vector2 focus, float zoom, Vector2 size);
+/// How a human is drawn now, from what it is doing.
+Pose poseOf(const Human& h);
 /// Whether the viewer's screen shows this human: in their sight, or reveal.
 bool shown(const Human& viewer, const Human& h, bool reveal);
 /// A key or a cake as it lies in the world, undimmed, CELL_PX square: for the HUD.

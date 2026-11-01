@@ -42,6 +42,12 @@
 /// the head back for SHOT_TIME, then it holds the aim. Type stands at a computer's keys, tapping.
 enum class Pose { Idle, Walk, Wave, Eat, Guard, Punch, Offer, Fall, Sit, Rise, Wash, Search, Feed, Wake, Point, PointUp, PointDown, Squat, Piss, Sleep, WakeUp, DiedAsleep, Sip, Fill, Pour, OfferBottle, Lie, Run, Winded, Shoot, ShootUp, ShootUpAhead, ShootDownAhead, ShootDown, Reload, Rack, Type };
 
+/// How many times a foot has come down since animTime began, walking or
+/// running: the frames where the legs are spread widest. -1 in any other
+/// pose. The sound of a step plays as this goes up, so it keeps time with
+/// the art.
+int footfalls(Pose pose, float animTime);
+
 
 /// One human's frames as textures, made from its look.
 class HumanSprites {

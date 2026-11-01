@@ -103,8 +103,11 @@ volume and a **low-bit** switch that crushes the music to 4 bits at
   unlocking (door, gate, airlock), an airlock pushed open and falling
   shut, a slam gate locking, spikes, darts fired and striking, a blow
   landing (`takeHit`), a death (`die`). `make check` passes unchanged.
-- Footsteps and pops don't need noises: the view hears a human come onto
-  a new cell, and a new line over a head.
+- Footsteps and pops don't need noises: the view hears a foot come down
+  in the walk or run art (`footfalls()`: walk frames 1 and 3, run 0 and
+  2, so the step keeps time with the drawing; at first it was one per
+  cell entered, which the user heard out of step), and a new line over
+  a head.
 
 ## 3. The sounds themselves
 

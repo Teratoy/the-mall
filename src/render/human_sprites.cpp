@@ -255,6 +255,13 @@ void HumanSprites::paint(Texture2D& t, const SpriteFrame& f) {
     UpdateTexture(t, px.data());
 }
 
+// The walk spreads its legs on frames 1 and 3, the run on 0 and 2.
+int footfalls(Pose pose, float animTime) {
+    if (pose == Pose::Walk) return (int(animTime * WALK_FPS) + 1) / 2;
+    if (pose == Pose::Run) return int(animTime * RUN_FPS) / 2 + 1;
+    return -1;
+}
+
 void HumanSprites::draw(Vector2 feet, Pose pose, float animTime, bool flip, int scale, Color tint,
                         int cakes, const Bottle* bottle, bool inHand) const {
     bool carrying = cakes > 0;
