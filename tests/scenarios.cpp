@@ -256,7 +256,8 @@ Checks guardedWater(Stage& s, bool strangerHasCake, Checks expect) {
     auto b = s.basin();
     if (!b) return {{"room for a basin near the spawn", [](const Stage&) { return false; }}};
     P::settle(settler, s.freeNear(*b, 1));
-    Human& stranger = s.add(seedWhere(plain, 4000), 3);
+    // Far enough off that the settler has done coming to before the stranger is at the water.
+    Human& stranger = s.add(seedWhere(plain, 4000), 8);
     stranger.thirst = 0.7f;
     // An empty bottle, so it needs the settler's water.
     stranger.bottles = {Bottle{}};

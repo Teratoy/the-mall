@@ -303,3 +303,16 @@ play.
    monologue has room), or keep 3–6 s and 2–4 s?
 3. What the empty mall sounds like, if anything beyond silence (asked,
    no preference yet).
+
+## The first lines go first (2026-11-01)
+
+The user: the first lines at spawn shouldn't be interrupted by the one
+noticing the bottle. Walking up to the bottle (or anything first seen), its
+remark used to go to the front of the queue, so it came out before the
+getting-up line still waiting, and that one often never came. Now
+`sayHere()` puts a find's remark behind any line from coming to
+(`talk::isWaking`: stir, wake, getting up, reaching back) still to say, and
+the human stands at the find until both are said. It still walks to the
+find as before: holding it back instead had it wander off and remark on the
+bottle from afar. `water-refused` wakes the stranger 8 cells off, not 3, so
+the settler has come to before the stranger is at its water.

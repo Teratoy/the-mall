@@ -159,12 +159,12 @@ void Human::lookAt(const Find& f, bool walked) {
     sayHere(std::move(s));
 }
 
-// Its line comes next, ahead of anything else it meant to say, and it
-// stands there until it is said, then a while more.
+// Its line comes next, ahead of anything else it meant to say but what it
+// had to say on coming to, and it stands there until it is said, then a while more.
 void Human::sayHere(Saying s) {
     s.awaited = true;
     auto at = std::find_if(voice_.sayings.begin(), voice_.sayings.end(),
-                           [](const Saying& q) { return !talk::isUrgent(q.moment); });
+                           [](const Saying& q) { return !talk::isUrgent(q.moment) && !talk::isWaking(q.moment); });
     voice_.sayings.insert(at, std::move(s));
     awaiting_ = true;
     voice_.answerWait = timer;

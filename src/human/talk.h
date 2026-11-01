@@ -250,6 +250,10 @@ inline bool isCry(Moment m) {
 /// over a line that has shown long enough to read, and the lines still
 /// waiting are dropped for them.
 inline bool isUrgent(Moment m) { return isCry(m) || m == Moment::Blame; }
+/// The first lines on coming to: stirring, waking, getting up, reaching back for anything from before.
+inline bool isWaking(Moment m) {
+    return m == Moment::WakeStir || m == Moment::Wake || m == Moment::WakeStand || m == Moment::Blank;
+}
 
 /// The moment for bringing up a topic of this kind.
 inline Moment chatMoment(Topic::Kind k) { return Moment(int(Moment::ChatHere) + int(k)); }
