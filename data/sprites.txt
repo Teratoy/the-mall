@@ -957,28 +957,34 @@ semmmmmmEsss
 
 sprite duct down n
 # The duct coming in from the north and bending down into the floor, through a bolted collar.
+ink L e8ecee lip, lit
+ink l c4cacf metal lit
 ink m a6adb3 metal
+ink e 8a9298 west edge
+ink E 6c737a east edge
 ink g d6dce0 flange lit
 ink G 7e868c flange shade
 ink b 4a5056 bolt
-ink d 858c92 bending down
-ink D 62686e bending down, far
+ink f 8c9399 face, top
+ink F 70777d face
+ink K 4a4f55 face, foot
 ink c 5c6064 floor collar
 ink C 3a3d40 floor collar shade
 ink n 9aa0a6 collar bolt
+ink o 141618 hole
 ink s 00000050 shadow
 .gbggggbgss.
 .GGGGGGGGss.
-cmmmmmmmmcs.
-cddddddddcs.
-cddddddddcs.
-nDDDDDDDDcs.
-cDDDDDDDDns.
-cDDDDDDDDcs.
-cCCCCCCCCcs.
-cCCCCCCCCcs.
-nCCCCCCCCcs.
-ccccnccccns.
+.emmmmmmEss.
+.emmmmmmEss.
+.emmmmmmEss.
+.llllllllss.
+.LLLLLLLLss.
+cffffffffCs.
+cFFFFFFFFCs.
+cKKKKKKKKCs.
+cooooooooCs.
+nccccccccns.
 
 sprite duct down e
 # The duct coming in from the east and bending down into the floor, through a bolted collar.
@@ -991,22 +997,22 @@ ink K 4a4f55 face, foot
 ink r b6bcc2 rivet
 ink d 858c92 bending down
 ink D 62686e bending down, far
-ink c 5c6064 floor collar
 ink C 3a3d40 floor collar shade
 ink n 9aa0a6 collar bolt
+ink o 141618 hole
 ink s 00000050 shadow
-.DDDddmmmLLL
-.DDDddmmmlll
-cDDDddmmmmmm
-cDDDddmmmmmm
-cDDDddmmmmmm
-nDDDddmmmmmm
-cDDDddmmmmmm
-cDDDddmmmmmm
-cCCCCCCCCfff
-cCCCCCCCCFrF
-nCCCCCCCCKKK
-ccccnccccnss
+....LLLLLLLL
+...Lllllllll
+..Lmmmmmmmmm
+nLdmmmmmmmmm
+oDdmmmmmmmmm
+oDdmmmmmmmmm
+oDdmmmmmmmmm
+oDdmmmmmmmmm
+offfffffffff
+orFFrFFrFFrF
+nKKKKKKKKKKK
+CCCCCsssssss
 
 sprite duct down s
 # The duct coming in from the south and bending down into the floor, through a bolted collar.
@@ -1016,45 +1022,52 @@ ink E 6c737a east edge
 ink d 858c92 bending down
 ink D 62686e bending down, far
 ink c 5c6064 floor collar
+ink C 3a3d40 floor collar shade
 ink n 9aa0a6 collar bolt
 ink s 00000050 shadow
-.DDDDDDDD...
-.DDDDDDDDss.
-cDDDDDDDDcs.
-cddddddddcs.
-cddddddddcs.
-nmmmmmmmmcs.
-cmmmmmmmmns.
-cmmmmmmmmcs.
-cemmmmmmEcs.
-cemmmmmmEcs.
-nemmmmmmEcs.
-cemmmmmmEns.
+cDDDDDDDDC..
+cddddddddCs.
+cemmmmmmECs.
+nemmmmmmEns.
+.emmmmmmEss.
+.emmmmmmEss.
+.emmmmmmEss.
+.emmmmmmEss.
+.emmmmmmEss.
+.emmmmmmEss.
+.emmmmmmEss.
+.emmmmmmEss.
 
 sprite duct down w
 # The duct coming in from the west and bending down into the floor, through a bolted collar.
+ink L e8ecee lip, lit
+ink l c4cacf metal lit
 ink m a6adb3 metal
 ink g d6dce0 flange lit
 ink G 7e868c flange shade
 ink b 4a5056 bolt
+ink f 8c9399 face, top
+ink F 70777d face
+ink K 4a4f55 face, foot
+ink r b6bcc2 rivet
 ink d 858c92 bending down
 ink D 62686e bending down, far
-ink c 5c6064 floor collar
 ink C 3a3d40 floor collar shade
 ink n 9aa0a6 collar bolt
+ink o 141618 hole
 ink s 00000050 shadow
-gmmmddDDD...
-bmmmddDDDss.
-gmmmddDDDcs.
-gmmmddDDDcs.
-gmmmddDDDcs.
-gmmmddDDDcs.
-bmmmddDDDns.
-gmmmddDDDcs.
-GCCCCCCCCcs.
-GCCCCCCCCcs.
-GCCCCCCCCcs.
-ccccnccccns.
+gLLLLL......
+blllllL..ss.
+gmmmmmmL.ss.
+gmmmmmmdLns.
+gmmmmmmdDos.
+gmmmmmmdDos.
+bmmmmmmdDos.
+gmmmmmmdDos.
+Gffffffffos.
+GrFFrFFrFos.
+GKKKKKKKKns.
+sssssCCCCCs.
 
 sprite duct ew vent
 # A straight duct with a vent in its top. v and V, the dark between the slats, trade colours as the air stirs.
@@ -1514,7 +1527,6 @@ sprite pipe down n
 ink p 7aa4c4 pipe
 ink P 5a82a2 pipe shade
 ink D 3e5e7a pipe dark
-ink K 2a3e52 pipe underside
 ink q c2c8ce flange lit
 ink Q 7c848c flange shade
 ink b 3c4248 bolt
@@ -1525,16 +1537,16 @@ ink o 121416 hole
 ink s 00000050 shadow
 qbqqqqqQQQb.
 qqqqqqqQQQQ.
-.cppppPPDn..
-coppppPPDoC.
-coppppPPDoC.
-coppppPPDoC.
-copppPPDKoC.
-coPPPDDKKoC.
-.coDDKKKoC..
-.CnoooooCn..
-...CCCCCs...
-............
+..ppppPPDs..
+..ppppPPDs..
+..ppppPPDs..
+..ppppPPDs..
+..ppppPPDs..
+..ppppPPDs..
+..ppppPPDs..
+ccppppPPDcc.
+CnoooooooCn.
+..CCCCCCCs..
 
 sprite pipe down e
 # The pipe coming in from the east and bending down into the floor, through a bolted collar.
@@ -1549,18 +1561,18 @@ ink C 3c3f42 floor collar shade
 ink n a4aaae collar bolt
 ink o 121416 hole
 ink s 00000050 shadow
-...ccccc....
-.ccooooocC..
-.cnhhlllllll
-colhllllllll
-colllppppppp
-copppppppppp
-copppPPPPPPP
-coPPPDDDDDDD
-.coDDKKKKKKK
-.CnoooooCnss
-...CCCCCssss
 ............
+............
+...hhlllllll
+..lhllllllll
+..lllppppppp
+..pppppppppp
+..ppppPPPPPP
+..ppppPDDDDD
+..ppppPPKKKK
+ccppppPPDccs
+CnoooooooCns
+..CCCCCCCs..
 
 sprite pipe down s
 # The pipe coming in from the south and bending down into the floor, through a bolted collar.
@@ -1572,18 +1584,17 @@ ink D 3e5e7a pipe dark
 ink c 6a6e72 floor collar
 ink C 3c3f42 floor collar shade
 ink n a4aaae collar bolt
-ink o 121416 hole
 ink s 00000050 shadow
-...ccccc....
-.ccooooocC..
-.cnhhlppon..
-colhllppPoC.
-colllppPDoC.
-coppppPPDoC.
-coppppPPDoC.
-coppppPPDoC.
-.cppppPPDC..
-.CppppPPDn..
+..chhlppc...
+cclhllppPcc.
+CnlllppPDCn.
+..ppppPPDs..
+..ppppPPDs..
+..ppppPPDs..
+..ppppPPDs..
+..ppppPPDs..
+..ppppPPDs..
+..ppppPPDs..
 ..ppppPPDs..
 ..ppppPPDs..
 
@@ -1602,18 +1613,18 @@ ink C 3c3f42 floor collar shade
 ink n a4aaae collar bolt
 ink o 121416 hole
 ink s 00000050 shadow
-qq.ccccc....
-bqcooooocC..
-qqllllppon..
-qqllllppPoC.
-qqpppppPDoC.
-qqppppPPDoC.
-qqPPPPPDKoC.
-QQDDDDDKKoC.
-QQKKKKKKoC..
-QQnoooooCn..
-bQsCCCCCs...
-............
+qq..........
+bq..........
+qqllllpp....
+qqllllppP...
+qqpppppPD...
+qqppppPPDs..
+qqPPPpPPDs..
+QQDDppPPDs..
+QQKpppPPDs..
+QQppppPPDcc.
+bQoooooooCn.
+..CCCCCCCs..
 
 sprite pipe ew valve
 # A straight pipe with a red handwheel on it, to shut the water off.

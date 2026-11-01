@@ -158,31 +158,55 @@ def duct(joins):
 
 
 def duct_down(side):
-    """The duct coming in from one side and bending down into the floor: its top darkens as it turns away, and
-    a dark gap shows round it inside a bolted collar on the floor."""
+    """The duct coming in from one side and bending down into the floor, seen as everything is, from above and the
+    south: its top rounds over and drops away at the bend, its face runs on to the floor, and a thin bolted rim
+    on the floor rings where it goes in, a dark gap inside it."""
     g = duct(side)
-    top, face = duct_body(side)
-    # Away from the arm the top bends down: darker toward the far side.
-    sx, sy = STEP[side]
-    for x in DUCT_COLS:
-        for y in DUCT_ROWS:
-            far = (x - DUCT_COLS[0]) if sx < 0 else (DUCT_COLS[-1] - x) if sx > 0 else \
-                  (y - DUCT_ROWS[0]) if sy < 0 else (DUCT_ROWS[-1] - y)
-            if g[y][x] not in "gGb":
-                g[y][x] = "m" if far < 3 else "d" if far < 5 else "D"
-    # The collar on the floor round where it goes in, showing past the far side and under its face.
-    fx0, fx1, fy0, fy1 = DUCT_COLS[0] - 1, DUCT_COLS[-1] + 1, DUCT_ROWS[0] + DUCT_HEIGHT - 1, DUCT_ROWS[-1] + DUCT_HEIGHT + 1
-    for y in range(fy0, min(SIZE, fy1 + 1)):
-        for x in range(max(0, fx0), min(SIZE, fx1 + 1)):
-            if g[y][x] in ".s":
-                edge = y in (fy0, fy1) or x in (fx0, fx1)
-                g[y][x] = ("c" if (x + y) % 5 else "n") if edge else "o"
-    if side != "s":
-        # Its face drops into the hole.
-        for x in DUCT_COLS:
-            for y in range(DUCT_ROWS[-1] + 1, DUCT_ROWS[-1] + DUCT_HEIGHT + 1):
-                if g[y][x] in "fFKr":
-                    g[y][x] = "C"
+    rows, cols, h = DUCT_ROWS, DUCT_COLS, DUCT_HEIGHT
+    floor = rows[-1] + h + 1
+
+    def rim(x, y, letter="c"):
+        if 0 <= x < SIZE and 0 <= y < SIZE:
+            g[y][x] = letter
+
+    if side in "ew":
+        # The bend at the far end: the top rounds over its last three columns, each lower and darker than the
+        # last, down toward the floor; the face below runs on to the end.
+        end = cols[0] if side == "e" else cols[-1]
+        step = 1 if side == "e" else -1
+        for k, (drop, tone) in enumerate(((3, "D"), (2, "d"), (1, "m"))):
+            x = end + k * step
+            for y in rows:
+                g[y][x] = "." if y < rows[0] + drop else "L" if y == rows[0] + drop else tone
+        # The rim on the floor beyond the end, and under the face.
+        ring = end - step
+        for y in range(rows[0] + h, floor):
+            rim(ring, y, "n" if y in (rows[0] + h, floor - 1) else "o")
+        for x in range(min(ring, end + 3 * step), max(ring, end + 3 * step) + 1):
+            rim(x, floor, "C")
+    elif side == "n":
+        # Bending toward us: the top runs on, its crown catches the light, and its face drops to the floor.
+        bend = rows[-1] - 2
+        for x in cols:
+            g[bend][x], g[bend + 1][x], g[bend + 2][x] = "l", "L", "f"
+            for y in range(bend + 3, floor - 1):
+                g[y][x] = "F" if y < floor - 2 else "K"
+            g[floor - 1][x] = "o"
+            rim(x, floor, "c")
+        for y in range(bend + 2, floor + 1):
+            rim(cols[0] - 1, y, "c")
+            rim(cols[-1] + 1, y, "C")
+        rim(cols[0] - 1, floor, "n")
+        rim(cols[-1] + 1, floor, "n")
+    else:
+        # Going down away from us: its far end rounds over and drops, the rim showing beside it.
+        for x in cols:
+            g[0][x], g[1][x] = "D", "d"
+        for y in range(0, h + 1):
+            rim(cols[0] - 1, y, "c")
+            rim(cols[-1] + 1, y, "C")
+        rim(cols[0] - 1, h, "n")
+        rim(cols[-1] + 1, h, "n")
     return g
 
 
@@ -233,6 +257,11 @@ CAP_REACH = 2.5
 LONE_REACH = 4.5
 # The cast shadow's offset, east and south.
 SHADOW = (1, 2)
+# A pipe bending down into the floor: where the floor meets it, below its middle, and the collar round it there,
+# a flat ring seen from the side. Going down away from us, its crown stops here, the collar behind it.
+DOWN_FLOOR_Y = CENTRE + 4.5
+COLLAR_RX, COLLAR_RY = 5.8, 2.0
+DOWN_FAR_Y = 3.5
 
 
 def norm(v):
@@ -277,7 +306,11 @@ def pipe_segments(joins, end="cap"):
         if end == "cap":
             start = (CENTRE - sx * CAP_REACH, CENTRE - sy * CAP_REACH)
             return [(start, EDGE[side], True, False)]
-        return [((CENTRE, CENTRE), EDGE[side], False, False)]
+        if side == "s":
+            # Going down at its far end, away from us: the bend's crown is all that shows.
+            return [((CENTRE, DOWN_FAR_Y), EDGE[side], False, False)]
+        # Going down at this end: it bends toward the floor, which lies this far below its middle.
+        return [((CENTRE, CENTRE), EDGE[side], False, False), ((CENTRE, CENTRE), (CENTRE, DOWN_FLOOR_Y), False, False)]
     return [((CENTRE, CENTRE), EDGE[side], False, False) for side in joins]
 
 
@@ -300,16 +333,25 @@ def pipe(joins, end="cap"):
     segs = pipe_segments(joins, end)
     on = [[tube((x + 0.5, y + 0.5), segs, RADIUS) for x in range(SIZE)] for y in range(SIZE)]
     if end == "down":
-        # The collar round the hole it goes down into, under the pipe.
+        # The collar on the floor where it goes in: a flat ring, its dark gap round the pipe.
+        cy = DOWN_FLOOR_Y if joins != "s" else DOWN_FAR_Y - 1.5
         for y in range(SIZE):
             for x in range(SIZE):
-                d = math.dist((x + 0.5, y + 0.5), (CENTRE, CENTRE))
-                if d < RADIUS + 0.9:
+                u, v = (x + 0.5 - CENTRE) / COLLAR_RX, (y + 0.5 - cy) / COLLAR_RY
+                r = math.hypot(u, v)
+                if r < 0.72:
                     g[y][x] = "o"
-                elif d < FLANGE_RADIUS + 0.6:
-                    g[y][x] = "c" if (x + 0.5 - CENTRE) + (y + 0.5 - CENTRE) < 0 else "C"
-        for x, y in ((2, 2), (9, 2), (2, 9), (9, 9)):
-            g[y][x] = "n"
+                elif r < 1.0:
+                    g[y][x] = "c" if v < 0.25 else "C"
+        for x in (1, SIZE - 2):
+            if 0 <= int(cy) < SIZE:
+                g[int(cy)][x] = "n"
+        if joins != "s":
+            # Below the floor the pipe is gone.
+            for y in range(SIZE):
+                for x in range(SIZE):
+                    if y + 0.5 > DOWN_FLOOR_Y:
+                        on[y][x] = None
     for y in range(SIZE):
         for x in range(SIZE):
             sx, sy = x - SHADOW[0], y - SHADOW[1]

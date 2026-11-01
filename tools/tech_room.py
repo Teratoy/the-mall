@@ -52,8 +52,8 @@ PIECES = [
     ("duct es", 18, 4), ("duct ns", 18, 6), ("duct ns vent", 18, 8), ("duct down n", 18, 10),
     ("duct ns", 21, 6), ("duct ne", 21, 8), ("duct ew", 23, 8), ("duct ew vent", 25, 8),
     ("duct sw", 27, 8), ("duct ns", 27, 10), ("duct down n", 27, 12),
-    # The second air handler sends its duct south into the floor.
-    ("duct ns", 31, 6), ("duct down n", 31, 8),
+    # The second air handler sends its duct south, then east and down into the floor.
+    ("duct ns", 31, 6), ("duct ne", 31, 8), ("duct down w", 33, 8),
     # The boiler standing in the room: its west outlet goes into the floor, its front south and into the floor.
     ("pipe down e", 10, 16), ("pipe down n", 13, 18),
     # The air handler seen from its right sends its duct south into the floor.
