@@ -1,0 +1,200 @@
+# Light and light sources
+
+The Mall is evenly lit everywhere: every cell in sight is drawn at full
+brightness, everything out of sight that the human remembers at
+`MEMORY_DIM`. Light should make **places feel different and some places
+feel wrong**: the flat white of a corridor under strip lights, a plaza
+with half its ceiling dead, a server room lit only by its racks' LEDs and
+a terminal's glow, a vending machine humming light onto the floor in
+front of it, a dark room you can see into only as far as your own feet.
+And if the user wants it in the sim, darkness should change what humans
+can see, where they sleep, what they fear and where they hide.
+
+It ties into what is already there:
+- `Sight` (recursive shadowcasting, RADIUS 20, less for the dazed) and
+  `Memory`: humans know only what they've seen.
+- The view's in-sight / remembered drawing in `render/world_view.cpp`
+  (`dim(c, lit)`, `SIGHT_FADE`), and every `*_art` that takes `lit`.
+  Note that `lit` there means **in sight**, not lit by a lamp; that name
+  has to change before light goes in (step 1).
+- Things that already glow in their art: vending machines' LEDs, CRT
+  terminals and console desks, server racks' lamps, water's glint.
+- Sleep (where to sleep, robbing sleepers, keeping watch), dread and
+  fright, hiding and privacy (relief's private spots), traps, cakes on
+  tables, smell (sniffed through walls), sound (heard through walls).
+- Statues: the giant desk lamp and light bulb are already in the world.
+- The phone canvas (216x468, 6 px cells) and the wide PC layout.
+
+## Ground rules (from CLAUDE.md, not up for debate)
+
+- **Deterministic.** Whatever light decides goes through the world's Rng
+  or a human's `rng_`; flicker drawn only in the view may use the clock.
+- **Humans know only what they've seen.** If light is in the sim, a human
+  learns a room is dark by seeing (or not seeing) into it, and remembers
+  it in `Memory`; nobody reads the world's light map to plan.
+- **Every new behaviour** gets a `note()` and a `sayLater()` moment with
+  lines in `data/lines.txt`, never stating the obvious ("IT'S DARK").
+- **Art**: pixel art, 6 px cells. Light is drawn in steps (bands, ordered
+  dither), never a smooth gradient that smears the pixels. Light glyphs
+  (ceiling fittings, a torch item) go in `data/sprites.txt`.
+- **A new `Human::Action`** (switching a light, say) needs a row in the
+  hunger, thirst and tiredness tables.
+
+## User's decisions (2026-11-01)
+
+- **Light limits sight, and humans change it** (A3): a human sees a cell
+  only if it is lit, or close to its eyes in the dark; wall switches and
+  carried lights (a torch) are in.
+- **Sources:** ceiling fittings, glowing machines, dark wings, and the
+  giant desk lamp and light bulb statues glow.
+- **A mall clock:** the whole mall goes through opening and closing on a
+  cycle. A **bell rings each hour**, and **another bell rings at opening
+  and at closing time**.
+- **The player sees what the human sees** in the dark: no more.
+- **Darkness does all four:** fear, sleep, hiding and blind trouble (E).
+- **A mall day is 20 minutes** (`MACHINE_DAY`, 1200 s), **a quarter of
+  it closed**. Closed is **dim, not black**: a few night lights stay on,
+  and machines, glowing statues and torches still give light.
+- **Humans hear the bells and react**: lines when they ring; closing
+  pushes toward sleep and opening wakes them, with hope or dread by
+  trait. Bells are in the sim.
+- **The time is in the HUD**, to the right of the humans and chunk
+  counters, laid out from measured text in the top strip.
+
+Defaults taken from those (tell me to change them): 24 mall hours of
+50 s each, so the hour bell rings every 50 s; open 06:00–24:00, closed
+00:00–06:00; the world wakes at opening (06:00) on day 1.
+
+## Options that were put to the user
+
+Kept for the reasoning; the answers are under "User's decisions".
+
+**A. Sim or look only?**
+1. *Look only*: light is drawn, nothing in the sim reads it. `make check`
+   unchanged. Cheapest, no new behaviour.
+2. *Light limits sight* (recommended): a human sees a cell in line of
+   sight only if it is lit, or within a few cells of its own eyes in the
+   dark. Lit things are seen from far across a dark plaza; a human in the
+   dark is seen only close. Behaviour follows from that (step 5).
+3. As 2, and **humans can change light** (switches, carried lights).
+
+**B. Where light comes from.** Candidates, any mix:
+- Ceiling fittings over corridors and rooms (strip lights), placed by the
+  generators per room, some dead, some flickering.
+- Glowing machines: vending fronts, CRT screens, console desks, server
+  rack LEDs, water dispensers.
+- Whole dark chunks or districts: a dead wing, a blacked-out maze.
+- Light that leaks through open doors from a lit room into a dark one.
+- Carried light (a torch, a lighter) as a new item.
+
+**C. Does it change over time?**
+- Static: a place is lit or dark for good.
+- Failing: lights die one by one (world Rng), now and then one comes back.
+- A mall clock: the whole mall dims on a long cycle (closing time), tied
+  to `MACHINE_DAY` (1200 s) or its own length; sleep could follow it.
+
+**D. How it looks.** Mall fluorescent white-green under fittings; warm
+amber round vending machines; CRT blue-green; deep blue-black in the
+dark. In the dark, remembered cells and unlit seen cells must still read
+differently from each other.
+
+**E. What darkness does to humans** (only with A2/A3):
+- Fear: dark rooms add dread, more for the timid, less for the brave.
+- Sleep: the tired prefer a dark corner to sleep in (harder to find and
+  rob); the timid prefer a light one.
+- Hiding: relief's private spots, hoarders' stashes and the cunning
+  waiting in the dark.
+- Trouble: walking into an unseen trap or stepping in mess in the dark;
+  missing a cake on a table across a dark room.
+- Following light: lost and parched humans drift toward lit places.
+
+## Steps
+
+### 1. Rename and light map
+- Rename the view's `lit` (in sight) to `inSight` across `render/`, a
+  pure refactor: `make check` unchanged.
+- `src/world/light.h/.cpp`: light sources `{cell, kind, radius, colour}`
+  owned by the world, and a per-chunk light level per cell (0–3 steps),
+  computed by shadowcasting from each source (reusing `Sight`'s cast) when
+  a chunk is made, and again only where a source changes. Walls block it;
+  open doors let it through, shut ones don't.
+- Nothing reads it yet: `make check` unchanged.
+
+### 2. Sources in generation
+- Ceiling fittings placed by `gen_rooms`, `gen_plaza`, `gen_maze` and the
+  rest, at regular spacing, from the chunk's own Rng: a share dead, a
+  share flickering. Some chunks or districts dark all through.
+- Machines are sources: vending, terminals, consoles, racks, dispensers.
+- This changes generation's dice, so the soak's worlds change: golden.
+
+### 3. Drawing light
+- A light layer over the world view: per pixel, the cell's level
+  (interpolated in steps between neighbouring cells, ordered dither like
+  `SIGHT_FADE`) multiplies the colours, with the source's tint.
+- Fittings drawn on the walls' tops/ceiling as glyphs from
+  `data/sprites.txt`; flickering ones flicker in the view only.
+- Remembered cells stay at `MEMORY_DIM`, desaturated, so memory and dark
+  never look alike. `make shot --scene` gets a dark-room scene; a sheet
+  (`make lightsheet`) shows each source and level.
+
+### 4. Light limits sight
+- `Sight::look` marks a cell seen only if it is lit, or within
+  `DARK_SIGHT` cells (2–3) of the eye. Walls and lit cells beyond a dark
+  stretch are still seen.
+- Humans are seen by others by the same rule: one standing in the dark is
+  seen only close.
+- `Memory` keeps which rooms it found dark. Golden changes; look at the
+  diff for new stuck humans (walking blind into dark mazes).
+
+### 5. What darkness does
+- Dread in the dark by bravery (more for the timid); lines on entering a dark place for the
+  first time and on lights dying around it (feeling, not report).
+- Sleep: where-to-sleep scores dark corners by trait.
+- Hiding: private spots and stashes favour the dark.
+- Traps and mess unseen in the dark are walked into.
+- The lost and parched drift toward lit places they can see.
+- A cake across a dark room is missed until it is near.
+- A scenario per behaviour in `tests/scenarios.cpp`.
+
+### 6. The mall clock and its bells
+- The world keeps the mall's time of day, from the world's start (no
+  dice). At closing time the ceiling fittings go out mall-wide but for a
+  few night lights (chosen per chunk at generation); at opening they come back. Machines and
+  the glowing statues stay on.
+- An hour bell rings each mall hour; a different bell rings at opening
+  and at closing. Bells go in the sim's noise list (sound_plan.md step 2)
+  so the sound plan plays them.
+- Humans hear the bells (a sim event, heard everywhere, softer through
+  walls as sound_plan.md has it): `note()` and a `sayLater()` moment for
+  the hour bell (rarely, so it isn't every 50 s), and for opening and
+  closing. Closing raises the pull to sleep; opening wakes the sleeping
+  (not the exhausted); hope or dread by trait, as escape_plan.md's hope.
+  Humans learn the clock only by hearing it: one that has heard a few
+  closings comes to expect them (`Memory`).
+- The light map is redone for every chunk at opening and closing, and
+  where a switch or torch changes it.
+- The HUD's top strip shows the mall time (HH:MM) to the right of the
+  humans and chunk counters, measured with `ui::textRight`; on the wide
+  PC layout in the same place. A scenario checks the bells and reactions.
+
+### 7. (If A3) Switches and carried light
+- Wall switches per room; a new `Action` with rows in all three tables.
+- A torch item, found or vended, carried like a bottle, its light moving
+  with the human (light map updated round it each tick: watch the cost
+  with `make simprofile`).
+
+## Build order
+
+1 → 3 (look only, with a few sources from 2 in a scene) so the user can
+judge the look before anything changes the sim; then 2, 4, 6 (the clock
+before behaviour, since sleep and fear lean on it), 5, 7.
+
+## Open questions
+
+All answered (2026-11-01). Left to judge when built:
+- The look (step 3): colours, how dark is dark, dither.
+- Mall hours of 50 s and 06:00–24:00 opening are defaults; the sleep
+  plan's ~15–20 min awake and ~90 s asleep don't line up with a 15 min
+  open day, so watch whether closing-time sleep fights the sleep tuning.
+- `DARK_SIGHT` (2–3 cells) and whether walking blind into dark mazes
+  leaves humans stuck (step 4's golden diff).
