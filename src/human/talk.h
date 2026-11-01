@@ -230,6 +230,9 @@ enum class Moment {
     // Hiding in the dark: the modest going where it hides them; making a
     // stash where no light falls (both to nobody).
     ReliefDark, StashDark,
+    // Stepping in feces it couldn't see for the dark (to nobody, in place of
+    // stepped_in).
+    SteppedInDark,
     Count
 };
 

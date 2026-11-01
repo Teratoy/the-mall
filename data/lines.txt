@@ -2943,3 +2943,13 @@ filthy                  | WHAT HAVE I BECOME?
 greedy                  | ALL MINE. ALL HIDDEN.
 hungry                  | REMEMBER THE SPOT. REMEMBER IT.
 loner                   | NOBODY ELSE KNOWS. GOOD.
+
+# Stepping in feces it couldn't see for the dark. Said to nobody, in place
+# of stepped_in.
+[stepped_in_dark]
+                        | WARM. WHY IS IT WARM?
+                        | NO. NO NO NO.
+                        | OF COURSE. OF COURSE IT IS.
+timid                   | WHAT ELSE IS DOWN HERE?
+erratic                 | HA. HA HA.
+filthy                  | WHAT'S A LITTLE MORE.

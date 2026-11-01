@@ -386,11 +386,13 @@ void Human::tread(World& world) {
             dirt.wet[i] = std::max(dirt.wet[i], fresh);
         }
         dirt.version++;
+        // In the dark it never saw it coming.
+        const bool dark = world.light(cell) == 0;
         if (!isErratic()) {
             scare(STEPPED_DREAD * modesty());
-            note("STEPPED IN SHIT");
+            note(dark ? "STEPPED IN SHIT IN THE DARK" : "STEPPED IN SHIT");
         }
-        sayLater(talk::Moment::SteppedIn);
+        sayLater(dark ? talk::Moment::SteppedInDark : talk::Moment::SteppedIn);
         return;
     }
     if (relief_.messSteps <= 0) return;

@@ -2253,6 +2253,22 @@ const std::vector<Scenario> SCENARIOS = {
          s.run(120);
          return Checks{loggedBy(h, "HID IT IN THE DARK")};
      }},
+    {"stepped-dark", "hungry in the dark, walking out of a box to a lit cake, it steps in feces it never saw",
+     seedWhere(plain, 31000), [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         calm(h);
+         s.run(45);
+         P::darkenChunk(s.world, h.cell);
+         P::wallIn(s.world, h.cell, Vec2i{2, 0});
+         P::dropFeces(s.world, h.cell + Vec2i{2, 0});
+         const Vec2i cake = h.cell + Vec2i{12, 0};
+         P::addCake(s.world, cake);
+         P::hangLight(s.world, cake);
+         h.hunger = 0.7f;
+         s.run(20);
+         return Checks{loggedBy(h, "STEPPED IN SHIT IN THE DARK")};
+     }},
     {"airlock-surprise", "with keys and nowhere else to go, it opens a server room's outer door and finds another behind",
      seedWhere(plain, 23000), [](Stage& s) {
          Human& h = s.first();

@@ -436,7 +436,9 @@ bool Human::observe(const World& world) {
             if (drinkable(t)) seeTint(world, c);
         }
         // Fresh feces of someone else's, first seen, sicken the modest a little.
-        if (const std::vector<int>* m = world.mess().at(c))
+        // In the dark, what lies on the floor it makes out only underfoot.
+        const std::vector<int>* m = world.light(c) > 0 || cheb(c, cell) <= DARK_FLOOR ? world.mess().at(c) : nullptr;
+        if (m)
             for (int i : *m) {
                 const Dropping& d = world.mess().all()[size_t(i)];
                 if (d.kind == MessKind::Print && d.who != id) firstSight(talk::Moment::FirstPrints, c, d.who);

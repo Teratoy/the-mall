@@ -349,6 +349,20 @@ User asked for other dithering: crossed, hatched, and lines.
   accept, or rework that setup.
 - Soak: 16 still, 0 flips, 0 loops.
 
+### Built: blind trouble (2026-11-01)
+- In the dark it makes out mess on the floor only underfoot or beside it
+  (`DARK_FLOOR` 1), though walls and the rest show 4 cells off: a path
+  planned through dark mess it never saw walks into it. Stepping in fresh
+  feces in the dark notes "STEPPED IN SHIT IN THE DARK" and says
+  `stepped_in_dark` in place of `stepped_in`.
+- A hidden trap beside it is noticed only 0.3 as often in the dark
+  (`NOTICE_TRAP_DARK`).
+- A cake across a dark room is missed until within 4 cells: that came
+  with step 4. The lost and parched making for light: step 5a.
+- Scenario `stepped-dark`: walled in a box in the dark with feces in its
+  one way out, it walks out to a lit cake and steps in them.
+- Soak: 16 still, 1 flip, 0 loops.
+
 ### 6. The mall clock and its bells
 - The world keeps the mall's time of day, from the world's start (no
   dice). At closing time the ceiling fittings go out mall-wide but for a
