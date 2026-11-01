@@ -1,16 +1,17 @@
 #include "world/gen.h"
+#include "world/gen_tuning.h"
 
 namespace gen {
 
 namespace {
 
 /// Floor size of a slam room, each side.
-constexpr int SLAM_ROOM_MIN = 4, SLAM_ROOM_MAX = 7;
+tune::Int SLAM_ROOM_MIN{"traps", "SLAM_ROOM_MIN"}, SLAM_ROOM_MAX{"traps", "SLAM_ROOM_MAX"};
 /// Longest corridor from a slam room's gate to the floor it opens onto.
-constexpr int SLAM_CORRIDOR_MAX = 10;
-constexpr int SLAM_TRIES = 300;
+tune::Int SLAM_CORRIDOR_MAX{"traps", "SLAM_CORRIDOR_MAX"};
+tune::Int SLAM_TRIES{"traps", "SLAM_TRIES"};
 /// How far a dart shooter may sit from its plate, in cells.
-constexpr int DART_RANGE_MIN = 3, DART_RANGE_MAX = 9;
+tune::Int DART_RANGE_MIN{"traps", "DART_RANGE_MIN"}, DART_RANGE_MAX{"traps", "DART_RANGE_MAX"};
 
 bool solid(const Chunk& c, int x, int y, int w, int h) {
     for (int yy = y; yy < y + h; yy++)

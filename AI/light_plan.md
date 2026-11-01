@@ -237,6 +237,19 @@ User asked for other dithering: crossed, hatched, and lines.
   once every `PULSE_SECONDS` (2.4 s), so pixels on the edge of a step
   come and go one by one. View only, on the clock.
 
+### Effects the player can turn off (2026-11-01)
+User asked for the view's effects to be optional settings, on by default.
+CONFIGURATION has SNOW, LIGHT DITHER and SIGHT DITHER under the volumes,
+each an ON/OFF button, kept in the settings file (`snow`, `light_dither`,
+`sight_dither`, 1 or 0) and held in `viewEffects()` (`render/view_effects.h`).
+- SNOW off: never-seen cells are plain black.
+- LIGHT DITHER off: the layer's blend is drawn smooth, not stepped through
+  the pattern (so no breathing either).
+- SIGHT DITHER off: the last rings of sight don't fade toward memory, and
+  pixels don't blend across the line between in sight and remembered, so
+  sight ends on the cells' edges.
+- `make shot SHOT_ARGS="--no-snow --no-light-dither --no-sight-dither"`.
+
 ### 4. Light limits sight
 - `Sight::look` marks a cell seen only if it is lit, or within
   `DARK_SIGHT` cells (2–3) of the eye. Walls and lit cells beyond a dark

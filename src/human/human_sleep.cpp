@@ -335,6 +335,7 @@ bool Human::seekSleep(World& world) {
 // Caught out worn through, it learns to find somewhere safe in time.
 void Human::startSleeping(World& world, bool collapsed) {
     note(collapsed ? "COLLAPSED FROM EXHAUSTION" : "FELL ASLEEP");
+    if (collapsed) world.noise(NoiseKind::Collapse, cell, id);
     if (collapsed) learn(lessons.safeSleep, true);
     // Worn out on watch, it leaves those it watched unguarded.
     if (sleep_.watchee >= 0) note("FELL ASLEEP ON WATCH");

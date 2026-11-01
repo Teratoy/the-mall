@@ -1,5 +1,6 @@
 #include "render/light_view.h"
 #include "human/human.h"
+#include "render/view_effects.h"
 #include "world/world.h"
 #include <algorithm>
 #include <cmath>
@@ -88,6 +89,7 @@ struct Cell {
     float drawn = 1.0f;
     bool wall = false;
     bool shown = false;
+    bool inSight = true;
 };
 
 } // namespace
@@ -107,13 +109,16 @@ const char* ditherName(Dither d) {
 // its own art is drawn: so it can darken art toward a dark neighbour but
 // never brighten memory, and the edge of sight fades on the side in sight.
 // Never a wall's shade over floor, so light doesn't leak through one. The
-// blend is stepped through the pattern, so it falls off in pixels.
+// blend is stepped through the pattern, so it falls off in pixels. With the
+// light's dither turned off the blend is smooth; with the sight's, sight
+// neither fades nor blends across its edge, which then follows the cells.
 void drawLight(const World& world, const Human& viewer, bool reveal, int x0, int y0, int x1, int y1, int left,
                int top) {
     const int cw = x1 - x0 + 3, ch = y1 - y0 + 3;
     std::vector<Cell> cells(size_t(cw * ch));
     const Vec2i eye = viewer.sight.eye();
     const float radius = float(viewer.sight.radius());
+    const ViewEffects& effects = viewEffects();
     for (int y = 0; y < ch; y++)
         for (int x = 0; x < cw; x++) {
             Vec2i c{x0 - 1 + x, y0 - 1 + y};
@@ -126,16 +131,17 @@ void drawLight(const World& world, const Human& viewer, bool reveal, int x0, int
                 cell.want = lit(world.light(c), world.lightFrom(c));
                 continue;
             }
-            if (!viewer.sight.sees(c)) {
+            if (!viewer.sight.inView(c)) {
                 auto seen = viewer.memory.lightSeen(c);
                 cell.want = remembered(seen ? lit(seen->level, seen->from) : Shade{1.0f, 1.0f, 1.0f});
                 cell.drawn = MEMORY_DIM;
+                cell.inSight = false;
                 continue;
             }
             const float d = std::hypot(float(c.x - eye.x), float(c.y - eye.y));
             Shade now = lit(world.light(c), world.lightFrom(c));
             now = brighter(now, mix(DARK, EYE_GLOW, std::max(0.0f, 1.0f - d / EYE_GLOW_CELLS)));
-            if (d > radius - 2.0f) {
+            if (effects.sightDither && d > radius - 2.0f) {
                 const float fade = d > radius - 1.0f ? SIGHT_FADE_OUTER : SIGHT_FADE_INNER;
                 now = mix(now, remembered(now), fade);
             }
@@ -154,7 +160,8 @@ void drawLight(const World& world, const Human& viewer, bool reveal, int x0, int
     pixels.resize(size_t(w * h));
     // A shade over art drawn this dim, stepped to the next step up or down
     // by the pattern.
-    auto channel = [](float want, float drawn, float t) {
+    auto channel = [&effects](float want, float drawn, float t) {
+        if (!effects.lightDither) return (unsigned char)std::lround(255.0f * std::min(1.0f, want / drawn));
         float x = std::min(1.0f, want / drawn) * float(SHADE_STEPS);
         float step = std::floor(x);
         if (x - step > t) step += 1.0f;
@@ -182,7 +189,8 @@ void drawLight(const World& world, const Human& viewer, bool reveal, int x0, int
             const int nx = ownX + (u < 0 ? -1 : 1);
             auto at = [&](int x, int y) {
                 const Cell& c = cells[size_t(y * cw + x)];
-                return !c.shown || (c.wall && !own.wall) ? own.want : c.want;
+                bool apart = !c.shown || (c.wall && !own.wall) || (!effects.sightDither && c.inSight != own.inSight);
+                return apart ? own.want : c.want;
             };
             const float ku = std::abs(u), kv = std::abs(v);
             const Shade want = mix(mix(own.want, at(nx, ownY), ku), mix(at(ownX, ny), at(nx, ny), ku), kv);

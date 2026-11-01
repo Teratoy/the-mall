@@ -1,4 +1,5 @@
 #include "world/gen.h"
+#include "world/gen_tuning.h"
 #include <algorithm>
 #include <bit>
 
@@ -7,12 +8,12 @@ namespace gen {
 namespace {
 
 /// Corridor width and wall thickness are rolled per chunk.
-constexpr int CORRIDOR_MIN = 3, CORRIDOR_MAX = 5;
-constexpr int WALL_MIN = 1, WALL_MAX = 3;
+tune::Int CORRIDOR_MIN{"maze", "CORRIDOR_MIN"}, CORRIDOR_MAX{"maze", "CORRIDOR_MAX"};
+tune::Int WALL_MIN{"maze", "WALL_MIN"}, WALL_MAX{"maze", "WALL_MAX"};
 /// Chance a dead end is knocked through, so the maze has loops.
-constexpr float BRAID_CHANCE = 0.25f;
+tune::Float BRAID_CHANCE{"maze", "BRAID_CHANCE"};
 /// Up to this many halls per slot: blocks of maze cells opened into one space.
-constexpr int HALLS_PER_SLOT_MAX = 2;
+tune::Int HALLS_PER_SLOT_MAX{"maze", "HALLS_PER_SLOT_MAX"};
 
 } // namespace
 

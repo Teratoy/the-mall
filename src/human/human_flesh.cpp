@@ -57,6 +57,8 @@ constexpr float SPOILED_APPETITE = 0.4f;
 /// one gives; what rotten flesh costs in health (never all of it), and how
 /// long it keeps it from healing.
 constexpr float FEED_TIME = 4.0f;
+/// A bite from a rotten body is softer, and less wet.
+constexpr float ROTTEN_BITE_SOUND = 0.7f;
 constexpr float FLESH_FOOD = 0.4f;
 constexpr float SPOILED_FOOD = 0.5f;
 constexpr float SICK_DAMAGE = 0.1f;
@@ -225,6 +227,7 @@ void Human::feed(World& world) {
     if (mind_.prey == b.id) mind_.prey = -1;
     bool rotten = b.spoiled();
     b.flesh--;
+    world.noise(NoiseKind::Bite, b.cell, id, rotten ? ROTTEN_BITE_SOUND : 1.0f);
     hunger = std::max(0.0f, hunger - FLESH_FOOD * (rotten ? SPOILED_FOOD : 1.0f));
     takeIn(0.0f, 1.0f);
     thirst = std::max(0.0f, thirst - FLESH_DRINK);

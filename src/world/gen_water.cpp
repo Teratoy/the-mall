@@ -1,4 +1,5 @@
 #include "world/gen.h"
+#include "world/gen_tuning.h"
 #include <cmath>
 #include <deque>
 
@@ -7,20 +8,20 @@ namespace gen {
 namespace {
 
 /// Floor cells kept between a pool and anything that is not floor.
-constexpr int POOL_RING = 2;
+tune::Int POOL_RING{"water", "POOL_RING"};
 /// Tries per pool at a shape, size, turn and place that fits.
-constexpr int POOL_TRIES = 80;
+tune::Int POOL_TRIES{"water", "POOL_TRIES"};
 /// Half a pool's extent. L, T and C need room for their arms and hollow.
-constexpr float POOL_SIZE_MIN = 2.5f, POOL_SIZE_MAX = 7.0f;
-constexpr float ARMED_SIZE_MIN = 4.0f;
+tune::Float POOL_SIZE_MIN{"water", "POOL_SIZE_MIN"}, POOL_SIZE_MAX{"water", "POOL_SIZE_MAX"};
+tune::Float ARMED_SIZE_MIN{"water", "ARMED_SIZE_MIN"};
 /// Arm thickness; the C's hollow keeps at least this radius.
-constexpr float ARM_MIN = 2.5f, HOLLOW_MIN = 2.5f;
+tune::Float ARM_MIN{"water", "ARM_MIN"}, HOLLOW_MIN{"water", "HOLLOW_MIN"};
 /// The oval's narrow half axis, so a small one is not a ragged sliver.
-constexpr float MINOR_MIN = 2.0f;
-constexpr int CANAL_WIDTH_MIN = 2, CANAL_WIDTH_MAX = 4;
-constexpr int QUAY_WIDTH_MIN = 1, QUAY_WIDTH_MAX = 2;
+tune::Float MINOR_MIN{"water", "MINOR_MIN"};
+tune::Int CANAL_WIDTH_MIN{"water", "CANAL_WIDTH_MIN"}, CANAL_WIDTH_MAX{"water", "CANAL_WIDTH_MAX"};
+tune::Int QUAY_WIDTH_MIN{"water", "QUAY_WIDTH_MIN"}, QUAY_WIDTH_MAX{"water", "QUAY_WIDTH_MAX"};
 /// Least room between a canal and the walls it runs along.
-constexpr int CANAL_MARGIN = 6;
+tune::Int CANAL_MARGIN{"water", "CANAL_MARGIN"};
 
 enum class Shape { Round, Oval, Square, L, T, C, Count };
 
@@ -56,9 +57,9 @@ Outline randomOutline(Rng& rng) {
     // from ending in one-cell spikes.
     auto half = [](float v) { return std::floor(v) + 0.5f; };
     o.size = half(rng.range(armed ? ARMED_SIZE_MIN : POOL_SIZE_MIN, POOL_SIZE_MAX));
-    o.minor = half(std::max(MINOR_MIN, o.size * rng.range(0.4f, 0.7f)));
+    o.minor = half(std::max<float>(MINOR_MIN, o.size * rng.range(0.4f, 0.7f)));
     float armMax = o.shape == Shape::C ? o.size - HOLLOW_MIN : o.size * 0.75f;
-    o.arm = rng.range(ARM_MIN, std::max(ARM_MIN, armMax));
+    o.arm = rng.range(ARM_MIN, std::max<float>(ARM_MIN, armMax));
     return o;
 }
 

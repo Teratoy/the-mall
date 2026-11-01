@@ -53,6 +53,8 @@ constexpr float ROUSE_BLINK_EVERY = 0.7f, ROUSE_BLINK_TIME = 0.2f;
 constexpr float Z_EVERY = 1.3f, Z_LIFE = 2.6f, Z_RISE = 15.0f, Z_DRIFT = 4.0f, Z_SWAY = 1.0f, Z_FADE = 0.3f;
 /// Each Z is the sprite "sleeper's z" in data/sprites.txt, this many pixels square.
 constexpr int Z_SIZE = 4;
+/// Lying on its back, how far the middle of the head is from the sprite's middle.
+constexpr float WAKE_HEAD = 5.0f;
 /// The remains are redrawn only every this much of eating and of rot.
 constexpr int EATEN_STEPS = 12, ROT_STEPS = 24;
 
@@ -255,6 +257,13 @@ void HumanSprites::paint(Texture2D& t, const SpriteFrame& f) {
     UpdateTexture(t, px.data());
 }
 
+// The walk spreads its legs on frames 1 and 3, the run on 0 and 2.
+int footfalls(Pose pose, float animTime) {
+    if (pose == Pose::Walk) return (int(animTime * WALK_FPS) + 1) / 2;
+    if (pose == Pose::Run) return int(animTime * RUN_FPS) / 2 + 1;
+    return -1;
+}
+
 void HumanSprites::draw(Vector2 feet, Pose pose, float animTime, bool flip, int scale, Color tint,
                         int cakes, const Bottle* bottle, bool inHand) const {
     bool carrying = cakes > 0;
@@ -391,7 +400,10 @@ void HumanSprites::drawCurled(Vector2 feet, const Texture2D& tex, bool flip, int
     // The head lies off the middle along the body, towards the way it faces.
     float along = SPRITE_H / 2.0f - curlHead_.y, across = curlHead_.x - SPRITE_W / 2.0f;
     float ahead = flip ? -1.0f : 1.0f;
-    Vector2 head{mid.x + ahead * along * scale, mid.y + across * scale};
+    drawZs({mid.x + ahead * along * scale, mid.y + across * scale}, ahead, scale, tint, sleepTime);
+}
+
+void HumanSprites::drawZs(Vector2 head, float ahead, int scale, Color tint, float sleepTime) const {
     const Sprite& zSprite = sprites::get("sleeper's z", Z_SIZE, Z_SIZE);
     for (int n = 0; n * Z_EVERY < Z_LIFE; n++) {
         float age = std::fmod(sleepTime, Z_EVERY) + n * Z_EVERY;
@@ -410,4 +422,12 @@ void HumanSprites::drawCurled(Vector2 feet, const Texture2D& tex, bool flip, int
                 DrawRectangle(zx + gx * scale, zy + gy * scale, scale, scale, c);
             }
     }
+}
+
+// Lying on its back as draw lays the Wake pose, turned a quarter about the
+// sprite's middle, the head WAKE_HEAD pixels off it, to the left unless flipped.
+void HumanSprites::drawWakingZs(Vector2 feet, bool flip, int scale, float sleepTime) const {
+    float lift = SPRITE_W * scale / 2.0f, side = flip ? 1.0f : -1.0f;
+    Vector2 mid{std::round(feet.x), std::round(feet.y) - lift};
+    drawZs({mid.x + side * WAKE_HEAD * scale, mid.y}, side, scale, WHITE, sleepTime);
 }

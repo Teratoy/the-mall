@@ -1,9 +1,12 @@
 #include "scenes/menu_scene.h"
+#include "audio/audio.h"
+#include "audio/music.h"
 #include "human/human.h"
 #include "render/canvas.h"
 #include "render/world_view.h"
-#include "scenes/create_scene.h"
+#include "scenes/config_scene.h"
 #include "scenes/obituary_scene.h"
+#include "scenes/world_scene.h"
 #include "ui/pixel_ui.h"
 #include <ctime>
 
@@ -19,6 +22,8 @@ constexpr int BUTTON_W = 120, BUTTON_H = 24, BUTTON_GAP = 12;
 constexpr int BUTTONS_Y = 260;
 constexpr Rectangle ENTER{(Canvas::W - BUTTON_W) / 2.0f, BUTTONS_Y, BUTTON_W, BUTTON_H};
 constexpr Rectangle OBITUARY{(Canvas::W - BUTTON_W) / 2.0f, BUTTONS_Y + BUTTON_H + BUTTON_GAP, BUTTON_W, BUTTON_H};
+constexpr Rectangle CONFIGURATION{(Canvas::W - BUTTON_W) / 2.0f, BUTTONS_Y + 2 * (BUTTON_H + BUTTON_GAP), BUTTON_W,
+                                 BUTTON_H};
 
 /// The mall behind is shown at the world's own scale, scrolling south this
 /// many world pixels a second, and grown this many cells ahead of the view.
@@ -37,6 +42,12 @@ MenuScene::MenuScene() : world_(uint64_t(std::time(nullptr))) {
 }
 
 void MenuScene::update(float dt, const Canvas&) {
+    music::want(music::MENU);
+    // F5 reads the music and sounds again, to hear a change to them here.
+    if (IsKeyPressed(KEY_F5)) {
+        music::reload();
+        audio::reload();
+    }
     focus_.y += MALL_SPEED * dt;
     // Down the view's middle and both edges, a chunk ahead of its bottom.
     const int below = int(focus_.y / CELL_PX) + MALL_AHEAD;
@@ -44,8 +55,9 @@ void MenuScene::update(float dt, const Canvas&) {
     for (int x : {mid - half, mid, mid + half})
         for (int y = int(focus_.y / CELL_PX); y <= below; y += CHUNK / 2) world_.ensureGenerated({x, y});
     if (IsKeyPressed(KEY_ENTER)) enter_ = true;
-    if (enter_) next = std::make_unique<CreateScene>(uint64_t(std::time(nullptr)));
+    if (enter_) next = std::make_unique<WorldScene>(uint64_t(std::time(nullptr)));
     else if (obituary_) next = std::make_unique<ObituaryScene>();
+    else if (configuration_) next = std::make_unique<ConfigScene>();
 }
 
 // Buttons report clicks while drawing; they act on the next update.
@@ -65,4 +77,5 @@ void MenuScene::draw(const Canvas& canvas) {
     Vector2 m = canvas.mouse();
     enter_ |= ui::button(ENTER, "ENTER THE MALL", m);
     obituary_ |= ui::button(OBITUARY, "OBITUARY", m);
+    configuration_ |= ui::button(CONFIGURATION, "CONFIGURATION", m);
 }

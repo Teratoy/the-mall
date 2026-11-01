@@ -4,9 +4,12 @@
 #include <optional>
 #include "human/human.h"
 #include "world/world.h"
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <deque>
+#include <tuple>
+#include <utility>
 
 struct SoakProbe {
     // Reading how walks go (stuck_soak.cpp).
@@ -90,6 +93,8 @@ struct SoakProbe {
             for (int x = 0; x < CHUNK; x++) {
                 Vec2i c{slot.x * CHUNK + x, slot.y * CHUNK + y};
                 h.memory.see(c, w.tile(c));
+                // Explored, it has tried its doors, all but the airlocks'.
+                if (w.tile(c) == Tile::DoorLocked && !w.airlock(c)) h.doors_.tried[c] = 0xF;
                 if (items && w.hasCake(c)) h.memory.cakes.insert(c);
                 if (items && w.hasKey(c)) h.memory.keys.insert(c);
             }
@@ -245,6 +250,8 @@ struct SoakProbe {
     }
     /// Shut in, h cries for help on its next update.
     static void cryNow(Human& h) { h.rescue_.helpTimer = 0.0f; }
+    /// h, shut in, cries for help on its own only when it hears someone.
+    static void hushShutIn(Human& h) { h.rescue_.helpTimer = 1e9f; }
     /// Nothing lies put down anywhere, and h knows of nothing lying: the
     /// bottle it woke near is gone, as if never laid.
     static void clearPiles(World& w, Human& h) {
@@ -372,6 +379,14 @@ struct SoakProbe {
         h.server_.keyWise = times >= 2;
     }
     static bool keyWise(const Human& h) { return h.server_.keyWise; }
+    /// h has found this many shut doors locked by trying them (AI/door_trying_plan.md).
+    static void doorsLocked(Human& h, int n) { h.doors_.locked = n; }
+    static bool doorsLearnt(const Human& h) { return h.doors_.learnt; }
+    /// Teller tells listener the way to a locked door it knows and they don't;
+    /// the doors listener now takes for locked on someone's word.
+    static void tellLockedDoor(World& w, Human& teller, Human& listener) { teller.tellLockedDoor(w, listener); }
+    static const std::unordered_set<Vec2i, Vec2iHash>& doorsTold(const Human& h) { return h.doors_.told; }
+    static bool doorKnownLocked(const Human& h, Vec2i door) { return h.doorKnownLocked(door); }
     /// The water dispenser grown in the server room, set to hold this much
     /// water. Aborts if the room grew none.
     static const Dispenser& fillDispenser(World& w, const ServerRoom& r, float water) {
@@ -404,5 +419,33 @@ struct SoakProbe {
         h.escape_.settled = true;
         h.escape_.home = home;
         h.escape_.hope = 0.0f;
+    }
+};
+
+/// What tools/genview.cpp asks of the world: one chunk of the kind and
+/// footprint it is told, grown as the game would grow it, past the spawn.
+struct GenViewProbe {
+    /// Whether the game ever grows this kind on this footprint.
+    static bool grows(ChunkKind kind, const Footprint& parts) { return World::grows(kind, parts); }
+    /// Grows a chunk of this kind on the footprint past the spawn's door
+    /// (World::growPastSpawn).
+    static const Chunk* grow(World& w, ChunkKind kind, const Footprint& parts) { return w.growPastSpawn(kind, parts); }
+    /// A human waking at a cell as every human does, a bottle on the floor
+    /// a step or two away.
+    static Human& wake(World& w, const HumanLook& look, Vec2i cell, uint64_t seed) {
+        Human& h = w.addHuman(look, cell, seed);
+        w.layBottle(h);
+        return h;
+    }
+    /// Where keys and the chunk's human may start: floor deep enough into
+    /// the chunk from where it was entered. World cells.
+    static std::vector<Vec2i> deepSpots(World& w, const Chunk& c, Vec2i entry) {
+        return w.deepSpots(c, entry - c.origin());
+    }
+    /// The chunk the game would grow through the spawn's door, its kind and
+    /// footprint rolled.
+    static const Chunk* rolled(World& w) {
+        w.ensureGenerated(w.spawnEntry());
+        return w.chunks_.back().get();
     }
 };

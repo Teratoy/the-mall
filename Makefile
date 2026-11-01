@@ -11,6 +11,11 @@ LDLIBS   := $(shell pkg-config --libs raylib 2>/dev/null) -lm
 SRC := $(shell find src -name '*.cpp')
 OBJ := $(SRC:src/%.cpp=build/%.o)
 BIN := build/themall
+# raylib copied beside the game, which finds it there (rpath), so play.sh can
+# start the game on the host: the toolbox has no sound libraries, and raylib
+# there plays into nothing.
+RAYLIB_DIR := $(shell pkg-config --variable=libdir raylib 2>/dev/null)
+RAYLIB_COPY := build/lib/.copied
 # Headless check for humans stuck, looping or blocking each other.
 STUCK := build/stuck_soak
 # The soak run that make check compares with tests/golden/soak.txt. The
@@ -24,7 +29,10 @@ SCENARIOS := build/scenarios
 SHOT := build/shot
 # Grows chunk interiors on every footprint and checks they keep to it.
 GENPROBE := build/genprobe
+# The world generator editor: knobs and a live preview (tools/genview.cpp).
+GENVIEW := build/genview
 LIGHTPROBE := build/lightprobe
+EXPLOREPROBE := build/exploreprobe
 # A human drawn at twice the detail, beside the one the game draws now.
 HIDEF := build/hidef
 # Human frames with bottles, scaled up, to check the bottle art by eye.
@@ -34,12 +42,17 @@ DIRTYSHEET := build/dirty_sheet
 # One human shooting all eight ways, as animation frames (tools/frames_gif.py makes the GIF).
 SHOOTANIM := build/shoot_anim
 
-.PHONY: all run clean trips stuck check golden coverage shot scenarios genprobe lightprobe hidef bottlesheet dirtysheet shootanim spritesheet spriteref fontdump lines sprites trapprobe icon apk install-apk logcat simprofile gprof
+.PHONY: all run clean trips stuck check golden coverage shot scenarios genprobe genview lightprobe exploreprobe hidef bottlesheet dirtysheet shootanim spritesheet soundsheet musicsheet voicesheet spriteref fontdump lines sprites sounds trapprobe icon apk install-apk logcat simprofile noiseprobe logsize gprof
 
 all: $(BIN)
 
-$(BIN): $(OBJ)
-	$(CXX) $(LDFLAGS) $^ -o $@ $(LDLIBS)
+$(BIN): $(OBJ) | $(RAYLIB_COPY)
+	$(CXX) $(LDFLAGS) $^ -o $@ -Wl,-rpath,'$$ORIGIN/lib' $(LDLIBS)
+
+$(RAYLIB_COPY):
+	@mkdir -p $(@D)
+	cp -P $(RAYLIB_DIR)/libraylib.so* $(@D)/
+	@touch $@
 
 build/%.o: src/%.cpp
 	@mkdir -p $(@D)
@@ -49,20 +62,20 @@ run: $(BIN)
 	./$(BIN)
 
 $(SCENARIOS): tests/scenarios.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out tests/probe.h,$^) -o $@ $(LDLIBS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDLIBS)
 
 scenarios: $(SCENARIOS)
 	./$(SCENARIOS)
 
 $(STUCK): tests/stuck_soak.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out tests/probe.h,$^) -o $@ $(LDLIBS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDLIBS)
 
 stuck: $(STUCK)
 	./$(STUCK)
 
 # The soak's output, remade only when the soak or what it reads has changed,
 # so make golden after a failed make check copies it instead of running it again.
-build/soak.txt: $(STUCK) data/lines.txt data/names.txt Makefile
+build/soak.txt: $(STUCK) data/lines.txt data/names.txt data/worldgen.txt Makefile
 	./$(STUCK) $(SOAK_ARGS) > $@.tmp && mv $@.tmp $@
 
 # The scenarios run on a spare core while the soak runs, and print after it.
@@ -90,17 +103,30 @@ $(SHOT): tools/shot.cpp $(filter-out build/main.o,$(OBJ))
 shot: $(SHOT)
 	./$(SHOT) build/shot.png $(SHOT_ARGS)
 
-$(GENPROBE): tools/genprobe.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out tests/probe.h,$^) -o $@ $(LDLIBS)
+$(GENPROBE): tools/genprobe.cpp tools/chunk_checks.h tests/probe.h $(filter-out build/main.o,$(OBJ))
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDLIBS)
 
 genprobe: $(GENPROBE)
 	./$(GENPROBE) $(GENPROBE_ARGS)
+
+$(GENVIEW): tools/genview.cpp tools/chunk_checks.h tests/probe.h $(filter-out build/main.o,$(OBJ))
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDLIBS)
+
+# It opens the game on the chunk it shows (P), so the game is built too.
+genview: $(GENVIEW) $(BIN)
+	./$(GENVIEW)
 
 $(LIGHTPROBE): tools/light_probe.cpp $(filter-out build/main.o,$(OBJ))
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@ $(LDLIBS)
 
 lightprobe: $(LIGHTPROBE)
 	./$(LIGHTPROBE) $(LIGHTPROBE_ARGS)
+
+$(EXPLOREPROBE): tools/explore_probe.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDLIBS)
+
+exploreprobe: $(EXPLOREPROBE)
+	./$(EXPLOREPROBE) $(EXPLOREPROBE_ARGS)
 
 $(HIDEF): tools/hidef.cpp $(filter-out build/main.o,$(OBJ))
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@ $(LDLIBS)
@@ -127,6 +153,30 @@ shootanim: $(SHOOTANIM)
 	rm -rf build/shoot-anim
 	./$(SHOOTANIM) build/shoot-anim $(SHOOTANIM_ARGS)
 
+# Every sound from data/sounds.txt rendered to build/sounds/*.wav, clear and muffled (tools/sound_sheet.cpp).
+SOUNDSHEET := build/sound_sheet
+
+# No raylib, so the sound editor can run it on the host.
+$(SOUNDSHEET): tools/sound_sheet.cpp build/audio/synth.o build/audio/music_data.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@ -lm
+
+soundsheet: $(SOUNDSHEET)
+	./$(SOUNDSHEET) data/sounds.txt build/sounds
+
+# Every song in data/music.txt to build/music/: each section alone, and each song as played for 3 minutes.
+musicsheet: $(SOUNDSHEET)
+	./$(SOUNDSHEET) --music data/music.txt build/music
+
+# Sample voices rendered to build/voices/*.wav, crushed as in the game, and the voices of a few grown
+# humans in every tone (tools/voice_sheet.cpp). VOICESHEET_ARGS="6" sets how many humans.
+VOICESHEET := build/voice_sheet
+
+$(VOICESHEET): tools/voice_sheet.cpp $(filter-out build/main.o,$(OBJ))
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@ $(LDLIBS)
+
+voicesheet: $(VOICESHEET)
+	./$(VOICESHEET) build/voices $(VOICESHEET_ARGS)
+
 # Every sprite from data/sprites.txt at 1x, in all the ways the game draws it (tools/sprite_sheet.cpp).
 SPRITESHEET := build/sprite_sheet
 
@@ -144,6 +194,10 @@ spriteref: $(SPRITESHEET)
 # Python only, so it runs on the host too.
 sprites:
 	python3 tools/sprite_editor.py
+
+# The sound editor (tools/sound_editor.py): renders with build/sound_sheet.
+sounds: $(SOUNDSHEET)
+	python3 tools/sound_editor.py
 
 # raylib's default font, saved for the lines editor (tools/font_dump.cpp).
 FONTDUMP := build/font_dump
@@ -163,14 +217,14 @@ lines:
 # Life logs of one soak world: build/lifelog seed [minutes] [crowd] [name] [every].
 LIFELOG := build/lifelog
 $(LIFELOG): tools/lifelog.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out tests/probe.h,$^) -o $@ $(LDLIBS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDLIBS)
 
 # How trips for needs go: done or dropped on the way, and for what.
 # build/trips [seeds] [minutes] [crowd] [examples].
 TRIPS := build/trips
 TRIPS_ARGS ?= 6 15 6
 $(TRIPS): tools/trips.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out tests/probe.h,$^) -o $@ $(LDLIBS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDLIBS)
 
 trips: $(TRIPS)
 	./$(TRIPS) $(TRIPS_ARGS)
@@ -185,10 +239,29 @@ clean:
 SIMPROFILE := build/sim_profile
 SIMPROFILE_ARGS ?= 4 15 6
 $(SIMPROFILE): tools/sim_profile.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out tests/probe.h,$^) -o $@ $(LDLIBS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDLIBS)
 
 simprofile: $(SIMPROFILE)
 	./$(SIMPROFILE) $(SIMPROFILE_ARGS)
+
+# How big the life logs grow over a long game (tools/log_size.cpp):
+# build/log_size [seeds] [minutes] [crowd] [every].
+LOGSIZE := build/log_size
+LOGSIZE_ARGS ?= 4 120 6 15
+$(LOGSIZE): tools/log_size.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDLIBS)
+
+logsize: $(LOGSIZE)
+	./$(LOGSIZE) $(LOGSIZE_ARGS)
+
+# How many of each noise the sim makes for the view to hear (tools/noise_probe.cpp).
+NOISEPROBE := build/noise_probe
+NOISEPROBE_ARGS ?= 6 15 6
+$(NOISEPROBE): tools/noise_probe.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDLIBS)
+
+noiseprobe: $(NOISEPROBE)
+	./$(NOISEPROBE) $(NOISEPROBE_ARGS)
 
 # The same run built with -pg, its gprof flat profile and call graph in
 # build/gprof.txt. The drawing code isn't needed, so it isn't built. It runs
@@ -211,7 +284,7 @@ gprof: build/pg/sim_profile
 TRAPPROBE := build/trap_probe
 
 $(TRAPPROBE): tools/trap_probe.cpp tests/probe.h $(filter-out build/main.o,$(OBJ))
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out tests/probe.h,$^) -o $@ $(LDLIBS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDLIBS)
 
 trapprobe: $(TRAPPROBE)
 	./$(TRAPPROBE) $(TRAPPROBE_ARGS)

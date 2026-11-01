@@ -7,6 +7,7 @@
 #include "world/door.h"
 #include "world/gen.h"
 #include "world/mess.h"
+#include "world/noise.h"
 #include "world/pile.h"
 #include "world/server_room.h"
 #include "world/smell.h"
@@ -16,6 +17,7 @@
 #include "world/trap.h"
 #include "world/vending.h"
 #include <algorithm>
+#include <deque>
 #include <memory>
 #include <optional>
 #include <string>
@@ -52,6 +54,17 @@ public:
     /// they were shown before the world existed. A name given replaces the
     /// one grown from seed.
     Human& makeSpawn(const HumanLook& look, uint64_t seed, const std::string& name = {});
+
+    /// The cell just past the spawn's door, in the slot beyond, where
+    /// whoever goes through it first steps.
+    Vec2i spawnEntry() const;
+    /// Grows a chunk of this kind on the footprint through the spawn's door,
+    /// in a world with the spawn and nothing more yet, as the game would grow
+    /// it had it rolled them: placed so the slot past the door is one of its
+    /// own, the first that keeps it off the spawn. Kind Spawn gives the spawn
+    /// itself; nothing when the game never grows this kind on this footprint.
+    /// For tools/genview.cpp, and the game it opens on that chunk.
+    const Chunk* growPastSpawn(ChunkKind kind, const Footprint& parts);
 
     static Vec2i slotOf(Vec2i cell) { return {floorDiv(cell.x, CHUNK), floorDiv(cell.y, CHUNK)}; }
     bool generated(Vec2i slot) const { return slotChunk_.count(slot) > 0; }
@@ -158,7 +171,11 @@ public:
     const std::unordered_map<Vec2i, uint8_t, Vec2iHash>& cables() const { return cables_; }
 
     bool hasKey(Vec2i cell) const { return keys_.count(cell) > 0; }
-    bool takeKey(Vec2i cell) { return keys_.erase(cell) > 0; }
+    bool takeKey(Vec2i cell) {
+        if (!keys_.erase(cell)) return false;
+        noise(NoiseKind::PickKey, cell);
+        return true;
+    }
     const std::unordered_set<Vec2i, Vec2iHash>& keys() const { return keys_; }
     /// Unlocks the door the cell is part of, on both sides, or the slam
     /// room gate it is, for good; or opens the airlock door it is, until it
@@ -166,7 +183,11 @@ public:
     bool unlock(Vec2i cell);
 
     bool hasCake(Vec2i cell) const { return cakes_.count(cell) > 0; }
-    bool takeCake(Vec2i cell) { return cakes_.erase(cell) > 0; }
+    bool takeCake(Vec2i cell) {
+        if (!cakes_.erase(cell)) return false;
+        noise(NoiseKind::PickCake, cell);
+        return true;
+    }
     const std::unordered_set<Vec2i, Vec2iHash>& cakes() const { return cakes_; }
 
     /// What lies put down on a floor cell, if anything.
@@ -219,6 +240,13 @@ public:
     /// How many bells have rung since the world began, and which was last.
     int bellsRung() const { return bellsRung_; }
     Bell lastBell() const { return lastBell_; }
+    /// Something made a sound the player may hear. For the view only:
+    /// nothing in the sim reads noises back, so they change nothing.
+    void noise(NoiseKind kind, Vec2i cell, int who = -1, float size = 1.0f);
+    /// The newest noises, oldest first, and how many were ever made, so the
+    /// view can tell which it hasn't heard yet.
+    const std::deque<Noise>& noises() const { return noises_; }
+    uint64_t noiseCount() const { return noiseCount_; }
     size_t chunkCount() const { return chunks_.size(); }
 
     /// Every human ever made; a human's id is its index here.
@@ -236,6 +264,8 @@ public:
 private:
     /// tests/stuck_soak.cpp packs extra humans in with addHuman.
     friend struct SoakProbe;
+    /// tools/genview.cpp grows the chunk it is asked for with grow.
+    friend struct GenViewProbe;
     struct Edge {
         EdgeKey key;
         /// The chunk's slot on this side of the wall, and the slot past it.
@@ -296,6 +326,8 @@ private:
     /// Rings the bell when the hour turns, and puts the ceiling lights out
     /// at closing and on again at opening.
     void tickClock(float before);
+    std::deque<Noise> noises_;
+    uint64_t noiseCount_ = 0;
     std::vector<Smell> smells_;
     /// Seconds until the smells are gathered again.
     float smellIn_ = 0.0f;
@@ -306,6 +338,13 @@ private:
     Chunk* chunkAt(Vec2i slot);
     Chunk& addChunk(ChunkKind kind, Vec2i slot, const Footprint& parts);
     void generate(Vec2i slot, Vec2i entry);
+    /// Whether the game ever grows this kind on this footprint: plazas only
+    /// on a whole square, mazes no bigger than MAZE_SLOTS_MAX slots.
+    static bool grows(ChunkKind kind, const Footprint& parts);
+    /// Grows a chunk of this kind on the footprint at origin, entered at
+    /// entry, once generate() has rolled them. When mayCentre, its own dice
+    /// may make it a data centre instead.
+    void grow(ChunkKind kind, Vec2i origin, const Footprint& parts, Vec2i entry, bool mayCentre);
     std::vector<Edge> perimeter(const Chunk& c) const;
     /// Puts the doors neighbours already made into the chunk's border, as
     /// tiles only, so generators can keep water off them.

@@ -67,6 +67,12 @@ constexpr float DOOR_URGE_OUT = 0.3f;
 /// door, the hunch turns this far toward the way it went.
 constexpr int HUNCH_COST = 300;
 constexpr int HUNCH_DOOR_COST = 1500;
+/// Exploring, unseen floor right behind the way it was going costs as much
+/// as this many tenths of a cell more walking, so it carries on across a
+/// room instead of circling the rim of what it can see; and plain unseen
+/// floor costs FRONTIER_COST more than a door, so a doorway in view wins.
+constexpr int HEADING_COST = 300;
+constexpr int FRONTIER_COST = 150;
 /// Hope, 0 to 1 (more in human_hope.cpp): what each thing does to it. A new
 /// chunk is in human_hope.cpp, as it wears off. Falls hit the timid harder.
 constexpr float HOPE_DOOR = 0.1f;
@@ -124,6 +130,9 @@ constexpr float CHECK_DOOR_CHANCE = 0.5f;
 constexpr float CHECK_DOOR_CURIOUS = 0.4f;
 constexpr float DOOR_RECHECK_TIME = 90.0f;
 constexpr int DOOR_CHECK_RANGE = 2;
+/// Shut doors it must find locked by trying them before it takes every
+/// shut door for locked and stops trying (AI/door_trying_plan.md).
+constexpr int DOOR_LESSON = 3;
 /// Cells a single search may expand before giving up.
 constexpr int SEARCH_LIMIT = 200000;
 /// Steps in a row a walker waits for someone in the way before giving up.

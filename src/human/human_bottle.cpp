@@ -253,6 +253,7 @@ void Human::sip(World& world) {
     float foul = b.foul, red = b.red;
     float got = b.take(std::min(SIP_GULP, thirst));
     thirst = std::max(0.0f, thirst - got);
+    if (got > 0.0f) world.noise(NoiseKind::Sip, cell, id);
     takeIn(got / SIP_GULP, 0.0f);
     swallow(world, foul, red, std::nullopt, true);
     bool dry = b.empty();

@@ -15,6 +15,7 @@
 #include "render/table_art.h"
 #include "render/toilet_art.h"
 #include "render/vending_art.h"
+#include "render/view_effects.h"
 #include "render/water_art.h"
 #include "world/world.h"
 #include <rlgl.h>
@@ -59,6 +60,15 @@ constexpr Color HURT_TINT = {255, 90, 90, 255};
 constexpr Color GHOST_TINT = {255, 255, 255, 110};
 /// Remembered but out of sight: drawn at this brightness.
 constexpr float MEMORY_DIM = 0.45f;
+/// Cells the viewer has never seen are dark snow, like a dead screen: a tile
+/// of SNOW_PX world pixels a side (whole cells, so each cell takes a piece of
+/// it whole), SNOW_FRAMES of it, flicked through SNOW_FPS times a second.
+constexpr int SNOW_PX = 48, SNOW_FRAMES = 8;
+constexpr float SNOW_FPS = 12.0f;
+/// Most of the snow is black; a grain in SNOW_GRAIN lights up to between
+/// SNOW_DIM and SNOW_BRIGHT, and one in SNOW_SPARK of those to SNOW_SPARK_LEVEL.
+constexpr float SNOW_GRAIN = 0.35f;
+constexpr int SNOW_DIM = 2, SNOW_BRIGHT = 9, SNOW_SPARK = 12, SNOW_SPARK_LEVEL = 15;
 /// Statues are looked for this many rows below the screen, as the tallest
 /// rise into it from there.
 constexpr int STATUE_REACH = 28;
@@ -148,6 +158,8 @@ void drawShooter(int x, int y, bool inSight) {
     DrawRectangle(x + 2, y + 2, 2, 2, dim(TRAP_HOLE, inSight));
 }
 
+} // namespace
+
 Pose poseOf(const Human& h) {
     // Pointing the way out, arm held out: up for a way mostly north, down
     // for one mostly south.
@@ -186,8 +198,6 @@ Pose poseOf(const Human& h) {
     return h.winded() ? Pose::Winded : Pose::Idle;
 }
 
-} // namespace
-
 void drawKeyIcon(int x, int y) { drawKey(x, y, true); }
 
 void drawCakeIcon(int x, int y) { drawCake(x, y, true); }
@@ -196,6 +206,32 @@ Vector2 feetOf(const Human& h) {
     float t = h.stepProgress();
     return {(h.prev.x + (h.cell.x - h.prev.x) * t) * CELL_PX + CELL_PX / 2.0f,
             (h.prev.y + (h.cell.y - h.prev.y) * t) * CELL_PX + CELL_PX};
+}
+
+int floorMod(int a, int b) { return a - floorDiv(a, b) * b; }
+
+/// The snow's frames side by side, grown once from a hash of each pixel so it
+/// is the same every run and takes nothing from the sim's dice.
+const Texture2D& snowTexture() {
+    static Texture2D tex{};
+    if (tex.id != 0) return tex;
+    Image img = GenImageColor(SNOW_PX * SNOW_FRAMES, SNOW_PX, BLACK);
+    auto* px = static_cast<Color*>(img.data);
+    for (int i = 0; i < img.width * img.height; i++) {
+        uint32_t h = uint32_t(i) * 2654435761u;
+        h ^= h >> 15;
+        h *= 2246822519u;
+        h ^= h >> 13;
+        h *= 3266489917u;
+        h ^= h >> 16;
+        if (float(h & 0xffff) / 65536.0f >= SNOW_GRAIN) continue;
+        int level = SNOW_DIM + int((h >> 16) % uint32_t(SNOW_BRIGHT - SNOW_DIM + 1));
+        if ((h >> 24) % SNOW_SPARK == 0) level = SNOW_SPARK_LEVEL;
+        px[i] = {(unsigned char)level, (unsigned char)level, (unsigned char)level, 255};
+    }
+    tex = LoadTextureFromImage(img);
+    UnloadImage(img);
+    return tex;
 }
 
 Vector2 drawnFeet(const Human& h, float zoom) {
@@ -212,7 +248,7 @@ Vector2 cameraFor(Vector2 focus, float zoom, Vector2 size) {
 }
 
 bool shown(const Human& viewer, const Human& h, bool reveal) {
-    return reveal || &h == &viewer || viewer.sight.sees(h.cell);
+    return reveal || &h == &viewer || viewer.sight.inView(h.cell);
 }
 
 void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprites,
@@ -235,14 +271,30 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
             Tile tile = known(c);
             if (tile == Tile::Void) continue;
             drawCell(x * CELL_PX - left, y * CELL_PX - top, tile, known(c + Vec2i{0, -1}),
-                     known(c + Vec2i{0, 1}), world.floor(c), world.wall(c), reveal || viewer.sight.sees(c));
+                     known(c + Vec2i{0, 1}), world.floor(c), world.wall(c), reveal || viewer.sight.inView(c));
+        }
+    // What the viewer has never seen is snow, in a pass of its own so the
+    // texture is bound once; with the snow turned off, black.
+    const Texture2D& snow = snowTexture();
+    const bool snowing = viewEffects().snow;
+    const int snowFrame = int(GetTime() * SNOW_FPS) % SNOW_FRAMES;
+    for (int y = y0; y <= y1; y++)
+        for (int x = x0; x <= x1; x++) {
+            if (known({x, y}) != Tile::Void) continue;
+            if (!snowing) {
+                DrawRectangle(x * CELL_PX - left, y * CELL_PX - top, CELL_PX, CELL_PX, BLACK);
+                continue;
+            }
+            Rectangle src{float(snowFrame * SNOW_PX + floorMod(x * CELL_PX, SNOW_PX)),
+                          float(floorMod(y * CELL_PX, SNOW_PX)), float(CELL_PX), float(CELL_PX)};
+            DrawTextureRec(snow, src, {float(x * CELL_PX - left), float(y * CELL_PX - top)}, WHITE);
         }
     const int frame = int(GetTime() * WATER_FPS);
     for (int y = y0; y <= y1; y++)
         for (int x = x0; x <= x1; x++) {
             Vec2i c{x, y};
             Tile tile = known(c);
-            bool inSight = reveal || viewer.sight.sees(c);
+            bool inSight = reveal || viewer.sight.inView(c);
             if (tile == Tile::Water) {
                 // Blood clouds the water only while the viewer watches.
                 if (inSight) {
@@ -294,12 +346,12 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
         for (int x = x0; x <= x1; x++)
             if (uint8_t k = world.cable({x, y}); k && known({x, y}) != Tile::Void)
                 drawCable(x * CELL_PX - left, y * CELL_PX - top, uint8_t(k & 15), k >> 4,
-                          reveal || viewer.sight.sees({x, y}));
+                          reveal || viewer.sight.inView({x, y}));
 
     // Blood in sight as it is, elsewhere as the viewer last saw it. On
     // floor and walls now; on tables and statues once they are drawn.
     auto drawBlood = [&](Vec2i c, int rise) {
-        bool inSight = reveal || viewer.sight.sees(c);
+        bool inSight = reveal || viewer.sight.inView(c);
         const Stain* s = world.blood().at(c);
         if (!inSight) {
             auto it = viewer.memory.blood.find(c);
@@ -327,7 +379,7 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
             const Dropping& d = drops[i];
             if (d.kind != kind || d.cell.x < x0 - 1 || d.cell.x > x1 + 1 || d.cell.y < y0 - 1 || d.cell.y > y1 + 1)
                 continue;
-            bool inSight = reveal || viewer.sight.sees(d.cell);
+            bool inSight = reveal || viewer.sight.inView(d.cell);
             if (!inSight && !viewer.memory.mess.count(int(i))) continue;
             drawDropping(d, Mess::freshness(d, world.time()), world.time() - d.born, left, top,
                          inSight ? 1.0f : MEMORY_DIM, onFloor);
@@ -337,7 +389,7 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
     // a time as far as the viewer knows it.
     auto view = [&](Vec2i c) {
         if (known(c) != Tile::Table) return CellView::Unknown;
-        return reveal || viewer.sight.sees(c) ? CellView::InSight : CellView::Remembered;
+        return reveal || viewer.sight.inView(c) ? CellView::InSight : CellView::Remembered;
     };
     std::unordered_set<const Table*> tables;
     for (int y = y0; y <= y1; y++)
@@ -354,12 +406,12 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
     // Traps as the viewer knows them, or all of them when revealing; seen
     // as they are now when in sight. A dart plate's wall shows its slot.
     auto drawTrapAt = [&](Vec2i c, TrapKind kind) {
-        bool inSight = reveal || viewer.sight.sees(c);
+        bool inSight = reveal || viewer.sight.inView(c);
         const Trap* t = world.trap(c);
         drawTrap(c.x * CELL_PX - left, c.y * CELL_PX - top - rise(c), kind, inSight && t && !t->armed(), inSight);
         if (kind == TrapKind::Darts && t && known(t->from) != Tile::Void)
             drawShooter(t->from.x * CELL_PX - left, t->from.y * CELL_PX - top,
-                        reveal || viewer.sight.sees(t->from));
+                        reveal || viewer.sight.inView(t->from));
     };
     if (reveal)
         for (const auto& [c, t] : world.traps()) drawTrapAt(c, t.kind);
@@ -372,11 +424,11 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
         for (const auto& [c, p] : world.piles()) drawPile(c.x * CELL_PX - left, c.y * CELL_PX - top, p, true);
     } else {
         for (const auto& [c, p] : viewer.memory.piles)
-            drawPile(c.x * CELL_PX - left, c.y * CELL_PX - top, p, viewer.sight.sees(c));
+            drawPile(c.x * CELL_PX - left, c.y * CELL_PX - top, p, viewer.sight.inView(c));
         for (Vec2i k : viewer.memory.keys)
-            drawKey(k.x * CELL_PX - left, k.y * CELL_PX - top - rise(k), viewer.sight.sees(k));
+            drawKey(k.x * CELL_PX - left, k.y * CELL_PX - top - rise(k), viewer.sight.inView(k));
         for (Vec2i k : viewer.memory.cakes)
-            drawCake(k.x * CELL_PX - left, k.y * CELL_PX - top - rise(k), viewer.sight.sees(k));
+            drawCake(k.x * CELL_PX - left, k.y * CELL_PX - top - rise(k), viewer.sight.inView(k));
     }
 
     // Statues the viewer knows any of the base of, in sight if they see any of it.
@@ -455,7 +507,7 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
         rlPopMatrix();
         // The cakes a body still holds lie in plain sight on it, and its
         // bottles on their side at its feet.
-        bool inSight = reveal || viewer.sight.sees(h.cell);
+        bool inSight = reveal || viewer.sight.inView(h.cell);
         if (h.dead() && h.cakes > 0) drawCake(h.cell.x * CELL_PX - left, h.cell.y * CELL_PX - top, inSight);
         for (size_t i = 0; h.dead() && i < h.bottles.size(); i++) {
             Vector2 origin{float(h.cell.x * CELL_PX - left), float(h.cell.y * CELL_PX - top)};
@@ -468,13 +520,13 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
             // Each blinks to its own clock; remembered, it holds still.
             const ServerPiece& p = *d.piece;
             bool inSight = reveal;
-            for (Vec2i c : pieceCells(p)) inSight |= viewer.sight.sees(c);
+            for (Vec2i c : pieceCells(p)) inSight |= viewer.sight.inView(c);
             const float seconds = float(GetTime()) + float(p.seed % 1000) / 100.0f;
             const int x = p.at.x * CELL_PX - left;
             // Someone at its keys, in sight: the screen asks them for a password.
             bool typed = false;
             for (const auto& o : world.humans())
-                typed |= o->typingAt() == p.at && (reveal || viewer.sight.sees(o->cell));
+                typed |= o->typingAt() == p.at && (reveal || viewer.sight.inView(o->cell));
             if (p.kind == Rig::Rack) drawServerRack(x, int(d.y) - top, inSight, seconds);
             else if (p.kind == Rig::Terminal) drawTerminal(x, int(d.y) - top, inSight, seconds, typed);
             else drawConsoleDesk(x, p.at.y * CELL_PX - top, inSight, seconds, typed);
@@ -483,7 +535,7 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
         if (d.dispenser) {
             // In sight it shows how full it is now; remembered, as full as the viewer last saw it, dimmed.
             const Dispenser& w = *d.dispenser;
-            bool inSight = reveal || viewer.sight.sees(w.at);
+            bool inSight = reveal || viewer.sight.inView(w.at);
             auto it = viewer.memory.dispensers.find(w.at);
             float water = inSight ? w.water : it == viewer.memory.dispensers.end() ? 0.0f : it->second;
             drawDispenser(w.at.x * CELL_PX - left, int(d.y) - top, water / DISPENSER_HOLDS, w.side(), w.facing.x < 0,
@@ -493,7 +545,7 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
         if (d.machine) {
             // In sight it shows what it holds now; remembered, what the viewer saw in it, dimmed and still.
             const Machine& m = *d.machine;
-            bool inSight = reveal || viewer.sight.sees(m.at) || viewer.sight.sees(m.at + m.along());
+            bool inSight = reveal || viewer.sight.inView(m.at) || viewer.sight.inView(m.at + m.along());
             int x = m.at.x * CELL_PX - left, y = int(d.y) - top;
             if (!m.side()) {
                 auto it = viewer.memory.machines.find(m.at);
@@ -510,7 +562,7 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
             const Statue& s = world.statues()[size_t(d.statue)];
             bool inSight = reveal;
             for (int y = 0; y < s.size.y && !inSight; y++)
-                for (int x = 0; x < s.size.x && !inSight; x++) inSight = viewer.sight.sees(s.at + Vec2i{x, y});
+                for (int x = 0; x < s.size.x && !inSight; x++) inSight = viewer.sight.inView(s.at + Vec2i{x, y});
             statueArt.draw(s, d.statue, s.at.x * CELL_PX - left, int(d.y) - top, inSight);
             for (int y = 0; y < s.size.y; y++)
                 for (int x = 0; x < s.size.x; x++)
@@ -531,7 +583,7 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
 
     // Darts over everyone, as a short streak trailing back toward their wall.
     for (const Dart& d : world.darts()) {
-        if (d.flown < 1.0f || (!reveal && !viewer.sight.sees(d.at()))) continue;
+        if (d.flown < 1.0f || (!reveal && !viewer.sight.inView(d.at()))) continue;
         float px = (d.from.x + d.dir.x * d.flown + 0.5f) * CELL_PX - left;
         float py = (d.from.y + d.dir.y * d.flown + 0.5f) * CELL_PX - top - DART_RISE_PX;
         for (int i = 0; i < 3; i++) DrawPixel(int(px) - d.dir.x * i, int(py) - d.dir.y * i, DART);
@@ -546,7 +598,7 @@ void drawWorld(const World& world, const Human& viewer, const SpritesFor& sprite
             if (!shown(viewer, h, reveal)) continue;
             at = feetOf(h);
             at.y -= h.dead() ? SPRITE_W / 2.0f + FLY_OVER_BODY : SPRITE_H + FLY_OVER_HEAD;
-        } else if (!reveal && !viewer.sight.sees(s.cell)) {
+        } else if (!reveal && !viewer.sight.inView(s.cell)) {
             continue;
         }
         int flies = 1 + int(std::lround(s.strength * (FLIES_MAX - 1)));

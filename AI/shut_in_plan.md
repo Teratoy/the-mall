@@ -88,3 +88,15 @@ All six steps, in `human_rescue.cpp` (state in `rescue_`), with the tell in
 Not done: the chat topics don't bring it up; the greeting tell carries it.
 In 6 crowded 25-minute worlds it was told 3 times and sent 2 humans for
 keys, but no roll came up to go: the odds are as they were.
+
+## Crying out to steps (2026-11-01)
+
+A test pass saw a shut-in human hear steps outside while eating a cake and
+say nothing until its next timed cry, by which time the walker had gone.
+Now, in `callForHelp`, steps out of sight within 9 cells (`STEPS_HEARD`, as
+far as the player hears them) bring a cry at once, whatever it is doing, no
+sooner than 10 s after the last such cry (`STEPS_AGAIN`). The cry is the new
+moment `HelpSteps` (`[help_steps]`), urgent so it cuts in over a line being
+read; the log says "HEARD STEPS OUTSIDE. CRIED OUT". The timed `Help` cry
+also goes ahead of small talk now, instead of being dropped when the queue
+is full. Scenario: `shut-in-steps`.

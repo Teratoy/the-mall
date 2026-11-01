@@ -1,14 +1,19 @@
 #include "world/world.h"
 #include "world/gen.h"
+#include "world/gen_tuning.h"
 #include "human/human.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <deque>
+#include <tuple>
 #include <utility>
 
 namespace {
 
+/// Noises kept for the view to hear; older ones are dropped unheard, as
+/// when nothing is listening (the soak).
+constexpr size_t NOISES_KEPT = 256;
 /// Smells are gathered this often, in seconds.
 constexpr float SMELL_EVERY = 1.0f;
 /// Feces smell until this fresh (Mess::freshness), as dry as no longer to
@@ -20,47 +25,47 @@ constexpr float WATER_SMELL_FOUL = 0.5f, WATER_SMELL_MIN = 0.2f;
 
 /// Chance each free stretch of border gets an exit door, beyond the one
 /// every chunk with an empty neighbour is sure to have.
-constexpr float NEW_DOOR_CHANCE = 0.35f;
-constexpr int DOOR_WIDTH = 3;
+tune::Float NEW_DOOR_CHANCE{"world", "NEW_DOOR_CHANCE"};
+tune::Int DOOR_WIDTH{"world", "DOOR_WIDTH"};
 /// Doors keep at least this far from the corners of their slot.
-constexpr int DOOR_MARGIN = 8;
+tune::Int DOOR_MARGIN{"world", "DOOR_MARGIN"};
 /// How likely each kind of chunk is.
 /// Plazas only come square.
 constexpr ChunkKind KINDS[] = {ChunkKind::Rooms, ChunkKind::Maze, ChunkKind::WaterMaze, ChunkKind::Plaza};
-const std::vector<float> KIND_WEIGHTS = {0.5f, 0.25f, 0.13f, 0.12f};
+tune::List KIND_WEIGHTS{"world", "KIND_WEIGHTS", 4};
 /// Chance a chunk is a data centre, rolled with dice of its own after its
 /// kind, so other chunks come out as they would without (user: uncommon).
-constexpr float DATA_CENTRE_CHANCE = 0.125f;
+tune::Float DATA_CENTRE_CHANCE{"world", "DATA_CENTRE_CHANCE"};
 /// Server rooms a data centre wants for each slot it covers.
-constexpr int CENTRE_ROOMS_PER_SLOT = 8;
+tune::Int CENTRE_ROOMS_PER_SLOT{"world", "CENTRE_ROOMS_PER_SLOT"};
 /// Chance a room network has a server room (user: rare).
-constexpr float SERVER_ROOM_CHANCE = 0.1f;
+tune::Float SERVER_ROOM_CHANCE{"world", "SERVER_ROOM_CHANCE"};
 /// An airlock door shuts and locks this long after the last one through it stepped out of it.
 constexpr float AIRLOCK_SHUT_TIME = 1.0f;
 /// Mazes, of stone or water, come no bigger than this many slots (user).
-constexpr int MAZE_SLOTS_MAX = 2;
+tune::Int MAZE_SLOTS_MAX{"world", "MAZE_SLOTS_MAX"};
 /// Width of the corridors that join stray areas and doors to the rest.
-constexpr int JOIN_WIDTH = 3;
+tune::Int JOIN_WIDTH{"world", "JOIN_WIDTH"};
 /// Keys and the chunk's human start at least this far into the chunk from
 /// where it was entered, as a fraction of the way to the farthest floor.
-constexpr float KEY_DEPTH = 0.4f;
+tune::Float KEY_DEPTH{"world", "KEY_DEPTH"};
 /// A chunk makes one spare key for every this many locks it brings, to the
 /// nearest: 1 lock gets 1 key, 2 get 3, 3 get 4, 4 get 5, 5 get 7 (user).
-constexpr int LOCKS_PER_SPARE_KEY = 3;
+tune::Int LOCKS_PER_SPARE_KEY{"world", "LOCKS_PER_SPARE_KEY"};
 /// Cakes per slot a chunk is made with. They never come back once eaten.
-constexpr int CAKES_MIN = 2, CAKES_MAX = 5;
+tune::Int CAKES_MIN{"world", "CAKES_MIN"}, CAKES_MAX{"world", "CAKES_MAX"};
 /// Each human wakes BOTTLE_STEPS_MIN to BOTTLE_STEPS_MAX steps from a bottle
 /// this full, lying on the floor.
 constexpr int BOTTLE_STEPS_MIN = 2, BOTTLE_STEPS_MAX = 3;
 constexpr float WAKE_BOTTLE = 0.5f;
 /// Slam rooms per slot of a room network, at most.
-constexpr int SLAM_ROOMS_MAX = 1;
+tune::Int SLAM_ROOMS_MAX{"world", "SLAM_ROOMS_MAX"};
 /// Chance a cake is rigged with darts, where a wall faces it down a straight run.
-constexpr float DART_BAIT_CHANCE = 0.3f;
-constexpr int SPIKES_MIN = 0, SPIKES_MAX = 2;
+tune::Float DART_BAIT_CHANCE{"world", "DART_BAIT_CHANCE"};
+tune::Int SPIKES_MIN{"world", "SPIKES_MIN"}, SPIKES_MAX{"world", "SPIKES_MAX"};
 /// Spikes keep this far into the chunk, and this far from slam room gates.
-constexpr int SPIKE_MARGIN = 4;
-constexpr int SPIKE_GATE_GAP = 2;
+tune::Int SPIKE_MARGIN{"world", "SPIKE_MARGIN"};
+tune::Int SPIKE_GATE_GAP{"world", "SPIKE_GATE_GAP"};
 /// Seconds spikes stay up once they go off; then they sink, armed again.
 constexpr float SPIKES_UP_TIME = 3.0f;
 /// A dart plate stays down this long after a volley, then re-arms.
@@ -73,66 +78,57 @@ constexpr int DART_FLIGHT_MAX = 16;
 constexpr float DART_DAMAGE_MIN = 0.12f, DART_DAMAGE_MAX = 0.2f;
 
 /// How likely each table shape is, in TableShape order.
-const std::vector<float> TABLE_SHAPE_WEIGHTS = {3.0f, 2.0f, 2.0f, 2.0f, 2.0f, 1.0f, 1.0f};
+tune::List TABLE_SHAPE_WEIGHTS{"world", "TABLE_SHAPE_WEIGHTS", 7};
 /// How likely each table material is, in TableMaterial order.
-const std::vector<float> TABLE_MATERIAL_WEIGHTS = {3.0f, 2.0f, 2.0f, 2.0f, 1.5f, 1.0f, 1.0f, 1.5f};
+tune::List TABLE_MATERIAL_WEIGHTS{"world", "TABLE_MATERIAL_WEIGHTS", 8};
 /// Chance a table is of its chunk's house material rather than any.
-constexpr float TABLE_HOUSE_CHANCE = 0.65f;
+tune::Float TABLE_HOUSE_CHANCE{"world", "TABLE_HOUSE_CHANCE"};
 
 /// How likely each statue kind and material is, in enum order.
-const std::vector<float> STATUE_KIND_WEIGHTS = {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
+tune::List STATUE_KIND_WEIGHTS{"world", "STATUE_KIND_WEIGHTS", 10};
 
-const std::vector<float> STATUE_MATERIAL_WEIGHTS = {1.0f, 1.0f, 0.8f, 1.2f};
-constexpr float PLINTH_CHANCE = 0.5f;
+tune::List STATUE_MATERIAL_WEIGHTS{"world", "STATUE_MATERIAL_WEIGHTS", 4};
+tune::Float PLINTH_CHANCE{"world", "PLINTH_CHANCE"};
 /// Chance a room gets a statue in its middle, and the most per slot.
-constexpr float STATUE_ROOM_CHANCE = 0.35f;
+tune::Float STATUE_ROOM_CHANCE{"world", "STATUE_ROOM_CHANCE"};
 /// Chance a room without one in its middle gets one in a niche instead,
 /// and the kinds small enough for niches.
-constexpr float NICHE_CHANCE = 0.25f;
+tune::Float NICHE_CHANCE{"world", "NICHE_CHANCE"};
 /// A plaza's middle is a fountain this often, else its grand statue stands
 /// on the floor. Smaller statues stand round it, this many per slot across.
-constexpr float FOUNTAIN_CHANCE = 0.7f;
-constexpr int PLAZA_STATUES_MIN = 2, PLAZA_STATUES_MAX = 6;
+tune::Float FOUNTAIN_CHANCE{"world", "FOUNTAIN_CHANCE"};
+tune::Int PLAZA_STATUES_MIN{"world", "PLAZA_STATUES_MIN"}, PLAZA_STATUES_MAX{"world", "PLAZA_STATUES_MAX"};
 /// Now and then a plaza is given over to toilets: every statue in it a
 /// toilet, half as many again of them, and real ones all round its walls.
-constexpr float TOILET_PLAZA_CHANCE = 0.2f;
-constexpr int TOILET_PLAZA_STATUES_EXTRA = 3;
+tune::Float TOILET_PLAZA_CHANCE{"world", "TOILET_PLAZA_CHANCE"};
+tune::Int TOILET_PLAZA_STATUES_EXTRA{"world", "TOILET_PLAZA_STATUES_EXTRA"};
 constexpr StatueKind NICHE_KINDS[] = {StatueKind::Spoon, StatueKind::Bulb, StatueKind::Mug, StatueKind::Lamp,
                                       StatueKind::Clock};
 
-constexpr int STATUES_PER_SLOT_MAX = 3;
+tune::Int STATUES_PER_SLOT_MAX{"world", "STATUES_PER_SLOT_MAX"};
 /// Cells per side of the spawn room: 30% of the floor the whole chunk once gave.
-constexpr int SPAWN_ROOM = 54;
+tune::Int SPAWN_ROOM{"world", "SPAWN_ROOM"};
 /// The spawn room gets a statue this often, at least this far from its middle.
-constexpr float SPAWN_STATUE_CHANCE = 0.6f;
-constexpr int SPAWN_STATUE_GAP = 14;
+tune::Float SPAWN_STATUE_CHANCE{"world", "SPAWN_STATUE_CHANCE"};
+tune::Int SPAWN_STATUE_GAP{"world", "SPAWN_STATUE_GAP"};
 /// Cells per side of a basin. A plaza with no fountain gets this many.
-constexpr int BASIN_SIZE = 2;
-constexpr int PLAZA_BASINS_MIN = 1, PLAZA_BASINS_MAX = 2;
+tune::Int BASIN_SIZE{"world", "BASIN_SIZE"};
+tune::Int PLAZA_BASINS_MIN{"world", "PLAZA_BASINS_MIN"}, PLAZA_BASINS_MAX{"world", "PLAZA_BASINS_MAX"};
 /// Washrooms a data centre has for each slot it covers. It has no other
 /// water than their toilets (user).
-constexpr int CENTRE_WASHROOMS_PER_SLOT = 1;
+tune::Int CENTRE_WASHROOMS_PER_SLOT{"world", "CENTRE_WASHROOMS_PER_SLOT"};
 /// A statue keeps at least this many cells from any door, and from the
 /// cell it is told to keep clear.
-constexpr int STATUE_DOOR_GAP = 3;
-constexpr int STATUE_CLEAR_GAP = 2;
+tune::Int STATUE_DOOR_GAP{"world", "STATUE_DOOR_GAP"};
+tune::Int STATUE_CLEAR_GAP{"world", "STATUE_CLEAR_GAP"};
 /// How far from the centre a statue may be nudged to fit.
-constexpr int STATUE_NUDGE = 4;
+tune::Int STATUE_NUDGE{"world", "STATUE_NUDGE"};
 
-/// Chunk footprints, and how likely each is.
-struct ShapePick {
-    Footprint parts;
-    float weight;
-};
-const std::vector<ShapePick> SHAPES = {{boxFootprint({1, 1}), 4.0f},
-                                       {boxFootprint({2, 1}), 2.0f},
-                                       {boxFootprint({1, 2}), 2.0f},
-                                       {boxFootprint({2, 2}), 1.0f},
-                                       {boxFootprint({3, 1}), 0.6f},
-                                       {boxFootprint({1, 3}), 0.6f},
-                                       {boxFootprint({4, 1}), 0.3f},
-                                       {boxFootprint({1, 4}), 0.3f},
-                                       {boxFootprint({3, 3}), 0.25f}};
+/// Chunk footprints; how likely each is is in SHAPE_WEIGHTS, in this order.
+const std::vector<Footprint> SHAPES = {boxFootprint({1, 1}), boxFootprint({2, 1}), boxFootprint({1, 2}),
+                                       boxFootprint({2, 2}), boxFootprint({3, 1}), boxFootprint({1, 3}),
+                                       boxFootprint({4, 1}), boxFootprint({1, 4}), boxFootprint({3, 3})};
+tune::List SHAPE_WEIGHTS{"world", "SHAPE_WEIGHTS", 9};
 
 TableMaterial randomMaterial(Rng& rng) { return TableMaterial(rng.weighted(TABLE_MATERIAL_WEIGHTS)); }
 
@@ -254,6 +250,12 @@ Human* World::occupant(Vec2i cell) const {
     return it == occupied_.end() ? nullptr : it->second;
 }
 
+void World::noise(NoiseKind kind, Vec2i cell, int who, float size) {
+    noises_.push_back({kind, cell, who, size});
+    noiseCount_++;
+    if (noises_.size() > NOISES_KEPT) noises_.pop_front();
+}
+
 void World::moveOccupant(Vec2i from, Vec2i to, Human* h) {
     occupied_.erase(from);
     occupied_[to] = h;
@@ -274,25 +276,58 @@ void World::generate(Vec2i slot, Vec2i entry) {
     // Each slot of each footprint in turn is tried on the one entered.
     std::vector<std::pair<Vec2i, const Footprint*>> options;
     std::vector<float> weights;
-    for (const ShapePick& sp : SHAPES)
-        for (Vec2i on : sp.parts) {
+    for (size_t i = 0; i < SHAPES.size(); i++)
+        for (Vec2i on : SHAPES[i]) {
             Vec2i origin = slot - on;
-            bool free = std::none_of(sp.parts.begin(), sp.parts.end(),
+            bool free = std::none_of(SHAPES[i].begin(), SHAPES[i].end(),
                                      [&](Vec2i p) { return generated(origin + p); });
             if (!free) continue;
-            options.push_back({origin, &sp.parts});
-            weights.push_back(sp.weight);
+            options.push_back({origin, &SHAPES[i]});
+            weights.push_back(SHAPE_WEIGHTS.values()[i]);
         }
     auto [origin, parts] = options[size_t(rng_.weighted(weights))];
 
     std::vector<float> kindWeights = KIND_WEIGHTS;
-    const Vec2i box = footprintBox(*parts);
-    if (box.x != box.y || int(parts->size()) != box.x * box.y) kindWeights[3] = 0.0f;
-    if (int(parts->size()) > MAZE_SLOTS_MAX) kindWeights[1] = kindWeights[2] = 0.0f;
-    ChunkKind kind = KINDS[rng_.weighted(kindWeights)];
+    for (size_t i = 0; i < kindWeights.size(); i++)
+        if (!grows(KINDS[i], *parts)) kindWeights[i] = 0.0f;
+    grow(KINDS[rng_.weighted(kindWeights)], origin, *parts, entry, true);
+}
+
+bool World::grows(ChunkKind kind, const Footprint& parts) {
+    const Vec2i box = footprintBox(parts);
+    if (kind == ChunkKind::Plaza) return box.x == box.y && int(parts.size()) == box.x * box.y;
+    if (kind == ChunkKind::Maze || kind == ChunkKind::WaterMaze) return int(parts.size()) <= MAZE_SLOTS_MAX;
+    return kind != ChunkKind::Spawn;
+}
+
+Vec2i World::spawnEntry() const {
+    const auto& [key, d] = *std::min_element(doors_.begin(), doors_.end(), [](const auto& a, const auto& b) {
+        return std::tuple(a.first.slot.y, a.first.slot.x, int(a.first.side)) <
+               std::tuple(b.first.slot.y, b.first.slot.x, int(b.first.side));
+    });
+    const Vec2i into = generated(d.slot) ? d.other() : d.slot;
+    return d.cellsIn(into)[size_t(d.width / 2)];
+}
+
+const Chunk* World::growPastSpawn(ChunkKind kind, const Footprint& parts) {
+    if (kind == ChunkKind::Spawn) return chunks_.front().get();
+    if (!grows(kind, parts) || chunks_.size() != 1) return nullptr;
+    const Vec2i entry = spawnEntry(), into = slotOf(entry);
+    for (Vec2i on : parts) {
+        const Vec2i origin = into - on;
+        if (std::any_of(parts.begin(), parts.end(), [&](Vec2i p) { return generated(origin + p); })) continue;
+        grow(kind, origin, parts, entry, false);
+        return chunks_.back().get();
+    }
+    return nullptr;
+}
+
+// The data centre's dice are rolled even when the kind is given, so the
+// chunk comes out as it would have had the game rolled that kind.
+void World::grow(ChunkKind kind, Vec2i origin, const Footprint& parts, Vec2i entry, bool mayCentre) {
     Rng serverDice(seed_ ^ uint64_t(chunks_.size() + 1) * 0xD1B54A32D192ED03ull);
-    if (serverDice.chance(DATA_CENTRE_CHANCE)) kind = ChunkKind::DataCentre;
-    Chunk& c = addChunk(kind, origin, *parts);
+    if (serverDice.chance(DATA_CENTRE_CHANCE) && mayCentre) kind = ChunkKind::DataCentre;
+    Chunk& c = addChunk(kind, origin, parts);
     const Glowing unlit = glowing();
     const int slotCount = c.slotCount();
     markDoors(c);
@@ -782,6 +817,7 @@ int World::takePileCakes(Vec2i cell, int n) {
     if (it == piles_.end()) return 0;
     int got = std::clamp(n, 0, it->second.cakes);
     it->second.cakes -= got;
+    if (got > 0) noise(NoiseKind::PickCake, cell);
     if (it->second.empty()) piles_.erase(it);
     return got;
 }
@@ -791,6 +827,7 @@ Bottle World::takePileBottle(Vec2i cell, size_t i) {
     if (it == piles_.end() || i >= it->second.bottles.size()) return {};
     Bottle b = it->second.bottles[i];
     it->second.bottles.erase(it->second.bottles.begin() + long(i));
+    noise(NoiseKind::PickBottle, cell);
     if (it->second.empty()) piles_.erase(it);
     return b;
 }
@@ -800,10 +837,12 @@ bool World::unlock(Vec2i cell) {
         if (tile(cell) != Tile::DoorLocked) return false;
         setTile(cell, Tile::DoorOpen);
         it->second.open = AIRLOCK_SHUT_TIME;
+        noise(NoiseKind::Unlock, cell);
         return true;
     }
     if (gates_.erase(cell) > 0) {
         setTile(cell, Tile::DoorOpen);
+        noise(NoiseKind::Unlock, cell);
         return true;
     }
     auto it = doorCells_.find(cell);
@@ -814,6 +853,7 @@ bool World::unlock(Vec2i cell) {
     for (Vec2i s : {d.slot, d.other()})
         if (Chunk* c = chunkAt(s))
             for (Vec2i p : d.cellsIn(s)) c->set(p - c->origin(), Tile::DoorOpen);
+    noise(NoiseKind::Unlock, cell);
     return true;
 }
 
@@ -822,6 +862,7 @@ bool World::pushOpen(Vec2i door, Vec2i from) {
     if (it == airlocks_.end() || from != door + it->second.in) return false;
     setTile(door, Tile::DoorOpen);
     it->second.open = AIRLOCK_SHUT_TIME;
+    noise(NoiseKind::AirlockOpen, door);
     return true;
 }
 
@@ -836,7 +877,10 @@ void World::updateAirlocks(float dt) {
     for (auto& [cell, d] : airlocks_) {
         if (tile(cell) != Tile::DoorOpen) continue;
         if (occupant(cell)) d.open = AIRLOCK_SHUT_TIME;
-        else if ((d.open -= dt) <= 0.0f) setTile(cell, Tile::DoorLocked);
+        else if ((d.open -= dt) <= 0.0f) {
+            setTile(cell, Tile::DoorLocked);
+            noise(NoiseKind::AirlockShut, cell);
+        }
     }
 }
 
@@ -864,6 +908,7 @@ void World::setOff(Vec2i cell, Human& h) {
     switch (t.kind) {
     case TrapKind::Spikes:
         t.sprung = SPIKES_UP_TIME;
+        noise(NoiseKind::Spikes, cell, h.id);
         h.impale(*this);
         break;
     case TrapKind::Slam:
@@ -897,9 +942,11 @@ void World::updateTraps(float dt) {
             t.shutting = false;
             setTile(t.from, Tile::DoorLocked);
             gates_.insert(t.from);
+            noise(NoiseKind::Slam, t.from);
         }
         if (t.volley > 0 && (t.reload -= dt) <= 0.0f) {
             darts_.push_back({t.from, t.dir});
+            noise(NoiseKind::DartFire, t.from);
             t.volley--;
             t.reload = DART_GAP;
         }
@@ -911,6 +958,7 @@ void World::updateTraps(float dt) {
             Vec2i cell = d.from + d.dir * i;
             if (i > DART_FLIGHT_MAX || opaque(tile(cell))) return true;
             if (Human* h = occupant(cell)) {
+                noise(NoiseKind::DartHit, cell, h->id);
                 h->hitByDart(rng_.range(DART_DAMAGE_MIN, DART_DAMAGE_MAX), d.dir);
                 return true;
             }
@@ -930,8 +978,13 @@ void World::updateMachines(float dt) {
 // The bottom of what it holds goes first, so the rest stays shelved from the top.
 bool World::vend(Vec2i cell) {
     auto it = machineCells_.find(cell);
-    if (it == machineCells_.end() || machines_[size_t(it->second)].stock <= 0) return false;
+    if (it == machineCells_.end()) return false;
+    if (machines_[size_t(it->second)].stock <= 0) {
+        noise(NoiseKind::VendEmpty, cell);
+        return false;
+    }
     machines_[size_t(it->second)].stock--;
+    noise(NoiseKind::VendDrop, cell);
     return true;
 }
 

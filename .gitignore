@@ -3,3 +3,5 @@ AI/APIkey.txt
 *.kate-swp
 .directory
 data/obituary.txt
+data/settings.txt
+__pycache__/

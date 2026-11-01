@@ -237,6 +237,14 @@ enum class Moment {
     // lights coming on; closing, the lights going out; knowing at last
     // what the bell means (all to nobody).
     HourBell, OpeningBell, ClosingBell, ClockLesson,
+    // Trying doors (AI/door_trying_plan.md): a shut door's handle that won't
+    // give; an airlock door that gives at a push from inside; finding
+    // enough locked to stop trying; boxed in, trying them all again (all to
+    // nobody).
+    TryDoorLocked, DoorGave, LearnDoors, TryDoorsBoxed,
+    // Shut in a slam room, hearing steps beyond the wall: crying out to
+    // them at once (to nobody, but it carries through the walls).
+    HelpSteps,
     Count
 };
 
@@ -245,10 +253,15 @@ inline bool isCry(Moment m) {
     return m == Moment::Hit || m == Moment::Ouch || m == Moment::Darted || m == Moment::Spiked ||
            m == Moment::Slammed;
 }
-/// An emergency: blows and cries, and the shout of who killed. These cut in
+/// An emergency: blows and cries, the shout of who killed, and a cry to steps
+/// passing a slam room. These cut in
 /// over a line that has shown long enough to read, and the lines still
 /// waiting are dropped for them.
-inline bool isUrgent(Moment m) { return isCry(m) || m == Moment::Blame; }
+inline bool isUrgent(Moment m) { return isCry(m) || m == Moment::Blame || m == Moment::HelpSteps; }
+/// The first lines on coming to: stirring, waking, getting up, reaching back for anything from before.
+inline bool isWaking(Moment m) {
+    return m == Moment::WakeStir || m == Moment::Wake || m == Moment::WakeStand || m == Moment::Blank;
+}
 
 /// The moment for bringing up a topic of this kind.
 inline Moment chatMoment(Topic::Kind k) { return Moment(int(Moment::ChatHere) + int(k)); }

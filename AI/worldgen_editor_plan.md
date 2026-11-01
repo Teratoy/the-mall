@@ -53,12 +53,59 @@ a world without a visible window.
   (`SMELL_EVERY`, `SPIKES_UP_TIME`, `DART_RELOAD_TIME`, airlock and so on)
   stay in code.
 
+### Built (2026-11-01)
+
+- `data/worldgen.txt` holds 177 knobs (226 values, with the lists) over
+  ten sections (world, maze, rooms, plaza, water, traps, vending,
+  dispenser, server, toilets), each with its range and the comment above
+  it. A value may be written as a fraction (`MACHINE_CHANCE 1/3`), worked
+  out in floats as the code did.
+- `world/gen_tuning.{h,cpp}`: `tune::Int`, `tune::Float` and `tune::List`
+  handles, each named by section and name at the top of the file that uses
+  it, in place of its `constexpr`. A handle finds its knob the first time
+  it is read and keeps its place, so reading one costs what a constant
+  did. A reload keeps every knob where it was. A knob the file lacks, or
+  with the wrong count of values, stops the game with a message saying
+  which.
+- Lists: `KIND_WEIGHTS`, the table and statue weights, `SHAPE_WEIGHTS`
+  (the footprints stay in code, in the order the comment names), the
+  server room sizes (`CLOSET_SIZE`, `ROOM_SIZE`, `HALL_SIZE`: widths then
+  depths) and their weights.
+- Left in code: timings the sim runs on (smell, spikes, darts, airlock),
+  the wake bottle, the dispenser's fill up to full, what is tied to the
+  art (how far a machine or dispenser rises over the cells behind it) or
+  to the layout's shape (`LOBBY`, the facings, restroom tiles, the
+  raised floor).
+- F5 in game reads it with lines and sprites. The soak reruns when it
+  changes, and the APK ships it.
+- `make check` passes unchanged, and `genprobe 20 png` gives the same
+  output and pictures as before on every footprint and kind.
+
 ### Step 2: growing one chunk on demand
 
 - `World` gets a way to grow a given kind on a given footprint at a slot,
   with a given seed, used only by the tool through a `GenViewProbe` friend
   in `tests/probe.h`. `generate()` itself still rolls as now, so the game
   and the soak are unchanged.
+
+### Built (2026-11-01)
+
+- `World::generate()` now only rolls the footprint and the kind, then
+  calls `World::grow(kind, origin, parts, entry, mayCentre)`, which grows
+  the chunk as before. The data centre's own dice are rolled even when the
+  kind is given, so a chunk grown as asked comes out as the game would
+  have grown it had it rolled that kind.
+- `World::grows(kind, parts)`: whether the game ever grows that kind on
+  that footprint (plazas only on a whole square, mazes no bigger than
+  `MAZE_SLOTS_MAX`). `generate()` uses it for its kind weights.
+- `GenViewProbe` in `tests/probe.h`, a friend of World: `grow(world, kind,
+  footprint)` grows the chunk through the spawn's door, placed so the slot
+  past the door is its own (Spawn gives the spawn itself; nothing when the
+  game never grows that kind there); `rolled(world)` lets the game roll
+  it; `spawnDoor(world)` gives the door and the cell past it.
+- `genprobe` grows every kind on every footprint the game allows this way,
+  5 seeds each, and checks them as it checks world chunks: 295 chunks, 0
+  failed. `make check` passes unchanged.
 
 ### Step 3: `tools/genview.cpp`, `make genview`
 
@@ -95,6 +142,37 @@ A window, PC only. The knob panel on the left, the chunk on the right.
 - **Restart in place:** the state file is read back at start, so after a
   rebuild for a code change the tool opens on the same seed and view.
 
+### Built (2026-11-01)
+
+- `tools/genview.cpp`, `make genview`, `./genview.sh` from the host (it
+  runs it in the toolbox). Usage at the top of the file.
+- Knob panel: sections fold; a slider for each value (lists one per value,
+  numbered in the order the comment gives), stepped in whole numbers for
+  knobs written without a point; double-click the value to type one (a
+  fraction too); Left/Right step the knob under the mouse; a changed knob
+  shows yellow with a tick where the file's value is; right-click its name
+  to put it back; Ctrl+Z undoes. The hovered knob's comment shows in the
+  status line.
+- Top bar: kind (rolled as the game does, spawn, rooms, maze, water maze,
+  plaza, data centre), footprint (the nine the game grows, then L3, L4,
+  T4, S4), turn, mirror, seed (< > R), view (V: art or map), mode (one, C
+  before/after, G nine seeds; clicking one of the nine takes its seed),
+  Save (S) with the count of changed knobs. A kind the game never grows on
+  a footprint says so in the pane.
+- The art is the game's own drawWorld, revealed, without humans, drawn
+  once a regrow into a texture the size of the chunk, then panned (drag)
+  and zoomed (wheel, F fits). The map is a pixel a cell, coloured as
+  genprobe's pictures.
+- To tell a knob read as a fraction from a whole one, the file writes
+  fractions with a point (`POOL_SIZE_MAX 7.0`); `tune::` checks every
+  knob is written as the code reads it, and stops with a message if not.
+- `tune::set` and `tune::save`: save writes only the knobs' lines again,
+  keeping comments, ranges and a value written as a fraction while it
+  holds.
+- Watching and the saved view work as planned; tried by changing the file
+  under a running genview (read again, unsaved knob kept), and saving into
+  a copy (only the changed lines differ; saving twice gives the same file).
+
 ### Step 4: overlays and readout
 
 - Overlays, each on its own key: doors and their keys, the sides of the
@@ -107,6 +185,35 @@ A window, PC only. The knob panel on the left, the chunk on the right.
   and says so loudly when one fails (floor outside the footprint, a door
   that can't be reached).
 
+### Built (2026-11-01)
+
+- A second row in the top bar: five overlays, any together (keys 1 to 5),
+  each a picture a pixel a cell over the art or the map:
+  1. doors and keys: open doors orange, locked red, keys yellow, cakes
+     pink, the entry white;
+  2. water sides (`gen::sides`), a colour each;
+  3. out of reach from the entry, locks as open: orange where only
+     swimming gets, red where nothing does;
+  4. traps: spikes red; dart plates pink with their shooter and line cyan;
+     slam plates pink with their gate red;
+  5. deep spots, where keys and the chunk's human may start.
+- T: the readout, per chunk: floor and water %, the longest walk between
+  two doors that can reach each other, the farthest floor from the entry
+  (in steps, locks as open), doors and new doors, keys, cakes and those
+  over water, tables, statues, machines, toilets, basin cells, server
+  rooms, dispensers, spikes, dart plates, slam rooms. Before/after puts
+  the two side by side, what differs yellow; nine seeds gives the least,
+  mean and most.
+- genprobe's checks moved to `tools/chunk_checks.h` and are run on every
+  chunk grown: what they would fail it for shows in red across the
+  chunk, readout or not.
+- The readout and any fault go into `build/genview.txt` too, a line per
+  chunk, for Claude.
+- Not built: dead ends (no good measure on corridors three wide), a count
+  of rooms (the rooms generator's boxes are not kept), private spots, and
+  where a vending machine could stand (that test lives inside
+  `placeMachines`). Each can come if wanted.
+
 ### Step 5: drop humans
 
 - A button runs the sim headless on the chunk (with the world around it
@@ -116,9 +223,53 @@ A window, PC only. The knob panel on the left, the chunk on the right.
 - How many humans, for how long, and which heatmap shows are picked in
   the tool.
 
+### Built (2026-11-01)
+
+- Second bar row: H Drop (or Stop), the count of humans (0 to 24, click
+  to change), the minutes (1 to 30), and J the heatmap shown: walked,
+  slept, stuck (blocked by someone in the way, or rethinking a walk twice
+  running), bled (time spent with an open wound), died (a ring where each
+  fell).
+- The humans wake on free floor of the chunk shown, picked by the seed's
+  own dice, each beside a bottle as every human in the game does
+  (`GenViewProbe::wake`). The sim runs on that chunk's world at the
+  soak's step, 14 ms of each frame so the window stays live; the world
+  round it grows as they cross doors. Only time in the chunk counts. The
+  heatmap is drawn again every quarter second, yellow to red by the square
+  root of each cell's share of the most.
+- One chunk, or before and after (both run side by side); not with nine
+  seeds. Any change to the chunk drops the run.
+- Under each chunk's name: dropped, time, deaths by cause (thirst, hunger,
+  bled, other, from the life log), and how fast it runs (about x100 to
+  x200 on this machine: 10 minutes of 24 humans in 5 to 7 s).
+- `build/genview.txt` gets a line per run with the same and the seconds
+  spent in the chunk for each heatmap; `genview --drop` starts a run as
+  soon as the chunk is grown, so Claude can run one without a click.
+- What it showed in trying it: 24 humans dropped in a 2x1 maze (seed 4)
+  lose 22 in 10 minutes (thirst 6, hunger 2, bled 6, other 8); in a 2x1
+  room network with a canal, 17 die, 13 of them not of need, most along
+  the canal. Crowds of 24 kill each other; 6 to 8 is a gentler test.
+
 ### Step 6: play this
 
 - Opens the game on that seed with the edited values, for a look in play.
+
+### Built (2026-11-01)
+
+- P Play (top bar) opens the game on the seed shown, the chunk shown
+  grown past the spawn's door before anyone walks, so it is the same chunk
+  to the cell; with the kind rolled, the chunk the game rolls there. You
+  play a human grown from the seed (the spawn's own in genview).
+- The knobs go as they are in genview, saved or not: written to
+  `build/genview-worldgen.txt` (`tune::save` to a copy) and handed to the
+  game by `THEMALL_WORLDGEN`, so F5 in that game reads them again.
+- The game takes `--seed N` and `--chunk KIND x,y;x,y;...` (main.cpp),
+  goes straight into the world past the menu, and keeps that world out of
+  the obituary (my call: a look from the editor is not a life to count;
+  say if it should count).
+- Growing past the spawn moved from `GenViewProbe` into World
+  (`spawnEntry`, `growPastSpawn`), as the game uses it now.
+- `make genview` builds the game too.
 
 ## User's decisions (2026-11-01)
 

@@ -605,6 +605,8 @@ private:
         /// when it next cries for help.
         std::optional<Vec2i> slamGate;
         float helpTimer = 0.0f;
+        /// When it last cried out to steps it heard beyond the wall.
+        float stepsCried = -1e9f;
         /// Parched and boxed in: the locked door it lies by and calls through
         /// for water, and when it next calls.
         std::optional<Vec2i> callDoor;
@@ -762,6 +764,12 @@ private:
     /// Cells still to walk to, in order, and the last of them.
     std::deque<Vec2i> path_;
     Vec2i target_;
+    /// The way it last set out exploring, or went through a door: it keeps
+    /// on that way rather than turn back to the nearest unseen floor.
+    Vec2i heading_{0, 0};
+    /// The extra a frontier at c costs for lying away from the heading, up
+    /// to HEADING_COST right behind: none straight ahead.
+    int headingCost(Vec2i c) const;
     /// Something changed; decide again before the next step.
     bool rethink_ = false;
     /// Steps in a row someone stood in the way.
@@ -1207,6 +1215,24 @@ private:
     /// knows, to tell whether it is worth going back to see if it opened.
     float clock_ = 0.0f;
     std::unordered_map<Vec2i, float, Vec2iHash> doorChecked_;
+    /// What it has learnt of shut doors by trying them (AI/door_trying_plan.md).
+    /// A shut door is only shut until tried: it walks up and tries the handle.
+    struct Doors {
+        /// The sides each shut door cell was tried from, a bit per DIRS4
+        /// way from the door to where it stood.
+        std::unordered_map<Vec2i, uint8_t, Vec2iHash> tried;
+        /// Doors someone told it the way to, known locked untried.
+        std::unordered_set<Vec2i, Vec2iHash> told;
+        /// The shut door cells it has seen, to know when any is left to try.
+        std::unordered_set<Vec2i, Vec2iHash> seen;
+        /// Doors it found locked by trying them.
+        int locked = 0;
+        /// Found enough of them locked to count every shut door so.
+        bool learnt = false;
+        /// Boxed in, trying them all again, said once.
+        bool boxedNoted = false;
+    };
+    Doors doors_;
 
     /// Hunger, thirst and health over dt, for whatever the human is doing.
     void live(World& world, float dt);
@@ -2220,6 +2246,20 @@ private:
     /// An open door next to known floor c with nothing known past it: someone
     /// opened it, or the human gave up going through.
     std::optional<Vec2i> openDoorBeside(Vec2i c) const;
+    /// A shut door it knows is locked: tried, told of, or all of them once
+    /// the lesson is learnt.
+    bool doorKnownLocked(Vec2i door) const;
+    /// A shut door next to known floor c worth trying from c: one not known
+    /// locked, or with anySide, one never tried from c's side.
+    std::optional<Vec2i> untriedDoorBeside(Vec2i c, bool anySide) const;
+    /// Some shut door it has seen it never tried from one of its sides.
+    bool doorsLeftToTry() const;
+    /// Tries the handle of the shut door beside it: it gives if it is an
+    /// airlock door seen from inside, else it is locked, and after enough of
+    /// those it learns they all are. True if it gave.
+    bool tryDoor(World& world, Vec2i door);
+    /// The cells of the shut door through cell door, however wide, along its wall.
+    std::vector<Vec2i> doorCells(Vec2i door) const;
     /// Notes that it is looking at, close up, every locked door near it.
     void checkDoorsNear();
     /// A locked door next to known floor c not looked at close up lately.

@@ -318,11 +318,15 @@ void Human::startRelieving(World& world) {
     // else it lies where it lands.
     bool intoWater = false;
     auto drop = [&](MessKind kind, float x, float y, float size) {
-        if (toilet && !missed)
+        NoiseKind sound = kind == MessKind::Feces ? NoiseKind::Feces : NoiseKind::Piss;
+        if (toilet && !missed) {
+            world.noise(sound, *toilet, id, size);
             return world.soilToilet(*toilet, size * (kind == MessKind::Feces ? TOILET_FECES : TOILET_PISS),
                                     kind == MessKind::Piss);
+        }
         Vec2i at{floorDiv(int(std::floor(x)), CELL_PX), floorDiv(int(std::floor(y)), CELL_PX)};
         if (!passable(world.tile(at))) at = cell, x = fx, y = fy;
+        world.noise(sound, at, id, size);
         if (pooled(world.tile(at))) {
             intoWater = true;
             return foulWater(world, at, size * (kind == MessKind::Feces ? FECES_FOUL : PISS_FOUL));
@@ -489,6 +493,7 @@ void Human::accident(World& world, bool fright) {
     bool shit = !fright && bowels >= 1.0f;
     float fx = cell.x * CELL_PX + CELL_PX / 2.0f, fy = (cell.y + 1) * CELL_PX - 1.0f;
     auto drop = [&](MessKind kind, float size) {
+        world.noise(kind == MessKind::Feces ? NoiseKind::Feces : NoiseKind::Piss, cell, id, size);
         world.mess().drop(kind, cell, fx + rng_.range(-1.0f, 1.0f), fy, size, world.time(), id,
                           uint32_t(rng_.next()));
     };
@@ -528,6 +533,8 @@ void Human::accident(World& world, bool fright) {
 
 void Human::letGo(World& world) {
     float fx = cell.x * CELL_PX + CELL_PX / 2.0f, fy = (cell.y + 1) * CELL_PX - 1.0f;
+    if (bladder > LET_GO) world.noise(NoiseKind::Piss, cell, id, bladder);
+    if (bowels > LET_GO) world.noise(NoiseKind::Feces, cell, id, bowels);
     if (bladder > LET_GO)
         world.mess().drop(MessKind::Piss, cell, fx, fy, bladder, world.time(), id, uint32_t(rng_.next()));
     if (bowels > LET_GO)

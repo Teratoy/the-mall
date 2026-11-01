@@ -1,4 +1,5 @@
 #include "scenes/obituary_scene.h"
+#include "audio/music.h"
 #include "render/canvas.h"
 #include "scenes/menu_scene.h"
 #include "ui/pixel_ui.h"
@@ -9,6 +10,8 @@
 
 namespace {
 
+/// The menu's music carries on here, low, under the names of the dead.
+constexpr float MUSIC_LEVEL = 0.35f;
 constexpr int MARGIN = 4;
 /// BACK, small in the corner, and the title across the top.
 constexpr Rectangle BACK{MARGIN, MARGIN, 32, 14};
@@ -43,6 +46,7 @@ std::string dayText(std::time_t when) {
 ObituaryScene::ObituaryScene() : records_(obituary::load()) {}
 
 void ObituaryScene::update(float, const Canvas& canvas) {
+    music::want(music::MENU, MUSIC_LEVEL);
     if (ui::backPressed()) back_ = true;
     if (cremate_) {
         cremate_ = false;

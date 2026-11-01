@@ -73,6 +73,20 @@ volume and a **low-bit** switch that crushes the music to 4 bits at
   Pausing quiets the world's sounds.
 - Android: stop all sound when the app goes to the background.
 
+### Built (2026-11-01)
+
+- `src/audio/audio.{h,cpp}`: opened in `main.cpp`; plays each sound clear
+  or muffled with its own six voices (raylib sound aliases), volume, pan
+  and pitch. Where there is no device (the tools), nothing plays.
+- MASTER and SOUNDS only, 0–10, saved in `data/settings.txt` (ignored by
+  git). MUSIC came with the music (music_plan.md).
+- `ConfigPanel` (`src/scenes/config_panel.cpp`) is the CONFIGURATION
+  menu: `ConfigScene` on the main menu under OBITUARY, and over the
+  pause menu, between RESUME and MAIN MENU. A change plays a pop.
+- Pausing simply stops new sounds; nothing loops yet, so nothing needs
+  quieting. Not done: stopping sound when the Android app goes to the
+  background (untried on the phone).
+
 ## 2. Noises from the sim
 
 - `World` keeps a per-tick list of `Noise {kind, cell, who, loud}`,
@@ -81,6 +95,19 @@ volume and a **low-bit** switch that crushes the music to 4 bits at
   reads it, so the soak is unchanged; a check in `make check` confirms
   it.
 - Speech already reaches the view through bubbles; voices read those.
+
+### Built (2026-11-01)
+
+- `World::noise()` keeps the newest 256 in `World::noises()` with a count
+  of all ever made; `Hearing` plays those it hasn't yet. Made at: a key
+  unlocking (door, gate, airlock), an airlock pushed open and falling
+  shut, a slam gate locking, spikes, darts fired and striking, a blow
+  landing (`takeHit`), a death (`die`). `make check` passes unchanged.
+- Footsteps and pops don't need noises: the view hears a foot come down
+  in the walk or run art (`footfalls()`: walk frames 1 and 3, run 0 and
+  2, so the step keeps time with the drawing; at first it was one per
+  cell entered, which the user heard out of step), and a new line over
+  a head.
 
 ## 3. The sounds themselves
 
@@ -92,6 +119,16 @@ art drawn in code:
   listen to, and `cmp` before and after a refactor.
 - Small random pitch and volume wobble each play, from a view-only Rng,
   so 30 footsteps don't sound like a machine gun.
+
+### Built (2026-11-01)
+
+- `src/audio/synth.{h,cpp}`: square, triangle, saw, sine and noise layers
+  sliding in pitch under an envelope, with low and high pass, repeats and
+  wobble; then the crush, 5 bits at 8 kHz by default. The file's header
+  explains the format.
+- `make soundsheet` (`tools/sound_sheet.cpp`) writes each sound clear and
+  muffled to `build/sounds/` and prints its length.
+- `data/sounds.txt` ships in the APK beside the other data files.
 
 ## 4. First sounds
 
@@ -105,6 +142,99 @@ What the player most needs to hear, by group:
 - **Places (loops):** water lapping, server room hum, flies near smell,
   the room tone of each kind of place (rooms, plazas, mazes).
 
+### Built (2026-11-01): the first sounds
+
+`step`, `run`, `step_wet` (fresh piss or poured water), `step_blood` (wet
+blood), `step_filth` (fresh feces), `pop`, `cry`, `unlock`,
+`airlock_open`, `airlock_shut`, `slam`, `spikes`, `dart_fire`,
+`dart_hit`, `hit`, `death`. Still to come: breath, eating, sipping,
+snoring, retching, keys and cakes picked up, bottles, flushes, vending,
+and the place loops.
+
+Later, `knob`: a shut door's handle rattling when a human tries it
+(`tryDoor`).
+
+### Survey (2026-11-01): what still makes no sound
+
+An agent went through the code for everything the player can see happen
+without a sound. Not built; the user chose to plan them first. **Sim**
+needs a new `NoiseKind` and a `world.noise()` call where it happens;
+**view** is for `hearing.cpp` to tell from state frame to frame, as
+footsteps and pops are. New to this plan unless marked (planned).
+
+### Built (2026-11-01): the survey's ten
+
+The user asked for the ten below. New noises, made where it happens
+(`world.noise`, with a `size` the view turns into loudness): `Spray`
+(louder the more drops a blow throws), `Drip` (bigger round a body
+pooling), `Bite` (softer from a rotten body), `Swing` (every punch,
+`landPunch`), `Piss` and `Feces` (relieving, accidents, letting go at
+death; the view picks the toilet, water or floor sound from the cell),
+`Gulp`, `Sip`, `Collapse`, `VendDrop`, `VendEmpty` (in `World::vend`),
+`PickKey`, `PickCake` (`World::takeKey`/`takeCake` and piles),
+`PickBottle`. Heard by the view without noises, played over and over
+while they last (each again at 85% of its length, in real time):
+`chew` while eating, `pant` while winded, `snore` from 3 s into sleep
+(a random wait so sleepers don't snore in step), and for the listener's
+nearest: `flies` over a rotting body or fresh feces (as loud as its
+smell), `hum` from a server rack, `water` from a pool or basin. 24 new
+sounds in `data/sounds.txt` (Violence, then new Bodies, Things and
+Places sections). `make noiseprobe` counts each noise over soak worlds:
+all are made except `Collapse` and `VendEmpty`, which the soak's 90
+minutes never reach. `make check` unchanged. Not listened to in game yet.
+
+The ten that matter most, in order:
+1. Blood spraying from a blow, louder the more blood it throws
+   (`spill`, human_blood.cpp). Sim, or a wet layer folded into `hit`.
+2. Bleeding drips, and a body pooling (human_blood.cpp drip loop). Sim
+   per drop, or view from `bleeding()` (planned, with a question mark).
+3. Feeding on a body: each bite and its blood (human_flesh.cpp). Sim.
+   The wettest thing in the game.
+4. A punch swung: a whoosh as `punchLanded` turns true (human_fight.cpp
+   `landPunch`); `hit` plays over it when it lands, so a lone whoosh is a
+   miss. View (planned as "punch").
+5. Pissing and shitting, a splash or a plop by where it lands (toilet,
+   floor, water), and wetting or soiling itself (human_relief.cpp
+   `startRelieving`, `accident`, `letGo`). Sim.
+6. Flies over rotting bodies and fresh filth (`smellStrength`, and the
+   freshness `stepSound` already uses). View loop (planned).
+7. Gulping from water, a basin or a toilet (human_thirst.cpp, a timer
+   per gulp: sim) and sipping from a bottle (view) (planned).
+8. Eating a cake (`startEating`, human_fight.cpp). View (planned).
+9. Panting while winded (planned), snoring (planned), a thud on
+   collapsing from exhaustion (`startSleeping` collapsed), a gasp on a
+   rough waking (`wakeUp`). View, the gasp perhaps sim.
+10. The server room hum (the sim's own `humShare`, which humans already
+    hear) and water lapping at pools and basins: view loops (planned);
+    then the vending drop and pickups below.
+
+The rest:
+- **Bodies:** sick from rotten flesh or toilet water (human_flesh.cpp,
+  human_thirst.cpp): retching is planned, but nobody retches in the game
+  yet, so it waits for that. Washing (human_blood.cpp). Rummaging while
+  looting, stashing or robbing a sleeper (the Search pose: view).
+- **Things:** a key or cake picked up (human_walk.cpp, and piles in
+  world.cpp; planned), a bottle put down (`World::putDown`); a vending
+  machine dropping goods and an empty one clunking (`World::vend`: sim,
+  planned as "paying and dropping"); a dispenser's glug as a bottle is
+  filled from it or poured into it (human_dispenser.cpp); typing at a
+  terminal (view) and its refusal beep (human_computer.cpp, sim).
+- **The toilet flush in step 4 is wrong:** the game has no flush on
+  purpose ("FOUND NO FLUSH"). The plop or splash in 5 above takes its
+  place.
+- **Places:** a buzz near a flickering light (world/lighting.cpp); the
+  room tone of each chunk kind (Rooms, Plaza, Maze, WaterMaze,
+  DataCentre; planned), a dark dead wing near silent.
+- **Guns:** the Shoot, Reload and Rack poses are drawn but `poseOf`
+  never returns them, so there is nothing to hear until humans use guns.
+- **UI:** nothing clicks but the CONFIGURATION panel's pop. One hook in
+  `ui::button` and `ui::arrowButton` (pixel_ui.cpp) covers every button:
+  the menus, HUD (LOG, MAP, NEXT, zoom, speed, pause), the pause menu,
+  the obituary. Worth sounds of their own: pause, WAKE UP, NEXT after
+  your human dies, CREMATE.
+- Left out: greeting and giving (their speech already pops); machines
+  restocking (unseen).
+
 ## 5. Where sound is heard from
 
 - Volume falls with distance from the followed human's ears,
@@ -116,12 +246,46 @@ What the player most needs to hear, by group:
   ones (cries, slams, deaths) always play.
 - At high speed sounds thin out so X16 isn't a roar; cries, slams and deaths always play.
 
+### Built (2026-11-01)
+
+`src/audio/hearing.cpp`, from the followed human's cell: each sound
+fades out at its own reach (steps 9 cells, a slam 30), each wall on the
+line between keeps 45% of it, muffled, and past 3 walls nothing is
+heard. Asleep it hears 8% (urgent ones 30%). Pan up to 0.3 either side
+over 12 cells. At speed xN, steps play one in N and anything not urgent
+is quieter by the square root of N. At most 6 sounds start a frame,
+loudest first, besides the urgent ones (cries, slams, spikes, deaths).
+
+### Denoiser (2026-11-01, user's ask)
+
+`src/audio/denoise.cpp` sits on raylib's final mix
+(`AttachAudioMixedProcessor`), so every sound, voice and the music pass
+through it last. A fourth-order low-pass at 3800 Hz smooths the hiss of
+the crush's stair-steps (just under half its 8000 Hz) and keeps the grit;
+a gentle gate fades the mix out under 0.004, where only the last flicker
+of crushed tails is left (opens in 2 ms, closes over 120 ms). It assumes
+the device mixes at 48000 Hz in stereo, as it does on this machine
+(PulseAudio) and on Android. A sound given a crush rate above 8000 in
+`data/sounds.txt` loses what it gains above 3800 Hz: raise `CUT_HZ` if
+that is wanted.
+
 ## 6. Voices
 
 - A soft pop as each bubble opens (user's decision), pitched a little
   per human from its seed so a crowd isn't one note.
 - Urgent moments (`talk::isUrgent`) get their own louder cry instead,
   cutting in like their bubbles.
+
+Voiced since 2026-11-01: see [voice_plan.md](voice_plan.md). At X1
+every line in earshot is said in the speaker's own voice, replacing the
+pop and the cry; faster, the pop and cry below still play.
+
+### Built early (2026-11-01)
+
+A pop as a bubble the player can see opens, pitched by the speaker's id.
+A line in the Fear tone is a `cry` instead, heard bubble or not, through
+walls. The violent urgent moments (hit, darts, spikes) already sound
+through their noises.
 
 ## 7. Mood
 
@@ -133,7 +297,8 @@ tone and breath), and death (silence).
 ## 8. Later
 
 - `make sounds`: a sound editor page beside the lines and sprite
-  editors, playing each sound as it is changed.
+  editors, playing each sound as it is changed. Built: see
+  [sound_editor_plan.md](sound_editor_plan.md).
 - Humans hearing the mall (a sim feature, see the ground rules).
 
 ## Build order

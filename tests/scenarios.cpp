@@ -97,11 +97,23 @@ struct Stage {
     /// Runs, calling each() after every step.
     template <typename F> void run(float seconds, F each) {
         const float dt = 1.0f / 30.0f;
+        // SCENARIO_TRACE=1 prints each human's state, goal and cell whenever the first two change.
+        static const bool trace = std::getenv("SCENARIO_TRACE");
         for (int f = 0; f < int(seconds / dt); f++) {
             world.update(dt);
             each();
+            if (!trace) continue;
+            for (const auto& h : world.humans()) {
+                auto& was = traced_[h->id];
+                std::pair<int, int> now{int(h->state), int(h->goal)};
+                if (was == now) continue;
+                was = now;
+                std::printf("     #%d %6.1f state %d goal %d at (%d,%d) to (%d,%d)\n", h->id, world.time(), now.first,
+                            now.second, h->cell.x, h->cell.y, P::target(*h).x, P::target(*h).y);
+            }
         }
     }
+    std::map<int, std::pair<int, int>> traced_;
     /// Someone's log has this line.
     bool logged(const std::string& line) const {
         for (const auto& h : world.humans())
@@ -244,7 +256,8 @@ Checks guardedWater(Stage& s, bool strangerHasCake, Checks expect) {
     auto b = s.basin();
     if (!b) return {{"room for a basin near the spawn", [](const Stage&) { return false; }}};
     P::settle(settler, s.freeNear(*b, 1));
-    Human& stranger = s.add(seedWhere(plain, 4000), 3);
+    // Far enough off that the settler has done coming to before the stranger is at the water.
+    Human& stranger = s.add(seedWhere(plain, 4000), 8);
     stranger.thirst = 0.7f;
     // An empty bottle, so it needs the settler's water.
     stranger.bottles = {Bottle{}};
@@ -1710,6 +1723,20 @@ const std::vector<Scenario> SCENARIOS = {
          return Checks{logged({"HEARD @ CALLING FOR HELP"}), logged({"LET @ OUT OF A SLAM ROOM"}),
                        logged({"@ LET ME OUT"})};
      }},
+    {"shut-in-steps", "shut in and eating, it hears steps outside and cries out to them at once", 99,
+     [](Stage& s) {
+         Human& caller = shutInFirst(s);
+         P::hushShutIn(caller);
+         caller.cakes = 2;
+         caller.hunger = 0.8f;
+         Human& walker = s.add(seedWhere(caring, 12500), 30);
+         calm(walker);
+         s.run(8);
+         P::place(s.world, walker, s.freeNear(caller.cell, 4));
+         s.run(15);
+         return Checks{logged({"HEARD STEPS OUTSIDE. CRIED OUT"}),
+                       logged({"HEARD SOMEONE CALLING FOR HELP", "HEARD @ CALLING FOR HELP"})};
+     }},
     {"shut-in-told", "a hearer tells a stranger with keys, who never heard the cry, and they let them out", 99,
      [](Stage& s) {
          Human& caller = shutInFirst(s);
@@ -1959,7 +1986,9 @@ const std::vector<Scenario> SCENARIOS = {
                  return Checks{own(prim, "WASHED OFF BLOOD"), own(slob, "WASHED OFF BLOOD")};
              },
              shamelessMeek);
-     }},
+     },
+     "since sight reaches 40 cells when lit (explore_heading_plan), the shameless one checks a far door and sits "
+     "twice before it makes for the basin, at 60 s, as the run ends"},
     {"stink", "dirty long enough, a human starts to smell", seedWhere(shameless, 12000),
      [](Stage& s) {
          Human& h = s.first();
@@ -2066,7 +2095,9 @@ const std::vector<Scenario> SCENARIOS = {
                               return Checks{loggedBy(heard, "HEARD SOMEONE CALL OUT"),
                                             loggedBy(heard, "WENT TOWARD THE VOICE")};
                           });
-     }},
+     },
+     "since sight reaches 40 cells when lit (explore_heading_plan), the hearer already sees all round the voice "
+     "beyond the locked door, so it is as near as it can get without walking"},
     {"call-timid", "a timid human hears a call from out of sight, hushes, and doesn't go to it",
      seedWhere([](const Traits& t) { return t.brave >= 0.5f; }, 9950),
      [](Stage& s) {
@@ -2149,7 +2180,8 @@ const std::vector<Scenario> SCENARIOS = {
          h.memory.airlocks[r.outer] = {0, -1};
          bool opened = s.world.unlock(r.outer);
          h.hunger = h.thirst = h.tiredness = 0.1f;
-         s.run(60);
+         // Seeing the whole lit room, it may look round it before the open door.
+         s.run(90);
          return Checks{{"the outer door opened", [opened](const Stage&) { return opened; }},
                        {"never inside the room", [&h, &r](const Stage&) { return !r.contains(h.cell); }},
                        {"not stuck in the lobby", [&h, &r](const Stage&) { return !r.encloses(h.cell); }}};
@@ -2159,12 +2191,16 @@ const std::vector<Scenario> SCENARIOS = {
          Human& h = s.first();
          P::clearChunk(s.world, h.cell);
          calm(h);
-         // Past the waking fog, which narrows sight too.
+         // Past the waking fog, which narrows sight too, and back in the middle of the room.
+         const Vec2i woke = h.cell;
          s.run(45);
+         P::place(s.world, h, woke);
          P::darkenChunk(s.world, h.cell);
-         const Vec2i near = s.freeNear(h.cell, 3), dark = s.freeNear(h.cell, 9), lit = s.farFrom(h.cell, 14);
+         const Vec2i near = s.freeNear(h.cell, 2), dark = s.freeNear(h.cell, 9), lit = s.farFrom(h.cell, 14);
          for (Vec2i c : {near, dark, lit}) P::addCake(s.world, c);
          P::hangLight(s.world, lit);
+         // It looks round now, even if it stands still looking at something.
+         h.observe(s.world);
          s.run(0.5f);
          return Checks{{"sees the cake beside it", [&h, near](const Stage&) { return h.memory.cakes.count(near) > 0; }},
                        {"not the one in the dark", [&h, dark](const Stage&) { return h.memory.cakes.count(dark) == 0; }},
@@ -2274,13 +2310,21 @@ const std::vector<Scenario> SCENARIOS = {
          Human& h = s.first();
          calm(h);
          s.run(45);
-         const Vec2i at = h.cell;
-         const bool litBefore = s.world.light(at) > 0;
+         // Under the first fitting that is on, which closing puts out.
+         Vec2i at{};
+         for (const LightSource& l : s.world.lights())
+             if (l.kind == LightKind::Fitting && l.on) {
+                 at = l.cell;
+                 break;
+             }
+         const int before = s.world.light(at);
          P::setDread(h, 0.0f);
          P::setTime(s.world, (MALL_HOURS - OPENING) * MALL_HOUR - 2.0f);
          s.run(4);
          return Checks{loggedBy(h, "THE BELL RANG AND THE LIGHTS WENT OUT"),
-                       {"lit before, closed now", [&s, litBefore](const Stage&) { return litBefore && s.world.closed(); }},
+                       {"fitting out, closed now", [&s, at, before](const Stage&) {
+                            return before == LIGHT_FULL && s.world.light(at) < before && s.world.closed();
+                        }},
                        {"uneasy", [&h](const Stage&) { return h.dread() > 0.05f; }}};
      }},
     {"opening-bell", "asleep in the night, not worn through, it wakes to the opening bell",
@@ -2324,10 +2368,16 @@ const std::vector<Scenario> SCENARIOS = {
      seedWhere(plain, 23000), [](Stage& s) {
          Human& h = s.first();
          const ServerRoom& r = airlockPocket(s, h, 0);
-         s.run(40);
+         // Passing through, or trying the doors from it, it is in the lobby
+         // a moment at a time, never long.
+         float inLobby = 0.0f, longest = 0.0f;
+         s.run(40, [&] {
+             inLobby = r.encloses(h.cell) && !r.contains(h.cell) ? inLobby + 1.0f / 30.0f : 0.0f;
+             longest = std::max(longest, inLobby);
+         });
          return Checks{loggedBy(h, "ANOTHER LOCKED DOOR BEHIND THE FIRST"), notLogged({"LEARNT THE DOUBLE DOORS EAT KEYS"}),
                        {"a key spent on it", [&h](const Stage&) { return h.keys < 3; }},
-                       {"not stuck in the lobby", [&h, &r](const Stage&) { return !r.encloses(h.cell) || r.contains(h.cell); }}};
+                       {"not stuck in the lobby", [longest](const Stage&) { return longest < 8.0f; }}};
      }},
     {"airlock-learn", "the second time it finds a locked door behind the one it opened, it learns the double doors eat keys",
      seedWhere(plain, 24000), [](Stage& s) {
@@ -2371,6 +2421,59 @@ const std::vector<Scenario> SCENARIOS = {
          return Checks{loggedBy(teller, "TOLD @ THE DOUBLE DOORS EAT KEYS"),
                        loggedBy(told, "@ TOLD ME THE DOUBLE DOORS EAT KEYS"),
                        {"the told knows it", [&told](const Stage&) { return P::keyWise(told); }}};
+     }},
+    {"try-door", "fresh in the spawn room, a human walks up to a shut door and tries it before it counts it locked",
+     seedWhere(plain, 41000), [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         calm(h);
+         s.run(90);
+         return Checks{loggedBy(h, "TRIED A DOOR: LOCKED")};
+     }},
+    {"learn-doors", "two shut doors found locked already, the next teaches it they all are, and it tries no more",
+     seedWhere(plain, 42000), [](Stage& s) {
+         Human& h = s.first();
+         calm(h);
+         P::doorsLocked(h, 2);
+         s.run(90);
+         return Checks{loggedBy(h, "LEARNT THAT SHUT DOORS ARE LOCKED"),
+                       {"no door tried after", [&h](const Stage&) {
+                            bool learnt = false;
+                            for (const auto& e : h.log.entries()) {
+                                if (learnt && e.what == "TRIED A DOOR: LOCKED") return false;
+                                learnt |= e.what == "LEARNT THAT SHUT DOORS ARE LOCKED";
+                            }
+                            return P::doorsLearnt(h);
+                        }}};
+     }},
+    {"airlock-push", "inside a server room with no key, it tries the airlock door from inside and it gives",
+     seedWhere(plain, 43000), [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         const ServerRoom& r = P::buildServerRoom(s.world, h.cell + Vec2i{-5, -17}, 10, 8);
+         calm(h);
+         s.run(8);
+         P::place(s.world, h, r.inner + Vec2i{0, -1});
+         h.keys = 0;
+         h.hunger = h.thirst = h.tiredness = 0.1f;
+         s.run(60);
+         return Checks{loggedBy(h, "PUSHED A DOOR OPEN"),
+                       {"out of the room", [&h, &r](const Stage&) { return !r.contains(h.cell); }}};
+     }},
+    {"told-door", "told the way to a locked door, a human takes the teller's word that it is locked",
+     seedWhere(plain, 44000), [](Stage& s) {
+         Human& teller = s.first();
+         P::knowChunk(s.world, teller);
+         Human& listener = s.add(seedWhere(plain, 44500), 2);
+         P::forget(listener);
+         P::tellLockedDoor(s.world, teller, listener);
+         s.run(15);
+         return Checks{{"told of a door", [&listener](const Stage&) { return !P::doorsTold(listener).empty(); }},
+                       {"taken as locked", [&listener](const Stage&) {
+                            for (Vec2i c : P::doorsTold(listener))
+                                if (!P::doorKnownLocked(listener, c)) return false;
+                            return true;
+                        }}};
      }},
     {"hum-stay", "inside a server room the first time, drowsy, it feels the hum and sleeps there rather than leave",
      seedWhere(plain, 28000), [](Stage& s) {

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Draws the sprites of some groups of data/sprites.txt, scaled up, on a floor: each sprite in both blinks,
-then, for the air ducts and water pipes, a layout of runs with the pieces turned and joined up, to see that
+then, for the air ducts and water pipes, a map of runs with each piece picked by its neighbours, to see that
 they meet. Sprites the game has no code for yet can be seen here before the sprite sheet draws them.
 
 Usage (on the host, which has PIL): python3 tools/sprite_preview.py [out.png] [group ...]
@@ -9,7 +9,7 @@ Usage (on the host, which has PIL): python3 tools/sprite_preview.py [out.png] [g
 import sys
 from PIL import Image
 
-SCALE = 8
+SCALE = 4
 FLOOR = (58, 56, 62, 255)
 GAP = 2
 
@@ -63,16 +63,53 @@ def paint(img, grid, x, y):
                     img.putpixel((px, py), tuple(round(c[k] * a + under[k] * (1 - a)) for k in range(3)) + (255,))
 
 
-# A layout of runs for one kind, prefix "duct" or "pipe": (piece, quarter turns clockwise) by cell, None
-# for bare floor. Straights are drawn west to east, corners east to south, tees west, east and south.
+# A map of runs, drawn for ducts and for pipes: '#' a piece, 'v' one bending down into the floor, 'o' a straight
+# with something on it (a vent, a valve) and 'L' a leaking pipe. Each picks its sprite by the pieces beside it.
 LAYOUT = [
-    [("end", 0), ("", 0), ("tee", 0), ("", 0), ("corner", 1), None],
-    [None, None, ("", 1), None, ("", 1), None],
-    [("corner", 0), ("", 0), ("cross", 0), ("", 0), ("tee", 1), None],
-    [("", 1), None, ("", 1), None, ("", 1), None],
-    [("corner", 3), ("", 0), ("tee", 2), ("", 0), ("corner", 2), None],
+    "v###.#v",
+    "...#...",
+    "#o###L#",
+    "#..#..#",
+    "####..v",
+    "o...v..",
+    "v.#.#..",
 ]
-EXTRAS = {"duct": [("grille", 2, 5)], "pipe": [("valve", 0, 1), ("leaking", 0, 3)]}
+EXTRAS = {"duct": {"o": "vent", "L": "vent"}, "pipe": {"o": "valve", "L": "leaking"}}
+STEPS = {"n": (0, -1), "e": (1, 0), "s": (0, 1), "w": (-1, 0)}
+
+
+def piece(kind, i, j):
+    """The sprite name for the piece at column i, row j of LAYOUT."""
+    def at(x, y):
+        return 0 <= y < len(LAYOUT) and 0 <= x < len(LAYOUT[y]) and LAYOUT[y][x] != "."
+    joins = "".join(s for s, (dx, dy) in STEPS.items() if at(i + dx, j + dy))
+    c = LAYOUT[j][i]
+    if c == "v":
+        return f"{kind} down {joins}"
+    if c in EXTRAS[kind]:
+        return f"{kind} {joins} {EXTRAS[kind][c]}"
+    return kind + (" " + joins if joins else "")
+
+
+# The plant joined to its runs: (machine, kind of run). From the front a run goes into the base on the left and one
+# leaves the east side over the bottom two cells; from the side one goes into the base.
+JOINED = [("boiler", "pipe"), ("air handler", "duct")]
+
+
+def joined(img, sprites, left, top):
+    """Each machine of JOINED front and side, with pieces of its run set where they join it."""
+    for k, (machine, kind) in enumerate(JOINED):
+        x = left + k * 100 * SCALE
+        front, side = sprites.get(machine), sprites.get(machine + " side")
+        if not front or not side:
+            continue
+        paint(img, pixels(front), x, top)
+        for name, dx, dy in ((kind + " ew", 18, 18), (kind + " down w", 30, 18),
+                             (kind + " ns", 0, 30), (kind + " down n", 0, 42)):
+            paint(img, pixels(sprites[name]), x + dx * SCALE, top + dy * SCALE)
+        sx = x + 50 * SCALE
+        paint(img, pixels(side), sx, top)
+        paint(img, pixels(sprites[kind + " down n"]), sx, top + 36 * SCALE)
 
 
 def main():
@@ -80,26 +117,39 @@ def main():
     groups = sys.argv[2:] or ["Air ducts", "Water pipes"]
     sprites = load("data/sprites.txt")
     shown = [(n, s) for n, s in sprites.items() if s["group"] in groups]
-    cell = 6 * SCALE
-    width = max(len(shown) * (cell + GAP * SCALE), 2 * 7 * cell) + GAP * SCALE
-    img = Image.new("RGBA", (width, 2 * cell + 3 * GAP * SCALE + 6 * cell), FLOOR)
+    box = max(len(s["rows"][0]) for _, s in shown) * SCALE + GAP * SCALE
+    tall = max(len(s["rows"]) for _, s in shown) * SCALE + GAP * SCALE
+    kinds = [k for k, g in (("duct", "Air ducts"), ("pipe", "Water pipes")) if g in groups]
+    per_row = 12
+    rows = (len(shown) + per_row - 1) // per_row
+    piece_px = 12 * SCALE
+    map_w = len(LAYOUT[0]) * piece_px
+    width = max(min(per_row, len(shown)) * box, len(kinds) * (map_w + 2 * box)) + GAP * SCALE
+    map_h = len(LAYOUT) * piece_px if kinds else 0
+    plant = "Plant" in groups
+    if plant:
+        width = max(width, len(JOINED) * 100 * SCALE)
+        map_h += 60 * SCALE
+    img = Image.new("RGBA", (width, rows * 2 * tall + 2 * GAP * SCALE + map_h), FLOOR)
     for k, (name, s) in enumerate(shown):
-        x = GAP * SCALE + k * (cell + GAP * SCALE)
-        w = len(s["rows"][0]) * SCALE
-        paint(img, pixels(s), x + (cell - w) // 2, GAP * SCALE)
-        paint(img, pixels(s, blinked=True), x + (cell - w) // 2, 2 * GAP * SCALE + cell)
-    top = 3 * GAP * SCALE + 2 * cell
-    for side, kind in enumerate(["duct", "pipe"]):
-        left = GAP * SCALE + side * 7 * cell
+        x = GAP * SCALE + k % per_row * box
+        y = GAP * SCALE + k // per_row * 2 * tall
+        paint(img, pixels(s), x, y)
+        paint(img, pixels(s, blinked=True), x, y + tall)
+    top = rows * 2 * tall + 2 * GAP * SCALE
+    for side, kind in enumerate(kinds):
+        left = GAP * SCALE + side * (map_w + 2 * box)
         for j, row in enumerate(LAYOUT):
-            for i, piece in enumerate(row):
-                name = kind + (" " + piece[0] if piece and piece[0] else "")
-                if piece and name in sprites:
-                    paint(img, pixels(sprites[name], turns=piece[1]), left + i * cell, top + j * cell)
-        for piece, turns, i in EXTRAS[kind]:
-            name = kind + " " + piece
-            if name in sprites:
-                paint(img, pixels(sprites[name], turns=turns), left + i * cell, top + 5 * cell)
+            for i, c in enumerate(row):
+                if c == ".":
+                    continue
+                name = piece(kind, i, j)
+                if name not in sprites:
+                    print("no sprite", name)
+                    continue
+                paint(img, pixels(sprites[name]), left + i * piece_px, top + j * piece_px)
+    if plant:
+        joined(img, sprites, GAP * SCALE, top + (len(LAYOUT) * piece_px if kinds else 0))
     img.save(out)
     print("saved", out)
 

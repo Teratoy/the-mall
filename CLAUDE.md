@@ -26,7 +26,7 @@ toolbox run -c claude-build make check        # soak vs golden output (~75 s)
 | Command (inside the toolbox) | What it does |
 |---|---|
 | `make` | Builds `build/themall`. Zero warnings is the norm: keep it so |
-| `./play.sh` (from the host) | Rebuilds if needed and opens the game window |
+| `./play.sh` (from the host) | Rebuilds if needed in the toolbox, then opens the game window on the host, where the sound is (the toolbox has no sound libraries, so `make run` there is silent). The game finds raylib in `build/lib` |
 | `make check` | Runs the headless soak (`build/stuck_soak 6 15 1 6`, one process per seed) with the scenarios beside it, diffing the soak with `tests/golden/soak.txt`. The soak's output is kept in `build/soak.txt` and only rerun when the soak, the data files or the Makefile change |
 | `make scenarios` | The scenarios alone (3 s): set-up situations that check rare features still happen. `build/scenarios NAME` runs one and prints every log line |
 | `make golden` | Rewrites the golden output after a change meant to alter behaviour. Commit it with that change. Straight after a failed `make check` it just copies `build/soak.txt`, so it takes no time |
@@ -36,14 +36,23 @@ toolbox run -c claude-build make check        # soak vs golden output (~75 s)
 | `make dirtysheet` | Draws one human beside itself dirty in every pose, with cake, bottle, blood and remains, to `build/dirty-sheet.png`. `DIRTYSHEET_ARGS="42 4 gun"` draws a gun tucked into each kind of bottom instead, and `"42 4 shoot"` a human shooting all eight ways |
 | `make shootanim`, then `python3 tools/frames_gif.py build/shoot-anim build/shoot.gif` on the host | One human shooting all eight ways, its spent casings piling up on the floor, beside ammo boxes, as frames in `build/shoot-anim/` (`SHOOTANIM_ARGS="42 8 reload"`: reloading instead), joined into a GIF (the toolbox has no PIL). See [AI/gun_art_plan.md](AI/gun_art_plan.md) |
 | `make genprobe` | Grows chunk interiors on every footprint (L, T, S, boxes) and checks they keep to it. `GENPROBE_ARGS="20 png"` also saves pictures to `build/genprobe-png/` |
+| `make genview` (toolbox), or `./genview.sh` from the host | The world generator editor: the knobs of `data/worldgen.txt` beside a chunk grown with them, regrown on the same seed as they move; pick kind, footprint and seed, art or map, before/after or nine seeds, overlays (1–5), a readout (T), humans dropped for a heatmap (H, J; `--drop` starts one), Save, and Play (P) to open the game on that chunk (`themall --seed N --chunk KIND x,y;...`). It reloads the file when it changes on disk and saves what it shows to `build/genview.png` and `build/genview.txt`, so you can change knobs from a chat and look. See [AI/worldgen_editor_plan.md](AI/worldgen_editor_plan.md) |
+| `make exploreprobe` | Follows the waker until it leaves the spawn room and draws its walk and each explore target (`EXPLOREPROBE_ARGS="seed seconds"`; `WHY=1` before it prints why each target). See [AI/explore_heading_plan.md](AI/explore_heading_plan.md) |
 | `make lightprobe` | Grows the chunks round a spawn and prints its light: sources by kind, floor by light level, and an ASCII map. `LIGHTPROBE_ARGS="seed width height source"` centres it on a source. See [AI/light_plan.md](AI/light_plan.md) |
 | `make apk` (on the host, not the toolbox) | Builds `build/TheMall-debug.apk` for the phone with the Android NDK. See `android/apk.mk` and [AI/android_plan.md](AI/android_plan.md) |
 | `make lines` (host or toolbox), or `./lines.sh` (the "The Mall Lines" desktop shortcut) | The lines editor: a local web page at http://localhost:8765 for rewriting `data/lines.txt`, with the game's bubble drawn beside each line. See [AI/lines_editor_plan.md](AI/lines_editor_plan.md) |
 | `make sprites` (host or toolbox), or `./sprites.sh` | The sprite editor: a local web page at http://localhost:8766 for redrawing `data/sprites.txt`. See [AI/sprite_editor_plan.md](AI/sprite_editor_plan.md) |
+| `make sounds` (host), or `./sounds.sh` (the "The Mall Sounds" desktop shortcut) | The sound editor: a local web page at http://localhost:8767 for tweaking `data/sounds.txt` (and, on its MUSIC tab, `data/music.txt`), each sound rendered by the game's synth (`build/sound_sheet --one`, which sounds.sh builds in the toolbox). See [AI/sound_editor_plan.md](AI/sound_editor_plan.md) |
+| `make soundsheet` | Renders every sound from `data/sounds.txt` to `build/sounds/NAME.wav`, clear and muffled. See [AI/sound_plan.md](AI/sound_plan.md) |
+| `make musicsheet` | Renders each section of each song in `data/music.txt` alone, and three minutes of each song as the game plays it, to `build/music/`. See [AI/music_plan.md](AI/music_plan.md) |
+| `make voicesheet` | Renders sample voices (Loudworks' English voice that humans speak with, and its formant and villager babbles, ported in `src/audio/voice*.cpp`) to `build/voices/*.wav`, crushed as in game: a few lines in each voice by a small, middling and big speaker, and a few grown humans in every tone (`VOICESHEET_ARGS="N"`). See [AI/voice_plan.md](AI/voice_plan.md) |
 | `make spritesheet` | Draws every sprite from `data/sprites.txt` in all the ways the game does, at 1x, to `build/sprite-sheet.png`: `cmp` it before and after an art refactor. `make spriteref` remakes the sprite editor's human and machine slots |
 | `make simprofile` / `make gprof` | Times the sim alone on one soak seed (`SIMPROFILE_ARGS="seed minutes crowd"`); `gprof` writes a profile to `build/gprof.txt`. See [AI/sim_speed_plan.md](AI/sim_speed_plan.md) |
+| `make noiseprobe` | Counts each noise the sim makes for the sound (`World::noise`) over soak-like worlds (`NOISEPROBE_ARGS="seeds minutes crowd"`): to see a new one is made at all |
+| `make logsize` | How big the life logs grow over long soak-like worlds, in entries, memory and obituary bytes (`LOGSIZE_ARGS="seeds minutes crowd every first"`) |
 | `make trips` | How walks for needs go in the soak's worlds: finished or dropped on the way, and for what; how far water was when it got thirsty; what the thirsty who know no water do. `TRIPS_TRACE=seed:id` follows one human (pass it with `toolbox run -c claude-build env TRIPS_TRACE=...`, since `toolbox run` drops the environment). See [AI/needs_planning_plan.md](AI/needs_planning_plan.md) |
-| `make shot SHOT_ARGS="..."` | Saves `build/shot.png` without a visible window. See `tools/shot.cpp` for the options (`--scene`, `--seconds`, `--seed`, `--zoom`, `--stats`, `--log`, `--reveal`, `--wide`) |
+| `python3 tools/conduit_art.py --write`, then `python3 tools/sprite_preview.py` (on the host) | Grows the air duct and water pipe sprites (12x12, one per way a piece joins its neighbours, and the ones bending into the floor) into `data/sprites.txt`, over any hand edits to them; the preview draws them, and a map of runs, to `build/sprite-preview.png`. `tools/plant_art.py --write` does the same for the boiler and air handler, whose outlets are cut from those pieces so runs join them; `sprite_preview.py build/plant-preview.png Plant` shows them joined, and `tools/tech_room.py` draws a mock technical room of them to `build/tech-room.png` |
+| `make shot SHOT_ARGS="..."` | Saves `build/shot.png` without a visible window. See `tools/shot.cpp` for the options (`--scene`, `--seconds`, `--seed`, `--zoom`, `--stats`, `--log`, `--reveal`, `--wide`; `--scene choose --wake` for choosing a human and waking) |
 
 **The sim is deterministic.** Same seeds, same output, byte for byte. So:
 - A pure refactor must pass `make check` unchanged. If it doesn't, the
@@ -91,8 +100,8 @@ lost, and several useful probes already have been.
   - errand: keeping to a walk for a need, topping up, turning back, looking for water or food, the other need while there
 - `src/world/`: chunks and generation (`gen_*.cpp`), blood, mess, traps,
   tables, statues, toilets.
-- `src/render/`: pixel art drawn in code; `src/scenes/`: menu, create,
-  world (HUD, log, stats), obituary; `src/ui/`: the pixel UI.
+- `src/render/`: pixel art drawn in code; `src/scenes/`: menu,
+  world (choosing the human asleep in it, HUD, log, stats), obituary; `src/ui/`: the pixel UI.
 - `data/lines.txt`: everything humans say. The user edits it, and F5
   reloads it in game. Its header explains the format.
 - `data/names.txt`: what names are grown from.
@@ -101,6 +110,21 @@ lost, and several useful probes already have been.
   F5 reloads it. The sprite editor writes it. Art drawn from letters goes
   here, not in a glyph array in code; humans and other procedural art stay
   in code.
+- `data/worldgen.txt`: the knobs that shape what is grown (kind mix, room
+  sizes, plazas, water, traps, machines, toilets, statues), read through
+  `tune::Int`/`Float`/`List` handles in `world/gen_tuning.h`; F5 reloads it
+  for chunks grown from then on. A new generation knob goes here, named
+  at the top of the file that uses it, not as a `constexpr`. Timings the
+  sim runs on (smell, spikes, darts, airlocks) stay in code.
+- `data/sounds.txt`: every sound, as a few synth numbers per layer (its
+  header explains them); F5 reloads it. `data/music.txt`: the music,
+  written like a tracker and played through the same synth (the main
+  menu's for now); F5 reloads it, on the main menu too. `src/audio/`: the synth, the
+  player, and `Hearing`, which plays what the followed human hears from
+  the world's noises (`World::noise`, for the view only: nothing in the
+  sim reads them).
+- `data/settings.txt`: the player's CONFIGURATION (volumes). Not tracked
+  by git, like the obituary.
 - `data/lines_review.json` and `data/lines_drafts.json`: the lines editor's
   review marks, and rewrites Claude drafts for the user to accept or reject
   there (format at the top of `tools/lines_editor.py`). Draft rewrites go in

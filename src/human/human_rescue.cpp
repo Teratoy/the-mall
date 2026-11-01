@@ -5,6 +5,7 @@
 #include <queue>
 
 // Shut in a slam room with no key, a human cries for help now and then,
+// and at once whatever it is doing when it hears steps beyond the wall,
 // loud enough to carry through the walls. Anyone in earshot hears it, sees
 // them or not, and is shaken; one with a key to spare may go and let them
 // out, though a key spent on a gate is one fewer for a way out, so few do.
@@ -21,6 +22,11 @@ namespace {
 constexpr float HELP_FIRST_MIN = 8.0f, HELP_FIRST_MAX = 15.0f;
 constexpr float HELP_EVERY_MIN = 20.0f, HELP_EVERY_MAX = 40.0f;
 constexpr int HELP_RADIUS = 12;
+/// Steps out of sight this near are heard through the walls (as far as the
+/// player hears them), and cried out to at once, no sooner than this after
+/// the last such cry.
+constexpr int STEPS_HEARD = 9;
+constexpr float STEPS_AGAIN = 10.0f;
 /// Walled in: it can reach no more than this many cells.
 constexpr int WALLED_IN_CELLS = 120;
 /// Hearing a cry for help, the first time from each.
@@ -93,7 +99,13 @@ void Human::callForHelp(World& world, float dt) {
         rescue_.slamGate.reset();
         return;
     }
-    if ((rescue_.helpTimer -= dt) > 0.0f) return;
+    // Steps beyond the wall: someone is there, now, whatever it was doing.
+    bool steps = clock_ - rescue_.stepsCried >= STEPS_AGAIN &&
+                 std::any_of(world.humans().begin(), world.humans().end(), [&](const auto& o) {
+                     return o.get() != this && !o->dead() && o->moving && cheb(o->cell, cell) <= STEPS_HEARD &&
+                            !sight.sees(o->cell);
+                 });
+    if ((rescue_.helpTimer -= dt) > 0.0f && !steps) return;
     rescue_.helpTimer = rng_.range(HELP_EVERY_MIN, HELP_EVERY_MAX);
     // Stepped out before the gate shut, it was never shut in; with a key it
     // lets itself out.
@@ -102,7 +114,13 @@ void Human::callForHelp(World& world, float dt) {
         return;
     }
     if (keys > 0) return;
-    if (!sayLater(talk::Moment::Help)) return;
+    if (steps) {
+        rescue_.stepsCried = clock_;
+        note("HEARD STEPS OUTSIDE. CRIED OUT");
+        sayLater(talk::Moment::HelpSteps);
+    } else if (!sayLater(talk::Moment::Help)) {
+        return;
+    }
     for (const auto& o : world.humans())
         if (o.get() != this && !o->dead() && cheb(o->cell, cell) <= HELP_RADIUS) o->hearHelp(*this, *rescue_.slamGate);
 }
