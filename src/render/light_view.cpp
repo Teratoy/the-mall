@@ -14,7 +14,7 @@ struct Shade {
 };
 
 /// Unlit: what is left of a colour in the dark.
-constexpr Shade DARK = {0.23f, 0.24f, 0.38f};
+constexpr Shade DARK = {0.33f, 0.34f, 0.48f};
 /// How far each light level goes from the dark to the source's colour.
 constexpr float LEVEL_MIX[LIGHT_FULL + 1] = {0.0f, 0.6f, 0.9f, 1.0f};
 /// Remembered: as bright as the light it was seen in, greyed, at this.
@@ -23,7 +23,7 @@ constexpr float LEVEL_MIX[LIGHT_FULL + 1] = {0.0f, 0.6f, 0.9f, 1.0f};
 constexpr float MEMORY_DIM = 0.45f;
 /// Remembered dark is never darker than this much of remembered light, so
 /// the way through a dark place stays readable.
-constexpr float MEMORY_DARK = 0.5f;
+constexpr float MEMORY_DARK = 0.6f;
 /// Eyes get used to the dark: right round the viewer it makes out this
 /// much, fading to nothing this many cells out.
 constexpr Shade EYE_GLOW = {0.58f, 0.59f, 0.7f};

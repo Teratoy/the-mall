@@ -184,7 +184,7 @@ differently from each other.
 ### Built (2026-11-01)
 - `render/light_view.cpp`, `drawLight`: after everything standing is
   drawn and before the edge of sight fades, a multiply layer over the
-  cells in sight. Each cell's colour runs from `DARK` (58, 62, 98) to its
+  cells in sight. Each cell's colour runs from `DARK` (84, 87, 122; was 58, 62, 98) to its
   brightest source's tint by level (0, 0.6, 0.9, 1.0). Strip lights are
   a cool off-white, vending warm, screens blue, racks green, dispensers
   pale blue, statues and torches amber, night lights blue.
@@ -205,7 +205,7 @@ does all three shadings that were separate:
   level and source kind (the sim doesn't plan on it yet; `make check`
   unchanged). Remembered cells are greyed by the light they were seen
   in, at `MEMORY_DIM`, never below `MEMORY_DARK` (half) of remembered
-  light, so a dark place stays readable on the way back. Cells only heard
+  light (0.6, was 0.5), so a dark place stays readable on the way back. Cells only heard
   of are drawn as lit.
 - **The edge of sight fades into memory**, not into black: the last two
   rings mix a quarter and three quarters toward how the cell will be
