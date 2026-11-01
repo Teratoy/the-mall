@@ -1,4 +1,5 @@
 #include "audio/audio.h"
+#include "audio/music.h"
 #include "core/rng.h"
 #include "human/human_look.h"
 #include "render/canvas.h"
@@ -90,6 +91,7 @@ int main(int argc, char** argv) {
             canvas.fit(scene->canBeWide());
             scene->update(dt, canvas);
             if (scene->next) scene = std::move(scene->next);
+            music::update(dt);
             canvas.begin();
             scene->draw(canvas);
             canvas.end();
@@ -99,6 +101,7 @@ int main(int argc, char** argv) {
             EndDrawing();
         }
     }
+    music::close();
     audio::close();
     CloseWindow();
 }

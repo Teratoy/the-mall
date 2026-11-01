@@ -105,6 +105,34 @@ void addLayer(std::vector<float>& out, const Layer& l, size_t start, float loud,
 
 } // namespace
 
+bool readLayer(const std::string& wave, std::istream& words, Layer& l, const std::string& source, int line) {
+    if (!waveNamed(wave, l.wave)) {
+        warn(source, line, "no wave " + wave);
+        return false;
+    }
+    if (!(words >> l.from)) {
+        warn(source, line, "a layer wants a pitch");
+        return false;
+    }
+    l.to = l.from;
+    std::string key;
+    if (words >> key) {
+        // A second number is the pitch it slides to.
+        try {
+            size_t used;
+            float to = std::stof(key, &used);
+            if (used == key.size()) l.to = to, key.clear();
+        } catch (...) {
+        }
+        float v;
+        if (!key.empty() && words >> v && !layerOption(l, key, v)) warn(source, line, "no layer option " + key);
+        while (words >> key >> v)
+            if (!layerOption(l, key, v)) warn(source, line, "no layer option " + key);
+    }
+    l.from = std::max(l.from, MIN_HZ), l.to = std::max(l.to, MIN_HZ);
+    return true;
+}
+
 std::vector<Def> parse(std::istream& in, const std::string& source) {
     std::vector<Def> defs;
     int bits = Def{}.bits;
@@ -137,65 +165,52 @@ std::vector<Def> parse(std::istream& in, const std::string& source) {
             defs.push_back(std::move(d));
             continue;
         }
-        Layer l;
-        if (!waveNamed(head, l.wave)) {
-            warn(source, number, "no wave " + head);
-            continue;
-        }
         if (defs.empty()) {
             warn(source, number, "a layer before any sound");
             continue;
         }
-        if (!(words >> l.from)) {
-            warn(source, number, "a layer wants a pitch");
-            continue;
-        }
-        l.to = l.from;
-        std::string key;
-        if (words >> key) {
-            // A second number is the pitch it slides to.
-            try {
-                size_t used;
-                float to = std::stof(key, &used);
-                if (used == key.size()) l.to = to, key.clear();
-            } catch (...) {
-            }
-            float v;
-            if (!key.empty() && words >> v && !layerOption(l, key, v)) warn(source, number, "no layer option " + key);
-            while (words >> key >> v)
-                if (!layerOption(l, key, v)) warn(source, number, "no layer option " + key);
-        }
-        l.from = std::max(l.from, MIN_HZ), l.to = std::max(l.to, MIN_HZ);
+        Layer l;
+        if (!readLayer(head, words, l, source, number)) continue;
         defs.back().layers.push_back(l);
     }
     return defs;
 }
 
-std::vector<float> render(const Def& def, float lowpass) {
+std::vector<float> layers(const Def& def, uint64_t seed) {
     float length = 0.0f;
     for (const Layer& l : def.layers)
         length = std::max(length, l.delay + (l.repeat - 1) * l.gap + l.attack + l.hold + l.decay);
     std::vector<float> out(size_t(length * SAMPLE_RATE) + 1, 0.0f);
-    Rng rng(seedOf(def.name));
+    Rng rng(seed);
     for (const Layer& l : def.layers) {
         float loud = l.gain;
         for (int k = 0; k < l.repeat; k++, loud *= l.fade)
             addLayer(out, l, size_t((l.delay + k * l.gap) * SAMPLE_RATE), loud, rng);
     }
+    return out;
+}
+
+Crush::Crush(int bits, float rate)
+    : levels_(float(1 << std::max(1, bits - 1))), every_(SAMPLE_RATE / std::max(rate, 1.0f)), since_(every_) {}
+
+float Crush::operator()(float s) {
+    if ((since_ += 1.0f) >= every_) since_ -= every_, held_ = std::round(s * levels_) / levels_;
+    return std::clamp(held_, -1.0f, 1.0f);
+}
+
+std::vector<float> render(const Def& def, float lowpass) {
+    std::vector<float> out = layers(def, seedOf(def.name));
     crush(out, def.bits, def.rate, lowpass, def.gain);
     return out;
 }
 
-// Through a wall, then crushed: held for a whole crushed sample, and
-// rounded to a few levels.
+// Through a wall, then crushed.
 void crush(std::vector<float>& samples, int bits, float rate, float lowpass, float gain) {
     float lowStep = lowpass > 0.0f ? smoothing(lowpass) : 1.0f, low = 0.0f;
-    float levels = float(1 << std::max(1, bits - 1));
-    float every = SAMPLE_RATE / std::max(rate, 1.0f), held = 0.0f, since = every;
+    Crush crush(bits, rate);
     for (float& s : samples) {
         low += (std::clamp(s * gain, -1.0f, 1.0f) - low) * lowStep;
-        if ((since += 1.0f) >= every) since -= every, held = std::round(low * levels) / levels;
-        s = std::clamp(held, -1.0f, 1.0f);
+        s = crush(low);
     }
 }
 

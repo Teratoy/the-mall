@@ -1,5 +1,6 @@
 #include "scenes/world_scene.h"
 #include "audio/audio.h"
+#include "audio/music.h"
 #include "core/files.h"
 #include "human/human.h"
 #include "human/obituary.h"
@@ -452,6 +453,9 @@ const Human* WorldScene::nearestLiving() const {
 }
 
 void WorldScene::update(float dt, const Canvas& canvas) {
+    // The menu's music plays on while choosing the sleeper, and fades out as
+    // it wakes; the world has none of its own yet.
+    music::want(choosing() ? music::MENU : "");
     if (choosing()) {
         updateChoosing(dt, canvas);
         return;
@@ -492,6 +496,7 @@ void WorldScene::update(float dt, const Canvas& canvas) {
         sprites::reload();
         tune::reload();
         audio::reload();
+        music::reload();
     }
     int step = zoomStep_;
     zoomStep_ = 0;

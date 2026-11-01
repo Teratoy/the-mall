@@ -3,8 +3,8 @@
 #include <vector>
 
 /// The game's sound: the sounds of data/sounds.txt, rendered once and
-/// played at a volume, pan and pitch, clear or muffled as through a wall;
-/// humans' voices, made for each line;
+/// played at a volume, pan and pitch, clear or muffled as through a wall
+/// (the music is in audio/music.h); humans' voices, made for each line;
 /// and the volumes the player set in CONFIGURATION, kept between runs.
 /// Where there is no sound device, or it was never opened (the tools),
 /// nothing plays and nothing fails.
@@ -17,6 +17,7 @@ struct Settings {
     int master = 8;
     int sounds = 8;
     int voices = 8;
+    int music = 6;
 };
 
 /// Opens the sound device and reads the settings.
@@ -35,6 +36,11 @@ void play(std::string_view name, float volume = 1.0f, float pan = 0.5f, float pi
 void speak(const std::vector<float>& samples, float volume = 1.0f, float pan = 0.5f, bool muffled = false);
 
 Settings& settings();
+/// A volume step as a gain, heard as its square, which sounds more even
+/// across the steps.
+float gainOf(int step);
+/// True once the sound device is open and working.
+bool ready();
 /// Writes the settings to the save file, after a change.
 void save();
 

@@ -79,7 +79,7 @@ volume and a **low-bit** switch that crushes the music to 4 bits at
   or muffled with its own six voices (raylib sound aliases), volume, pan
   and pitch. Where there is no device (the tools), nothing plays.
 - MASTER and SOUNDS only, 0–10, saved in `data/settings.txt` (ignored by
-  git). The music volume waits for the music.
+  git). MUSIC came with the music (music_plan.md).
 - `ConfigPanel` (`src/scenes/config_panel.cpp`) is the CONFIGURATION
   menu: `ConfigScene` on the main menu under OBITUARY, and over the
   pause menu, between RESUME and MAIN MENU. A change plays a pop.

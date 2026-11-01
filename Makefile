@@ -42,7 +42,7 @@ DIRTYSHEET := build/dirty_sheet
 # One human shooting all eight ways, as animation frames (tools/frames_gif.py makes the GIF).
 SHOOTANIM := build/shoot_anim
 
-.PHONY: all run clean trips stuck check golden coverage shot scenarios genprobe genview lightprobe exploreprobe hidef bottlesheet dirtysheet shootanim spritesheet soundsheet voicesheet spriteref fontdump lines sprites sounds trapprobe icon apk install-apk logcat simprofile gprof
+.PHONY: all run clean trips stuck check golden coverage shot scenarios genprobe genview lightprobe exploreprobe hidef bottlesheet dirtysheet shootanim spritesheet soundsheet musicsheet voicesheet spriteref fontdump lines sprites sounds trapprobe icon apk install-apk logcat simprofile gprof
 
 all: $(BIN)
 
@@ -157,11 +157,15 @@ shootanim: $(SHOOTANIM)
 SOUNDSHEET := build/sound_sheet
 
 # No raylib, so the sound editor can run it on the host.
-$(SOUNDSHEET): tools/sound_sheet.cpp build/audio/synth.o
+$(SOUNDSHEET): tools/sound_sheet.cpp build/audio/synth.o build/audio/music_data.o
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@ -lm
 
 soundsheet: $(SOUNDSHEET)
 	./$(SOUNDSHEET) data/sounds.txt build/sounds
+
+# Every song in data/music.txt to build/music/: each section alone, and each song as played for 3 minutes.
+musicsheet: $(SOUNDSHEET)
+	./$(SOUNDSHEET) --music data/music.txt build/music
 
 # Sample voices rendered to build/voices/*.wav, crushed as in the game, and the voices of a few grown
 # humans in every tone (tools/voice_sheet.cpp). VOICESHEET_ARGS="6" sets how many humans.

@@ -1,0 +1,333 @@
+# The game's music, written like a tiny tracker and played through the same
+# synth as the sounds (src/audio/music_data.h). F5 reads it again.
+# `make musicsheet` renders each section alone, and each song as the game
+# would play it, to build/music/.
+#
+#   crush BITS RATE     every song after this is crushed to BITS bits a
+#                       sample at RATE samples a second, as the sounds are
+#   song NAME [tempo BPM] [rows R] [wow CENTS] [gain G] [bits B] [rate R]
+#                       starts a song; the code plays it by NAME. tempo is
+#                       beats a minute (90), rows how many rows a beat (4),
+#                       wow how far the old tape drifts out of tune (0),
+#                       gain how loud the whole mix is before the crush (1)
+#   instrument NAME [gain G] [detune CENTS] [sustain]
+#                       an instrument, its layers on the lines under it,
+#                       written as in data/sounds.txt at A4 (440 Hz): each
+#                       note moves them to its pitch. sustain holds a note
+#                       for as long as it is written; otherwise it is struck
+#                       and rings as its layers do
+#   channels NAME[:CENTS] ...
+#                       the song's channels, an instrument each, maybe a few
+#                       cents out of tune of their own
+#   section NAME        a section, its rows on the lines under it: a cell
+#                       per channel, each a note (C-4, Db4: flats, as # starts
+#                       a comment), x (a hit at the pitch its instrument was
+#                       written at), . (nothing new: what plays rings on) or
+#                       == (stop). A note plays until the next in its channel
+#                       or a stop, and rings on past the end of its section
+#   flow FROM TO WEIGHT [TO WEIGHT ...]
+#                       what may follow a section, likelier the heavier;
+#                       a section with no flow is followed by the next one
+#   vary drop CHANCE [keep NAME ...]
+#                       each time a section starts (but the first), each
+#                       channel may drop out this often, but those playing
+#                       the kept instruments
+#
+# The song starts at its first section, as written.
+
+crush 5 8000
+
+# --- The main menu: the mall's own music, soft lounge chords played to
+# nobody for years, a little slow and out of tune. Four sections of eight
+# bars: a, the tune; b, its bridge; c, the tune gone wrong, its chords
+# sliding off key; d, the chords alone.
+
+song menu tempo 80 rows 2 wow 14 gain 0.38
+
+instrument epiano gain 0.8
+    square 440 duty 0.15 gain 0.35 attack 0.003 decay 1.4 lowpass 1500
+    sine 880 gain 0.12 attack 0.002 decay 0.5
+
+instrument vibes detune 6
+    triangle 440 gain 0.5 attack 0.004 decay 1.8 lowpass 3000
+    sine 1760 gain 0.05 attack 0.002 decay 0.25
+
+instrument bass sustain
+    sine 440 gain 0.7 attack 0.006 decay 0.5
+    square 880 gain 0.08 duty 0.3 attack 0.004 decay 0.25 lowpass 900
+
+instrument brush
+    noise 5000 gain 0.18 attack 0.01 decay 0.12 highpass 2500
+
+# Three voices of the chord, a little out of tune with each other.
+channels epiano epiano:7 epiano:-5 bass vibes brush
+
+section a
+    A-3 C-4 E-4 F-2 A-4 .    # Fmaj7
+    .   .   .   .   .   .
+    .   .   .   .   .   x
+    .   .   .   .   C-5 .
+    .   .   .   C-3 .   .
+    A-3 C-4 E-4 .   .   .
+    .   .   .   Eb2 E-5 x
+    .   .   .   .   .   .
+    A-3 C-4 F-4 D-2 D-5 .    # Dm7
+    .   .   .   .   .   .
+    .   .   .   .   .   x
+    .   .   .   .   .   .
+    .   .   .   A-2 .   .
+    A-3 C-4 F-4 .   .   .
+    .   .   .   Gb2 C-5 x
+    .   .   .   .   .   .
+    Bb3 D-4 F-4 G-2 Bb4 .    # Gm7
+    .   .   .   .   .   .
+    .   .   .   .   .   x
+    .   .   .   .   A-4 .
+    .   .   .   D-3 .   .
+    Bb3 D-4 F-4 .   .   .
+    .   .   .   Db2 G-4 x
+    .   .   .   .   .   .
+    Bb3 E-4 G-4 C-2 E-4 .    # C7
+    .   .   .   .   .   .
+    .   .   .   .   .   x
+    .   .   .   .   .   .
+    .   .   .   G-2 .   .
+    Bb3 E-4 G-4 .   .   .
+    .   .   .   E-2 G-4 x
+    .   .   .   .   .   .
+    A-3 C-4 E-4 F-2 A-4 .    # Fmaj7
+    .   .   .   .   .   .
+    .   .   .   .   .   x
+    .   .   .   .   C-5 .
+    .   .   .   C-3 .   .
+    A-3 C-4 E-4 .   .   .
+    .   .   .   B-1 F-5 x
+    .   .   .   .   .   .
+    A-3 D-4 F-4 Bb1 E-5 .    # Bbmaj7
+    .   .   .   .   .   .
+    .   .   .   .   .   x
+    .   .   .   .   .   .
+    .   .   .   F-2 D-5 .
+    A-3 D-4 F-4 .   .   .
+    .   .   .   Gb2 C-5 x
+    .   .   .   .   .   .
+    Bb3 D-4 F-4 G-2 D-5 .    # Gm7
+    .   .   .   .   .   .
+    .   .   .   .   Bb4 x
+    .   .   .   .   .   .
+    .   .   .   D-3 A-4 .
+    Bb3 D-4 F-4 .   .   .
+    .   .   .   Db2 G-4 x
+    .   .   .   .   .   .
+    Bb3 F-4 G-4 C-2 F-4 .    # C7sus
+    .   .   .   .   .   .
+    .   .   .   .   .   x
+    .   .   .   .   .   .
+    .   .   .   G-2 .   .
+    Bb3 F-4 G-4 .   .   .
+    .   .   .   E-2 ==  x
+    .   .   .   .   .   .
+
+section b
+    A-3 D-4 F-4 Bb1 D-5 .    # Bbmaj7
+    .   .   .   .   .   .
+    .   .   .   .   .   x
+    .   .   .   .   .   .
+    .   .   .   F-2 F-5 .
+    A-3 D-4 F-4 .   .   .
+    .   .   .   B-1 .   x
+    .   .   .   .   .   .
+    G-3 Db4 F-4 Bb1 Db5 .    # Bbm6
+    .   .   .   .   .   .
+    .   .   .   .   .   x
+    .   .   .   .   .   .
+    .   .   .   F-2 .   .
+    G-3 Db4 F-4 .   .   .
+    .   .   .   Bb1 C-5 x
+    .   .   .   .   .   .
+    G-3 C-4 E-4 A-1 C-5 .    # Am7
+    .   .   .   .   .   .
+    .   .   .   .   .   x
+    .   .   .   .   E-5 .
+    .   .   .   E-2 .   .
+    G-3 C-4 E-4 .   .   .
+    .   .   .   Db2 G-5 x
+    .   .   .   .   .   .
+    Gb3 A-3 C-4 D-2 Gb5 .    # D7
+    .   .   .   .   .   .
+    .   .   .   .   .   x
+    .   .   .   .   .   .
+    .   .   .   A-2 .   .
+    Gb3 A-3 C-4 .   .   .
+    .   .   .   Gb2 E-5 x
+    .   .   .   .   .   .
+    Bb3 D-4 F-4 G-2 D-5 .    # Gm7
+    .   .   .   .   .   .
+    .   .   .   .   .   x
+    .   .   .   .   Bb4 .
+    .   .   .   D-3 .   .
+    Bb3 D-4 F-4 .   .   .
+    .   .   .   Db2 D-5 x
+    .   .   .   .   .   .
+    Bb3 E-4 G-4 C-2 C-5 .    # C7
+    .   .   .   .   .   .
+    .   .   .   .   .   x
+    .   .   .   .   .   .
+    .   .   .   G-2 .   .
+    Bb3 E-4 G-4 .   .   .
+    .   .   .   E-2 Bb4 x
+    .   .   .   .   .   .
+    A-3 C-4 E-4 F-2 A-4 .    # Fmaj7
+    .   .   .   .   .   .
+    .   .   .   .   .   x
+    .   .   .   .   .   .
+    .   .   .   C-3 .   .
+    A-3 C-4 E-4 .   .   .
+    .   .   .   Db2 .   x
+    .   .   .   .   .   .
+    Bb3 E-4 G-4 C-2 G-4 .    # C7
+    .   .   .   .   .   .
+    .   .   .   .   .   x
+    .   .   .   .   .   .
+    .   .   .   G-2 E-4 .
+    Bb3 E-4 G-4 .   .   .
+    .   .   .   B-1 .   x
+    .   .   .   .   ==  .
+
+section c
+    A-3 C-4 E-4 F-2 A-4 .    # Fmaj7
+    .   .   .   .   .   .
+    .   .   .   .   .   x
+    .   .   .   .   C-5 .
+    .   .   .   C-3 .   .
+    A-3 C-4 E-4 .   .   .
+    .   .   .   E-2 E-5 x
+    .   .   .   .   .   .
+    G-3 Bb3 D-4 Eb2 D-5 .    # Ebmaj7
+    .   .   .   .   .   .
+    .   .   .   .   .   x
+    .   .   .   .   .   .
+    .   .   .   Bb2 .   .
+    G-3 Bb3 D-4 .   .   .
+    .   .   .   Eb2 Bb4 x
+    .   .   .   .   .   .
+    A-3 C-4 F-4 D-2 A-4 .    # Dm7
+    .   .   .   .   .   .
+    .   .   .   .   .   x
+    .   .   .   .   F-4 .
+    .   .   .   A-2 .   .
+    A-3 C-4 F-4 .   .   .
+    .   .   .   D-2 D-4 x
+    .   .   .   .   .   .
+    F-3 Ab3 C-4 Db2 C-4 .    # Dbmaj7
+    .   .   .   .   .   .
+    .   .   .   .   .   x
+    .   .   .   .   .   .
+    .   .   .   Ab2 .   .
+    F-3 Ab3 C-4 .   .   .
+    .   .   .   Gb2 .   x
+    .   .   .   .   .   .
+    Bb3 D-4 F-4 G-2 Bb4 .    # Gm7
+    .   .   .   .   .   .
+    .   .   .   .   .   x
+    .   .   .   .   D-5 .
+    .   .   .   D-3 .   .
+    Bb3 D-4 F-4 .   .   .
+    .   .   .   G-1 F-5 x
+    .   .   .   .   .   .
+    F-3 Bb3 Db4 Gb1 F-5 .    # Gbmaj7
+    .   .   .   .   .   .
+    .   .   .   .   .   x
+    .   .   .   .   .   .
+    .   .   .   Db2 .   .
+    F-3 Bb3 Db4 .   .   .
+    .   .   .   E-2 Db5 x
+    .   .   .   .   .   .
+    A-3 C-4 E-4 F-2 C-5 .    # Fmaj7
+    .   .   .   .   .   .
+    .   .   .   .   .   x
+    .   .   .   .   .   .
+    .   .   .   C-3 .   .
+    A-3 C-4 E-4 .   .   .
+    .   .   .   Gb2 .   x
+    .   .   .   .   .   .
+    A-3 C-4 E-4 F-2 .   .    # Fmaj7
+    .   .   .   .   .   .
+    .   .   .   .   .   x
+    .   .   .   .   .   .
+    .   .   .   C-3 ==  .
+    A-3 C-4 E-4 .   .   .
+    .   .   .   Gb2 .   x
+    .   .   .   .   .   .
+
+section d
+    A-3 C-4 E-4 F-2 ==  .    # Fmaj7
+    .   .   .   .   .   .
+    .   .   .   .   .   .
+    .   .   .   .   .   .
+    .   .   .   .   .   .
+    .   .   .   .   .   .
+    .   .   .   ==  .   .
+    .   .   .   .   .   .
+    A-3 C-4 F-4 D-2 .   .    # Dm7
+    .   .   .   .   .   .
+    .   .   .   .   .   .
+    .   .   .   .   .   .
+    .   .   .   .   .   .
+    .   .   .   .   .   .
+    .   .   .   ==  .   .
+    .   .   .   .   .   .
+    Bb3 D-4 F-4 G-2 .   .    # Gm7
+    .   .   .   .   .   .
+    .   .   .   .   .   .
+    .   .   .   .   .   .
+    .   .   .   .   .   .
+    .   .   .   .   .   .
+    .   .   .   ==  .   .
+    .   .   .   .   .   .
+    Bb3 E-4 G-4 C-2 .   .    # C7
+    .   .   .   .   .   .
+    .   .   .   .   .   .
+    .   .   .   .   .   .
+    .   .   .   .   .   .
+    .   .   .   .   .   .
+    .   .   .   ==  .   .
+    .   .   .   .   .   .
+    A-3 C-4 E-4 F-2 .   .    # Fmaj7
+    .   .   .   .   .   .
+    .   .   .   .   .   .
+    .   .   .   .   .   .
+    .   .   .   .   .   .
+    .   .   .   .   .   .
+    .   .   .   ==  .   .
+    .   .   .   .   .   .
+    A-3 C-4 F-4 D-2 .   .    # Dm7
+    .   .   .   .   .   .
+    .   .   .   .   .   .
+    .   .   .   .   .   .
+    .   .   .   .   .   .
+    .   .   .   .   .   .
+    .   .   .   ==  .   .
+    .   .   .   .   .   .
+    Bb3 D-4 F-4 G-2 .   .    # Gm7
+    .   .   .   .   .   .
+    .   .   .   .   .   .
+    .   .   .   .   .   .
+    .   .   .   .   .   .
+    .   .   .   .   .   .
+    .   .   .   ==  .   .
+    .   .   .   .   .   .
+    Bb3 F-4 G-4 C-2 .   .    # C7sus
+    .   .   .   .   .   .
+    .   .   .   .   .   .
+    .   .   .   .   .   .
+    .   .   .   .   .   .
+    .   .   .   .   .   .
+    .   .   .   ==  .   .
+    .   .   .   .   .   .
+
+flow a b 2 c 1 d 1
+flow b a 2 c 1
+flow c a 1 d 1
+flow d a 2 b 1
+vary drop 0.2 keep bass
