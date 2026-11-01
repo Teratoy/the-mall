@@ -2024,7 +2024,7 @@ group Plant
 sprite boiler
 # An electric boiler, three cells wide, seen from the front: power in by a conduit from above,
 # the readout, the isolator, the gauge, the high-voltage sign. o, the heating light, blinks.
-# Flow and return leave both sides over the bottom two cells, to join east-west pipes.
+# Flow and return leave both sides over the bottom two cells, collared, to join east-west pipes.
 ink Z f6f6f2 enamel lit
 ink E e2e2da enamel
 ink e bcbcb4 enamel shade
@@ -2076,17 +2076,17 @@ blink o O
 ...ZKWWnKEYBYEe...
 ...ZKWnWKYYBYYe...
 ...ZKWWWKYBYYYe...
-77.ZZKKKEYYYYYe...
-97.ZZEEEEEEEEEe...
-772ZZEEEEEEEEEe222
-772ZZEvvvvvvEEe222
-773ZZEEEEEEEEEe333
-773ZZEvvvvvvEEe333
-774ZZEEEEEEEEEe444
-885ZZEvvvvvvEEe555
-886ZZEEEEEEEEEe666
-880eeeeeeeeeeee000
-980kkKKKKKKKKkk000
+..7ZZKKKEYYYYYe77.
+..9ZZEEEEEEEEEe97.
+227ZZEEEEEEEEEe772
+227ZZEvvvvvvEEe772
+337ZZEEEEEEEEEe773
+337ZZEvvvvvvEEe773
+447ZZEEEEEEEEEe774
+558ZZEvvvvvvEEe885
+668ZZEEEEEEEEEe886
+008eeeeeeeeeeee880
+009kkKKKKKKKKkk980
 ...kkkkkkkkkkkk...
 
 sprite boiler side
@@ -2195,17 +2195,17 @@ blink x X
 ...aqqqqqqqqqpK...
 ...aqeessPPKKpK...
 ...aqsssrPPPPpK...
-891aqpppppppppK111
-892aqqqqqqqqqpK222
-093aqPPPPPPPPpK333
-893aqPyYyYyPwpK333
-893aqPyYYyYPPpK333
-893aqPPPPPPPPpK333
-093aqcPPPPPPwpK333
-893aqcPPPPPPPpK333
-893aqcppppppppK333
-89fAAcAAAAAAAAAfff
-89FkkckkkkkkkkkRFF
+118aqpppppppppK891
+228aqqqqqqqqqpK892
+330aqPPPPPPPPpK093
+338aqPyYyYyPwpK893
+338aqPyYYyYPPpK893
+338aqPPPPPPPPpK893
+330aqcPPPPPPwpK093
+338aqcPPPPPPPpK893
+338aqcppppppppK893
+ff8AAcAAAAAAAAA89f
+RF8kkckkkkkkkkk89F
 ZZZkkc.......kkZZZ
 
 sprite air handler side

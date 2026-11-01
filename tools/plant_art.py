@@ -118,6 +118,14 @@ def cabinet(g, x0, x1):
     rect(g, x0 + 2, 28, x1 - 2, 28, "K")
 
 
+def outlets(g, x0, x1, run, letters):
+    """Lays a machine's two outlets, cut from run, an east-west piece: out of both sides over the bottom two
+    cells, each with a bolted collar where it leaves the cabinet."""
+    stamp(g, cut(run, 9, 10), 0, OUTLET_ROW, letters)
+    stamp(g, cut(run, 0, 0), x0 - 1, OUTLET_ROW, letters)
+    stamp(g, cut(run, 0, 2), x1 + 1, OUTLET_ROW, letters)
+
+
 def boiler_front():
     g = canvas()
     x0, x1 = 3, 14
@@ -135,10 +143,8 @@ def boiler_front():
     # Vents for the heat of the elements.
     for y in (21, 23, 25):
         rect(g, x0 + 3, y, x1 - 3, y, "v")
-    # Flow and return: the pipe leaves both sides over the bottom two cells.
-    pipe = unbanded(conduit_art.pipe("ew"))
-    stamp(g, cut(pipe, 0, 2), 0, OUTLET_ROW, PIPE_LETTERS)
-    stamp(g, cut(pipe, 9, 11), x1 + 1, OUTLET_ROW, PIPE_LETTERS)
+    # Flow and return.
+    outlets(g, x0, x1, unbanded(conduit_art.pipe("ew")), PIPE_LETTERS)
     return g
 
 
@@ -242,10 +248,8 @@ def ahu_front():
     rect(g, x0 + 3, 21, x1 - 4, 22, "y")
     put(g, [(x0 + 4, 21), (x0 + 6, 21), (x0 + 4, 22), (x0 + 5, 22), (x0 + 7, 22)], "Y")
     rect(g, x0 + 2, 24, x0 + 2, 29, "c")
-    # Supply and return: the duct leaves both sides over the bottom two cells.
-    duct = plain(conduit_art.duct("ew"))
-    stamp(g, cut(duct, 0, 2), 0, OUTLET_ROW, DUCT_LETTERS)
-    stamp(g, cut(duct, 9, 11), x1 + 1, OUTLET_ROW, DUCT_LETTERS)
+    # Supply and return.
+    outlets(g, x0, x1, plain(conduit_art.duct("ew")), DUCT_LETTERS)
     return g
 
 
@@ -283,7 +287,7 @@ def sprite(name, comment, inks, g, blink=None):
 
 
 def group():
-    joins_front = "Flow and return leave both sides over the bottom two cells, to join east-west pipes."
+    joins_front = "Flow and return leave both sides over the bottom two cells, collared, to join east-west pipes."
     joins_side = "Its outlet runs off the bottom from the second cell in, to join a north-south pipe."
     return "\n".join([
         "group Plant\n",
