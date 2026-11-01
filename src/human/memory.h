@@ -91,10 +91,12 @@ public:
     std::unordered_set<Vec2i, Vec2iHash> keys;
     std::unordered_set<Vec2i, Vec2iHash> cakes;
     /// A vending machine as it last saw it, or was told of it: what it
-    /// sells, and how many items were behind the glass.
+    /// sells, how many items were behind the glass, and when, by its own
+    /// clock.
     struct SeenMachine {
         Vend kind = Vend::Cake;
         int stock = 0;
+        float seenAt = 0.0f;
     };
     /// The machines it knows, by their first cell.
     std::unordered_map<Vec2i, SeenMachine, Vec2iHash> machines;

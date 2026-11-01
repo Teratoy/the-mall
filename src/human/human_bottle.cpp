@@ -393,7 +393,7 @@ float Human::fillDrive() const {
     // No bottle at all is as good as an empty one, if it knows one to fetch,
     // or one to buy with keys enough.
     if (bottles.empty()) {
-        auto toBuy = [&](const auto& m) { return m.second.kind == Vend::Bottle && m.second.stock > 0; };
+        auto toBuy = [&](const auto& m) { return m.second.kind == Vend::Bottle && stockOf(m.second) > 0; };
         return needsBottle() && (std::any_of(memory.piles.begin(), memory.piles.end(),
                                              [&](const auto& p) { return bottleToFetch(p.first, p.second); }) ||
                                  (canBuy() && std::any_of(memory.machines.begin(), memory.machines.end(), toBuy)))

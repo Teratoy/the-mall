@@ -319,12 +319,15 @@ struct SoakProbe {
         w.lightPlaced(before);
         return w.machines_.back();
     }
-    /// h knows the machine and what is in it, as if it had seen it.
-    static void knowMachine(Human& h, const Machine& m) {
-        h.memory.machines[m.at] = {m.kind, m.stock};
+    /// h knows the machine and what is in it, as if it had seen it; or, with
+    /// a stock, as if it saw that much in it that many seconds from now.
+    static void knowMachine(Human& h, const Machine& m, int stock = -1, float when = 0.0f) {
+        h.memory.machines[m.at] = {m.kind, stock >= 0 ? stock : m.stock, h.clock_ + when};
         h.memory.see(m.at, Tile::Vending);
         h.memory.see(m.at + m.along(), Tile::Vending);
     }
+    /// h has learnt machines fill up again.
+    static void knowRefills(Human& h) { h.vend_.refills = true; }
     /// Standing in front of a machine of the kind it knows, h starts working it.
     static bool startVending(World& w, Human& h, Vend kind) {
         h.vend_.kind = kind;

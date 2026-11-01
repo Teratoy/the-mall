@@ -239,7 +239,7 @@ std::optional<Human::Tell> Human::newsFor(const Human& o, bool& forPay) const {
     if (o.canBuy() && (!selling || o.cakes > o.spareFrom()) && !(cunning() && !friendly)) {
         std::vector<Vec2i> machines;
         for (const auto& [at, seen] : memory.machines)
-            if (seen.stock > 0 && (seen.kind == Vend::Cake ? o.hungry() && o.cakes == 0 : o.needsBottle()))
+            if (stockOf(seen) > 0 && (seen.kind == Vend::Cake ? o.hungry() && o.cakes == 0 : o.needsBottle()))
                 machines.push_back(at);
         if (auto c = nearest(machines, [&](Vec2i c) { return !o.memory.machines.count(c); })) {
             forPay = selling;
@@ -579,7 +579,8 @@ void Human::deliver(Human& o, const Tell& t) {
         if (it == memory.machines.end() || o.memory.machines.count(t.cell)) break;
         learnRoute();
         news = true;
-        o.memory.machines[t.cell] = it->second;
+        // What it counts on being there now, as seen just now by the hearer.
+        o.memory.machines[t.cell] = {it->second.kind, stockOf(it->second), o.clock_};
         o.memory.toldBy[t.cell] = id;
         for (Vec2i d : DIRS8)
             for (Vec2i m : {t.cell, t.cell + d})

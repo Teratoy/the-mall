@@ -2480,6 +2480,16 @@ hungry                  | NO. NOT NOW.
 starving rude           | NO! COME ON!
 brave                   | IT'LL FILL UP AGAIN. IT HAS TO.
 
+# Seeing a machine fuller than it last saw it, and learning they fill up
+# again. Said to nobody.
+[learn_refill 0.8]
+                        | SOMEBODY'S BEEN HERE.
+                        | WHO KEEPS DOING THIS?
+                        | SO IT COMES BACK.
+hungry                  | GOOD. GOOD.
+curious                 | WHO FILLS IT? AND WHEN?
+fear                    | SOMEONE WALKS THESE HALLS.
+
 # Telling someone of a vending machine at a greeting, to them.
 [tell_vending]
                         | THERE'S A MACHINE. IT TAKES KEYS.

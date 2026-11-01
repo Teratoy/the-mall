@@ -20,10 +20,15 @@ constexpr float VEND_HOARD_GREEDY = 0.75f;
 
 } // namespace
 
+int Human::stockOf(const Memory::SeenMachine& seen) const {
+    if (!vend_.refills) return seen.stock;
+    return std::min(MACHINE_SLOTS, seen.stock + int((clock_ - seen.seenAt) / MACHINE_DAY));
+}
+
 std::optional<std::vector<Vec2i>> Human::machinePath(const World& world, Vend kind) const {
     std::vector<const Machine*> stocked;
     for (const auto& [at, seen] : memory.machines)
-        if (seen.kind == kind && seen.stock > 0 && !avoids(at))
+        if (seen.kind == kind && stockOf(seen) > 0 && !avoids(at))
             if (const Machine* m = world.machine(at)) stocked.push_back(m);
     if (stocked.empty()) return std::nullopt;
     return search(world, [&](Vec2i c) {
@@ -44,7 +49,7 @@ std::optional<std::vector<Vec2i>> Human::buyCakePath(const World& world, size_t 
 bool Human::hoardBuys() const {
     return traits.greedy >= VEND_HOARD_GREEDY && canBuy() && cakes < carryMax() &&
            std::any_of(memory.machines.begin(), memory.machines.end(),
-                       [](const auto& m) { return m.second.kind == Vend::Cake && m.second.stock > 0; });
+                       [&](const auto& m) { return m.second.kind == Vend::Cake && stockOf(m.second) > 0; });
 }
 
 bool Human::buyBottle(World& world) {
@@ -72,7 +77,7 @@ bool Human::startVending(World& world) {
         const Machine* m = world.machine(cell + d);
         if (!m || !m->usedFrom(cell) || m->kind != vend_.kind) continue;
         auto it = memory.machines.find(m->at);
-        if (it == memory.machines.end() || it->second.stock <= 0) continue;
+        if (it == memory.machines.end() || stockOf(it->second) <= 0) continue;
         if (vend_.kind == Vend::Cake ? cakes >= carryMax() : !bottles.empty()) return false;
         vend_.at = m->at;
         state = State::Vending;
@@ -98,7 +103,7 @@ void Human::takeVended(World& world) {
         return startIdle(LOOK_TIME_MIN, LOOK_TIME_MAX);
     }
     keys -= MACHINE_PRICE;
-    memory.machines[m->at] = {m->kind, m->stock};
+    memory.machines[m->at] = {m->kind, m->stock, clock_};
     if (m->kind == Vend::Cake) {
         cakes++;
         note("PAID 3 KEYS FOR A CAKE FROM A MACHINE");
@@ -113,11 +118,17 @@ void Human::takeVended(World& world) {
 
 // A machine is lit and see-through: what it sells and how much is left
 // shows from as far as it can be seen. News to the hungry with keys to
-// spend, the first time.
+// spend, the first time. Fuller than it last saw it, it learns they fill
+// up again.
 bool Human::seeMachine(const Machine& m, Vec2i c) {
     checkTold(c, true);
-    bool fresh = memory.machines.emplace(m.at, Memory::SeenMachine{m.kind, m.stock}).second;
-    memory.machines[m.at] = {m.kind, m.stock};
+    auto [it, fresh] = memory.machines.emplace(m.at, Memory::SeenMachine{m.kind, m.stock, clock_});
+    if (!fresh && m.stock > it->second.stock && !vend_.refills && state != State::Waking) {
+        vend_.refills = true;
+        note("LEARNT THE MACHINES FILL UP AGAIN");
+        sayLater(talk::Moment::LearnRefill);
+    }
+    it->second = {m.kind, m.stock, clock_};
     if (!vend_.seen && state != State::Waking) {
         vend_.seen = true;
         note("FOUND A MACHINE THAT TAKES KEYS");

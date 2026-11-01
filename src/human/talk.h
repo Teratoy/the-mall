@@ -241,6 +241,9 @@ enum class Moment {
     // Shut in a slam room, hearing steps beyond the wall: crying out to
     // them at once (to nobody, but it carries through the walls).
     HelpSteps,
+    // Seeing a machine fuller than it last saw it, learning they fill up
+    // again (to nobody).
+    LearnRefill,
     Count
 };
 

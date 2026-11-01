@@ -176,3 +176,17 @@ vending machines too: the night shift's snack corner.
   one more brief mutual block (at a washroom doorway, under 5 s). No new
   scenario: buying from an alcove machine is the same as from any other
   (the vend-* scenarios), and genprobe checks each can be reached.
+
+### Added (2026-11-01): learning machines fill up again
+
+A test run found a human starving with 21 keys, never going back to the
+machine it had bought empty, though machines get an item back a day.
+User: a human counts on that only once it has learnt it, by seeing a machine
+hold more than it last saw in it ("LEARNT THE MACHINES FILL UP AGAIN",
+[learn_refill]). From then on it counts one item back for each day
+(MACHINE_DAY) since it last looked at each machine it knows
+(`Human::stockOf`), for buying, hoarding, telling others and keeping on its
+way there. `SeenMachine` keeps when it was seen, by the human's own clock;
+told of one, the hearer takes what the teller counts on as seen just now.
+Scenarios: `vend-refill-unknown` (not knowing, it doesn't go back),
+`vend-refill` (knowing, it goes back after two days and buys), `learn-refill`.

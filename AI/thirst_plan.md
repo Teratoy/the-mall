@@ -308,8 +308,8 @@ User asked. With no water it would drink in reach (seekWater finds
 none), the parched and the erratic go to a toilet they know and drink
 from it (seekToilet; water_.drinkAt is the toilet). Its water is as foul as
 0.5 × the toilet's dirt (hurts, and from 0.5 sickens, "THE TOILET WATER
-MADE ME SICK"); a clean toilet is safe. It stops once no longer parched
-(the erratic drink on). Log "DRANK FROM A TOILET", [toilet_drink];
+MADE ME SICK"); a clean toilet is safe. It stops once no longer thirsty
+(the erratic drink on); see the 2026-11-01 note below. Log "DRANK FROM A TOILET", [toilet_drink];
 anyone not erratic who sees it thinks 0.1 less of it (half in its group)
 and notes it; the cruel (greedy ≥ 0.6, sociable ≤ 0.4) say [toilet_mock].
 Test (scratchpad tdrink.cpp): parched by a dirty toilet, no water known:
@@ -338,6 +338,16 @@ drank one gulp, got sick, stopped at 0.58 thirst; a cruel onlooker said
 3. Settling at water + guarding drinking cells + drinks for cakes.
 4. Tell::Kind::Water, selling, lying, escort to drink.
 5. Talk lines, hope/dread/flesh hooks, nearWater lesson.
+
+### Changed (2026-11-01): toilet drinkers drink enough to last
+
+A test run of five worlds at X16 found humans stopping at a toilet after one
+gulp (0.35), as soon as they were no longer parched, so they were parched
+again a minute later and looped back, some 8 or 9 times, and one died of
+thirst two minutes after a toilet drink. User: only the parched kneel at a
+toilet, but once there they drink until no longer thirsty (below THIRSTY,
+about two gulps). Scenario `toilet-parched` now checks thirst gets below
+THIRSTY.
 
 ## Open questions
 

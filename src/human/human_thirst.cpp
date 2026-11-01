@@ -331,8 +331,9 @@ void Human::startDrinking(Vec2i water) {
 void Human::drink(World& world) {
     const Toilet* toilet = world.toilet(water_.drinkAt);
     // Turned away, or the water went bad, since it knelt; at a toilet, no
-    // longer desperate.
-    if (toilet ? !parched() && !isErratic() : !wouldDrink(world, cell, water_.drinkAt)) return choose(world);
+    // longer thirsty: only the parched kneel there, but once there they
+    // drink enough to last (user).
+    if (toilet ? !thirsty() && !isErratic() : !wouldDrink(world, cell, water_.drinkAt)) return choose(world);
     // At a dispenser, a gulp is what the tap still gives.
     float gulp = DRINK_GULP;
     if (world.dispenser(water_.drinkAt) && (gulp = drawFrom(world, water_.drinkAt, DRINK_GULP)) <= 0.0f)

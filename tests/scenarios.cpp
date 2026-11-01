@@ -1673,12 +1673,20 @@ const std::vector<Scenario> SCENARIOS = {
          h.bottles.clear();
          h.thirst = 0.9f;
          h.hunger = h.bladder = 0.1f;
-         auto at = stoodAt(s, h, Human::State::Drinking, 60);
+         float least = h.thirst;
+         std::vector<Vec2i> at;
+         for (int t = 0; t < 60 * 30; t++) {
+             s.run(1.0f / 30.0f);
+             least = std::min(least, h.thirst);
+             if (h.state == Human::State::Drinking && std::find(at.begin(), at.end(), h.cell) == at.end())
+                 at.push_back(h.cell);
+         }
          auto [foul, clean] = *fronts;
          return Checks{logged({"DRANK FROM A TOILET"}),
                        {"drank at the clean toilet, not the foul one", [at, foul, clean](const Stage&) {
                             return std::count(at.begin(), at.end(), clean) && !std::count(at.begin(), at.end(), foul);
-                        }}};
+                        }},
+                       {"drank till no longer thirsty, not one gulp", [least](const Stage&) { return least < 0.5f; }}};
      }},
     {"foul-parched", "a parched human with only foul water it knows drinks it, knowingly", 99,
      [](Stage& s) {
@@ -1896,6 +1904,46 @@ const std::vector<Scenario> SCENARIOS = {
          s.run(30);
          return Checks{loggedBy(h, "PAID 3 KEYS FOR A CAKE FROM A MACHINE"), loggedBy(h, "ATE A CAKE"),
                        {"its keys spent", [&h](const Stage&) { return h.keys == 0; }}};
+     }},
+    {"vend-refill-unknown", "starving with keys, it doesn't go back to a machine it saw empty, not knowing they fill up",
+     seedWhere(plain, 14000), [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         const Machine& m = P::standMachine(s.world, Vend::Cake, h.cell + Vec2i{0, -24}, {0, 1}, 3);
+         P::knowChunk(s.world, h);
+         P::knowMachine(h, m, 0, -2.0f * MACHINE_DAY);
+         h.hunger = 0.85f;
+         h.thirst = h.tiredness = 0.1f;
+         h.keys = 21;
+         s.run(60);
+         return Checks{loggedBy(h, "PAID 3 KEYS FOR A CAKE FROM A MACHINE", false)};
+     }},
+    {"vend-refill", "knowing machines fill up, starving with keys, it goes back to one it saw empty days ago and buys",
+     seedWhere(plain, 14000), [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         const Machine& m = P::standMachine(s.world, Vend::Cake, h.cell + Vec2i{0, -24}, {0, 1}, 3);
+         P::knowChunk(s.world, h);
+         P::knowMachine(h, m, 0, -2.0f * MACHINE_DAY);
+         P::knowRefills(h);
+         h.hunger = 0.85f;
+         h.thirst = h.tiredness = 0.1f;
+         h.keys = 21;
+         s.run(60);
+         return Checks{loggedBy(h, "PAID 3 KEYS FOR A CAKE FROM A MACHINE"), loggedBy(h, "ATE A CAKE")};
+     }},
+    {"learn-refill", "seeing a machine fuller than it last saw it, it learns they fill up again, and buys",
+     seedWhere(plain, 14000), [](Stage& s) {
+         Human& h = s.first();
+         P::clearChunk(s.world, h.cell);
+         const Machine& m = P::standMachine(s.world, Vend::Cake, h.cell + Vec2i{4, -3}, {0, 1}, 3);
+         P::knowMachine(h, m, 0, 0.0f);
+         h.hunger = 0.6f;
+         h.thirst = h.tiredness = 0.1f;
+         h.keys = MACHINE_PRICE;
+         s.run(30);
+         return Checks{loggedBy(h, "LEARNT THE MACHINES FILL UP AGAIN"),
+                       loggedBy(h, "PAID 3 KEYS FOR A CAKE FROM A MACHINE")};
      }},
     {"vend-bottle", "thirsty with no bottle and three keys, it buys an empty one from a machine side on",
      seedWhere(plain, 15000), [](Stage& s) {

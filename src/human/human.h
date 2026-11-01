@@ -1670,12 +1670,19 @@ private:
         Vend kind = Vend::Cake;
         /// Has seen a machine before: the first is remarked on.
         bool seen = false;
+        /// Has seen a machine hold more than it last saw in it, so knows
+        /// they fill up again, and counts on one item back a day since it
+        /// last looked (user).
+        bool refills = false;
     };
     Vending vend_;
+    /// What it thinks is in a machine it knows: what it last saw, and, once
+    /// it knows they fill up again, an item more for each day since.
+    int stockOf(const Memory::SeenMachine& seen) const;
     /// Keys enough in hand to buy from a machine.
     bool canBuy() const { return keys >= MACHINE_PRICE; }
     /// The way to the front of the nearest machine of the kind it knows of
-    /// with something left in it, as it last saw it. Nothing if none.
+    /// with something left in it, as far as it knows. Nothing if none.
     std::optional<std::vector<Vec2i>> machinePath(const World& world, Vend kind) const;
     /// Hungry with keys enough, the way to a cake machine when it would
     /// sooner buy a cake than go for whatever food it knows nearest steps
