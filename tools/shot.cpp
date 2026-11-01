@@ -2,7 +2,7 @@
 // in a hidden raylib window and saves what it draws as a PNG.
 //
 // Usage: build/shot out.png [options]   (or: make shot, to build/shot.png)
-//   --scene world|menu|create|obituary|config   which screen (world)
+//   --scene world|menu|choose|obituary|config   which screen (world)
 //   --seconds S    world time to run before the shot (8)
 //   --frames N     N shots, one each frame from there on, as out_000.png,
 //                  out_001.png, ...: to see how things move, frame by frame
@@ -14,6 +14,8 @@
 //   --reveal       show the whole world, not just what the human knows
 //   --dither ordered|hatched|crossed|lines  the pattern light steps in (ordered)
 //   --wide         a wide window, so the world takes the PC layout
+//   --wake         with --scene choose, press WAKE UP first, so --seconds is
+//                  the time since: to see the strips slide and the zoom ease
 //   --vending      grow the mall round the spawn until a vending machine
 //                  stands in it, and put the followed human in front of it
 //   --server       grow the mall round the spawn until a server room
@@ -38,7 +40,6 @@
 #include "render/canvas.h"
 #include "render/light_view.h"
 #include "scenes/config_scene.h"
-#include "scenes/create_scene.h"
 #include "scenes/menu_scene.h"
 #include "scenes/obituary_scene.h"
 #include "scenes/world_scene.h"
@@ -55,6 +56,12 @@
 /// Sets up the world scene the way the options ask; a friend of WorldScene.
 struct ShotProbe {
     static void neverRecord(WorldScene& s) { s.recorded_ = true; }
+    /// WAKE UP, as if pressed; once woken it is kept out of the obituary.
+    static void wake(WorldScene& s, const Canvas& canvas) {
+        s.wake_ = true;
+        s.update(0.0f, canvas);
+        s.recorded_ = true;
+    }
     static void set(WorldScene& s, int zoom, bool stats, bool log, bool reveal, bool map) {
         s.zoom_ = zoom;
         s.statsOpen_ = stats;
@@ -65,7 +72,7 @@ struct ShotProbe {
     /// Fresh feces, a full pile and a small one, a few cells either side of
     /// the followed human, for the flies.
     static void smells(WorldScene& s) {
-        World& w = s.world_;
+        World& w = *s.world_;
         Vec2i at = w.human(s.follow_).cell;
         uint32_t n = 0;
         for (Vec2i d : {Vec2i{3, 0}, Vec2i{-3, 0}}) {
@@ -79,7 +86,7 @@ struct ShotProbe {
     /// Cakes and bottles, clean, foul and bloody, on the free floor nearest
     /// a few cells right of the followed human.
     static void pile(WorldScene& s) {
-        World& w = s.world_;
+        World& w = *s.world_;
         Vec2i from = w.human(s.follow_).cell + Vec2i{3, 0};
         for (int r = 0; r < 10; r++)
             for (int y = -r; y <= r; y++)
@@ -94,7 +101,7 @@ struct ShotProbe {
     /// machine, then moves the followed human two cells out from one, to its side,
     /// facing the viewer if any does.
     static void vending(WorldScene& s) {
-        World& w = s.world_;
+        World& w = *s.world_;
         auto facingUs = [&] { return std::any_of(w.machines().begin(), w.machines().end(), [](const Machine& m) { return !m.side(); }); };
         for (int r = 1; r <= 6 && !facingUs(); r++)
             for (int y = -r; y <= r; y++)
@@ -120,7 +127,7 @@ struct ShotProbe {
     /// biggest of those found, and puts the followed human on its floor a
     /// few cells in from its door.
     static void server(WorldScene& s) {
-        World& w = s.world_;
+        World& w = *s.world_;
         for (int r = 1; r <= 6 && w.serverRooms().empty(); r++)
             for (int y = -r; y <= r; y++)
                 for (int x = -r; x <= r; x++) w.ensureGenerated(Vec2i{x, y} * CHUNK + Vec2i{CHUNK / 2, CHUNK / 2});
@@ -144,7 +151,7 @@ struct ShotProbe {
     /// console desk of a server room and sets it typing there for good.
     static void typing(WorldScene& s, Rig kind) {
         server(s);
-        World& w = s.world_;
+        World& w = *s.world_;
         Human& h = w.human(s.follow_);
         for (const ServerPiece& p : w.pieces()) {
             if (p.kind != kind) continue;
@@ -169,7 +176,7 @@ struct ShotProbe {
     /// a machine facing the viewer in a corridor alcove, and puts the
     /// followed human in the corridor a little in front of it.
     static void centreVending(WorldScene& s) {
-        World& w = s.world_;
+        World& w = *s.world_;
         // Only a data centre's machines stand in alcoves, with wall past their ends.
         auto inCentre = [&](const Machine& m) { return !m.side() && w.tile(m.at - m.along()) == Tile::Wall; };
         auto found = [&] { return std::any_of(w.machines().begin(), w.machines().end(), inCentre); };
@@ -190,7 +197,7 @@ struct ShotProbe {
     /// puts the followed human in a doorway of one of its washrooms: the
     /// floor cell walled on both sides two in front of a toilet.
     static void washroom(WorldScene& s) {
-        World& w = s.world_;
+        World& w = *s.world_;
         // In a chunk with a server room: the restrooms of mazes have none.
         auto inCentre = [&](Vec2i c) {
             return std::any_of(w.serverRooms().begin(), w.serverRooms().end(),
@@ -224,7 +231,7 @@ struct ShotProbe {
     /// the followed human a little way out in front of the one nearest the
     /// spawn.
     static void toilet(WorldScene& s) {
-        World& w = s.world_;
+        World& w = *s.world_;
         for (int r = 1; r <= 6 && w.toilets().empty(); r++)
             for (int y = -r; y <= r; y++)
                 for (int x = -r; x <= r; x++) w.ensureGenerated(Vec2i{x, y} * CHUNK + Vec2i{CHUNK / 2, CHUNK / 2});
@@ -250,7 +257,7 @@ struct ShotProbe {
     /// less in each further off: yellow through, then paler, then none. The
     /// human sees what it can of them.
     static void pissed(WorldScene& s) {
-        World& w = s.world_;
+        World& w = *s.world_;
         Vec2i from = w.human(s.follow_).cell;
         std::vector<Vec2i> at;
         for (const auto& [c, t] : w.toilets()) at.push_back(c);
@@ -267,9 +274,9 @@ struct ShotProbe {
 
 int main(int argc, char** argv) {
     if (argc < 2 || argv[1][0] == '-') {
-        std::fprintf(stderr, "usage: %s out.png [--scene world|menu|create|obituary|config] [--seconds S] [--seed N] "
+        std::fprintf(stderr, "usage: %s out.png [--scene world|menu|choose|obituary|config] [--seconds S] [--seed N] "
                              "[--zoom 0-3] [--stats] [--log] [--map] [--reveal] [--dither NAME] [--wide] [--pile] [--smells] "
-                             "[--vending] [--server] [--typing terminal|desk] [--washroom] [--pissed] [--frames N]\n", argv[0]);
+                             "[--vending] [--server] [--typing terminal|desk] [--washroom] [--pissed] [--wake] [--frames N]\n", argv[0]);
         return 1;
     }
     const char* out = argv[1];
@@ -277,7 +284,7 @@ int main(int argc, char** argv) {
     float seconds = 8.0f;
     uint64_t seed = 7;
     int zoom = 2, frames = 0;
-    bool stats = false, log = false, reveal = false, wide = false, pile = false, smelly = false, vending = false,
+    bool stats = false, log = false, reveal = false, wide = false, wake = false, pile = false, smelly = false, vending = false,
          map = false, server = false, washroom = false, centreVending = false, pissed = false;
     std::string typing;
     for (int i = 2; i < argc; i++) {
@@ -303,6 +310,7 @@ int main(int argc, char** argv) {
                 if (!std::strcmp(name, ditherName(Dither(d)))) setDither(Dither(d));
         }
         else if (!std::strcmp(argv[i], "--wide")) wide = true;
+        else if (!std::strcmp(argv[i], "--wake")) wake = true;
         else if (!std::strcmp(argv[i], "--pile")) pile = true;
         else if (!std::strcmp(argv[i], "--smells")) smelly = true;
         else if (!std::strcmp(argv[i], "--vending")) vending = true;
@@ -341,8 +349,11 @@ int main(int argc, char** argv) {
             s = std::move(w);
         } else if (scene == "menu") {
             s = std::make_unique<MenuScene>();
-        } else if (scene == "create") {
-            s = std::make_unique<CreateScene>(seed);
+        } else if (scene == "choose") {
+            auto w = std::make_unique<WorldScene>(seed);
+            canvas.fit(w->canBeWide());
+            if (wake) ShotProbe::wake(*w, canvas);
+            s = std::move(w);
         } else if (scene == "obituary") {
             s = std::make_unique<ObituaryScene>();
         } else if (scene == "config") {

@@ -1,5 +1,6 @@
 #pragma once
 #include "audio/hearing.h"
+#include "core/rng.h"
 #include "render/floor_tiles.h"
 #include "render/human_sprites.h"
 #include "render/statue_art.h"
@@ -14,7 +15,16 @@
 
 class Human;
 
-/// The world, with every human left to explore it. The camera follows one
+/// The world, with every human left to explore it. It opens on choosing the
+/// human you will be: the spawn room, frozen, with them asleep in it where
+/// they will come to, close up, their name and traits in the strips over
+/// it. REFRESH (or R) lays another human there in the same room; tapping
+/// the name lets you type one of your own (ENTER or a tap elsewhere ends
+/// it), which REFRESH keeps; BACK (or ESC) goes to the menu, and WAKE UP
+/// (or ENTER) starts the world: the strips slide away for the HUD, the
+/// camera eases out to the play zoom, and they come to as everyone does.
+///
+/// The camera follows one
 /// of them, starting with the one you made, and shows what they know,
 /// between a strip about them at the top and their bars and doings at the
 /// bottom. The buttons down the right edge: + and - (or the wheel, or the
@@ -43,8 +53,11 @@ class Human;
 class WorldScene : public Scene {
 public:
     /// humanSeed names and shapes the human you made; seed grows the world.
-    /// An empty name gives the one grown from humanSeed.
+    /// An empty name gives the one grown from humanSeed. It starts awake,
+    /// with no choosing.
     WorldScene(const HumanLook& look, uint64_t humanSeed, uint64_t seed, const std::string& name = {});
+    /// Opens on choosing the human, in a world grown from seed.
+    explicit WorldScene(uint64_t seed);
     ~WorldScene() override;
 
     /// Opened from tools/genview.cpp for a look in play: the chunk it showed,
@@ -61,7 +74,9 @@ private:
     /// tools/shot.cpp opens menus and keeps its worlds out of the obituary.
     friend struct ShotProbe;
     uint64_t seed_;
-    World world_;
+    /// Grown afresh from seed_ for each human rolled while choosing, so the
+    /// spawn room is the same for all of them.
+    std::unique_ptr<World> world_;
     /// Made on first draw, per human id.
     std::unordered_map<int, std::unique_ptr<HumanSprites>> sprites_;
     FloorTiles floorTiles_;
@@ -129,6 +144,41 @@ private:
     ConfigPanel config_;
     /// The human you made is in the obituary already.
     bool recorded_ = false;
+
+    /// Choosing, before the world's first moment: the dice the human is
+    /// rolled with, their look and seed, and the name typed in (empty for
+    /// the rolled one), being typed while editing_. wokeFor_ is how long
+    /// since WAKE UP, below 0 while choosing; chooseTime_ how long the
+    /// choosing has gone on, for the sleeper's z's. The buttons report
+    /// while drawing.
+    Rng rolls_{0};
+    HumanLook look_{};
+    uint64_t humanSeed_ = 0;
+    std::string chosen_;
+    bool editing_ = false;
+    bool startEdit_ = false;
+    float caret_ = 0.0f;
+    float wokeFor_ = 0.0f;
+    float chooseTime_ = 0.0f;
+    bool refresh_ = false;
+    bool wake_ = false;
+    bool back_ = false;
+
+    bool choosing() const { return wokeFor_ < 0.0f; }
+    /// Lays a fresh human asleep in the spawn room, the world grown again.
+    void roll();
+    /// Choosing: typing the name, the buttons and keys; true once the scene
+    /// is done with this update.
+    bool updateChoosing(float dt, const Canvas& canvas);
+    /// Canvas pixels per world pixel now: close while choosing, easing out
+    /// to the play zoom after WAKE UP.
+    float zoomNow() const;
+    /// The choosing strips over the world: the name at the top, the traits
+    /// and buttons at the bottom; in the PC layout one column. out slides
+    /// them away, from 0 in place to 1 gone.
+    void drawChoosing(Vector2 mouse, bool wide, float out);
+    /// The sleeper's z's over it, in the world drawn in view at focus.
+    void drawSleeperZs(const Human& sleeper, Rectangle view, Vector2 focus);
 
     const HumanSprites& spritesFor(const Human& h);
     /// Puts the human you made into the obituary, dead or left behind.

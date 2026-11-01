@@ -3,8 +3,8 @@
 #include "render/canvas.h"
 #include "render/world_view.h"
 #include "scenes/config_scene.h"
-#include "scenes/create_scene.h"
 #include "scenes/obituary_scene.h"
+#include "scenes/world_scene.h"
 #include "ui/pixel_ui.h"
 #include <ctime>
 
@@ -47,7 +47,7 @@ void MenuScene::update(float dt, const Canvas&) {
     for (int x : {mid - half, mid, mid + half})
         for (int y = int(focus_.y / CELL_PX); y <= below; y += CHUNK / 2) world_.ensureGenerated({x, y});
     if (IsKeyPressed(KEY_ENTER)) enter_ = true;
-    if (enter_) next = std::make_unique<CreateScene>(uint64_t(std::time(nullptr)));
+    if (enter_) next = std::make_unique<WorldScene>(uint64_t(std::time(nullptr)));
     else if (obituary_) next = std::make_unique<ObituaryScene>();
     else if (configuration_) next = std::make_unique<ConfigScene>();
 }
