@@ -646,6 +646,7 @@ function nextUnreviewed() {
   toast("Every line is reviewed.", true);
 }
 document.addEventListener("keydown", e => {
+  if (window.diagramKeys && window.diagramKeys(e)) return;
   if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") {
     if (e.target.id === "search" && (e.key === "Escape" || e.key === "Enter")) { if (e.key === "Escape") { e.target.value = ""; filt.search = ""; render(); } e.target.blur(); }
     return;
@@ -676,6 +677,7 @@ document.addEventListener("keydown", e => {
   else if (k === "/") go(() => $("search").focus());
   else if (k === "?") go(showHelp);
   else if (k === "c") go(() => showConditions());
+  else if (k === "t") go(() => showDiagram(true));
   else if (k === "Escape" && filt.search) go(() => { filt.search = ""; $("search").value = ""; render(); });
 });
 function showHelp() {
@@ -690,6 +692,7 @@ function showHelp() {
     <kbd>d</kbd><span>delete the line</span>
     <kbd>y</kbd> <kbd>Y</kbd> <kbd>x</kbd><span>accept Claude's draft, edit it then accept, reject it</span>
     <kbd>/</kbd><span>search; Esc clears it</span>
+    <kbd>t</kbd><span>the DIAGRAM tab: every moment, what makes it said, what it does and what can follow; in it f focuses, o goes back to the overview, b steps back, l opens the lines, t comes back here</span>
     <kbd>c</kbd><span>every condition and tone in plain words; hover a chip for one, and the selected line reads its own out</span>
   </div>
   <h2>The bubble</h2><pre>Drawn in the game's own font at its wrap width (96 px) and edged in the tone's colour, at twice its size. Names are filled with stand-ins: ${Object.entries(FILL).map(([k, v]) => k + " " + v).join(", ")}.</pre>
@@ -743,5 +746,6 @@ $("list").onclick = e => {
 };
 loadFont().then(load).then(poll).catch(e => { document.body.textContent = "Couldn't load: " + e; });
 </script>
+<script src="diagram.js"></script>
 </body>
 </html>

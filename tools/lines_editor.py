@@ -451,7 +451,8 @@ class Handler(BaseHTTPRequestHandler):
             with lock:
                 return self.send(200, diagram())
         files = {"/": ("index.html", "text/html; charset=utf-8"), "/font.png": ("font.png", "image/png"),
-                 "/font.json": ("font.json", "application/json")}
+                 "/font.json": ("font.json", "application/json"),
+                 "/diagram.js": ("diagram.js", "text/javascript; charset=utf-8")}
         if path in files:
             name, kind = files[path]
             with open(os.path.join(PAGE, name), "rb") as f:

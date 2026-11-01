@@ -134,6 +134,36 @@ like the line drafts.
   system rather than in the same exchange, such as threat to hit, killed
   to loot, and help to freed.
 3. The DIAGRAM tab: overview and focus, the side panel, the filters.
+
+### Built (2026-11-02, step 3)
+
+- `tools/lines_editor/diagram.js`, loaded after the page's own script.
+  It brings its own style and page parts, and draws with the page's
+  bubble, book and meanings. Tab buttons sit at the top of both tabs;
+  `t` switches between them. The tab, view and filters are remembered.
+- Overview: the groups of talk.h, each moment a card. A card shows who
+  it is said to (→ someone, · nobody, ! shout, ▮ wall), its name, a
+  flag (!) when a check found something, and reached in tests (● said,
+  ○ never, ? no coverage yet). It also shows its line count with a
+  reviewed bar, a dot per tone, the say-chance, and the ◎ button that
+  opens its focus view. Hovering a card, or picking one, draws its
+  arrows: blue to what it leads to, yellow from what leads to it.
+  Arrows are thicker the likelier the branch, and dashed when seldom.
+- Focus: what leads in on the left, two steps out, and what it leads to
+  on the right, two steps out. Each moment shows once, nearest the
+  middle, at most 12 to a column. Arrows run between neighbouring
+  columns, with the chance word on those touching the middle. Clicking
+  a card focuses on it; Back (`b`) steps back, `o` returns to the
+  overview.
+- Side panel: the group comment, who, lines and reviewed, say-chance,
+  times said in tests, the flags, a bubble of its first line, its when
+  and does, its tones and what each does, and the branches out and in
+  (`code` marks those the code shows too). Last come its places in the
+  code: file:line (click to copy), said or acted on, the function, its
+  doc and the comment nearby. Open lines (`l`) goes to the moment in the
+  lines tab.
+- Filters: search (over names, groups, whens and does), unreached,
+  unreviewed, no lines, flagged, and a tone.
 4. Editing the flow file from the tab (add a branch, change a trigger),
    with the same small-operation saving the lines use.
 5. Counted chances: a tool runs the soak's worlds and counts, for each
