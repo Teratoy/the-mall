@@ -134,3 +134,38 @@ over (villager and formant only), in its own style, in `src/audio/`.
   `human_N.wav` (`VOICESHEET_ARGS="N"` humans grown as the game grows
   them, two lines in every tone; it prints who each is and its pitch).
 - `make check` passes unchanged: nothing in the sim reads a voice.
+
+## Changed after playing (2026-11-01): English, lighter crush
+
+User, after hearing the formant voice in game: "too realistic but the
+pronunciation is very poor". Six samples later
+(formant as it was; lighter crush; a cartoon formant; the Princess
+English voice at both crushes; and English pitched up small and quick),
+the choice was **the cartoon English voice**, with a **lighter crush**,
+and a fix for "a hiss at the end of words, like it says the dots".
+
+- **The English voice** (`src/audio/voice_english.{h,cpp}` and
+  `voice_english_data.inc`): Loudworks' Princess voice copied from Goblin
+  Engineering's `voice_princess.cpp`, kept close to its source (its
+  names and layout) so it can be copied again; its parameter tables are
+  replaced by `english::Params`. Words are read as English: a lexicon,
+  letter-to-sound rules, stress, reduced vowels, real intonation. About
+  6 ms for a 2 s line on the PC. Humans speak with it
+  (`voice::Kind::English`); the formant and villager voices stay for the
+  sheet.
+- **The hiss** was each word's last stop (the D of FOOD, the T of DON'T):
+  a silent closure, then a full release burst after the word. English
+  mostly leaves those unreleased, so a stop before a pause or the end is
+  now let go at 0.25 of its burst, and one before another consonant at
+  0.6 (`kFinalBurst`, `kClusterBurst`).
+- **Lighter crush for voices:** 8 bits at 16 kHz (sounds stay 5 bits at
+  8 kHz), so s, t and k come through.
+- **The cartoon:** the smallest body speaks at 420 Hz with a 1.28 throat
+  (sample 6 was 382 Hz and 1.2), 1.15 times as quick, a little goblin
+  twang. Tones pick the emotion it speaks with: Plain calm (sad once
+  gloom is past 0.5), Warm warm, Rude stern, Plead and Fear worried
+  (Fear shaking), Threat commanding; the tone table's pitch moves are
+  milder, as the emotions move the pitch themselves. Brave steadies its
+  vibrato; sociable and greedy make it clearer, less breathy.
+- `make voicesheet` writes `english_*.wav` too, and the humans speak
+  English in it.

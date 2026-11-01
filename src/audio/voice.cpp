@@ -717,7 +717,15 @@ std::vector<float> formant(const std::u32string& text, const Voice& v) {
 
 std::vector<float> speak(const Voice& voice, std::string_view text) {
     std::u32string l = letters(text);
-    return voice.kind == Kind::Villager ? villager(l, voice) : formant(l, voice);
+    if (voice.kind == Kind::Villager) return villager(l, voice);
+    if (voice.kind == Kind::Formant) return formant(l, voice);
+    english::Params p;
+    p.emotion = voice.emotion;
+    p.pitch = voice.pitch, p.speed = voice.speed, p.size = voice.size;
+    p.clarity = voice.articulation, p.expression = voice.intonation;
+    p.breath = voice.breath, p.vibrato = voice.vibrato, p.goblin = voice.twang;
+    p.shake = voice.shake, p.volume = voice.volume, p.seed = voice.seed;
+    return english::render(l, p);
 }
 
 } // namespace voice

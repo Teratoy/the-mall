@@ -1,6 +1,6 @@
 // Renders sample voices to .wav files in a folder, to listen to, crushed
 // as the game crushes them: a few lines said in each kind of voice
-// (formant, villager) by a few kinds of speaker, then a few humans grown
+// (english, formant, villager) by a few kinds of speaker, then a few humans grown
 // as the game grows them (human_N.wav), saying the lines in each tone.
 // Prints each file, its length, and who the human is.
 //   build/voice_sheet [out dir] [humans]
@@ -19,9 +19,9 @@
 
 namespace {
 
-/// The crush the game's sounds get (data/sounds.txt's default).
-constexpr int CRUSH_BITS = 5;
-constexpr float CRUSH_RATE = 8000.0f;
+/// The crush the game's voices get (audio.cpp).
+constexpr int CRUSH_BITS = 8;
+constexpr float CRUSH_RATE = 16000.0f;
 
 void put16(std::ostream& out, uint16_t v) { out.put(char(v & 0xff)).put(char(v >> 8)); }
 void put32(std::ostream& out, uint32_t v) { put16(out, uint16_t(v & 0xffff)), put16(out, uint16_t(v >> 16)); }
@@ -78,8 +78,8 @@ int main(int argc, char** argv) {
     std::filesystem::path dir = argc > 1 ? argv[1] : "build/voices";
     int humans = argc > 2 ? std::stoi(argv[2]) : 6;
     std::filesystem::create_directories(dir);
-    for (voice::Kind kind : {voice::Kind::Formant, voice::Kind::Villager}) {
-        const char* kindName = kind == voice::Kind::Formant ? "formant" : "villager";
+    for (voice::Kind kind : {voice::Kind::English, voice::Kind::Formant, voice::Kind::Villager}) {
+        const char* kindName = kind == voice::Kind::English ? "english" : kind == voice::Kind::Formant ? "formant" : "villager";
         for (const Speaker& sp : SPEAKERS) {
             voice::Voice v;
             v.kind = kind;

@@ -23,9 +23,10 @@ constexpr int VOICES = 6;
 /// Through a wall a sound keeps only what is under this, in Hz.
 constexpr float MUFFLE_HZ = 450.0f;
 constexpr const char* SETTINGS_FILE = "settings.txt";
-/// The crush a voice gets: as data/sounds.txt's sounds by default.
-constexpr int VOICE_BITS = 5;
-constexpr float VOICE_RATE = 8000.0f;
+/// The crush a voice gets: lighter than data/sounds.txt's, so its
+/// consonants come through.
+constexpr int VOICE_BITS = 8;
+constexpr float VOICE_RATE = 16000.0f;
 
 /// A sound made ready to play, clear and muffled, each with its voices.
 struct Entry {
