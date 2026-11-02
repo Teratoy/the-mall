@@ -252,6 +252,10 @@ enum class Moment {
     // (to nobody, but it carries through the walls); hearing someone bang
     // on a door out of sight, the first time from each (to nobody).
     BangDoor, HearBang,
+    // Erratic and stuck, beating its head against a wall (to nobody); seeing
+    // someone at it (to nobody, about them); hearing the thuds through a
+    // wall, the first time from each (to nobody).
+    Headbang, SawHeadbang, HearThud,
     // Smell: telling someone it trusts they smell, and the answer, told it
     // smells (both to that one); seeing someone walk off from its smell (to
     // nobody).

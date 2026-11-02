@@ -30,6 +30,8 @@
 //                  put the followed human out in front of it, and just before the
 //                  shot piss in the toilets more and more, left to right, to
 //                  see their water yellow
+//   --headbang     the human erratic and hopeless, going at a wall with its
+//                  head as soon as it is up (AI/headbang_plan.md)
 //   --pile         put a heap of cakes and bottles down near the human at
 //                  the start, to see how piles look
 //   --smells       leave a big and a small pile of fresh feces near the
@@ -148,6 +150,18 @@ struct ShotProbe {
             h.observe(w);
             return;
         }
+    }
+
+    /// The followed human erratic and without hope, meaning to go at a wall
+    /// with its head the first time it chooses what to do, however long that is.
+    static void headbang(WorldScene& s) {
+        Human& h = s.world_->human(s.follow_);
+        h.mind_.erratic = 1.0f;
+        h.escape_.hope = 0.2f;
+        h.headbang_.stuckSince = 0.0f;
+        h.headbang_.nextRoll = 1e9f;
+        h.headbang_.want = true;
+        h.headbang_.wantWhen = 1e9f;
     }
 
     /// As server(), then stands the followed human at a terminal or the
@@ -280,7 +294,7 @@ int main(int argc, char** argv) {
         std::fprintf(stderr, "usage: %s out.png [--scene world|menu|choose|obituary|config] [--seconds S] [--seed N] "
                              "[--zoom 0-3] [--stats] [--log] [--map] [--reveal] [--dither NAME] "
                              "[--no-snow] [--no-light-dither] [--no-sight-dither] [--wide] [--pile] [--smells] "
-                             "[--vending] [--server] [--typing terminal|desk] [--washroom] [--pissed] [--wake] [--frames N]\n", argv[0]);
+                             "[--vending] [--server] [--typing terminal|desk] [--washroom] [--pissed] [--headbang] [--wake] [--frames N]\n", argv[0]);
         return 1;
     }
     const char* out = argv[1];
@@ -289,7 +303,7 @@ int main(int argc, char** argv) {
     uint64_t seed = 7;
     int zoom = 2, frames = 0;
     bool stats = false, log = false, reveal = false, wide = false, wake = false, pile = false, smelly = false, vending = false,
-         map = false, server = false, washroom = false, centreVending = false, pissed = false;
+         map = false, server = false, washroom = false, centreVending = false, pissed = false, headbang = false;
     std::string typing;
     for (int i = 2; i < argc; i++) {
         auto value = [&]() -> const char* {
@@ -326,6 +340,7 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(argv[i], "--washroom")) washroom = true;
         else if (!std::strcmp(argv[i], "--centre-vending")) centreVending = true;
         else if (!std::strcmp(argv[i], "--pissed")) pissed = true;
+        else if (!std::strcmp(argv[i], "--headbang")) headbang = true;
         else {
             std::fprintf(stderr, "unknown option %s\n", argv[i]);
             return 1;
@@ -352,6 +367,7 @@ int main(int argc, char** argv) {
             if (washroom) ShotProbe::washroom(*w);
             if (centreVending) ShotProbe::centreVending(*w);
             if (pissed) ShotProbe::toilet(*w);
+            if (headbang) ShotProbe::headbang(*w);
             world = w.get();
             s = std::move(w);
         } else if (scene == "menu") {

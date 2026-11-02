@@ -248,6 +248,13 @@ struct SoakProbe {
         h.mind_.erratic = 1.0f;
         h.mind_.appetite = appetite;
     }
+    static void setHope(Human& h, float hope) { h.escape_.hope = hope; }
+    /// Erratic and stuck, h has been so long enough to weigh going at a wall
+    /// on its next update (human_headbang.cpp).
+    static void stuckLong(Human& h) {
+        h.headbang_.stuckSince = 0.0f;
+        h.headbang_.nextRoll = 0.0f;
+    }
     /// Shut in, h cries for help on its next update.
     static void cryNow(Human& h) { h.rescue_.helpTimer = 0.0f; }
     /// h, shut in, cries for help on its own only when it hears someone.

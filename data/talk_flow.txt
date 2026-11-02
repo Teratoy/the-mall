@@ -1298,3 +1298,18 @@ does | Ashamed, it rethinks and may go wash (unless erratic)
 [shunned] nobody
 when | Sees someone walk off from its smell, if it does smell and washes for looks
 does | Ashamed; it may go wash
+
+[headbang] nobody
+when | Erratic and stuck (shut in with no key, or without hope) for 2 minutes, a roll every 15 s sends it to a wall; said as it starts a bout
+does | A few blows: each takes health, deepens a head wound and bloodies the wall; then it slumps down dazed
+-> saw_headbang often | Anyone who sees it, the first time from each
+-> hear_thud sometimes | Anyone within 16 cells out of sight, when it isn't shut in
+-> hear_bang sometimes | Anyone within 16 cells out of sight, when it is shut in
+
+[saw_headbang] nobody
+when | Sees someone start beating their head against a wall, the first time from each
+does | It gets scared
+
+[hear_thud] nobody
+when | Hears someone beat their head on a wall out of sight, the first time from each, and half the time says so
+does | It gets scared

@@ -152,6 +152,7 @@ template <class F> void HumanSprites::eachFrame(const HumanLook& look, F&& add) 
         add(rackFar_[size_t(i)], look.rack(i, true));
     }
     for (int i = 0; i < TYPE_FRAMES; i++) add(type_[size_t(i)], look.type(i));
+    for (int i = 0; i < 2; i++) add(headbutt_[size_t(i)], look.headbutt(i));
 }
 
 HumanSprites::HumanSprites(const HumanLook& look) : look_(look), skin_(look.skin) {
@@ -312,6 +313,8 @@ void HumanSprites::draw(Vector2 feet, Pose pose, float animTime, bool flip, int 
                            : pose == Pose::Offer ? offer_
                            : pose == Pose::Point ? point_
                            : pose == Pose::Type ? type_[size_t(int(animTime * TYPE_FPS) % TYPE_FRAMES)]
+                           : pose == Pose::HeadbuttBack ? headbutt_[0]
+                           : pose == Pose::HeadbuttHit ? headbutt_[1]
                            : pose == Pose::PointUp ? pointUp_
                            : pose == Pose::PointDown ? pointDown_
                            : pose == Pose::Sip   ? sip_

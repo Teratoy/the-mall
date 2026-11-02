@@ -251,6 +251,11 @@ SpriteFrame HumanLook::shoot(int aim, bool fire, bool far) const {
 }
 SpriteFrame HumanLook::type(int frame) const { return draw({.front = frame == 0 ? Arm::TypeUp : Arm::TypeDown}); }
 
+SpriteFrame HumanLook::headbutt(int frame) const {
+    if (frame == 0) return draw({.front = Arm::Brace, .lean = -1});
+    return draw({.stride = 1, .front = Arm::Brace, .nod = 1, .lean = 2, .eyesShut = true});
+}
+
 // Built from the feet up, so short legs and torsos leave empty rows on top.
 SpriteFrame HumanLook::drawBody(const Stance& s) const {
     Paper p;
@@ -595,6 +600,11 @@ SpriteFrame HumanLook::drawBody(const Stance& s) const {
                 armPx(side, x, shoulder + 1, 1, false);
                 armPx(side, x + 1, shoulder + 2, 2, false);
                 armPx(side, x + 2, shoulder + (s.front == Arm::TypeDown ? 3 : 2), 3, true);
+                break;
+            case Arm::Brace:
+                // Out ahead at the shoulder, the hand flat on the wall.
+                armPx(side, x, shoulder, 0, false);
+                armPx(side, x + 1, shoulder, 1, true);
                 break;
             case Arm::Swing:
             case Arm::Reload:

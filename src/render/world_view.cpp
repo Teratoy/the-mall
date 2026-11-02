@@ -193,6 +193,8 @@ Pose poseOf(const Human& h) {
     case Human::State::Typing: return Pose::Type;
     // Fists on the door, drawn back and thrown again.
     case Human::State::Banging: return h.bangLanded() ? Pose::Punch : Pose::Guard;
+    // The head drawn back from the wall and slammed into it.
+    case Human::State::Headbanging: return h.headbuttLanded() ? Pose::HeadbuttHit : Pose::HeadbuttBack;
     case Human::State::Idle:
     case Human::State::Walking: break;
     }

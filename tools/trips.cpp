@@ -21,8 +21,8 @@ using P = SoakProbe;
 using G = Human::Goal;
 
 static const char* GOAL[] = {"Explore", "FetchKey", "OpenDoor", "PassDoor", "Wander", "Meet", "Follow", "Company", "FetchCake", "Drink", "Relieve", "Fight",
-                             "Flee", "Share", "CheckDoor", "Wash", "Avoid", "Escort", "Escorted", "Track", "GiveWay", "Loot", "Feed", "Sleep", "Rob", "Watch", "Rescue", "Fill", "Ask", "Pick", "Stash", "Vend", "Voice", "Inspect", "Bang"};
-static_assert(std::size(GOAL) == size_t(G::Bang) + 1);
+                             "Flee", "Share", "CheckDoor", "Wash", "Avoid", "Escort", "Escorted", "Track", "GiveWay", "Loot", "Feed", "Sleep", "Rob", "Watch", "Rescue", "Fill", "Ask", "Pick", "Stash", "Vend", "Voice", "Inspect", "Bang", "Headbang"};
+static_assert(std::size(GOAL) == size_t(G::Headbang) + 1);
 
 static bool needGoal(G g) {
     return g == G::Drink || g == G::FetchCake || g == G::Relieve || g == G::Sleep || g == G::Fill || g == G::Pick ||

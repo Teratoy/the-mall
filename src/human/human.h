@@ -92,12 +92,12 @@ class Human {
 public:
     /// Waking is the first thing every human does: lying where it came to,
     /// knowing nothing, until it sits up (Sitting) and looks round.
-    enum class State { Waking, Idle, Sitting, Rising, Walking, Greeting, Eating, Drinking, Relieving, Punching, Giving, Washing, Looting, Feeding, Sleeping, Sipping, Filling, Pouring, Stashing, Vending, Typing, Banging, Dead };
+    enum class State { Waking, Idle, Sitting, Rising, Walking, Greeting, Eating, Drinking, Relieving, Punching, Giving, Washing, Looting, Feeding, Sleeping, Sipping, Filling, Pouring, Stashing, Vending, Typing, Banging, Headbanging, Dead };
     /// Why the human is walking: what it does on arrival.
-    enum class Goal { Explore, FetchKey, OpenDoor, PassDoor, Wander, Meet, Follow, Company, FetchCake, Drink, Relieve, Fight, Flee, Share, CheckDoor, Wash, Avoid, Escort, Escorted, Track, GiveWay, Loot, Feed, Sleep, Rob, Watch, Rescue, Fill, Ask, Pick, Stash, Vend, Voice, Inspect, Bang };
+    enum class Goal { Explore, FetchKey, OpenDoor, PassDoor, Wander, Meet, Follow, Company, FetchCake, Drink, Relieve, Fight, Flee, Share, CheckDoor, Wash, Avoid, Escort, Escorted, Track, GiveWay, Loot, Feed, Sleep, Rob, Watch, Rescue, Fill, Ask, Pick, Stash, Vend, Voice, Inspect, Bang, Headbang };
     /// What the human is doing, as far as hunger, thirst and tiredness go:
     /// each costs its own of all three.
-    enum class Action { Rest, Sit, Walk, Run, Greet, Eat, Drink, Relieve, Punch, Give, Wash, Loot, Feed, Sleep, Watch, Fill, Pour, Stash, Vend, Type, Bang, Count };
+    enum class Action { Rest, Sit, Walk, Run, Greet, Eat, Drink, Relieve, Punch, Give, Wash, Loot, Feed, Sleep, Watch, Fill, Pour, Stash, Vend, Type, Bang, Headbang, Count };
     /// What a human may set out to do once nothing presses. How much it
     /// wants each, by its traits and hunger, is weighed in choose(), which
     /// tries them from the most wanted down; the table of wants is in
@@ -290,6 +290,9 @@ public:
     }
     /// Banging on a door, the fist on it rather than drawn back for the next blow.
     bool bangLanded() const;
+    /// Beating its head against a wall, the head in the wall rather than
+    /// drawn back for the next blow.
+    bool headbuttLanded() const;
     bool atTap() const {
         return (state == State::Drinking || state == State::Filling) && memory.tile(water_.drinkAt) == Tile::Dispenser;
     }
@@ -647,6 +650,28 @@ private:
         bool keyNoted = false;
     };
     Rescue rescue_;
+    /// Erratic and stuck, beating its head against a wall to end it
+    /// (human_headbang.cpp, AI/headbang_plan.md).
+    struct Headbang {
+        /// Since when it has been erratic and stuck (shut in, or without
+        /// hope), or -1 while it isn't; when it next weighs a bout.
+        float stuckSince = -1.0f;
+        float nextRoll = 0.0f;
+        /// Meaning to go at a wall, since when.
+        bool want = false;
+        float wantWhen = 0.0f;
+        /// The wall it walks to or beats its head on; blows left in this
+        /// bout, and the time to the next.
+        Vec2i wall{};
+        int blows = 0;
+        float blow = 0.0f;
+        /// Bouts it has had.
+        int bouts = 0;
+        /// Whose thuds it has heard through a wall, and whom it has seen at
+        /// it, each a scare once.
+        std::unordered_set<int> heard, saw;
+    };
+    Headbang headbang_;
     /// Calling out into the mall, and voices heard calling (human_call.cpp,
     /// AI/waking_talk_plan.md step 5).
     struct Call {
@@ -738,6 +763,21 @@ private:
     void startBanging(World& world, Vec2i door);
     /// Banging: a blow now and then, broken off when something presses.
     void banging(World& world, float dt);
+    /// Erratic and stuck long enough: now and then it means to beat its
+    /// head against a wall (human_headbang.cpp).
+    void weighHeadbang(World& world, float dt);
+    /// Erratic and shut in with no key, or without hope.
+    bool stuckForGood() const;
+    /// Meaning to: beside a wall, it starts; else it walks to one.
+    bool goAtWall(World& world);
+    /// A bout of blows against the wall beside it.
+    void startHeadbanging(World& world, Vec2i wall);
+    void headbanging(World& world, float dt);
+    /// One blow: a thud, health gone, a head wound, blood on the wall.
+    void headbutt(World& world);
+    /// Heard who's thuds through a wall, or saw them at it.
+    void hearThud(const Human& who);
+    void sawHeadbang(const Human& who);
     /// Makes for the gate of whoever it means to let out; false, and gives
     /// up on them, if it can't.
     bool startRescue(World& world);

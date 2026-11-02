@@ -84,6 +84,13 @@ sound bang
     square 85 55 gain 0.45 decay 0.13 duty 0.45
     triangle 210 200 gain 0.1 delay 0.01 attack 0.005 decay 0.25
 
+# A head beaten against a wall: a dull, heavy knock, lower and shorter than
+# a fist on a door, with a wet crack in it.
+sound thud
+    noise 500 120 gain 0.7 decay 0.08 lowpass 800
+    square 70 45 gain 0.5 decay 0.1 duty 0.5
+    noise 2400 1600 gain 0.15 delay 0.005 decay 0.02 highpass 1200
+
 # A server room's airlock: a hiss as it gives, and as it seals.
 sound airlock_open
     noise 3600 2200 gain 0.35 attack 0.03 hold 0.1 decay 0.25 highpass 800

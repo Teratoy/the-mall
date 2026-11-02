@@ -3108,3 +3108,39 @@ curious                 | THAT CAME FROM A DOOR.
 generous                | SOMEONE NEEDS A KEY.
 greedy                  | NOT MY PROBLEM.
 hopeless                | THEY'LL STOP SOON.
+
+# Erratic and stuck, shut in or without hope, going at a wall with its head
+# to end it. Said to nobody.
+[headbang]
+                        | MAKE IT STOP.
+                        | ENOUGH. ENOUGH.
+                        | NO MORE.
+erratic                 | GET OUT OF MY HEAD.
+erratic                 | QUIET. QUIET. QUIET.
+hopeless                | THERE'S ONLY ONE WAY OUT.
+hopeless                | THIS IS HOW IT ENDS.
+timid                   | I'M SORRY. I'M SORRY.
+brave                   | HARDER.
+parched                 | ...JUST LET IT END.
+
+# Seeing someone beat their head against a wall. Said to nobody, about them.
+[saw_headbang]
+                        | STOP! STOP IT!
+                        | WHAT ARE YOU DOING?
+scared fear             | OH NO. NO NO NO.
+timid                   | I CAN'T WATCH.
+generous                | DON'T! PLEASE!
+greedy                  | FEWER MOUTHS.
+erratic                 | HA. HA HA.
+hopeless                | MAYBE THEY'RE RIGHT.
+curious                 | HOW LONG HAS {WHO} BEEN LIKE THIS?
+
+# Hearing something pound on a wall out of sight, the first time from each.
+# Said to nobody.
+[hear_thud]
+                        | WHAT IS THAT?
+                        | THAT'S NOT A DOOR.
+scared                  | SOMETHING'S HITTING THE WALL.
+timid                   | MAKE IT STOP.
+curious                 | WHERE IS THAT COMING FROM?
+hopeless                | SOMEONE'S HAD ENOUGH.

@@ -1761,6 +1761,60 @@ const std::vector<Scenario> SCENARIOS = {
          return Checks{logged({"BANGED ON THE GATE"}), logged({"HEARD SOMEONE BANGING ON A DOOR"}),
                        unlogged("HEARD SOMEONE CALLING FOR HELP")};
      }},
+    {"headbang-shut-in", "erratic and shut in long, it beats its head on the wall till it dies; heard as banging", 99,
+     [](Stage& s) {
+         Human& caller = shutInFirst(s);
+         P::hushShutIn(caller);
+         P::craze(caller, 1.0f);
+         P::setHope(caller, 0.1f);
+         // Boxed in beyond the slam room, out of reach of its cries.
+         Human& hearer = s.add(seedWhere(caring, 12500), 2);
+         calm(hearer);
+         s.run(8);
+         Vec2i box = s.farFrom(caller.cell, 14);
+         P::wallIn(s.world, box);
+         P::place(s.world, hearer, box);
+         P::stuckLong(caller);
+         s.run(300);
+         return Checks{own(caller, "BEAT MY HEAD AGAINST THE WALL"), own(hearer, "HEARD SOMEONE BANGING ON A DOOR"),
+                       {"#" + std::to_string(caller.id) + " dead", [&caller](const Stage&) { return caller.dead(); }}};
+     }},
+    {"headbang-hopeless", "erratic and hopeless, it goes at a wall with its head; one watching sees it, one boxed in hears it",
+     99,
+     [](Stage& s) {
+         Human& lost = s.first();
+         P::unhinge(lost);
+         P::setHope(lost, 0.0f);
+         calm(lost);
+         Human& watcher = s.add(seedWhere(plain, 12500), 2);
+         calm(watcher);
+         Human& boxed = s.add(seedWhere(plain, 12700), 3);
+         calm(boxed);
+         s.run(8);
+         // Boxed in with the one watching, so it can't wander off; the
+         // other in a box of its own, out of sight.
+         Vec2i box = s.farFrom(lost.cell, 10);
+         P::wallIn(s.world, box);
+         P::place(s.world, boxed, box);
+         P::wallIn(s.world, lost.cell);
+         P::place(s.world, watcher, lost.cell + Vec2i{0, 1});
+         // Settled, it would drive off anyone it didn't like.
+         P::setTrust(lost, watcher, 0.6f);
+         P::stuckLong(lost);
+         s.run(120);
+         return Checks{own(lost, "BEAT MY HEAD AGAINST THE WALL"),
+                       own(watcher, "SAW @ BEATING THEIR HEAD AGAINST THE WALL"),
+                       own(boxed, "HEARD SOMETHING POUNDING ON A WALL")};
+     }},
+    {"headbang-sane", "shut in and hopeless but not erratic, it never goes at a wall", 99,
+     [](Stage& s) {
+         Human& caller = shutInFirst(s);
+         P::setHope(caller, 0.0f);
+         calm(caller);
+         P::stuckLong(caller);
+         s.run(200);
+         return Checks{own(caller, "BEAT MY HEAD AGAINST THE WALL", false)};
+     }},
     {"shut-in-told", "a hearer tells a stranger with keys, who never heard the cry, and they let them out", 99,
      [](Stage& s) {
          Human& caller = shutInFirst(s);

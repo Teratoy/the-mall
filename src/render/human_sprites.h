@@ -40,7 +40,9 @@
 /// over RACK_TIME from starting, then stands holding the gun low. animTime counts from
 /// the shot: the kick knocks the hand back, tips the muzzle up and jolts
 /// the head back for SHOT_TIME, then it holds the aim. Type stands at a computer's keys, tapping.
-enum class Pose { Idle, Walk, Wave, Eat, Guard, Punch, Offer, Fall, Sit, Rise, Wash, Search, Feed, Wake, Point, PointUp, PointDown, Squat, Piss, Sleep, WakeUp, DiedAsleep, Sip, Fill, Pour, OfferBottle, Lie, Run, Winded, Shoot, ShootUp, ShootUpAhead, ShootDownAhead, ShootDown, Reload, Rack, Type };
+/// HeadbuttBack draws the head back from a wall ahead; HeadbuttHit slams it
+/// into the wall.
+enum class Pose { Idle, Walk, Wave, Eat, Guard, Punch, Offer, Fall, Sit, Rise, Wash, Search, Feed, Wake, Point, PointUp, PointDown, Squat, Piss, Sleep, WakeUp, DiedAsleep, Sip, Fill, Pour, OfferBottle, Lie, Run, Winded, Shoot, ShootUp, ShootUpAhead, ShootDownAhead, ShootDown, Reload, Rack, Type, HeadbuttBack, HeadbuttHit };
 
 /// How many times a foot has come down since animTime began, walking or
 /// running: the frames where the legs are spread widest. -1 in any other
@@ -112,6 +114,7 @@ private:
     std::array<Texture2D, WAVE_FRAMES> wave_;
     std::array<Texture2D, EAT_FRAMES> eat_;
     std::array<Texture2D, TYPE_FRAMES> type_;
+    std::array<Texture2D, 2> headbutt_;
     std::array<Texture2D, SIT_FRAMES> sit_;
     std::array<Texture2D, DOZE_FRAMES> doze_;
     std::array<Texture2D, CURL_FRAMES> curl_, curlCarry_;

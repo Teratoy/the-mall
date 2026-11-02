@@ -182,6 +182,7 @@ constexpr float HUNGER_PER_SECOND[] = {
     1.0f / 750.0f, // Vend
     1.0f / 1875.0f, // Type: still at the keys, as sitting
     1.0f / 400.0f, // Bang: fists on a door, more than walking, less than a fight
+    1.0f / 400.0f, // Headbang: as banging
 };
 static_assert(std::size(HUNGER_PER_SECOND) == size_t(Human::Action::Count));
 /// Thirst gained per second by each action, the same rule: a new action
@@ -209,6 +210,7 @@ constexpr float THIRST_PER_SECOND[] = {
     1.0f / 600.0f, // Vend
     1.0f / 1500.0f, // Type
     1.0f / 320.0f, // Bang
+    1.0f / 320.0f, // Headbang
 };
 static_assert(std::size(THIRST_PER_SECOND) == size_t(Human::Action::Count));
 /// Hungry from here on: food comes first. Starving from STARVING, and

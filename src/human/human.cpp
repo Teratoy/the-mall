@@ -49,6 +49,7 @@ void Human::update(World& world, float dt) {
     chatUrges(world, dt);
     callForHelp(world, dt);
     recallCries();
+    weighHeadbang(world, dt);
     keepTrackOfDry(world);
     timer -= dt;
     // A hit is answered at once, or as soon as the step under way is done.
@@ -79,6 +80,7 @@ void Human::update(World& world, float dt) {
     }
     if (state == State::Typing) return typing(world, dt);
     if (state == State::Banging) return banging(world, dt);
+    if (state == State::Headbanging) return headbanging(world, dt);
     if (timer > 0.0f) return;
     switch (state) {
     case State::Greeting: {
@@ -106,6 +108,7 @@ void Human::update(World& world, float dt) {
         return takeVended(world);
     case State::Typing:
     case State::Banging:
+    case State::Headbanging:
         return;
     case State::Relieving:
         endRelieving();
@@ -176,6 +179,8 @@ Human::Action Human::action() const {
         return Action::Type;
     case State::Banging:
         return Action::Bang;
+    case State::Headbanging:
+        return Action::Headbang;
     case State::Relieving:
         return Action::Relieve;
     case State::Punching:
@@ -645,6 +650,8 @@ void Human::choose(World& world) {
     if (bottleRage(world)) return;
     // Shut in, having cried out: it bangs on the door too (human_rescue.cpp).
     if (bangOnDoor(world)) return;
+    // Erratic and stuck for good: it goes at a wall with its head (human_headbang.cpp).
+    if (goAtWall(world)) return;
     // A body or blood first found it stares at, before backing off from it.
     if (inspectNext(world, true)) return;
     if (keepAway(world)) return;

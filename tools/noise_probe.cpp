@@ -13,9 +13,9 @@ namespace {
 
 constexpr const char* NAMES[] = {"Unlock", "AirlockOpen", "AirlockShut", "Slam", "Spikes", "DartFire", "DartHit",
                                  "Hit", "Death", "Knob", "Spray", "Drip", "Bite", "Swing", "Piss", "Feces", "Gulp",
-                                 "Sip", "Collapse", "VendDrop", "VendEmpty", "PickKey", "PickCake", "PickBottle", "Bang"};
+                                 "Sip", "Collapse", "VendDrop", "VendEmpty", "PickKey", "PickCake", "PickBottle", "Bang", "Thud"};
 constexpr size_t KINDS = std::size(NAMES);
-static_assert(KINDS == size_t(NoiseKind::Bang) + 1, "a name for every noise");
+static_assert(KINDS == size_t(NoiseKind::Thud) + 1, "a name for every noise");
 
 } // namespace
 
