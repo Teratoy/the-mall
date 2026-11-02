@@ -199,6 +199,8 @@ struct HumanLook {
     /// the head drawn back; 1 the head thrust ahead and down into it, eyes
     /// shut, the front foot forward.
     SpriteFrame headbutt(int frame) const;
+    /// Calming someone down beside it: the front hand out on their shoulder.
+    SpriteFrame comfort() const;
 
 private:
     /// What the front arm is doing.

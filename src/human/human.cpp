@@ -81,6 +81,7 @@ void Human::update(World& world, float dt) {
     if (state == State::Typing) return typing(world, dt);
     if (state == State::Banging) return banging(world, dt);
     if (state == State::Headbanging) return headbanging(world, dt);
+    if (state == State::Calming) return calmingDown(world, dt);
     if (timer > 0.0f) return;
     switch (state) {
     case State::Greeting: {
@@ -109,6 +110,7 @@ void Human::update(World& world, float dt) {
     case State::Typing:
     case State::Banging:
     case State::Headbanging:
+    case State::Calming:
         return;
     case State::Relieving:
         endRelieving();
@@ -181,6 +183,8 @@ Human::Action Human::action() const {
         return Action::Bang;
     case State::Headbanging:
         return Action::Headbang;
+    case State::Calming:
+        return Action::Calm;
     case State::Relieving:
         return Action::Relieve;
     case State::Punching:
@@ -652,6 +656,8 @@ void Human::choose(World& world) {
     if (bangOnDoor(world)) return;
     // Erratic and stuck for good: it goes at a wall with its head (human_headbang.cpp).
     if (goAtWall(world)) return;
+    // Caring, it stops whoever it saw at it, and tries to talk them down.
+    if (stepIn(world)) return;
     // A body or blood first found it stares at, before backing off from it.
     if (inspectNext(world, true)) return;
     if (keepAway(world)) return;

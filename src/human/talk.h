@@ -256,6 +256,9 @@ enum class Moment {
     // someone at it (to nobody, about them); hearing the thuds through a
     // wall, the first time from each (to nobody).
     Headbang, SawHeadbang, HearThud,
+    // Caring, stopping someone beating their head on a wall and talking them
+    // down (to them); talked down, or not (to the carer).
+    Calm, CalmedDown, NotCalmed,
     // Smell: telling someone it trusts they smell, and the answer, told it
     // smells (both to that one); seeing someone walk off from its smell (to
     // nobody).

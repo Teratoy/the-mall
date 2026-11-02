@@ -9,7 +9,9 @@
 // blood on the wall, then it slumps down dazed, until the next time. It
 // seldom lives through more than a few bouts. Anyone beyond the wall hears
 // the thuds, taken for banging when it is shut in; anyone who sees it is
-// shaken (AI/headbang_plan.md).
+// shaken. One who cares may go and stop them, and try to talk them down:
+// talked down, they come out of the erratic mind with a little hope
+// (AI/headbang_plan.md).
 
 namespace {
 
@@ -49,6 +51,22 @@ constexpr int THUD_HEARD = 16;
 constexpr float DREAD_THUD = 0.08f, DREAD_SAW_HEADBANG = 0.2f;
 /// The chance it says anything on first hearing the thuds.
 constexpr float HEAR_THUD_SAY = 0.5f;
+/// Caring, it steps in for anyone it doesn't distrust more than this, with
+/// a way to them no longer than this; a wish to left this long untaken is
+/// let go. They can be stopped at it, or sitting dazed this long after.
+constexpr float CALM_TRUST_MIN = -0.2f;
+constexpr int CALM_FARTHEST = 20;
+constexpr float CALM_STALE = 20.0f, CALM_AFTER = 20.0f;
+/// Talking them down takes this long; then the chance it works: this much,
+/// more the more they trust it, more the more sociable it is.
+constexpr float CALM_TIME = 4.0f;
+constexpr float CALM_CHANCE = 0.25f, CALM_TRUST = 0.4f, CALM_SOCIABLE = 0.2f;
+
+/// Still at it, or sitting dazed just after: someone to stop.
+bool stoppable(const Human& o) {
+    return !o.dead() && (o.state == Human::State::Headbanging ||
+                         (o.state == Human::State::Sitting && o.sinceHeadbang() < CALM_AFTER));
+}
 
 /// A wall beside c, east or west (the blow is drawn side on), as it knows.
 std::optional<Vec2i> sideWall(const Memory& memory, Vec2i c) {
@@ -127,8 +145,10 @@ void Human::startHeadbanging(World& world, Vec2i wall) {
     std::optional<Vec2i> gate = rescue_.slamGate ? rescue_.slamGate : rescue_.callDoor;
     for (const auto& o : world.humans()) {
         if (o.get() == this || o->dead() || cheb(o->cell, cell) > THUD_HEARD) continue;
-        if (o->sight.sees(cell))
+        if (o->sight.sees(cell)) {
             o->sawHeadbang(*this);
+            o->wantCalm(*this);
+        }
         else if (gate)
             o->hearHelp(*this, *gate, true);
         else
@@ -152,6 +172,7 @@ void Human::headbanging(World& world, float dt) {
         return;
     }
     // Done: it slumps down dazed, and won't go again for a while.
+    headbang_.endedAt = clock_;
     escape_.daze = std::max(escape_.daze, HEADBANG_DAZE);
     headbang_.nextRoll = clock_ + rng_.range(HEADBANG_AGAIN_MIN, HEADBANG_AGAIN_MAX);
     rethink_ = false;
@@ -191,4 +212,82 @@ void Human::sawHeadbang(const Human& who) {
     note("SAW @ BEATING THEIR HEAD AGAINST THE WALL", who.id);
     scare(DREAD_SAW_HEADBANG);
     sayLater(talk::Moment::SawHeadbang, -1, who.id);
+}
+
+void Human::wantCalm(const Human& who) {
+    if (dead() || state == State::Sleeping || !caresForShutIn() || trust(who.id) < CALM_TRUST_MIN ||
+        fight_.foe == who.id)
+        return;
+    headbang_.calming = who.id;
+    headbang_.calmWhen = clock_;
+    rethink_ = true;
+}
+
+bool Human::stepIn(World& world) {
+    if (headbang_.calming < 0) return false;
+    const Human& o = world.human(headbang_.calming);
+    if (clock_ - headbang_.calmWhen > CALM_STALE || !stoppable(o) || !caresForShutIn()) {
+        headbang_.calming = -1;
+        return false;
+    }
+    if (startCalming(world)) return true;
+    auto p = searchNear(world, [&](Vec2i c) { return cheb(c, o.cell) == 1; }, CALM_FARTHEST);
+    if (!p || p->empty()) {
+        headbang_.calming = -1;
+        return false;
+    }
+    startWalking(Goal::Calm, *p);
+    return true;
+}
+
+bool Human::startCalming(World& world) {
+    if (headbang_.calming < 0) return false;
+    Human& o = world.human(headbang_.calming);
+    if (!stoppable(o) || cheb(cell, o.cell) != 1) return false;
+    note("STOPPED @ BEATING THEIR HEAD AGAINST THE WALL", o.id);
+    o.heldBack(id);
+    sayLater(talk::Moment::Calm, o.id);
+    if (o.cell.x != cell.x) facingLeft = o.cell.x < cell.x;
+    state = State::Calming;
+    goal = Goal::Calm;
+    moving = false;
+    path_.clear();
+    animTime = 0.0f;
+    timer = CALM_TIME;
+    return true;
+}
+
+void Human::calmingDown(World& world, float) {
+    Human& o = world.human(headbang_.calming);
+    // Gone from its side, or dead: nothing more to say.
+    if (o.dead() || cheb(cell, o.cell) != 1) {
+        headbang_.calming = -1;
+        state = State::Idle;
+        return choose(world);
+    }
+    if (timer > 0.0f) return;
+    float chance = CALM_CHANCE + CALM_TRUST * std::max(0.0f, o.trust(id)) + CALM_SOCIABLE * traits.sociable;
+    if (rng_.chance(chance) && o.calmedBy(id)) {
+        note("TALKED @ DOWN", o.id);
+    } else {
+        note("COULDN'T GET THROUGH TO @", o.id);
+        o.sayLater(talk::Moment::NotCalmed, id);
+    }
+    headbang_.calming = -1;
+    state = State::Idle;
+    choose(world);
+}
+
+void Human::heldBack(int who) {
+    headbang_.blows = 0;
+    headbang_.want = false;
+    if (state == State::Headbanging) {
+        headbang_.endedAt = clock_;
+        headbang_.nextRoll = clock_ + rng_.range(HEADBANG_AGAIN_MIN, HEADBANG_AGAIN_MAX);
+    }
+    note("@ STOPPED ME", who);
+    rethink_ = false;
+    sitDown();
+    // Held there while it is talked to.
+    timer = std::max(timer, CALM_TIME + 1.0f);
 }

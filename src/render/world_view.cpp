@@ -195,6 +195,8 @@ Pose poseOf(const Human& h) {
     case Human::State::Banging: return h.bangLanded() ? Pose::Punch : Pose::Guard;
     // The head drawn back from the wall and slammed into it.
     case Human::State::Headbanging: return h.headbuttLanded() ? Pose::HeadbuttHit : Pose::HeadbuttBack;
+    // A hand on the shoulder of the one it talks down.
+    case Human::State::Calming: return Pose::Comfort;
     case Human::State::Idle:
     case Human::State::Walking: break;
     }

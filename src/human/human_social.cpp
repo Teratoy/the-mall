@@ -690,6 +690,7 @@ int Human::counterpart() const {
     case State::Giving: return social_.sharee;
     case State::Looting: return sleep_.robbee >= 0 ? sleep_.robbee : deaths_.corpse;
     case State::Feeding: return mind_.meal;
+    case State::Calming: return headbang_.calming;
     default: break;
     }
     switch (goal) {
@@ -707,6 +708,7 @@ int Human::counterpart() const {
     case Goal::Feed: return mind_.meal;
     case Goal::Rescue: return rescue_.rescuee;
     case Goal::Ask: return water_.askee;
+    case Goal::Calm: return headbang_.calming;
     default: return -1;
     }
 }

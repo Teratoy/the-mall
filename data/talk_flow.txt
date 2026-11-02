@@ -1303,6 +1303,7 @@ does | Ashamed; it may go wash
 when | Erratic and stuck (shut in with no key, or without hope) for 2 minutes, a roll every 15 s sends it to a wall; said as it starts a bout
 does | A few blows: each takes health, deepens a head wound and bloodies the wall; then it slumps down dazed
 -> saw_headbang often | Anyone who sees it, the first time from each
+-> calm sometimes | One who sees it and cares goes and stops it
 -> hear_thud sometimes | Anyone within 16 cells out of sight, when it isn't shut in
 -> hear_bang sometimes | Anyone within 16 cells out of sight, when it is shut in
 
@@ -1313,3 +1314,17 @@ does | It gets scared
 [hear_thud] nobody
 when | Hears someone beat their head on a wall out of sight, the first time from each, and half the time says so
 does | It gets scared
+
+[calm] someone
+when | Caring, it saw someone start beating their head on a wall, went to them, and reached them still at it or sitting dazed just after
+does | The bout stops and they are held sitting while it talks them down for 4 s; then a chance they come out of the erratic mind
+-> calmed_down sometimes | Talked down: more the more they trust it and the more sociable it is
+-> not_calmed sometimes | Not talked down, or held erratic by a craving for flesh
+
+[calmed_down] someone
+when | Talked down by the one who stopped it beating its head on a wall
+does | Out of the erratic mind; a little hope; it trusts them more
+
+[not_calmed] someone
+when | Stopped beating its head on a wall, but not talked down
+does | Nothing more: it may go at the wall again later

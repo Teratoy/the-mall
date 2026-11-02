@@ -92,12 +92,12 @@ class Human {
 public:
     /// Waking is the first thing every human does: lying where it came to,
     /// knowing nothing, until it sits up (Sitting) and looks round.
-    enum class State { Waking, Idle, Sitting, Rising, Walking, Greeting, Eating, Drinking, Relieving, Punching, Giving, Washing, Looting, Feeding, Sleeping, Sipping, Filling, Pouring, Stashing, Vending, Typing, Banging, Headbanging, Dead };
+    enum class State { Waking, Idle, Sitting, Rising, Walking, Greeting, Eating, Drinking, Relieving, Punching, Giving, Washing, Looting, Feeding, Sleeping, Sipping, Filling, Pouring, Stashing, Vending, Typing, Banging, Headbanging, Calming, Dead };
     /// Why the human is walking: what it does on arrival.
-    enum class Goal { Explore, FetchKey, OpenDoor, PassDoor, Wander, Meet, Follow, Company, FetchCake, Drink, Relieve, Fight, Flee, Share, CheckDoor, Wash, Avoid, Escort, Escorted, Track, GiveWay, Loot, Feed, Sleep, Rob, Watch, Rescue, Fill, Ask, Pick, Stash, Vend, Voice, Inspect, Bang, Headbang };
+    enum class Goal { Explore, FetchKey, OpenDoor, PassDoor, Wander, Meet, Follow, Company, FetchCake, Drink, Relieve, Fight, Flee, Share, CheckDoor, Wash, Avoid, Escort, Escorted, Track, GiveWay, Loot, Feed, Sleep, Rob, Watch, Rescue, Fill, Ask, Pick, Stash, Vend, Voice, Inspect, Bang, Headbang, Calm };
     /// What the human is doing, as far as hunger, thirst and tiredness go:
     /// each costs its own of all three.
-    enum class Action { Rest, Sit, Walk, Run, Greet, Eat, Drink, Relieve, Punch, Give, Wash, Loot, Feed, Sleep, Watch, Fill, Pour, Stash, Vend, Type, Bang, Headbang, Count };
+    enum class Action { Rest, Sit, Walk, Run, Greet, Eat, Drink, Relieve, Punch, Give, Wash, Loot, Feed, Sleep, Watch, Fill, Pour, Stash, Vend, Type, Bang, Headbang, Calm, Count };
     /// What a human may set out to do once nothing presses. How much it
     /// wants each, by its traits and hunger, is weighed in choose(), which
     /// tries them from the most wanted down; the table of wants is in
@@ -290,6 +290,10 @@ public:
     }
     /// Banging on a door, the fist on it rather than drawn back for the next blow.
     bool bangLanded() const;
+    /// Calming someone who was beating their head on a wall: who.
+    int calmingWho() const { return state == State::Calming ? headbang_.calming : -1; }
+    /// Seconds since its last bout of beating its head on a wall ended.
+    float sinceHeadbang() const { return clock_ - headbang_.endedAt; }
     /// Beating its head against a wall, the head in the wall rather than
     /// drawn back for the next blow.
     bool headbuttLanded() const;
@@ -665,8 +669,13 @@ private:
         Vec2i wall{};
         int blows = 0;
         float blow = 0.0f;
-        /// Bouts it has had.
+        /// Bouts it has had, and when the last ended (or was stopped).
         int bouts = 0;
+        float endedAt = -1e9f;
+        /// Caring, whom it means to stop or is calming, and since when it
+        /// meant to; -1 for nobody.
+        int calming = -1;
+        float calmWhen = 0.0f;
         /// Whose thuds it has heard through a wall, and whom it has seen at
         /// it, each a scare once.
         std::unordered_set<int> heard, saw;
@@ -778,6 +787,18 @@ private:
     /// Heard who's thuds through a wall, or saw them at it.
     void hearThud(const Human& who);
     void sawHeadbang(const Human& who);
+    /// Caring, it means to stop who beating their head on the wall.
+    void wantCalm(const Human& who);
+    /// Meaning to: beside them, it steps in; else it walks to them.
+    bool stepIn(World& world);
+    /// At them, still at it or dazed after: stops them and talks them down.
+    bool startCalming(World& world);
+    void calmingDown(World& world, float dt);
+    /// Held back from beating its head by who, and (calmed) talked down out
+    /// of the erratic mind (human_flesh.cpp).
+    void heldBack(int who);
+    /// True if it came out of the erratic mind.
+    bool calmedBy(int who);
     /// Makes for the gate of whoever it means to let out; false, and gives
     /// up on them, if it can't.
     bool startRescue(World& world);

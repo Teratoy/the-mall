@@ -3144,3 +3144,36 @@ scared                  | SOMETHING'S HITTING THE WALL.
 timid                   | MAKE IT STOP.
 curious                 | WHERE IS THAT COMING FROM?
 hopeless                | SOMEONE'S HAD ENOUGH.
+
+# Caring, it stops someone beating their head on a wall and talks them
+# down, a hand on their shoulder. Said to them.
+[calm]
+warm                    | HEY. HEY. I'VE GOT YOU.
+warm                    | BREATHE. JUST BREATHE.
+warm                    | YOU'RE NOT ALONE IN HERE.
+warm                    | LOOK AT ME. STAY WITH ME.
+friend warm             | NOT LIKE THIS, {NAME}.
+sociable warm           | WE'LL FIND IT TOGETHER.
+timid warm              | P-PLEASE. DON'T.
+brave warm              | ENOUGH. I'VE GOT YOU.
+hopeless warm           | I KNOW. I KNOW.
+
+# Talked down by the one who stopped it: it comes back to itself. Said to
+# them.
+[calmed_down]
+warm                    | ...THANK YOU.
+warm                    | I DON'T KNOW WHAT CAME OVER ME.
+warm                    | OKAY. OKAY.
+                        | WHERE WAS I?
+friend warm             | DON'T LEAVE, {NAME}.
+timid warm              | I'M SORRY. I'M SO SORRY.
+hopeless                | IT'S STILL THERE. BUT QUIETER.
+
+# Stopped, but not talked down. Said to the one who stopped it.
+[not_calmed]
+rude                    | LET GO OF ME.
+rude                    | YOU DON'T UNDERSTAND.
+                        | ...
+erratic                 | THEY'RE STILL TALKING.
+erratic rude            | GET YOUR HANDS OFF.
+hopeless                | YOU'RE ONLY MAKING IT LONGER.

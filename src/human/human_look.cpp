@@ -251,6 +251,8 @@ SpriteFrame HumanLook::shoot(int aim, bool fire, bool far) const {
 }
 SpriteFrame HumanLook::type(int frame) const { return draw({.front = frame == 0 ? Arm::TypeUp : Arm::TypeDown}); }
 
+SpriteFrame HumanLook::comfort() const { return draw({.front = Arm::Brace}); }
+
 SpriteFrame HumanLook::headbutt(int frame) const {
     if (frame == 0) return draw({.front = Arm::Brace, .lean = -1});
     return draw({.stride = 1, .front = Arm::Brace, .nod = 1, .lean = 2, .eyesShut = true});

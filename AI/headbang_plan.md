@@ -93,7 +93,40 @@ All four steps, in `src/human/human_headbang.cpp` (state in `headbang_`).
 - Soak: 9 bouts in 6 worlds, 4 deaths from it (seeds 1, 5, 6); nothing new
   stuck, no new loops or flips.
 
+## Stepping in (2026-11-02)
+
+The user asked: "caring humans can stop people from doing it and have a
+chance of calming people, making them snap out of erratic state and gain a
+very little amount of hope".
+
+Defaults chosen (to confirm):
+- **Who steps in:** anyone who sees a bout start and cares, as for the shut
+  in (not erratic, greed under 0.67), and isn't its foe (trust above -0.2)
+  or fighting it, with a way to it no longer than 20 steps. It goes to them
+  (`Goal::Calm`, "GOING TO STOP @"). Every bout seen is a new chance.
+- **Stopping:** reaching them while they beat their head, or sit dazed after
+  a bout (up to 20 s after), ends the bout: they are held back and sit, and
+  the carer stands over them, a hand on their shoulder, talking them down
+  for 4 s (`State::Calming`, `Action::Calm`, `Pose::Comfort`). Calming costs
+  as greeting does.
+- **Calming:** at the end, a chance of 25%, +40% x how much they trust the
+  carer, +20% x how sociable the carer is. Calmed: their mind drops well
+  below erratic (to 0.2, held up by any craving for flesh, so cravers stay
+  erratic), hope rises 0.05, and they trust the carer more (+0.2). Not
+  calmed: the bout is still stopped, and they go on as before.
+- Log: "STOPPED @ BEATING THEIR HEAD AGAINST THE WALL", "TALKED @ DOWN",
+  "COULDN'T GET THROUGH TO @"; held: "@ STOPPED ME", "@ TALKED ME DOWN.
+  FEEL MORE LIKE MYSELF". Moments `Calm` (the carer, to them), `CalmedDown`
+  and `NotCalmed` (them, to the carer).
+
+Built (2026-11-02): `wantCalm`, `stepIn`, `startCalming`, `calmingDown`,
+`heldBack` in `human_headbang.cpp`, `calmedBy` in `human_flesh.cpp`;
+`HumanLook::comfort()` (the front hand out at the shoulder). Scenarios
+`headbang-calm` (a caring friend boxed in with it stops it at once, fails
+the first time, talks it down on a later bout) and `headbang-greedy-watch`
+(a greedy watcher never steps in). In the soak no carer happens to see a
+bout, so `Calm` and `Calming` are never seen there.
+
 ## Open questions
 
-- Should caring humans who see it step in (hold it, talk it down)?
-- Should it ever survive and stop for good?
+- Should it ever survive and stop for good (beyond being talked down)?

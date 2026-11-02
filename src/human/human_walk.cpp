@@ -252,6 +252,9 @@ void Human::arrive(World& world) {
     case Goal::Sleep:
         if (seekSleep(world)) return;
         return choose(world);
+    case Goal::Calm:
+        if (startCalming(world)) return;
+        return choose(world);
     case Goal::Headbang:
         if (cheb(headbang_.wall, cell) == 1 && headbang_.wall.y == cell.y && memory.tile(headbang_.wall) == Tile::Wall &&
             stuckForGood())

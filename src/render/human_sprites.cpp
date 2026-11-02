@@ -112,6 +112,7 @@ size_t rackFrame(float t) {
 
 template <class F> void HumanSprites::eachFrame(const HumanLook& look, F&& add) {
     add(idle_, look.idle());
+    add(comfort_, look.comfort());
     add(guard_, look.guard());
     add(punch_, look.punch());
     add(offer_, look.offer());
@@ -315,6 +316,7 @@ void HumanSprites::draw(Vector2 feet, Pose pose, float animTime, bool flip, int 
                            : pose == Pose::Type ? type_[size_t(int(animTime * TYPE_FPS) % TYPE_FRAMES)]
                            : pose == Pose::HeadbuttBack ? headbutt_[0]
                            : pose == Pose::HeadbuttHit ? headbutt_[1]
+                           : pose == Pose::Comfort ? comfort_
                            : pose == Pose::PointUp ? pointUp_
                            : pose == Pose::PointDown ? pointDown_
                            : pose == Pose::Sip   ? sip_

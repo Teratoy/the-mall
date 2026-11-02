@@ -41,8 +41,9 @@
 /// the shot: the kick knocks the hand back, tips the muzzle up and jolts
 /// the head back for SHOT_TIME, then it holds the aim. Type stands at a computer's keys, tapping.
 /// HeadbuttBack draws the head back from a wall ahead; HeadbuttHit slams it
-/// into the wall.
-enum class Pose { Idle, Walk, Wave, Eat, Guard, Punch, Offer, Fall, Sit, Rise, Wash, Search, Feed, Wake, Point, PointUp, PointDown, Squat, Piss, Sleep, WakeUp, DiedAsleep, Sip, Fill, Pour, OfferBottle, Lie, Run, Winded, Shoot, ShootUp, ShootUpAhead, ShootDownAhead, ShootDown, Reload, Rack, Type, HeadbuttBack, HeadbuttHit };
+/// into the wall. Comfort holds the front hand out on the shoulder of
+/// someone beside it.
+enum class Pose { Idle, Walk, Wave, Eat, Guard, Punch, Offer, Fall, Sit, Rise, Wash, Search, Feed, Wake, Point, PointUp, PointDown, Squat, Piss, Sleep, WakeUp, DiedAsleep, Sip, Fill, Pour, OfferBottle, Lie, Run, Winded, Shoot, ShootUp, ShootUpAhead, ShootDownAhead, ShootDown, Reload, Rack, Type, HeadbuttBack, HeadbuttHit, Comfort };
 
 /// How many times a foot has come down since animTime began, walking or
 /// running: the frames where the legs are spread widest. -1 in any other
@@ -90,7 +91,7 @@ public:
     void remains(float eaten, float decay, uint64_t seed, bool curled = false);
 
 private:
-    Texture2D idle_, guard_, punch_, offer_, point_, pointUp_, pointDown_, kneel_, dead_, crouch_, woken_, wokenCarry_,
+    Texture2D comfort_, idle_, guard_, punch_, offer_, point_, pointUp_, pointDown_, kneel_, dead_, crouch_, woken_, wokenCarry_,
         sip_, fill_, pour_, offerBottle_;
     /// Where each texture's frame holds what it carries, and a bottle in
     /// the front hand.

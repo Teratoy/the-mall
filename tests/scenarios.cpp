@@ -1806,6 +1806,42 @@ const std::vector<Scenario> SCENARIOS = {
                        own(watcher, "SAW @ BEATING THEIR HEAD AGAINST THE WALL"),
                        own(boxed, "HEARD SOMETHING POUNDING ON A WALL")};
      }},
+    {"headbang-calm", "a caring friend boxed in with one going at the wall stops them and talks them down", 99,
+     [](Stage& s) {
+         Human& lost = s.first();
+         P::unhinge(lost);
+         P::setHope(lost, 0.0f);
+         calm(lost);
+         Human& friend_ = s.add(seedWhere(caring, 12500), 2);
+         calm(friend_);
+         s.run(8);
+         P::wallIn(s.world, lost.cell);
+         P::place(s.world, friend_, lost.cell + Vec2i{0, 1});
+         P::setTrust(lost, friend_, 0.8f);
+         P::setTrust(friend_, lost, 0.8f);
+         P::stuckLong(lost);
+         s.run(300);
+         return Checks{own(friend_, "STOPPED @ BEATING THEIR HEAD AGAINST THE WALL"),
+                       own(lost, "@ TALKED ME DOWN. FEEL MORE LIKE MYSELF"),
+                       {"#" + std::to_string(lost.id) + " alive", [&lost](const Stage&) { return !lost.dead(); }}};
+     }},
+    {"headbang-greedy-watch", "a greedy human boxed in with one going at the wall watches and never steps in", 99,
+     [](Stage& s) {
+         Human& lost = s.first();
+         P::unhinge(lost);
+         P::setHope(lost, 0.0f);
+         calm(lost);
+         Human& watcher = s.add(seedWhere([](const Traits& t) { return t.greedy >= 0.75f; }, 12500), 2);
+         calm(watcher);
+         s.run(8);
+         P::wallIn(s.world, lost.cell);
+         P::place(s.world, watcher, lost.cell + Vec2i{0, 1});
+         P::setTrust(lost, watcher, 0.6f);
+         P::stuckLong(lost);
+         s.run(150);
+         return Checks{own(watcher, "SAW @ BEATING THEIR HEAD AGAINST THE WALL"),
+                       own(watcher, "STOPPED @ BEATING THEIR HEAD AGAINST THE WALL", false)};
+     }},
     {"headbang-sane", "shut in and hopeless but not erratic, it never goes at a wall", 99,
      [](Stage& s) {
          Human& caller = shutInFirst(s);

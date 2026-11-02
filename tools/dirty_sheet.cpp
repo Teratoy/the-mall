@@ -167,6 +167,7 @@ int main(int argc, char** argv) {
         {"Punch", Pose::Punch},
         {"Headbutt back", Pose::HeadbuttBack},
         {"Headbutt hit", Pose::HeadbuttHit},
+        {"Comfort", Pose::Comfort},
         {"Headbutt bloody", Pose::HeadbuttHit, 0.0f, false, false, false, Coat::Bloody},
         {"Offer cake", Pose::Offer},
         {"Point", Pose::Point},

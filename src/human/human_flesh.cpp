@@ -104,6 +104,10 @@ constexpr int FEARED_DIST = 10;
 
 /// How much eating flesh, seeing it eaten, finding a gnawed body and the
 /// mind snapping strike it, as episodes to talk about.
+/// Talked down by someone who stopped it beating its head on a wall: its
+/// mind drops to this (held up by any craving), hope rises this much, and it
+/// trusts them this much more.
+constexpr float CALMED_TO = 0.2f, HOPE_CALMED = 0.05f, TRUST_CALMED = 0.2f;
 constexpr float EPISODE_ATE = 0.9f, EPISODE_SAW_EAT = 0.9f, EPISODE_GNAWED = 0.7f, EPISODE_SNAPPED = 0.8f;
 
 } // namespace
@@ -131,6 +135,19 @@ void Human::mind(float dt) {
     note(isErratic() ? "SOMETHING IN ME SNAPPED" : "FEEL MORE LIKE MYSELF");
     remember(Episode::What::Snapped, EPISODE_SNAPPED, id, -1, isErratic() ? 1 : 0);
     if (isErratic()) sayLater(talk::Moment::Snap);
+}
+
+// A craving for flesh holds the mind where it is: talking does nothing for it.
+bool Human::calmedBy(int who) {
+    if (!isErratic()) return false;
+    mind_.erratic = std::max(mind_.appetite * ERRATIC_HELD, std::min(mind_.erratic, CALMED_TO));
+    if (isErratic()) return false;
+    note("@ TALKED ME DOWN. FEEL MORE LIKE MYSELF", who);
+    remember(Episode::What::Snapped, EPISODE_SNAPPED, id, -1, 0);
+    lift(HOPE_CALMED);
+    regard(who, TRUST_CALMED);
+    sayLater(talk::Moment::CalmedDown, who);
+    return true;
 }
 
 // The erratic eat the dead when hungry, and never sooner however they crave
